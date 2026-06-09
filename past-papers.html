@@ -222,6 +222,7 @@
       font-weight: 500;
       white-space: nowrap;
     }
+    .paper-row .actions { display: flex; gap: 6px; flex-shrink: 0; }
     .paper-row a {
       color: #1d4ed8;
       text-decoration: none;
@@ -229,12 +230,17 @@
       font-size: 0.78rem;
       padding: 4px 10px;
       border-radius: 6px;
-      background: #e8f4fd;
       transition: background 0.15s;
+      white-space: nowrap;
     }
-    .paper-row a:hover { background: #bfdbfe; }
-    .paper-row a.ms-link { background: #fef3c7; color: #b45309; }
-    .paper-row a.ms-link:hover { background: #fde68a; }
+    .paper-row a.open-link { background: #e8f4fd; color: #1d4ed8; }
+    .paper-row a.open-link:hover { background: #bfdbfe; }
+    .paper-row a.open-link.ms-link { background: #fef3c7; color: #b45309; }
+    .paper-row a.open-link.ms-link:hover { background: #fde68a; }
+    .paper-row a.dl-link { background: #eef2ff; color: #4f46e5; }
+    .paper-row a.dl-link:hover { background: #ddd6fe; }
+    .paper-row a.dl-link.ms-link { background: #fffbeb; color: #b45309; }
+    .paper-row a.dl-link.ms-link:hover { background: #fef3c7; }
 
     .no-files {
       padding: 20px;
@@ -577,7 +583,10 @@ function renderSession(year, session, container) {
       row.className = 'paper-row';
       row.setAttribute('data-search', `${year} ${session} ${p.paper} ${p.label} Question Paper`);
       row.innerHTML = `<span class="label">${p.label}</span>
-        <a href="past-papers/${encodeURIComponent(p.file)}" target="_blank">Open PDF</a>`;
+        <span class="actions">
+          <a href="past-papers/${encodeURIComponent(p.file)}" target="_blank" class="open-link">Open</a>
+          <a href="past-papers/${encodeURIComponent(p.file)}" download class="dl-link">Download</a>
+        </span>`;
       qpCol.appendChild(row);
     });
   } else {
@@ -595,7 +604,10 @@ function renderSession(year, session, container) {
       row.className = 'paper-row';
       row.setAttribute('data-search', `${year} ${session} ${p.paper} ${p.label} Mark Scheme`);
       row.innerHTML = `<span class="label">${p.label}</span>
-        <a href="past-papers/${encodeURIComponent(p.file)}" target="_blank" class="ms-link">MS PDF</a>`;
+        <span class="actions">
+          <a href="past-papers/${encodeURIComponent(p.file)}" target="_blank" class="open-link ms-link">Open</a>
+          <a href="past-papers/${encodeURIComponent(p.file)}" download class="dl-link ms-link">Download</a>
+        </span>`;
       msCol.appendChild(row);
     });
   } else {
