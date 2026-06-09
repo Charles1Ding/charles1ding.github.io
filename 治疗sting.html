@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>蚂蚁叮咬处理互动模型 - 完整人体版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap');
+        
+        body {
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        .anime-font {
+            font-family: 'ZCOOL+KuaiLe', cursive;
+        }
+
+        /* 呼吸动画：影响全身 */
+        @keyframes body-breathe {
+            0%, 100% { transform: translateY(0) scale(1); }
+            50% { transform: translateY(-3px) scale(1.01); }
+        }
+        .breathe { animation: body-breathe 4s infinite ease-in-out; }
+
+        /* 剧烈震颤：用于极端疼痛 */
+        @keyframes body-shake {
+            0% { transform: translate(0,0); }
+            20% { transform: translate(-2px, 1px); }
+            40% { transform: translate(2px, -1px); }
+            60% { transform: translate(-2px, -1px); }
+            80% { transform: translate(2px, 1px); }
+            100% { transform: translate(0,0); }
+        }
+        .extreme-shake { animation: body-shake 0.1s infinite; }
+
+        /* 红肿脉冲 */
+        @keyframes pulse-sting {
+            0%, 100% { r: 10; opacity: 0.6; filter: blur(3px); }
+            50% { r: 14; opacity: 1; filter: blur(5px); }
+        }
+        .pulse { animation: pulse-sting 1s infinite ease-in-out; }
+
+        /* 汗滴轨迹 */
+        @keyframes sweat-flow {
+            0% { transform: translateY(0); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(30px); opacity: 0; }
+        }
+        .sweat-anim { animation: sweat-flow 1.2s infinite linear; }
+
+        .substance-card {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .substance-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.15);
+        }
+
+        .active-card {
+            border-color: #3b82f6 !important;
+            background-color: #f0f7ff !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .svg-shadow {
+            filter: drop-shadow(0 20px 25px rgba(0,0,0,0.1));
+        }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+    <div class="max-w-6xl mx-auto bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-100">
+        <!-- 头部标题 -->
+        <div class="bg-slate-900 p-8 text-center">
+            <h1 class="text-3xl md:text-5xl text-white anime-font tracking-widest">化学应急模拟：完整人体模型</h1>
+            <p class="mt-3 text-slate-400 text-sm md:text-base font-light">实验目标：寻找最适合中和蚁酸 (pH 3) 的家庭常用物质</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-0">
+            <!-- 左侧：全人体展示区 -->
+            <div id="canvas-bg" class="lg:col-span-7 bg-slate-50 p-6 flex flex-col items-center justify-center relative min-h-[600px] transition-colors duration-700">
+                
+                <div class="relative w-full h-full flex items-center justify-center" id="char-container">
+                    <svg width="400" height="550" viewBox="0 0 400 550" class="svg-shadow breathe" id="human-svg">
+                        <!-- 阴影 -->
+                        <ellipse cx="200" cy="520" rx="80" ry="15" fill="rgba(0,0,0,0.1)" />
+
+                        <!-- 腿部 -->
+                        <g id="legs">
+                            <!-- 左腿 -->
+                            <path d="M170,380 L150,510 Q150,520 165,520 L180,520 Q180,510 180,510 L190,380" fill="#FFE0BD" stroke="#333" stroke-width="2"/>
+                            <!-- 右腿 -->
+                            <path d="M210,380 L230,510 Q230,520 245,520 L260,520 Q260,510 260,510 L230,380" fill="#FFE0BD" stroke="#333" stroke-width="2"/>
+                        </g>
+
+                        <!-- 躯干 -->
+                        <path id="torso" d="M160,220 Q200,210 240,220 L250,380 Q200,400 150,380 Z" fill="#3B82F6" stroke="#333" stroke-width="2"/>
+
+                        <!-- 左臂 (自然垂下) -->
+                        <path id="arm-left" d="M160,230 Q120,280 130,350" fill="none" stroke="#FFE0BD" stroke-width="24" stroke-linecap="round"/>
+
+                        <!-- 右臂 (抬起展示伤口) -->
+                        <g id="arm-right">
+                            <path d="M240,230 Q300,230 320,180" fill="none" stroke="#FFE0BD" stroke-width="24" stroke-linecap="round"/>
+                            <!-- 手部 -->
+                            <g transform="translate(320, 180) rotate(-20)">
+                                <path d="M-15,-15 Q-20,-35 0,-45 Q20,-55 40,-40 Q55,-25 50,0 Q45,20 15,25 Q-10,20 -15,-15" fill="#FFE0BD" stroke="#333" stroke-width="2"/>
+                                <!-- 叮咬处 -->
+                                <circle id="sting-point" cx="15" cy="-10" r="10" fill="#EF4444" class="pulse"/>
+                                <!-- 覆盖效果层 -->
+                                <circle id="treatment-layer" cx="15" cy="-10" r="0" fill="white" opacity="0"/>
+                            </g>
+                        </g>
+
+                        <!-- 头部 -->
+                        <g id="head" transform="translate(200, 150)">
+                            <circle cx="0" cy="0" r="65" fill="#FFE0BD" stroke="#333" stroke-width="2"/>
+                            <!-- 头发 -->
+                            <path d="M-68,-10 Q-60,-90 0,-95 Q60,-90 68,-10 Z" fill="#334155" />
+                            
+                            <!-- 眼睛 -->
+                            <g id="face-eyes">
+                                <g id="eye-l">
+                                    <circle cx="-25" cy="-5" r="7" fill="white" stroke="#333" stroke-width="1"/>
+                                    <circle id="pupil-l" cx="-25" cy="-5" r="3.5" fill="#333"/>
+                                </g>
+                                <g id="eye-r">
+                                    <circle cx="25" cy="-5" r="7" fill="white" stroke="#333" stroke-width="1"/>
+                                    <circle id="pupil-r" cx="25" cy="-5" r="3.5" fill="#333"/>
+                                </g>
+                            </g>
+                            
+                            <!-- 嘴巴 -->
+                            <path id="face-mouth" d="M-15,35 Q0,45 15,35" fill="none" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+                            
+                            <!-- 汗滴 -->
+                            <path id="sweat" d="M40,-10 Q45,-5 40,0 Q35,-5 40,-10" fill="#0EA5E9" class="sweat-anim opacity-0"/>
+                        </g>
+                    </svg>
+
+                    <!-- 动态气泡 -->
+                    <div id="bubble" class="absolute top-20 right-10 bg-white p-4 rounded-3xl shadow-2xl border-2 border-slate-800 font-black text-slate-800 scale-0 transition-transform duration-300 origin-bottom-left max-w-[120px] text-center text-sm">
+                        哎呀痛！
+                    </div>
+                </div>
+
+                <!-- 底部状态显示 -->
+                <div class="flex flex-col items-center gap-4 mt-4 w-full px-10">
+                    <div id="status-tag" class="w-full text-center py-3 bg-red-500 text-white rounded-2xl font-bold shadow-lg transition-all">
+                        状态：被红火蚁叮咬 (pH 3)
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="w-3 h-3 bg-red-500 rounded-full animate-ping"></span>
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-tighter text-center">实时生物模拟 (Real-time Bio-Simulation)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：交互控制区 -->
+            <div class="lg:col-span-5 p-8 flex flex-col space-y-6">
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800 mb-2 anime-font">选择干预物质</h2>
+                    <p class="text-slate-500 text-sm">请点击下方物质进行局部涂抹，观察化学反应结果：</p>
+                </div>
+
+                <!-- 物质网格 -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div onclick="selectSubstance('acid')" id="btn-acid" class="substance-card p-5 rounded-[2rem] border-2 border-slate-100 bg-white">
+                        <div class="text-[10px] font-black text-red-500 mb-1">pH 1.0 (强烈酸性)</div>
+                        <div class="text-lg font-bold text-slate-800">汽车电池酸</div>
+                        <div class="text-[10px] text-slate-400">Car Battery Acid</div>
+                    </div>
+                    <div onclick="selectSubstance('lemon')" id="btn-lemon" class="substance-card p-5 rounded-[2rem] border-2 border-slate-100 bg-white">
+                        <div class="text-[10px] font-black text-amber-500 mb-1">pH 3.0 (弱酸性)</div>
+                        <div class="text-lg font-bold text-slate-800">鲜榨柠檬汁</div>
+                        <div class="text-[10px] text-slate-400">Lemon Juice</div>
+                    </div>
+                    <div onclick="selectSubstance('soda')" id="btn-soda" class="substance-card p-5 rounded-[2rem] border-2 border-slate-100 bg-white">
+                        <div class="text-[10px] font-black text-emerald-500 mb-1">pH 8.5 (弱碱性)</div>
+                        <div class="text-lg font-bold text-slate-800">食用小苏打</div>
+                        <div class="text-[10px] text-slate-400">Baking Soda</div>
+                    </div>
+                    <div onclick="selectSubstance('oven')" id="btn-oven" class="substance-card p-5 rounded-[2rem] border-2 border-slate-100 bg-white">
+                        <div class="text-[10px] font-black text-purple-500 mb-1">pH 14.0 (极强碱性)</div>
+                        <div class="text-lg font-bold text-slate-800">烤箱清洁剂</div>
+                        <div class="text-[10px] text-slate-400">Oven Cleaner</div>
+                    </div>
+                </div>
+
+                <!-- 实时报告面板 -->
+                <div class="bg-slate-900 rounded-[2rem] p-8 text-slate-300 flex-grow shadow-inner relative overflow-hidden">
+                    <div class="relative z-10 h-full flex flex-col">
+                        <div class="flex items-center gap-2 text-white mb-4">
+                            <div class="w-4 h-4 rounded-full bg-blue-500 animate-pulse"></div>
+                            <span class="font-bold tracking-widest text-sm uppercase">化学反应报告</span>
+                        </div>
+                        <div id="report-text" class="text-sm leading-relaxed overflow-y-auto">
+                            等待操作指令... <br><br>
+                            人体皮肤正常 pH 约为 5.5。蚁酸的注入打破了局部平衡。我们需要通过化学手段将伤口环境拉回中性。
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 重置按钮 -->
+                <button onclick="resetExperiment()" class="w-full py-5 bg-slate-100 text-slate-600 rounded-2xl font-black hover:bg-slate-200 transition-all active:scale-95 text-sm uppercase tracking-widest">
+                    重置实验环境
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const states = {
+            initial: {
+                eyes: 'normal',
+                mouth: 'M-15,35 Q0,45 15,35',
+                stingR: 10,
+                stingColor: '#EF4444',
+                treatment: { r: 0, color: 'none', opacity: 0 },
+                status: '状态：被红火蚁叮咬 (pH 3)',
+                statusColor: 'bg-red-500',
+                bubble: '好痛好痒！',
+                bg: 'bg-slate-50',
+                shake: false,
+                sweat: false,
+                report: '<b>初始状态：</b> 蚁酸（甲酸）正在水解组织蛋白质，引起红肿。目前伤口处于酸性环境（pH 3）。'
+            },
+            acid: {
+                eyes: 'pain',
+                mouth: 'M-20,45 Q0,30 20,45',
+                stingR: 30,
+                stingColor: '#450a0a',
+                treatment: { r: 35, color: '#000000', opacity: 0.5 },
+                status: '紧急！强酸化学灼伤 (pH 1)',
+                statusColor: 'bg-black',
+                bubble: '啊！！被烧伤了！！',
+                bg: 'bg-red-100',
+                shake: true,
+                sweat: true,
+                report: '<b class="text-red-400">【极度危险】</b> 汽车电池酸是强硫酸。涂抹后不仅没能中和蚁酸，反而发生了严重的脱水反应，导致皮肤组织<b>碳化</b>。'
+            },
+            lemon: {
+                eyes: 'unhappy',
+                mouth: 'M-15,40 Q0,35 15,40',
+                stingR: 14,
+                stingColor: '#f97316',
+                treatment: { r: 0, color: 'none', opacity: 0 },
+                status: '无效：酸性重叠 (pH 3)',
+                statusColor: 'bg-amber-500',
+                bubble: '嘶...没有用...',
+                bg: 'bg-amber-50',
+                shake: false,
+                sweat: false,
+                report: '<b class="text-amber-400">【干预无效】</b> 柠檬汁含有柠檬酸（pH 3）。酸与酸之间无法发生中和反应，无法缓解症状。'
+            },
+            soda: {
+                eyes: 'relieved',
+                mouth: 'M-15,35 Q0,55 15,35',
+                stingR: 5,
+                stingColor: '#fecaca',
+                treatment: { r: 25, color: '#ffffff', opacity: 0.7 },
+                status: '成功：酸碱中和反应 (pH 8)',
+                statusColor: 'bg-emerald-500',
+                bubble: '呼，好多了。',
+                bg: 'bg-emerald-50',
+                shake: false,
+                sweat: false,
+                report: '<b class="text-emerald-400">【处理正确】</b> 小苏打（碳酸氢钠）是理想的弱碱。它能温和地中和蚁酸，痛感迅速消失。'
+            },
+            oven: {
+                eyes: 'shock',
+                mouth: 'M-20,40 L20,40',
+                stingR: 45,
+                stingColor: '#4c1d95',
+                treatment: { r: 50, color: '#facc15', opacity: 0.4 },
+                status: '紧急！强碱腐蚀 (pH 14)',
+                statusColor: 'bg-purple-900',
+                bubble: '救命！肉在融化！',
+                bg: 'bg-purple-100',
+                shake: true,
+                sweat: true,
+                report: '<b class="text-purple-400">【极度危险】</b> 烤箱清洁剂含有氢氧化钠。虽然中和了酸，但强碱会引起<b>皂化反应</b>，溶解皮肤组织。'
+            }
+        };
+
+        function selectSubstance(key) {
+            const data = states[key];
+            if (!data) return;
+            
+            // UI 选中效果 - 增加 null 检查
+            document.querySelectorAll('.substance-card').forEach(c => c.classList.remove('active-card'));
+            const activeBtn = document.getElementById('btn-' + key);
+            if (activeBtn) {
+                activeBtn.classList.add('active-card');
+            }
+
+            // 眼睛变化逻辑
+            const eyes = document.getElementById('face-eyes');
+            if(data.eyes === 'pain') {
+                eyes.innerHTML = '<path d="M-35,-15 L-15,-5 M-15,-15 L-35,-5" stroke="#333" stroke-width="3"/><path d="M15,-15 L35,-5 M35,-15 L15,-5" stroke="#333" stroke-width="3"/>';
+            } else if(data.eyes === 'relieved') {
+                eyes.innerHTML = '<path d="M-35,-5 Q-25,-20 -15,-5" fill="none" stroke="#333" stroke-width="3"/><path d="M15,-5 Q25,-20 35,-5" fill="none" stroke="#333" stroke-width="3"/>';
+            } else if(data.eyes === 'shock') {
+                eyes.innerHTML = '<circle cx="-25" cy="-5" r="12" fill="white" stroke="red"/><circle cx="25" cy="-5" r="12" fill="white" stroke="red"/>';
+            } else if(data.eyes === 'unhappy') {
+                eyes.innerHTML = '<path d="M-35,-10 Q-25,0 -15,-10" fill="none" stroke="#333" stroke-width="2"/><path d="M15,-10 Q25,0 35,-10" fill="none" stroke="#333" stroke-width="2"/>';
+            } else {
+                eyes.innerHTML = '<circle cx="-25" cy="-5" r="7" fill="white" stroke="#333"/><circle cx="-25" cy="-5" r="3.5" fill="#333"/><circle cx="25" cy="-5" r="7" fill="white" stroke="#333"/><circle cx="25" cy="-5" r="3.5" fill="#333"/>';
+            }
+
+            // 嘴巴、汗水、伤口
+            document.getElementById('face-mouth').setAttribute('d', data.mouth);
+            document.getElementById('sweat').style.opacity = data.sweat ? "1" : "0";
+            
+            const sting = document.getElementById('sting-point');
+            sting.setAttribute('r', data.stingR);
+            sting.setAttribute('fill', data.stingColor);
+            
+            const layer = document.getElementById('treatment-layer');
+            layer.setAttribute('r', data.treatment.r);
+            layer.setAttribute('fill', data.treatment.color);
+            layer.setAttribute('opacity', data.treatment.opacity);
+
+            // 背景与震动
+            const canvas = document.getElementById('canvas-bg');
+            const svg = document.getElementById('human-svg');
+            canvas.className = `lg:col-span-7 p-6 flex flex-col items-center justify-center relative min-h-[600px] transition-colors duration-700 ${data.bg}`;
+            
+            if(data.shake) {
+                svg.classList.add('extreme-shake');
+            } else {
+                svg.classList.remove('extreme-shake');
+            }
+
+            // 气泡与标签
+            const bubble = document.getElementById('bubble');
+            bubble.innerText = data.bubble;
+            bubble.style.transform = "scale(1)";
+            
+            const tag = document.getElementById('status-tag');
+            tag.innerText = data.status;
+            tag.className = `w-full text-center py-3 text-white rounded-2xl font-bold shadow-lg transition-all ${data.statusColor}`;
+
+            // 报告内容
+            document.getElementById('report-text').innerHTML = data.report;
+        }
+
+        function resetExperiment() {
+            const bubble = document.getElementById('bubble');
+            bubble.style.transform = "scale(0)";
+            
+            setTimeout(() => {
+                selectSubstance('initial');
+                document.querySelectorAll('.substance-card').forEach(c => c.classList.remove('active-card'));
+                document.getElementById('report-text').innerHTML = "等待操作指令... <br><br> 人体皮肤正常 pH 约为 5.5。蚁酸的注入打破了局部平衡。";
+            }, 200);
+        }
+
+        window.onload = resetExperiment;
+    </script>
+</body>
+</html>

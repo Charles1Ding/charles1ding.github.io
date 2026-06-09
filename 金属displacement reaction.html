@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>铜与硝酸银反应 - 电子转移超慢速观察</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #050a1a; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+        #ui-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .controls { pointer-events: auto; }
+        .glass-panel { background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.1); }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <div id="ui-overlay" class="p-6 flex flex-col justify-between text-white">
+        <!-- 顶部信息面板 -->
+        <div class="flex justify-between items-start">
+            <div class="glass-panel p-4 rounded-xl shadow-2xl max-w-sm">
+                <h1 class="text-xl font-bold text-blue-400 mb-2">微观视角：电子转移过程</h1>
+                <p class="text-xs text-slate-300 leading-relaxed mb-3">
+                    在置换反应中，活泼金属铜原子失去电子成为蓝色铜离子，电子通过空间转移给银离子。
+                </p>
+                <div class="space-y-2 border-t border-slate-700 pt-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] text-slate-400">已转移电子数:</span>
+                        <span id="e-count" class="text-yellow-400 font-mono font-bold">0</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] text-slate-400">生成银原子数:</span>
+                        <span id="ag-count" class="text-slate-200 font-mono font-bold">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-3 rounded-lg flex flex-col gap-2">
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-yellow-400 rounded-full shadow-[0_0_8px_#fbbf24]"></div>
+                    <span class="text-[10px]">电子 (e⁻) - 慢速</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span class="text-[10px]">铜离子 (Cu²⁺)</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <div class="w-3 h-3 bg-gray-400 rounded-full"></div>
+                    <span class="text-[10px]">银离子 (Ag⁺)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部交互面板 -->
+        <div class="flex justify-center mb-8">
+            <div class="glass-panel p-6 rounded-3xl w-80 controls shadow-2xl flex flex-col gap-4">
+                <button id="dip-btn" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2">
+                    <span>🔬 开始浸入铜丝</span>
+                </button>
+
+                <div id="reaction-controls" class="hidden opacity-0 transition-opacity duration-700 flex flex-col gap-4">
+                    <div class="flex flex-col gap-1">
+                        <div class="flex justify-between text-[10px] uppercase tracking-widest text-slate-400">
+                            <span>反应程度</span>
+                            <span id="progress-val" class="text-indigo-400 font-bold">0%</span>
+                        </div>
+                        <input type="range" id="progress-slider" min="0" max="100" value="0" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button id="play-btn" class="flex-1 bg-slate-800 hover:bg-slate-700 py-2 rounded-lg text-xs font-semibold transition-all">自动反应</button>
+                        <button id="reset-btn" class="flex-1 border border-slate-700 hover:bg-slate-800 py-2 rounded-lg text-xs font-semibold transition-all">重置</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let scene, camera, renderer, copperWire, liquid;
+        let agIons = [], cuIons = [], activeElectrons = [], silverCrystals = [];
+        let totalElectrons = 0, totalAgAtoms = 0;
+        let isDipped = false, isAnimating = false, reactionProgress = 0;
+
+        const LIQUID_RADIUS = 5.4;
+        const LIQUID_HEIGHT = 10;
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x050a1a);
+
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 12, 22);
+            camera.lookAt(0, 4, 0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            document.body.appendChild(renderer.domElement);
+
+            // 光照
+            const ambient = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambient);
+            const point = new THREE.PointLight(0xffffff, 1);
+            point.position.set(10, 20, 10);
+            scene.add(point);
+
+            // 烧杯与液体
+            const beakerGeom = new THREE.CylinderGeometry(5.5, 5.5, 12, 64, 1, true);
+            const beakerMat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.1, side: THREE.DoubleSide });
+            const beaker = new THREE.Mesh(beakerGeom, beakerMat);
+            beaker.position.y = 6;
+            scene.add(beaker);
+
+            const liquidGeom = new THREE.CylinderGeometry(5.4, 5.4, 10, 64);
+            const liquidMat = new THREE.MeshPhongMaterial({ color: 0xffffff, transparent: true, opacity: 0.15 });
+            liquid = new THREE.Mesh(liquidGeom, liquidMat);
+            liquid.position.y = 5;
+            scene.add(liquid);
+
+            // 铜丝
+            const wireGeom = new THREE.CylinderGeometry(0.5, 0.5, 15, 32);
+            const wireMat = new THREE.MeshPhongMaterial({ color: 0xb87333, shininess: 80 });
+            copperWire = new THREE.Mesh(wireGeom, wireMat);
+            copperWire.position.set(0, 20, 0);
+            scene.add(copperWire);
+
+            // 离子贴图生成
+            const textures = {
+                Ag: createIonLabel('Ag+', '#94a3b8', '#000000'),
+                Cu: createIonLabel('Cu2+', '#3b82f6', '#ffffff', true),
+                e: createElectronLabel()
+            };
+
+            // 初始化银离子 (40个)
+            const agMat = new THREE.SpriteMaterial({ map: textures.Ag });
+            for(let i=0; i<40; i++) {
+                const s = new THREE.Sprite(agMat);
+                s.scale.set(1.4, 1.4, 1);
+                resetIonPos(s);
+                s.userData = { vel: randomVel(), originalScale: 1.4 };
+                scene.add(s);
+                agIons.push(s);
+            }
+
+            // 初始化铜离子 (隐藏)
+            const cuMat = new THREE.SpriteMaterial({ map: textures.Cu });
+            for(let i=0; i<20; i++) {
+                const s = new THREE.Sprite(cuMat);
+                s.scale.set(1.6, 1.6, 1);
+                s.visible = false;
+                s.userData = { vel: randomVel() };
+                scene.add(s);
+                cuIons.push(s);
+            }
+
+            // 银晶体 (铜丝表面)
+            for(let i=0; i<150; i++) {
+                const cry = new THREE.Mesh(new THREE.DodecahedronGeometry(0.25), new THREE.MeshPhongMaterial({ color: 0xd1d5db, shininess: 100 }));
+                const ang = Math.random() * Math.PI * 2;
+                cry.position.set(Math.cos(ang)*0.51, (Math.random()-0.5)*10, Math.sin(ang)*0.51);
+                cry.scale.set(0.01, 0.01, 0.01);
+                cry.visible = false;
+                copperWire.add(cry);
+                silverCrystals.push(cry);
+            }
+
+            // 电子池
+            const eMat = new THREE.SpriteMaterial({ map: textures.e, transparent: true, blending: THREE.AdditiveBlending });
+            for(let i=0; i<20; i++) {
+                const e = new THREE.Sprite(eMat);
+                e.scale.set(0.7, 0.7, 1);
+                e.visible = false;
+                scene.add(e);
+                activeElectrons.push(e);
+            }
+
+            // UI交互
+            const dipBtn = document.getElementById('dip-btn');
+            dipBtn.onclick = () => { isDipped = true; dipBtn.classList.add('hidden'); };
+            
+            const slider = document.getElementById('progress-slider');
+            slider.oninput = (e) => { isAnimating = false; syncReaction(e.target.value/100); };
+
+            const playBtn = document.getElementById('play-btn');
+            playBtn.onclick = () => { if(reactionProgress >= 1) return resetAll(); isAnimating = !isAnimating; playBtn.innerText = isAnimating ? "暂停" : "继续播放"; };
+
+            document.getElementById('reset-btn').onclick = resetAll;
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                // 铜丝进入
+                if(isDipped && copperWire.position.y > 6.5) {
+                    copperWire.position.y -= 0.1;
+                    if(copperWire.position.y <= 6.5) {
+                        const panel = document.getElementById('reaction-controls');
+                        panel.classList.remove('hidden');
+                        setTimeout(() => panel.classList.add('opacity-100'), 50);
+                    }
+                }
+
+                // 自动播放
+                if(isAnimating && reactionProgress < 1) {
+                    reactionProgress += 0.0012;
+                    syncReaction(reactionProgress);
+                    if(Math.random() > 0.96) launchElectrons(); // 控制发射频率
+                }
+
+                // 电子移动 (超慢速逻辑)
+                activeElectrons.forEach(e => {
+                    if(!e.visible) return;
+                    const target = e.userData.target;
+                    if(target && target.visible) {
+                        const dir = new THREE.Vector3().subVectors(target.position, e.position).normalize();
+                        // 极慢速: 0.035
+                        e.position.add(dir.multiplyScalar(0.035));
+                        
+                        // 碰撞检测
+                        if(e.position.distanceTo(target.position) < 0.4) {
+                            e.visible = false;
+                            totalElectrons++;
+                            document.getElementById('e-count').innerText = totalElectrons;
+                            
+                            // 目标离子碰撞动效
+                            target.scale.set(1.8, 1.8, 1);
+                            setTimeout(() => { if(target.visible) target.scale.set(1.4, 1.4, 1); }, 100);
+                        }
+                    } else {
+                        e.visible = false;
+                    }
+                });
+
+                // 离子游走
+                [...agIons, ...cuIons].forEach(s => {
+                    if(!s.visible) return;
+                    s.position.add(s.userData.vel);
+                    if(Math.abs(s.position.x) > LIQUID_RADIUS-0.5 || Math.abs(s.position.z) > LIQUID_RADIUS-0.5) s.userData.vel.x *= -1, s.userData.vel.z *= -1;
+                    if(s.position.y < 1 || s.position.y > 9) s.userData.vel.y *= -1;
+                });
+
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        // 发射两个电子 (Cu -> 2Ag+)
+        function launchElectrons() {
+            const visibleAg = agIons.filter(a => a.visible);
+            if(visibleAg.length < 2) return;
+
+            for(let i=0; i<2; i++) {
+                const e = activeElectrons.find(el => !el.visible);
+                if(e) {
+                    const startY = 1 + Math.random() * 8;
+                    const ang = Math.random() * Math.PI * 2;
+                    e.position.set(Math.cos(ang)*0.5, startY, Math.sin(ang)*0.5);
+                    e.userData.target = visibleAg[i];
+                    e.visible = true;
+                }
+            }
+        }
+
+        function syncReaction(p) {
+            reactionProgress = p;
+            document.getElementById('progress-val').innerText = Math.floor(p*100) + '%';
+            document.getElementById('progress-slider').value = p*100;
+
+            // 液体颜色
+            liquid.material.color.setRGB(1-p*0.5, 1-p*0.2, 1);
+            liquid.material.opacity = 0.15 + p*0.15;
+
+            // 离子可见性
+            agIons.forEach((s, i) => s.visible = i >= p * agIons.length);
+            cuIons.forEach((s, i) => {
+                if(i < p * cuIons.length) {
+                    if(!s.visible) {
+                        s.visible = true;
+                        s.position.set((Math.random()-0.5)*2, 5, (Math.random()-0.5)*2);
+                    }
+                } else s.visible = false;
+            });
+
+            // 银原子计数
+            totalAgAtoms = Math.floor(p * 100);
+            document.getElementById('ag-count').innerText = totalAgAtoms;
+
+            // 晶体生长
+            silverCrystals.forEach((c, i) => {
+                if(i < p * silverCrystals.length) {
+                    c.visible = true;
+                    const scale = Math.min(1.5, p * 5);
+                    c.scale.set(scale, scale, scale);
+                } else c.visible = false;
+            });
+        }
+
+        function resetAll() {
+            reactionProgress = 0;
+            isAnimating = false;
+            isDipped = false;
+            totalElectrons = 0;
+            totalAgAtoms = 0;
+            syncReaction(0);
+            copperWire.position.set(0, 20, 0);
+            document.getElementById('dip-btn').classList.remove('hidden');
+            document.getElementById('reaction-controls').classList.add('hidden');
+            document.getElementById('e-count').innerText = "0";
+            document.getElementById('ag-count').innerText = "0";
+        }
+
+        // 工具函数
+        function createIonLabel(text, color, textColor, glow=false) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256; canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            if(glow) {
+                const g = ctx.createRadialGradient(128,128,80,128,128,128);
+                g.addColorStop(0, color); g.addColorStop(1, 'transparent');
+                ctx.fillStyle = g; ctx.fillRect(0,0,256,256);
+            }
+            ctx.beginPath(); ctx.arc(128,128,90,0,Math.PI*2);
+            ctx.fillStyle = color; ctx.fill();
+            ctx.strokeStyle = '#fff'; ctx.lineWidth = 10; ctx.stroke();
+            ctx.fillStyle = textColor; ctx.font = 'bold 80px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText(text, 128, 128);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function createElectronLabel() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128; canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+            const g = ctx.createRadialGradient(64,64,0,64,64,64);
+            g.addColorStop(0,'#fff'); g.addColorStop(0.4,'#fbbf24'); g.addColorStop(1,'transparent');
+            ctx.fillStyle = g; ctx.fillRect(0,0,128,128);
+            ctx.fillStyle = '#000'; ctx.font = 'bold 50px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+            ctx.fillText('e-', 64, 64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        function resetIonPos(s) {
+            const r = Math.random() * (LIQUID_RADIUS - 1.2);
+            const a = Math.random() * Math.PI * 2;
+            s.position.set(Math.cos(a)*r, 1 + Math.random()*8, Math.sin(a)*r);
+        }
+
+        function randomVel() {
+            return new THREE.Vector3((Math.random()-0.5)*0.02, (Math.random()-0.5)*0.02, (Math.random()-0.5)*0.02);
+        }
+
+        window.onload = init;
+        window.onresize = () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        };
+    </script>
+</body>
+</html>

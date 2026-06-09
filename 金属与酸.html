@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金属与酸反应微观模拟 (Zn vs Cu)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #E0F7FA;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 340px;
+            border: 1px solid #e2e8f0;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .btn {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn:active { transform: scale(0.95); }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #334155;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .square {
+            width: 12px;
+            height: 12px;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">金属与酸反应</h2>
+        <div class="text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded border border-slate-200">
+            <strong>反应原理 (金属活动性)：</strong><br>
+            1. <span class="text-slate-700 font-bold">Zn + 2H⁺ → Zn²⁺ + H₂↑</span> (反应)<br>
+            2. <span class="text-orange-700 font-bold">Cu + H⁺ → 不反应</span> (无气泡)<br>
+            <span class="text-slate-400 mt-1 block">Zn 比 H 活泼，Cu 没有 H 活泼。</span>
+        </div>
+
+        <div class="flex gap-2 mb-4">
+            <button id="btn-add-acid" class="btn flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-3 rounded font-bold border border-red-200 text-sm">
+                + 酸 (H⁺)
+            </button>
+            <button id="btn-reset" class="btn bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-3 rounded font-bold border border-slate-200 text-sm">
+                重置
+            </button>
+        </div>
+
+        <div class="space-y-2 mb-4">
+            <button id="btn-add-zn" class="btn w-full bg-slate-200 hover:bg-slate-300 text-slate-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-slate-300">
+                <span>加入 锌片 (Zn)</span>
+                <span class="text-xs bg-slate-400 text-white px-2 py-1 rounded">活泼</span>
+            </button>
+            <button id="btn-add-cu" class="btn w-full bg-orange-100 hover:bg-orange-200 text-orange-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-orange-300">
+                <span>加入 铜片 (Cu)</span>
+                <span class="text-xs bg-orange-400 text-white px-2 py-1 rounded">不活泼</span>
+            </button>
+        </div>
+
+        <div class="border-t border-slate-200 pt-3">
+            <div class="text-xs font-bold text-slate-400 uppercase mb-2">图例</div>
+            
+            <div class="legend-item">
+                <span class="square" style="background: #90A4AE;"></span> Zn 原子 (固体)
+            </div>
+            <div class="legend-item">
+                <span class="square" style="background: #FF8A65;"></span> Cu 原子 (固体)
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #FF5252;"></span> H⁺ (酸)
+            </div>
+            <div class="legend-item mt-2 pt-2 border-t border-dashed border-slate-200">
+                <span class="dot" style="background: #546E7A;"></span> Zn²⁺ (离子)
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #B0BEC5; border-radius: 50%; opacity: 0.7;"></span> H₂ (气体)
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Refs
+    const ui = {
+    };
+
+    // Parameters
+    let width, height;
+    const RAD_H = 5;
+    const RAD_METAL = 14; 
+    const RAD_ION = 12;
+    const RAD_GAS = 10;
+    
+    let entities = [];
+    let effects = [];
+
+    // --- Entity Classes ---
+
+    class Entity {
+        constructor(x, y, vx, vy) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.markedForDeletion = false;
+        }
+
+        update() {
+            if (this.fixed) return; // Solids don't move
+
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Simple boundary constraints
+            if (this.type !== 'H2') {
+                if (this.y < 10) { this.y = 10; this.vy *= -1; }
+            } else {
+                if (this.y < -20) this.markedForDeletion = true; // Gas leaves
+            }
+
+            if (this.y > height - 10) { this.y = height - 10; this.vy *= -1; }
+            if (this.x < 10 || this.x > width - 10) this.vx *= -1;
+            
+            // Physics per type
+            if (this.type === 'H' || this.type === 'ZnIon') {
+                // Ions in solution: Friction + Brownian Motion (热运动)
+                this.vx *= 0.96; // 阻力
+                this.vy *= 0.96;
+                // 添加随机热运动力，使其能自由游动到金属表面
+                this.vx += (Math.random() - 0.5) * 0.8;
+                this.vy += (Math.random() - 0.5) * 0.8;
+            } else if (this.type === 'H2') {
+                // Gas bubble: Accelerate up
+                this.vy -= 0.05; 
+                this.vx += (Math.random() - 0.5) * 0.2; // Wobble
+            }
+        }
+    }
+
+    class Particle extends Entity {
+        constructor(x, y, type) {
+            super(x, y, (Math.random()-0.5)*2, (Math.random()-0.5)*2);
+            this.type = type; 
+            
+            if (type === 'H') {
+                this.radius = RAD_H;
+                this.color = '#FF5252';
+                this.label = 'H⁺';
+            } else if (type === 'Zn') {
+                this.radius = RAD_METAL;
+                this.color = '#90A4AE'; // Grey Blue
+                this.label = 'Zn';
+                this.fixed = true; // Solid metal
+                this.hits = 0; // Track H+ impacts
+                this.vx = 0; this.vy = 0;
+            } else if (type === 'Cu') {
+                this.radius = RAD_METAL;
+                this.color = '#FF8A65'; // Bronze/Orange
+                this.label = 'Cu';
+                this.fixed = true; // Solid metal
+                this.vx = 0; this.vy = 0;
+            } else if (type === 'ZnIon') {
+                this.radius = RAD_ION;
+                this.color = '#546E7A'; // Darker grey
+                this.label = 'Zn²⁺';
+                this.charge = 2;
+            } else if (type === 'H2') {
+                this.radius = RAD_GAS;
+                this.color = 'rgba(176, 190, 197, 0.5)';
+                this.label = 'H₂';
+                this.vy = -1.5 - Math.random(); // Float up
+            }
+        }
+
+        draw() {
+            ctx.beginPath();
+            
+            // Draw metals as squares to distinguish solids
+            if (this.fixed) {
+                const s = this.radius * 2;
+                ctx.rect(this.x - this.radius, this.y - this.radius, s, s);
+            } else {
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            }
+            
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            
+            // Visual feedback for reaction progress on Zn
+            if (this.type === 'Zn' && this.hits > 0) {
+                ctx.strokeStyle = '#FF5252';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                ctx.strokeStyle = "rgba(0,0,0,0.15)";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = this.fixed ? "white" : (this.type === 'H2' ? '#37474F' : "white");
+            ctx.font = "bold 10px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            
+            // Gas molecule dots
+            if (this.type === 'H2') {
+                 ctx.beginPath(); ctx.arc(this.x-3, this.y, 2, 0, Math.PI*2); ctx.fill();
+                 ctx.beginPath(); ctx.arc(this.x+3, this.y, 2, 0, Math.PI*2); ctx.fill();
+            } else {
+                ctx.fillText(this.label, this.x, this.y);
+            }
+        }
+    }
+
+    class Effect {
+        constructor(x, y, text) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+            this.life = 1.0;
+            this.dy = -0.5;
+        }
+        update() {
+            this.y += this.dy;
+            this.life -= 0.02;
+        }
+        draw() {
+            if (this.life <= 0) return;
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = "#37474F";
+            ctx.font = "bold 12px Arial";
+            ctx.fillText(this.text, this.x, this.y);
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    // --- Core Logic ---
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+    window.addEventListener('resize', resize);
+
+    function addAcid(amount) {
+        for(let i=0; i<amount; i++) {
+            const x = Math.random() * width;
+            const y = Math.random() * (height/2); // Start top half
+            entities.push(new Particle(x, y, 'H'));
+        }
+    }
+
+    function addMetalBlock(type, count) {
+        // Create a small grid of metal atoms at the bottom
+        const startX = Math.random() * (width - 150) + 75;
+        const startY = height - 50;
+        const cols = 5;
+        const spacing = RAD_METAL * 2 + 2;
+
+        for(let i=0; i<count; i++) {
+            const col = i % cols;
+            const row = Math.floor(i / cols);
+            const x = startX + col * spacing;
+            const y = startY - row * spacing;
+            entities.push(new Particle(x, y, type));
+        }
+    }
+
+    function handleReactions() {
+        let hIons = entities.filter(e => e.type === 'H' && !e.markedForDeletion);
+        let metals = entities.filter(e => (e.type === 'Zn' || e.type === 'Cu') && !e.markedForDeletion);
+        
+        for (let h of hIons) {
+            if (h.markedForDeletion) continue;
+            
+            for (let m of metals) {
+                if (m.markedForDeletion) continue;
+                
+                // Simple box collision for fixed metal atoms
+                const dx = h.x - m.x;
+                const dy = h.y - m.y;
+                // Treat metal as square for physics, but check distance
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // Attraction/Physics
+                if (dist < 50 && m.type === 'Zn') {
+                    // Slight attraction to Zn for reaction simulation
+                     h.vx += (m.x - h.x) * 0.005;
+                     h.vy += (m.y - h.y) * 0.005;
+                }
+
+                // Collision
+                if (dist < m.radius + h.radius) {
+                    
+                    // Bounce logic (simple)
+                    h.vx *= -1;
+                    h.vy *= -1;
+                    // Move out to prevent sticking
+                    h.x += h.vx * 2;
+                    h.y += h.vy * 2;
+
+                    if (m.type === 'Zn') {
+                        // REACTION!
+                        h.markedForDeletion = true; // H+ consumed
+                        m.hits++;
+                        
+                        // Need 2 H+ to react 1 Zn (Zn + 2H+ -> Zn2+ + H2)
+                        if (m.hits >= 2) {
+                            m.markedForDeletion = true;
+                            
+                            // Create Zn2+ Ion (mobile)
+                            const ion = new Particle(m.x, m.y, 'ZnIon');
+                            ion.vx = (Math.random()-0.5);
+                            ion.vy = -1; // Move up a bit
+                            entities.push(ion);
+
+                            // Create H2 Gas
+                            const gas = new Particle(m.x, m.y - 10, 'H2');
+                            entities.push(gas);
+                            
+                            effects.push(new Effect(m.x, m.y - 20, "H₂↑"));
+                        }
+                    } else if (m.type === 'Cu') {
+                        // NO REACTION
+                        // Just a bounce (already handled above)
+                        // Maybe visual feedback of "inert"
+                    }
+                    
+                    break; // H handled
+                }
+            }
+        }
+        
+        entities = entities.filter(e => !e.markedForDeletion);
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        
+        handleReactions();
+        
+        entities.forEach(e => {
+            e.update();
+            e.draw();
+        });
+        
+        effects.forEach((e, i) => {
+            e.update();
+            e.draw();
+            if (e.life <= 0) effects.splice(i, 1);
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    // Init
+    resize();
+    addAcid(15);
+    
+    // Bindings
+    document.getElementById('btn-add-acid').onclick = () => addAcid(10);
+    document.getElementById('btn-add-zn').onclick = () => addMetalBlock('Zn', 10);
+    document.getElementById('btn-add-cu').onclick = () => addMetalBlock('Cu', 10);
+    document.getElementById('btn-reset').onclick = () => { entities = []; addAcid(15); };
+
+    animate();
+
+</script>
+</body>
+</html>

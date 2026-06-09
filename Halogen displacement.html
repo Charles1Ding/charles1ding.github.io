@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>卤素置换反应微观模拟</title>
+    <!-- 引入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- 引入 Babel 用于解析 JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- 图标组件 (替换 Lucide React) ---
+        const ArrowRight = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        );
+        const RefreshCcw = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 2v6h6"></path><path d="M21 12A9 9 0 0 0 6 5.3L3 8"></path><path d="M21 22v-6h-6"></path><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"></path></svg>
+        );
+        const Info = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        );
+        const FlaskConical = ({ size = 24, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M10 2v7.527a2 2 0 0 1-.211.896L4.72 20.55a1 1 0 0 0 .9 1.45h12.76a1 1 0 0 0 .9-1.45l-5.069-10.127A2 2 0 0 1 14 9.527V2"></path><path d="M8.5 2h7"></path><path d="M7 16h10"></path></svg>
+        );
+
+        // --- 主组件 ---
+        const HalogenSimulation = () => {
+            // 状态管理
+            const [selectedHalogen, setSelectedHalogen] = useState(null);
+            const [selectedSalt, setSelectedSalt] = useState(null);
+            const [isReacting, setIsReacting] = useState(false);
+            const [hasReacted, setHasReacted] = useState(false);
+            const [particles, setParticles] = useState([]);
+            const [message, setMessage] = useState("请选择一种卤素单质水溶液和一种卤化物盐溶液。");
+            const [equation, setEquation] = useState("");
+            
+            // 使用 ref 来存储最新的 particles 状态
+            const particlesRef = useRef(particles);
+            particlesRef.current = particles;
+
+            // 存储定时器ID以便重置时清理
+            const timeoutsRef = useRef([]);
+
+            // 配置数据
+            const halogenConfig = {
+                Cl: { name: '氯 (Cl)', color: 'bg-green-100', atomColor: 'bg-green-400', symbol: 'Cl₂', ionSymbol: 'Cl⁻', strength: 3, solutionColor: 'rgba(134, 239, 172, 0.3)' }, 
+                Br: { name: '溴 (Br)', color: 'bg-orange-100', atomColor: 'bg-orange-500', symbol: 'Br₂', ionSymbol: 'Br⁻', strength: 2, solutionColor: 'rgba(251, 146, 60, 0.4)' }, 
+                I:  { name: '碘 (I)',  color: 'bg-purple-100', atomColor: 'bg-purple-700', symbol: 'I₂',  ionSymbol: 'I⁻',  strength: 1, solutionColor: 'rgba(126, 34, 206, 0.4)' }, 
+            };
+
+            const saltConfig = {
+                Cl: { name: '氯化钾 (KCl)', ionColor: 'border-green-500 text-green-700', symbol: 'Cl⁻' },
+                Br: { name: '溴化钾 (KBr)', ionColor: 'border-orange-500 text-orange-700', symbol: 'Br⁻' },
+                I:  { name: '碘化钾 (KI)',  ionColor: 'border-purple-600 text-purple-800', symbol: 'I⁻'  },
+            };
+
+            // 辅助函数：安全添加定时器
+            const addTimeout = (callback, delay) => {
+                const id = setTimeout(() => {
+                    callback();
+                }, delay);
+                timeoutsRef.current.push(id);
+            };
+
+            // 初始化粒子
+            useEffect(() => {
+                const newParticles = [];
+                let idCounter = 0;
+
+                // 添加卤素分子 (如果已选择)
+                if (selectedHalogen) {
+                    for (let i = 0; i < 6; i++) {
+                        newParticles.push({
+                            id: idCounter++,
+                            type: 'molecule',
+                            element: selectedHalogen,
+                            x: Math.random() * 80 + 10,
+                            y: Math.random() * 80 + 10,
+                            vx: (Math.random() - 0.5) * 0.5,
+                            vy: (Math.random() - 0.5) * 0.5,
+                        });
+                    }
+                }
+
+                // 添加盐离子 (如果已选择)
+                if (selectedSalt) {
+                    for (let i = 0; i < 10; i++) {
+                        newParticles.push({
+                            id: idCounter++,
+                            type: 'ion',
+                            element: selectedSalt,
+                            x: Math.random() * 80 + 10,
+                            y: Math.random() * 80 + 10,
+                            vx: (Math.random() - 0.5) * 0.8,
+                            vy: (Math.random() - 0.5) * 0.8,
+                        });
+                        // 添加钾离子 (旁观离子)
+                        newParticles.push({
+                            id: idCounter++,
+                            type: 'spectator',
+                            element: 'K',
+                            x: Math.random() * 80 + 10,
+                            y: Math.random() * 80 + 10,
+                            vx: (Math.random() - 0.5) * 0.8,
+                            vy: (Math.random() - 0.5) * 0.8,
+                        });
+                    }
+                }
+
+                setParticles(newParticles);
+                setHasReacted(false);
+                
+                // 生成初始消息
+                if (!selectedHalogen && !selectedSalt) setMessage("准备开始：请选择试剂。");
+                else if (selectedHalogen && !selectedSalt) setMessage(`已加入 ${halogenConfig[selectedHalogen].name} 水溶液。请加入盐溶液。`);
+                else if (!selectedHalogen && selectedSalt) setMessage(`已加入 ${saltConfig[selectedSalt].name} 溶液。请加入卤素单质。`);
+                else {
+                    // 传递 newParticles 以确保 checkReaction 使用最新的状态
+                    checkReaction(selectedHalogen, selectedSalt, newParticles);
+                }
+
+            }, [selectedHalogen, selectedSalt]);
+
+            // 粒子运动动画循环
+            useEffect(() => {
+                const interval = setInterval(() => {
+                    setParticles(prevParticles => prevParticles.map(p => {
+                        let newX = p.x + p.vx;
+                        let newY = p.y + p.vy;
+
+                        // 边界反弹
+                        if (newX <= 0 || newX >= 95) p.vx *= -1;
+                        if (newY <= 0 || newY >= 90) p.vy *= -1;
+
+                        return { ...p, x: newX, y: newY };
+                    }));
+                }, 50);
+
+                return () => {
+                    clearInterval(interval);
+                    timeoutsRef.current.forEach(clearTimeout);
+                };
+            }, []);
+
+            // 检查并执行反应
+            const checkReaction = (halogen, salt, currentParticlesOverride) => {
+                const oxidizerStrength = halogenConfig[halogen].strength;
+                const reducerStrength = halogenConfig[salt].strength;
+
+                if (halogen === salt) {
+                    setMessage("没有明显反应：同种元素。");
+                    setEquation("");
+                    setHasReacted(false);
+                    return;
+                }
+
+                if (oxidizerStrength > reducerStrength) {
+                    // 发生反应
+                    setMessage("正在反应...");
+                    setEquation(`${halogenConfig[halogen].symbol} + 2${saltConfig[salt].symbol} → 2${halogenConfig[halogen].ionSymbol} + ${halogenConfig[salt].symbol}`);
+                    setIsReacting(true);
+
+                    // 优先使用传入的最新粒子数组，否则回退到 ref
+                    const particlesToUse = currentParticlesOverride || particlesRef.current;
+                    const reactingIons = particlesToUse.filter(p => p.type === 'ion' && p.element === salt);
+                    const reactingMolecules = particlesToUse.filter(p => p.type === 'molecule' && p.element === halogen);
+                    
+                    // 安全检查：如果没有反应物，直接返回，避免崩溃
+                    if (reactingIons.length === 0 || reactingMolecules.length === 0) {
+                        return;
+                    }
+
+                    let completedCount = 0;
+                    // 限制反应次数，基于离子数量
+                    const totalEvents = reactingIons.length;
+
+                    // 逐步触发每个离子的电子转移
+                    reactingIons.forEach((ion, idx) => {
+                        // 设置延迟，每个电子间隔一定时间发射 (例如 800ms)
+                        const launchDelay = idx * 800;
+
+                        addTimeout(() => {
+                            // 在回调执行时，必须获取“当时”的实时粒子位置，所以这里用 particlesRef.current
+                            const liveParticles = particlesRef.current;
+                            const sourceIon = liveParticles.find(p => p.id === ion.id);
+                            
+                            // 安全获取目标分子
+                            const targetMoleculeRef = reactingMolecules[idx % reactingMolecules.length];
+                            if (!targetMoleculeRef) return; 
+
+                            const targetMolecule = liveParticles.find(p => p.id === targetMoleculeRef.id);
+
+                            if (sourceIon && targetMolecule) {
+                                // 计算距离和速度
+                                const dx = targetMolecule.x - sourceIon.x;
+                                const dy = targetMolecule.y - sourceIon.y;
+                                const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+                                const speed = 4; // 电子飞行速度
+                                
+                                // 计算飞行需要的帧数 (每帧50ms) -> 时间 = (dist/speed) * 50
+                                const flightTime = (dist / speed) * 50; 
+                                const electronId = 5000 + idx;
+
+                                // 1. 发射电子
+                                setParticles(prev => [
+                                    ...prev, 
+                                    {
+                                        id: electronId,
+                                        type: 'electron',
+                                        element: 'e',
+                                        x: sourceIon.x,
+                                        y: sourceIon.y,
+                                        vx: (dx/dist) * speed,
+                                        vy: (dy/dist) * speed,
+                                    }
+                                ]);
+
+                                // 2. 电子到达目标后的处理
+                                addTimeout(() => {
+                                    setParticles(prev => prev.map(p => {
+                                        // 移除电子
+                                        if (p.id === electronId) return null; 
+
+                                        // 转换目标分子 -> 离子
+                                        if (p.id === targetMolecule.id && p.type === 'molecule') {
+                                            return { ...p, type: 'ion', element: halogen, vx: p.vx * 1.2, vy: p.vy * 1.2 };
+                                        }
+                                        // 转换源离子 -> 分子
+                                        if (p.id === sourceIon.id && p.type === 'ion') {
+                                            return { ...p, type: 'molecule', element: salt, vx: p.vx * 0.8, vy: p.vy * 0.8 };
+                                        }
+                                        return p;
+                                    }).filter(Boolean)); 
+
+                                    // 检查是否所有反应都完成
+                                    completedCount++;
+                                    if (completedCount >= totalEvents) {
+                                        setIsReacting(false);
+                                        setHasReacted(true);
+                                        setMessage(`反应完成！电子已逐个转移，生成了 ${halogenConfig[salt].name}。`);
+                                    }
+
+                                }, flightTime);
+                            }
+                        }, launchDelay);
+                    });
+
+                } else {
+                    // 不发生反应
+                    setMessage(`无反应。${halogenConfig[halogen].name} 的氧化性弱于 ${halogenConfig[salt].name}，无法置换出 ${saltConfig[salt].name}。`);
+                    setEquation("No Reaction / 不反应");
+                    setHasReacted(false);
+                }
+            };
+
+            const handleReset = () => {
+                // 清除所有进行中的定时器
+                timeoutsRef.current.forEach(clearTimeout);
+                timeoutsRef.current = [];
+                
+                setSelectedHalogen(null);
+                setSelectedSalt(null);
+                setHasReacted(false);
+                setIsReacting(false);
+                setEquation("");
+                setMessage("实验已重置。");
+            };
+
+            // 获取当前溶液背景色
+            const getSolutionColor = () => {
+                if (isReacting) return 'bg-gray-100'; // 反应中
+                
+                // 如果发生了反应，显示生成物对应的颜色
+                if (hasReacted && selectedSalt) {
+                    return halogenConfig[selectedSalt].solutionColor;
+                }
+
+                // 如果没反应，显示初始卤素的颜色
+                if (selectedHalogen) {
+                    return halogenConfig[selectedHalogen].solutionColor;
+                }
+                
+                return 'bg-blue-50'; // 水的默认颜色
+            };
+
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50 p-4 font-sans text-slate-800">
+                    
+                    <div className="max-w-4xl w-full bg-white rounded-xl shadow-xl overflow-hidden border border-slate-200">
+                        
+                        {/* Header */}
+                        <div className="bg-slate-800 p-6 text-white flex justify-between items-center">
+                            <div>
+                                <h1 className="text-2xl font-bold flex items-center gap-2">
+                                    <FlaskConical className="w-6 h-6 text-yellow-400" />
+                                    卤素置换反应微观模拟
+                                </h1>
+                                <p className="text-slate-300 text-sm mt-1">探索 氯(Cl₂)、溴(Br₂)、碘(I₂) 之间的电子转移与置换规律</p>
+                            </div>
+                            <button 
+                                onClick={handleReset}
+                                className="flex items-center gap-2 px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors text-sm"
+                            >
+                                <RefreshCcw size={16} /> 重置实验
+                            </button>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row">
+                            
+                            {/* Main Simulation View (Left/Top) */}
+                            <div className="flex-1 p-6 flex flex-col items-center relative border-b md:border-b-0 md:border-r border-slate-200">
+                                
+                                {/* Status Bar */}
+                                <div className="w-full mb-4 bg-slate-100 p-3 rounded-lg border border-slate-200 min-h-[80px]">
+                                    <p className="font-semibold text-slate-700 mb-1">实验状态:</p>
+                                    <p className="text-sm text-slate-600 leading-relaxed">{message}</p>
+                                    {equation && (
+                                        <div className="mt-2 text-center font-mono font-bold text-lg text-blue-700 bg-blue-50 py-1 rounded">
+                                            {equation}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Beaker Container */}
+                                <div className="relative w-72 h-80 border-4 border-slate-300 border-t-0 rounded-b-3xl shadow-inner overflow-hidden mx-auto bg-white">
+                                    {/* Solution Liquid */}
+                                    <div 
+                                        className={`absolute bottom-0 w-full h-[90%] transition-colors duration-1000 ease-in-out ${getSolutionColor()}`}
+                                        style={{ backdropFilter: 'blur(2px)' }}
+                                    >
+                                        {/* Particles Rendering */}
+                                        {particles.map(p => (
+                                            <div
+                                                key={p.id}
+                                                className={`absolute flex items-center justify-center rounded-full text-xs font-bold transition-all duration-500 shadow-sm
+                                                    ${p.type === 'molecule' 
+                                                        ? `w-8 h-8 text-white ${halogenConfig[p.element].atomColor} z-10` 
+                                                        : p.type === 'spectator'
+                                                            ? 'w-5 h-5 bg-gray-100 text-gray-400 border border-gray-300 opacity-50 z-0'
+                                                            : p.type === 'electron'
+                                                                ? 'w-3 h-3 bg-yellow-300 border border-yellow-500 z-30 shadow-[0_0_8px_rgba(250,204,21,1)] animate-pulse'
+                                                                : `w-6 h-6 bg-white border-2 ${saltConfig[p.element].ionColor} z-10`
+                                                    }
+                                                    ${isReacting && p.type !== 'spectator' && p.type !== 'electron' ? 'scale-110' : ''}
+                                                `}
+                                                style={{ 
+                                                    left: `${p.x}%`, 
+                                                    top: `${p.y}%`,
+                                                    transform: `translate(-50%, -50%)`,
+                                                }}
+                                            >
+                                                {p.type === 'molecule' ? halogenConfig[p.element].symbol : 
+                                                 p.type === 'spectator' ? 'K⁺' : 
+                                                 p.type === 'electron' ? 'e⁻' :
+                                                 saltConfig[p.element].symbol}
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                    {/* Beaker Gloss Reflection */}
+                                    <div className="absolute top-10 right-4 w-4 h-48 bg-white opacity-20 rounded-full blur-sm"></div>
+                                </div>
+                                
+                                <div className="mt-4 flex items-center justify-center gap-3 text-xs text-slate-500 flex-wrap">
+                                    <div className="flex items-center"><span className="w-3 h-3 bg-yellow-300 border border-yellow-500 rounded-full inline-block mr-1 shadow-[0_0_4px_rgba(250,204,21,0.8)]"></span> 电子(e⁻)</div>
+                                    <div className="flex items-center"><span className="w-3 h-3 bg-gray-200 border border-gray-400 rounded-full inline-block mr-1"></span> 钾离子(K⁺)</div>
+                                </div>
+                            </div>
+
+                            {/* Controls Panel (Right/Bottom) */}
+                            <div className="w-full md:w-80 p-6 bg-slate-50">
+                                
+                                <div className="mb-8">
+                                    <h3 className="font-bold text-slate-700 mb-3 flex items-center">
+                                        <span className="bg-slate-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">1</span>
+                                        选择卤化物盐溶液 (还原剂)
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {['Cl', 'Br', 'I'].map((type) => (
+                                            <button
+                                                key={`salt-${type}`}
+                                                disabled={!!selectedSalt || isReacting}
+                                                onClick={() => setSelectedSalt(type)}
+                                                className={`flex items-center justify-between p-3 rounded-lg border transition-all
+                                                    ${selectedSalt === type 
+                                                        ? 'bg-blue-100 border-blue-500 ring-1 ring-blue-500' 
+                                                        : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-md'
+                                                    }
+                                                    ${selectedSalt && selectedSalt !== type ? 'opacity-50 cursor-not-allowed' : ''}
+                                                `}
+                                            >
+                                                <span className="font-medium text-slate-700">{saltConfig[type].name}</span>
+                                                <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">K{type}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="mb-6">
+                                    <h3 className="font-bold text-slate-700 mb-3 flex items-center">
+                                        <span className="bg-slate-700 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">2</span>
+                                        滴加卤素单质水 (氧化剂)
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-2">
+                                        {['Cl', 'Br', 'I'].map((type) => (
+                                            <button
+                                                key={`halogen-${type}`}
+                                                disabled={!!selectedHalogen || !selectedSalt || isReacting}
+                                                onClick={() => setSelectedHalogen(type)}
+                                                className={`flex items-center justify-between p-3 rounded-lg border transition-all
+                                                    ${selectedHalogen === type 
+                                                        ? 'bg-green-100 border-green-500 ring-1 ring-green-500' 
+                                                        : 'bg-white border-slate-200 hover:border-green-300 hover:shadow-md'
+                                                    }
+                                                    ${(!selectedSalt || (selectedHalogen && selectedHalogen !== type)) ? 'opacity-50 cursor-not-allowed' : ''}
+                                                `}
+                                            >
+                                                <span className="font-medium text-slate-700">{halogenConfig[type].name} 水</span>
+                                                <span className="font-mono text-xs bg-slate-100 px-2 py-1 rounded text-slate-500">{halogenConfig[type].symbol}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                    <h4 className="font-bold text-yellow-800 text-sm mb-2 flex items-center gap-1">
+                                        <Info size={14}/> 氧化性强弱规律
+                                    </h4>
+                                    <div className="flex items-center justify-between text-sm font-bold text-slate-700">
+                                        <span className="text-green-600">Cl₂</span>
+                                        <ArrowRight size={14} className="text-slate-400"/>
+                                        <span className="text-orange-500">Br₂</span>
+                                        <ArrowRight size={14} className="text-slate-400"/>
+                                        <span className="text-purple-600">I₂</span>
+                                    </div>
+                                    <p className="text-xs text-yellow-700 mt-2 leading-relaxed">
+                                        只有<span className="font-bold">更强</span>的氧化剂才能将<span className="font-bold">更弱</span>的氧化剂从其盐溶液中置换出来。
+                                    </p>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<HalogenSimulation />);
+    </script>
+</body>
+</html>

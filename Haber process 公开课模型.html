@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>哈伯法工业合成塔模拟器 - 动热力学博弈与平衡计时版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #020617; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow: hidden; }
+        .slider-label { display: flex; justify-content: space-between; margin-bottom: 0.15rem; font-size: 0.825rem; color: #94a3b8; }
+        
+        #viewport-content {
+            position: absolute;
+            cursor: grab;
+            display: flex;
+            align-items: flex-end;
+            gap: 20px;
+            padding: 40px;
+            transition: transform 0.1s ease-out;
+            transform-origin: center;
+        }
+        
+        #viewport-content:active { cursor: grabbing; }
+
+        #compressor-unit {
+            width: 80px;
+            height: 240px;
+            background: #1e293b;
+            border: 4px solid #334155;
+            border-radius: 12px;
+            position: relative;
+            flex-shrink: 0;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        #piston {
+            width: 64px;
+            height: 40px;
+            background: linear-gradient(to bottom, #94a3b8, #475569);
+            border-radius: 4px;
+            position: absolute;
+            left: 4px;
+            transition: top 0.1s ease-out;
+        }
+
+        #reactor-container {
+            position: relative;
+            background: #0f172a;
+            border-radius: 60px 60px 20px 20px;
+            border-left: 25px solid #475569;
+            border-right: 25px solid #475569;
+            border-top: 35px solid #334155;
+            border-bottom: 15px solid #1e293b;
+            box-shadow: inset 0 0 120px rgba(0,0,0,0.95), 0 30px 60px rgba(0,0,0,0.6);
+            overflow: hidden;
+            width: 700px; 
+            height: 550px;
+            flex-shrink: 0;
+        }
+
+        .tower-cap {
+            height: 60px;
+            background: linear-gradient(to bottom, #475569, #1e293b);
+            border-bottom: 4px solid #020617;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas { display: block; }
+        .control-panel { background: rgba(15, 23, 42, 0.98); border-right: 1px solid #1e293b; z-index: 50; }
+        
+        /* 超过200atm的高压振动特效 */
+        .danger-shake { animation: shake 0.08s infinite; }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            25% { transform: translate(-1px, -1.5px) rotate(-0.1deg); }
+            50% { transform: translate(-1.5px, 0px) rotate(0.1deg); }
+            75% { transform: translate(1px, 1.5px) rotate(0deg); }
+            100% { transform: translate(1px, -1px) rotate(-0.1deg); }
+        }
+
+        .broken-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        .is-broken .broken-overlay { opacity: 1; pointer-events: auto; }
+        
+        .catalyst-glow {
+            box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+        }
+    </style>
+</head>
+<body class="h-screen flex">
+
+    <!-- 左侧控制面板（紧凑版） -->
+    <aside class="w-72 control-panel p-4 flex flex-col shadow-2xl h-full justify-between overflow-hidden">
+        <div class="space-y-3.5">
+            <header class="mb-1">
+                <h1 class="text-xl font-bold text-blue-400 italic">HABER PROCESS</h1>
+                <p class="text-[9px] text-slate-500 uppercase tracking-widest mt-0.5">Chemical Kinetics & Energy Pro</p>
+            </header>
+            
+            <!-- 视角切换按钮 -->
+            <div class="grid grid-cols-2 gap-2">
+                <button id="view-macro-btn" class="py-1.5 bg-blue-600 rounded-lg text-xs font-bold transition-all border border-blue-400">
+                    宏观合成塔
+                </button>
+                <button id="view-micro-btn" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold transition-all border border-transparent">
+                    🔍 分子特写
+                </button>
+            </div>
+
+            <!-- 温度滑动条 -->
+            <div class="space-y-1">
+                <div class="slider-label"><span>反应温度 (T)</span><span id="temp-val" class="text-orange-500 font-mono">25 ℃</span></div>
+                <input type="range" id="temp-slider" min="25" max="800" value="25" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- 压强滑动条 -->
+            <div class="space-y-1">
+                <div class="slider-label"><span>系统压强 (P)</span><span id="press-val" class="text-sky-400 font-mono">1 atm</span></div>
+                <input type="range" id="press-slider" min="1" max="450" value="1" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer">
+            </div>
+
+            <!-- 催化剂按钮 -->
+            <button id="catalyst-btn" class="w-full py-2 bg-blue-600 hover:bg-blue-500 rounded-lg font-bold transition-all shadow-lg active:scale-95 text-xs">
+                装填铁触媒 (Fe Catalyst)
+            </button>
+
+            <!-- 快速达到平衡操作按钮 -->
+            <button id="equilibrium-btn" class="w-full py-2 bg-emerald-600 hover:bg-emerald-500 rounded-lg font-bold transition-all shadow-lg active:scale-95 text-xs flex items-center justify-center gap-1">
+                ⚡ 快速达到平衡 (Instant Equilibrium)
+            </button>
+
+            <!-- 补充原料操作区 -->
+            <div class="p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 space-y-1.5">
+                <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">原料通入系统 (Inject Reactants)</div>
+                <div class="grid grid-cols-2 gap-2">
+                    <button id="inject-n2-btn" class="py-1.5 bg-blue-900/50 hover:bg-blue-800 rounded-lg text-[11px] font-bold transition-all border border-blue-700 active:scale-95 text-blue-300">
+                        ＋ 注入 5×N₂
+                    </button>
+                    <button id="inject-h2-btn" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-[11px] font-bold transition-all border border-slate-600 active:scale-95 text-slate-200">
+                        ＋ 注入 15×H₂
+                    </button>
+                </div>
+                <p id="limit-warning" class="text-[9px] text-slate-500 text-center transition-colors">反应釜最大容量：250 粒子</p>
+            </div>
+        </div>
+
+        <!-- 产率、计时与重置底部区域 -->
+        <div class="mt-2 pt-2 border-t border-slate-800/60 space-y-2">
+            <!-- 平衡耗时计数器显示面板 -->
+            <div class="flex justify-between items-center bg-slate-950/40 p-2 rounded-lg border border-slate-900/50">
+                <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">平衡耗时 (Time to Eq.)</span>
+                <span id="equilibrium-timer" class="text-xs font-mono text-slate-400 font-bold">0.00 秒</span>
+            </div>
+
+            <div class="flex justify-between items-end">
+                <span class="text-[11px] text-slate-500 font-bold">氨气产率 (Yield)</span>
+                <span id="yield-percent" class="text-xl font-mono text-emerald-400">0.0%</span>
+            </div>
+            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div id="yield-bar" class="bg-emerald-500 h-full transition-all duration-700" style="width: 0%"></div>
+            </div>
+            <button id="reset-btn" class="w-full py-1 text-[10px] text-red-400/60 hover:text-red-400 transition-colors uppercase tracking-widest">Restart Simulation</button>
+        </div>
+    </aside>
+
+    <!-- 右侧交互区域 -->
+    <main id="viewport" class="flex-grow relative bg-slate-950 overflow-hidden">
+        <div id="viewport-content">
+            <div id="compressor-unit" class="flex flex-col items-center">
+                <div id="piston"></div>
+                <div class="absolute bottom-4 w-2 h-2 bg-green-500 rounded-full animate-pulse" id="piston-led"></div>
+            </div>
+            
+            <div id="reactor-container">
+                <div class="broken-overlay">
+                    <h2 class="text-3xl font-black text-red-500 mb-4 italic">装置溃决 (System Rupture)</h2>
+                    <p class="text-slate-300 mb-6">超高压（超过 400 atm）彻底摧毁了合成塔钢体壳结构</p>
+                    <button onclick="location.reload()" class="px-8 py-3 bg-white text-slate-950 rounded-full font-black uppercase tracking-wider hover:bg-slate-200 transition-all">紧急重建装置</button>
+                </div>
+                <div class="tower-cap">
+                    <span id="reactor-view-title" class="text-[10px] font-mono text-slate-400 tracking-[0.5em]">HIGH PERFORMANCE HABER CONVERTER</span>
+                </div>
+                <canvas id="simCanvas"></canvas>
+            </div>
+        </div>
+
+        <!-- 分子浮动计数板 -->
+        <div id="float-stats" class="absolute top-6 left-6 flex gap-3 pointer-events-none">
+            <div class="px-4 py-2 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl shadow-xl">
+                <span class="text-[10px] text-slate-500 block font-bold">N₂</span>
+                <span id="n2-count" class="font-mono text-blue-400 text-lg">0</span>
+            </div>
+            <div class="px-4 py-2 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl shadow-xl">
+                <span class="text-[10px] text-slate-500 block font-bold">H₂</span>
+                <span id="h2-count" class="font-mono text-slate-200 text-lg">0</span>
+            </div>
+            <div class="px-4 py-2 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl shadow-xl">
+                <span class="text-[10px] text-slate-500 block font-bold">NH₃</span>
+                <span id="nh3-count" class="font-mono text-yellow-400 text-lg">0</span>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const viewport = document.getElementById('viewport');
+        const content = document.getElementById('viewport-content');
+        const reactor = document.getElementById('reactor-container');
+        
+        const viewMacroBtn = document.getElementById('view-macro-btn');
+        const viewMicroBtn = document.getElementById('view-micro-btn');
+        const reactorViewTitle = document.getElementById('reactor-view-title');
+        const pistonLed = document.getElementById('piston-led');
+        const timerDisplay = document.getElementById('equilibrium-timer');
+
+        let isDragging = false;
+        let startX, startY, posX = 100, posY = 80;
+
+        viewport.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.clientX - posX;
+            startY = e.clientY - posY;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            posX = e.clientX - startX;
+            posY = e.clientY - startY;
+            content.style.transform = `translate(${posX}px, ${posY}px)`;
+        });
+
+        window.addEventListener('mouseup', () => isDragging = false);
+
+        // 状态与物理参数
+        let currentView = 'macro'; 
+        let particles = [];
+        let catalystActive = false;
+        let catalystGrains = []; 
+        let reactionsList = []; 
+        let gasLeaks = []; // 高压漏气粒子物理系统
+        const PARTICLE_MAX_LIMIT = 250; 
+
+        // 微观视角专用变量
+        let microN2 = { x: 180, y: 310, vx: 1.2, vy: 0, angle: 0, r: 40 };
+        let microH2 = { x: 470, y: 310, vx: -2.2, vy: 0, angle: 0, r: 25 };
+        let activeKinetics = 0; 
+        let activeForce = 0; 
+        let targetForce = 0; 
+        let transientReactionGlow = 0; 
+
+        // 微观反应状态机
+        let microReactionState = 'colliding'; 
+        let microNh3Angle = 0;
+        let microResetTimer = 0;
+
+        // 催化剂装填时间累计
+        let catalystLoadTime = 0;
+
+        // 动态提升监测与平衡锁定机制
+        let lastTemperature = 25; 
+        let lastPressure = 1; 
+        let speedSpikeActive = 0; 
+        let isLockedEquilibrium = false; // 平衡态锁定机制状态标志
+
+        // 平衡状态智能计时器核心变量
+        let equilibriumElapsedFrames = 0; // 记录催化开启且产生反应后的有效计时帧
+        let hasReachedEquilibriumState = false; // 记录是否首次达到平衡态
+        let finalEquilibriumTime = 0; // 锁定的最终达到平衡时间数（单位：秒）
+
+        class Molecule {
+            constructor(type, spawnAtInlet = false) {
+                this.type = type;
+                this.r = type === 'N2' ? 6 : (type === 'H2' ? 3 : 8); // 标定真实宏观微粒半径
+
+                if (spawnAtInlet) {
+                    this.x = canvas.width / 2 + (Math.random() * 80 - 40);
+                    this.y = 15;
+                    this.angle = Math.random() * Math.PI * 2;
+                    this.vx = Math.random() * 1.6 - 0.8;
+                    this.vy = 2.5 + Math.random() * 1.5; 
+                } else {
+                    this.resetPosition();
+                    this.angle = Math.random() * Math.PI * 2;
+                    
+                    const baseSpeed = type === 'H2' ? 1.8 : 1.1;
+                    const spread = 0.4;
+                    const speed = baseSpeed + (Math.random() * spread - spread / 2);
+                    this.vx = Math.cos(this.angle) * speed;
+                    this.vy = Math.sin(this.angle) * speed;
+                }
+            }
+
+            resetPosition() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * (canvas.height - 100);
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                if (this.type === 'N2') {
+                    ctx.fillStyle = '#3b82f6';
+                    ctx.beginPath(); ctx.arc(-3, 0, 5, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(3, 0, 5, 0, Math.PI*2); ctx.fill();
+                } else if (this.type === 'H2') {
+                    ctx.fillStyle = '#cbd5e1';
+                    ctx.beginPath(); ctx.arc(-2, 0, 3, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(2, 0, 3, 0, Math.PI*2); ctx.fill();
+                } else {
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#e2e8f0';
+                    for(let i=0; i<3; i++) {
+                        let a = (i * Math.PI * 2 / 3);
+                        ctx.beginPath(); ctx.arc(Math.cos(a)*6, Math.sin(a)*6, 3, 0, Math.PI*2); ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
+
+            update(temp, press) {
+                let drag = catalystActive && this.y > 180 && this.y < 330 ? 0.5 : 1.0;
+                
+                // 压强的升高直接加快分子的运动速度（增强动力学反应碰撞频率）
+                const speedScale = Math.sqrt((temp + 273) / 298) * (1 + (press - 1) / 80) * drag;
+
+                if (Math.random() < 0.02) { 
+                    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    let currentAngle = Math.atan2(this.vy, this.vx);
+                    currentAngle += (Math.random() - 0.5) * 0.4; 
+                    this.vx = Math.cos(currentAngle) * currentSpeed;
+                    this.vy = Math.sin(currentAngle) * currentSpeed;
+                }
+
+                this.x += this.vx * speedScale;
+                this.y += this.vy * speedScale;
+                this.angle += (this.vx + this.vy) * 0.05;
+
+                if (this.x < 10) {
+                    this.x = 10;
+                    this.vx = Math.abs(this.vx);
+                    this.vy += (Math.random() - 0.5) * 0.3; 
+                } else if (this.x > canvas.width - 10) {
+                    this.x = canvas.width - 10;
+                    this.vx = -Math.abs(this.vx);
+                    this.vy += (Math.random() - 0.5) * 0.3;
+                }
+                
+                if (this.y < 10) {
+                    this.y = 10;
+                    this.vy = Math.abs(this.vy);
+                    this.vx += (Math.random() - 0.5) * 0.3;
+                } else if (this.y > canvas.height - 10) {
+                    this.y = canvas.height - 10;
+                    this.vy = -Math.abs(this.vy);
+                    this.vx += (Math.random() - 0.5) * 0.3;
+                }
+
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                const desiredSpeed = this.type === 'H2' ? 1.8 : (this.type === 'N2' ? 1.1 : 1.3);
+                if (speed < desiredSpeed * 0.5) {
+                    this.vx = (this.vx / (speed || 1)) * desiredSpeed * 0.5;
+                    this.vy = (this.vy / (speed || 1)) * desiredSpeed * 0.5;
+                } else if (speed > desiredSpeed * 2.2) {
+                    this.vx = (this.vx / speed) * desiredSpeed * 2.2;
+                    this.vy = (this.vy / speed) * desiredSpeed * 2.2;
+                }
+            }
+        }
+
+        function handleParticleCollisions() {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    let p1 = particles[i];
+                    let p2 = particles[j];
+                    
+                    let dx = p2.x - p1.x;
+                    let dy = p2.y - p1.y;
+                    let dist = Math.sqrt(dx * dx + dy * dy);
+                    let minDist = p1.r + p2.r;
+                    
+                    if (dist < minDist) {
+                        let overlap = minDist - dist;
+                        let nx = dx / (dist || 1);
+                        let ny = dy / (dist || 1);
+                        
+                        p1.x -= nx * overlap * 0.5;
+                        p1.y -= ny * overlap * 0.5;
+                        p2.x += nx * overlap * 0.5;
+                        p2.y += ny * overlap * 0.5;
+                        
+                        let m1 = p1.type === 'H2' ? 2 : (p1.type === 'N2' ? 28 : 17);
+                        let m2 = p2.type === 'H2' ? 2 : (p2.type === 'N2' ? 28 : 17);
+                        
+                        let kx = p1.vx - p2.vx;
+                        let ky = p1.vy - p2.vy;
+                        
+                        let relativeNormalVel = kx * nx + ky * ny;
+                        if (relativeNormalVel > 0) { 
+                            let impulse = 2 * relativeNormalVel / (m1 + m2);
+                            
+                            p1.vx -= impulse * m2 * nx;
+                            p1.vy -= impulse * m2 * ny;
+                            p2.vx += impulse * m1 * nx;
+                            p2.vy += impulse * m1 * ny;
+                        }
+                    }
+                }
+            }
+        }
+
+        function init() {
+            canvas.width = 650; canvas.height = 490;
+            particles = []; 
+            gasLeaks = [];
+            isLockedEquilibrium = false;
+            resetEquilibriumTimer();
+            
+            catalystGrains = [];
+            for(let i=0; i<800; i++) {
+                catalystGrains.push({
+                    x: Math.random() * canvas.width,
+                    y: 180 + Math.random() * 150,
+                    size: 1 + Math.random() * 3,
+                    shade: 20 + Math.random() * 40
+                });
+            }
+            
+            posX = (viewport.clientWidth - content.clientWidth) / 2;
+            posY = (viewport.clientHeight - content.clientHeight) / 2;
+            content.style.transform = `translate(${posX}px, ${posY}px)`;
+        }
+
+        // 彻底清空或重置平衡计时器的辅助方法
+        function resetEquilibriumTimer() {
+            equilibriumElapsedFrames = 0;
+            hasReachedEquilibriumState = false;
+            finalEquilibriumTime = 0;
+            if (timerDisplay) {
+                timerDisplay.innerText = "0.00 秒";
+                timerDisplay.className = "text-xs font-mono text-slate-400 font-bold";
+            }
+        }
+
+        // 格式化输出具有高保真、跨时间尺度的模拟时间
+        function formatSimulatedTime(totalSeconds) {
+            if (totalSeconds >= 3600) {
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const secs = Math.floor(totalSeconds % 60);
+                return `${hours}小时 ${minutes}分 ${secs}秒`;
+            } else if (totalSeconds >= 60) {
+                const minutes = Math.floor(totalSeconds / 60);
+                const secs = Math.floor(totalSeconds % 60);
+                return `${minutes}分 ${secs}秒`;
+            } else {
+                return `${totalSeconds.toFixed(2)}秒`;
+            }
+        }
+
+        function drawCatalyst() {
+            if (!catalystActive || currentView !== 'macro') return;
+
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.08)';
+            ctx.fillRect(0, 180, canvas.width, 150);
+            
+            ctx.save();
+            catalystGrains.forEach(g => {
+                ctx.fillStyle = `rgb(${g.shade}, ${g.shade + 5}, ${g.shade + 10})`;
+                ctx.beginPath(); ctx.arc(g.x, g.y, g.size, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.restore();
+        }
+
+        function drawReactionsEffects() {
+            ctx.save();
+            for(let i = reactionsList.length - 1; i >= 0; i--) {
+                let e = reactionsList[i];
+                e.radius += 1.5;
+                e.alpha -= 0.05;
+                if (e.alpha <= 0) {
+                    reactionsList.splice(i, 1);
+                    continue;
+                }
+                ctx.strokeStyle = `rgba(16, 185, 129, ${e.alpha})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        // 渲染高压破损造成的向外漏气物理粒子系统
+        function handleGasLeaks(press) {
+            if (press <= 200) {
+                gasLeaks = [];
+                return;
+            }
+
+            const leakIntensity = Math.min(10, Math.floor((press - 200) / 20));
+            if (Math.random() < 0.4 && gasLeaks.length < 80) {
+                const isLeft = Math.random() < 0.5;
+                gasLeaks.push({
+                    x: isLeft ? 12 : canvas.width - 12,
+                    y: 100 + Math.random() * 300,
+                    vx: isLeft ? -(2 + Math.random() * 4) : (2 + Math.random() * 4),
+                    vy: (Math.random() - 0.5) * 2,
+                    size: 2 + Math.random() * 4,
+                    alpha: 1.0,
+                    color: Math.random() < 0.3 ? '#fbbf24' : '#ffffff' 
+                });
+            }
+
+            ctx.save();
+            for (let i = gasLeaks.length - 1; i >= 0; i--) {
+                let p = gasLeaks[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= 0.025;
+                if (p.alpha <= 0) {
+                    gasLeaks.splice(i, 1);
+                    continue;
+                }
+                ctx.fillStyle = `rgba(${p.color === '#fbbf24' ? '251,191,36' : '226,232,240'}, ${p.alpha})`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function drawMicroView(temp, press) {
+            ctx.fillStyle = '#090d16';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for(let j=0; j<canvas.height; j+=40) {
+                ctx.beginPath(); ctx.moveTo(0, j); ctx.lineTo(canvas.width, j); ctx.stroke();
+            }
+
+            const tempSpeedScale = Math.sqrt((temp + 273) / 298) * (1 + (press - 1) / 100);
+            const nominalKinetics = (temp / 800) * 120 + 10; 
+            activeKinetics += (nominalKinetics - activeKinetics) * 0.1; 
+
+            const currentEa = catalystActive ? 80 : 350; 
+
+            if (microReactionState === 'colliding') {
+                microN2.x += microN2.vx * tempSpeedScale;
+                microH2.x += microH2.vx * tempSpeedScale;
+                
+                microN2.angle += 0.012 * tempSpeedScale;
+                microH2.angle += -0.018 * tempSpeedScale;
+
+                if (microN2.x - microN2.r < 30) {
+                    microN2.x = 30 + microN2.r;
+                    microN2.vx = Math.abs(microN2.vx);
+                }
+                if (microH2.x + microH2.r > canvas.width - 30) {
+                    microH2.x = canvas.width - 30 - microH2.r;
+                    microH2.vx = -Math.abs(microH2.vx);
+                }
+
+                const dx = microH2.x - microN2.x;
+                const dist = Math.abs(dx);
+                const minDist = microN2.r + microH2.r + 30;
+
+                if (dist < minDist) {
+                    if (microN2.vx > 0 && microH2.vx < 0) {
+                        targetForce = activeKinetics * 1.6 + 40; 
+
+                        if (targetForce >= currentEa) {
+                            microReactionState = 'reacting';
+                            microResetTimer = 150; 
+                            transientReactionGlow = 1.0;
+                            reactionsList.push({ x: (microN2.x + microH2.x)/2, y: 310, radius: 10, alpha: 1.0 });
+
+                            const currentN2 = particles.filter(p => p.type === 'N2').length;
+                            const currentNh3 = particles.filter(p => p.type === 'NH3').length;
+                            const yieldRate = currentNh3 / (currentN2 + currentNh3);
+
+                            // 精确对接最新设定的热力学平衡极限（30.0% -> 15.0% -> 8.0% @ 1atm）
+                            const tempLimitFactor = Math.max(0.01, 1.0 - 0.7333 * Math.pow((temp - 25) / 425, 0.43)); 
+                            const pressScaleTerm = 1.0 + 1.2 * Math.pow((press - 1) / 449, 0.5); 
+                            let currentTargetYieldCap = 0.30 * tempLimitFactor * pressScaleTerm;
+                            if (currentTargetYieldCap > 0.70) currentTargetYieldCap = 0.70;
+                            if (currentTargetYieldCap < 0.01) currentTargetYieldCap = 0.01;
+
+                            if (yieldRate < currentTargetYieldCap) { 
+                                let n2Idx = particles.findIndex(p => p.type === 'N2');
+                                if (n2Idx !== -1) {
+                                    particles[n2Idx].type = 'NH3';
+                                    particles[n2Idx].r = 8;
+                                }
+                            }
+                        } else {
+                            microN2.vx = -Math.abs(microN2.vx);
+                            microH2.vx = Math.abs(microH2.vx);
+                        }
+                    }
+                }
+            } else if (microReactionState === 'reacting') {
+                microResetTimer--;
+                microNh3Angle += 0.02 * tempSpeedScale;
+
+                if (microResetTimer <= 0) {
+                    microReactionState = 'colliding';
+                    microN2.x = 180;
+                    microH2.x = 470;
+                    microN2.vx = 1.2;
+                    microH2.vx = -2.2;
+                    transientReactionGlow = 0;
+                }
+            }
+
+            activeForce += (targetForce - activeForce) * 0.2; 
+            targetForce *= 0.85; 
+
+            const panelX = 45;
+            const panelY = 50;
+            const barWidth = 300;
+            const barHeight = 12;
+
+            const displayEk = microReactionState === 'colliding' ? activeKinetics : 0;
+            ctx.fillStyle = 'rgba(30, 41, 59, 0.5)';
+            ctx.beginPath(); ctx.roundRect(panelX, panelY, barWidth, barHeight, 3); ctx.fill();
+
+            if (displayEk > 1) {
+                const ekGrad = ctx.createLinearGradient(panelX, 0, panelX + displayEk, 0);
+                ekGrad.addColorStop(0, '#1e3a8a');
+                ekGrad.addColorStop(1, '#3b82f6');
+                ctx.fillStyle = ekGrad;
+                ctx.beginPath(); ctx.roundRect(panelX, panelY, Math.min(barWidth, displayEk), barHeight, 3); ctx.fill();
+            }
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = 'bold 10px monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText("Ek (分子平移动能 - 随温度与压强提升)", panelX, panelY - 8);
+
+            const forceY = panelY + 45;
+            ctx.fillStyle = 'rgba(30, 41, 59, 0.5)';
+            ctx.beginPath(); ctx.roundRect(panelX, forceY, barWidth, barHeight, 3); ctx.fill();
+
+            if (activeForce > 1) {
+                const forceGrad = ctx.createLinearGradient(panelX, 0, panelX + activeForce, 0);
+                forceGrad.addColorStop(0, '#f59e0b');
+                forceGrad.addColorStop(1, '#ef4444');
+                ctx.fillStyle = forceGrad;
+                ctx.beginPath(); ctx.roundRect(panelX, forceY, Math.min(barWidth, activeForce), barHeight, 3); ctx.fill();
+            }
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText("Collision Force (碰撞瞬时相互作用力)", panelX, forceY - 8);
+
+            ctx.strokeStyle = catalystActive ? '#10b981' : '#f43f5e';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath();
+            ctx.moveTo(panelX + currentEa, forceY - 12);
+            ctx.lineTo(panelX + currentEa, forceY + barHeight + 12);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = catalystActive ? '#10b981' : '#f43f5e';
+            ctx.textAlign = 'center';
+            ctx.fillText("Ea (克服强共价键所需作用力)", panelX + currentEa, forceY + barHeight + 20);
+
+            if (microReactionState === 'colliding') {
+                ctx.save();
+                ctx.translate(microN2.x, microN2.y);
+                ctx.rotate(microN2.angle);
+                ctx.strokeStyle = 'rgba(59, 130, 246, 0.4)';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.moveTo(-25, -6); ctx.lineTo(25, -6);
+                ctx.moveTo(-30, 0); ctx.lineTo(30, 0);
+                ctx.moveTo(-25, 6); ctx.lineTo(25, 6);
+                ctx.stroke();
+                drawAtom(-30, 0, 24, '#2563eb', 'N');
+                drawAtom(30, 0, 24, '#2563eb', 'N');
+                ctx.restore();
+
+                ctx.save();
+                ctx.translate(microH2.x, microH2.y);
+                ctx.rotate(microH2.angle);
+                ctx.strokeStyle = 'rgba(226, 232, 240, 0.4)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-15, 0); ctx.lineTo(15, 0);
+                ctx.stroke();
+                drawAtom(-18, 0, 14, '#e2e8f0', 'H');
+                drawAtom(18, 0, 14, '#e2e8f0', 'H');
+                ctx.restore();
+            } else {
+                ctx.save();
+                const centerPointX = (microN2.x + microH2.x) / 2;
+                ctx.translate(centerPointX, 310);
+                ctx.rotate(microNh3Angle);
+
+                ctx.strokeStyle = `rgba(16, 185, 129, ${transientReactionGlow})`;
+                ctx.shadowBlur = 20;
+                ctx.shadowColor = '#10b981';
+                ctx.lineWidth = 3;
+
+                for(let i = 0; i < 3; i++) {
+                    const angle = (i * Math.PI * 2) / 3;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(Math.cos(angle) * 35, Math.sin(angle) * 35);
+                    ctx.stroke();
+                }
+
+                for(let i = 0; i < 3; i++) {
+                    const angle = (i * Math.PI * 2) / 3;
+                    drawAtom(Math.cos(angle) * 35, Math.sin(angle) * 35, 15, '#cbd5e1', 'H', transientReactionGlow);
+                }
+
+                drawAtom(0, 0, 28, '#2563eb', 'N', transientReactionGlow);
+                ctx.restore();
+
+                if (transientReactionGlow > 0) {
+                    transientReactionGlow -= 0.008;
+                }
+            }
+
+            drawReactionsEffects();
+        }
+
+        function drawAtom(x, y, r, color, symbol, glowIntensity = 0) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            
+            if (glowIntensity > 0) {
+                ctx.fillStyle = `rgba(16, 185, 129, ${glowIntensity})`;
+                ctx.fill();
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 1.0 - glowIntensity;
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            } else {
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+            
+            const g = ctx.createRadialGradient(x - r/3, y - r/3, r/8, x, y, r);
+            g.addColorStop(0, 'rgba(255,255,255,0.45)');
+            g.addColorStop(1, 'transparent');
+            ctx.fillStyle = g;
+            ctx.fill();
+
+            ctx.fillStyle = color === '#e2e8f0' ? '#1e293b' : '#ffffff';
+            ctx.font = `bold ${r*0.8}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(symbol, x, y);
+            ctx.restore();
+        }
+
+        function animate() {
+            const temp = parseInt(document.getElementById('temp-slider').value);
+            const press = parseInt(document.getElementById('press-slider').value);
+
+            if (currentView === 'macro') {
+                ctx.fillStyle = '#0f172a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                drawCatalyst();
+
+                particles.forEach(p => {
+                    p.update(temp, press);
+                });
+
+                handleParticleCollisions();
+
+                particles.forEach(p => {
+                    p.draw();
+                });
+
+                handleGasLeaks(press);
+
+                // --- 宏观动力学及热力学模型 ---
+                let forwardProb = 0;
+                let targetYield = 0;
+
+                const totalN = particles.filter(p => p.type === 'N2' || p.type === 'NH3').length;
+                const nh3Count = particles.filter(p => p.type === 'NH3').length;
+                const currentYield = totalN > 0 ? (nh3Count / totalN) : 0;
+
+                // 如果用户调节了温度或压强，解除一键平衡的产率锁定并复位计时器
+                if (temp !== lastTemperature || press !== lastPressure) {
+                    isLockedEquilibrium = false; 
+                    resetEquilibriumTimer();
+                }
+                lastTemperature = temp;
+                lastPressure = press;
+
+                if (catalystActive) {
+                    catalystLoadTime++;
+                    const tempKelvin = temp + 273;
+
+                    // 1. 【热力学平衡极限标定】
+                    // 确保压强的升高（P 变大）可以定量且极其明显地提升氨气最大平衡产率
+                    const tempLimitFactor = Math.max(0.01, 1.0 - 0.7333 * Math.pow((temp - 25) / 425, 0.43)); 
+                    const pressScaleTerm = 1.0 + 1.2 * Math.pow((press - 1) / 449, 0.5); // 压强提供热力学转化大幅补偿
+                    
+                    targetYield = 0.30 * tempLimitFactor * pressScaleTerm;
+                    
+                    if (targetYield > 0.70) targetYield = 0.70;
+                    if (targetYield < 0.01) targetYield = 0.01;
+
+                    // 2. 【动力学反应速率判定与控制】
+                    if (temp <= 100) {
+                        // 【常温环境（25 ℃）】：每 5 秒稳定阶梯上升
+                        let stepSeconds = Math.floor(catalystLoadTime / 300) * 5;
+                        let targetYieldAtFrame = 0;
+
+                        if (stepSeconds <= 10) {
+                            targetYieldAtFrame = (stepSeconds / 10) * 0.01; 
+                        } else if (stepSeconds <= 120) {
+                            targetYieldAtFrame = 0.01 + ((stepSeconds - 10) / 110) * 0.29; 
+                        } else {
+                            targetYieldAtFrame = 0.30;
+                        }
+
+                        const activeTarget = Math.min(targetYield, targetYieldAtFrame);
+
+                        if (currentYield < activeTarget) {
+                            forwardProb = 0.0025; 
+                        } else {
+                            forwardProb = 0; 
+                        }
+                    } else {
+                        // 【升温与压强激发的动力学模型】
+                        let rateConstant = Math.exp(-1400 / tempKelvin) * Math.pow(press / 10, 0.8) * 0.65;
+                        
+                        if (speedSpikeActive > 0) {
+                            const spikeMultiplier = 1.0 + (speedSpikeActive / 120) * 4.5; 
+                            rateConstant *= spikeMultiplier;
+                            speedSpikeActive--;
+                        }
+
+                        if (currentYield < targetYield) {
+                            forwardProb = rateConstant * 0.42; 
+                        } else {
+                            forwardProb = 0; 
+                        }
+                    }
+                } else {
+                    catalystLoadTime = 0; 
+                    speedSpikeActive = 0;
+                    resetEquilibriumTimer();
+                }
+
+                // 3. 【逆反应移动】
+                let finalDecompProb = 0;
+                if (catalystActive) {
+                    const tempKelvin = temp + 273;
+                    const baseDecompProb = Math.exp(-1500 / tempKelvin) * 0.18;
+                    const dynamicDecompModifier = currentYield > targetYield ? 30.0 : 0.0;
+                    finalDecompProb = baseDecompProb * dynamicDecompModifier;
+                }
+
+                // 如果处于锁定平衡状态，我们将正逆向转化率归零，使产率处于绝对静止状态
+                if (isLockedEquilibrium) {
+                    forwardProb = 0;
+                    finalDecompProb = 0;
+                }
+
+                // --- 物理级平衡耗时计算与精细化时钟显示逻辑 ---
+                if (catalystActive && totalN > 0 && !isLockedEquilibrium) {
+                    if (!hasReachedEquilibriumState) {
+                        if (currentYield < targetYield * 0.98) {
+                            equilibriumElapsedFrames++;
+
+                            // 1. 基准反应效率与速率换算（25℃, 1atm 作为基准常温尺度）
+                            const baseRate = Math.exp(-1400 / 298) * Math.pow(1 / 10, 0.8) * 0.65;
+                            const tempKelvin = temp + 273;
+                            const currentRate = Math.exp(-1400 / tempKelvin) * Math.pow(press / 10, 0.8) * 0.65;
+                            
+                            const rateRatio = currentRate / baseRate; 
+
+                            // 2. 标定常温（25℃, 1atm）下达到平衡耗时为 24小时 (86400秒)
+                            const T_total = 86400 / rateRatio; 
+
+                            // 根据当前合成进度 (0.00 ~ 1.00) 映射模拟反应流逝的时间
+                            const progress = Math.min(1.0, currentYield / (targetYield * 0.98 || 1));
+                            const elapsedSimulatedSeconds = progress * T_total;
+
+                            timerDisplay.innerText = formatSimulatedTime(elapsedSimulatedSeconds);
+                            timerDisplay.className = "text-xs font-mono text-amber-400 font-bold animate-pulse";
+                        } else {
+                            // 首次瞬间平衡锁定：记录该温度压强下达成平衡所需的【最终理论总耗时】
+                            hasReachedEquilibriumState = true;
+                            
+                            const baseRate = Math.exp(-1400 / 298) * Math.pow(1 / 10, 0.8) * 0.65;
+                            const tempKelvin = temp + 273;
+                            const currentRate = Math.exp(-1400 / tempKelvin) * Math.pow(press / 10, 0.8) * 0.65;
+                            const rateRatio = currentRate / baseRate; 
+                            
+                            finalEquilibriumTime = 86400 / rateRatio; 
+
+                            timerDisplay.innerText = formatSimulatedTime(finalEquilibriumTime) + " (已平衡)";
+                            timerDisplay.className = "text-xs font-mono text-emerald-400 font-bold";
+                            
+                            // 触发一次代表成功的化学反应涟漪
+                            for (let i = 0; i < 5; i++) {
+                                reactionsList.push({
+                                    x: 100 + Math.random() * (canvas.width - 200),
+                                    y: 190 + Math.random() * 130,
+                                    radius: 3,
+                                    alpha: 1.0
+                                });
+                            }
+                        }
+                    }
+                }
+
+                particles.forEach(p => {
+                    const inCatalystZone = !catalystActive || (p.y > 180 && p.y < 330);
+                    if (p.type === 'N2' && inCatalystZone && Math.random() < forwardProb && currentYield < targetYield) {
+                        p.type = 'NH3';
+                        p.r = 8; 
+                        reactionsList.push({ x: p.x, y: p.y, radius: 5, alpha: 1.0 });
+                    } else if (p.type === 'NH3' && Math.random() < finalDecompProb) {
+                        p.type = 'N2';
+                        p.r = 6; 
+                    }
+                });
+
+                drawReactionsEffects();
+
+                const displayYield = (currentYield * 100).toFixed(1);
+
+                document.getElementById('nh3-count').innerText = nh3Count;
+                document.getElementById('n2-count').innerText = particles.filter(p => p.type === 'N2').length;
+                document.getElementById('h2-count').innerText = particles.filter(p => p.type === 'H2').length;
+                document.getElementById('yield-percent').innerText = displayYield + '%';
+                document.getElementById('yield-bar').style.width = displayYield + '%';
+            } else {
+                drawMicroView(temp, press);
+            }
+
+            document.getElementById('temp-val').innerText = temp + ' ℃';
+            document.getElementById('press-val').innerText = press + ' atm';
+
+            const piston = document.getElementById('piston');
+            const vibration = press > 1 ? Math.sin(Date.now() / (200 - press/3)) * (press / 10) : 0;
+            piston.style.top = (40 + vibration) + 'px';
+            
+            // 安全监测与破损逻辑
+            if (press > 200) {
+                reactor.classList.add('danger-shake');
+                pistonLed.style.backgroundColor = '#ef4444'; // 报警红灯
+                
+                if (press > 400 && Math.random() < 0.01) {
+                    document.body.classList.add('is-broken');
+                }
+            } else {
+                reactor.classList.remove('danger-shake');
+                pistonLed.style.backgroundColor = '#22c55e'; // 正常绿灯
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        window.injectMolecules = function(type, count) {
+            const warningEl = document.getElementById('limit-warning');
+            
+            // 注入新原料时，解除产率锁定并复位计时器，重新记录通入后的平衡建立时间
+            isLockedEquilibrium = false; 
+            resetEquilibriumTimer();
+
+            if (particles.length + count > PARTICLE_MAX_LIMIT) {
+                warningEl.innerText = "⚠️ 釜内分子密度已达安全上限！";
+                warningEl.className = "text-[10px] text-red-400 text-center font-bold font-sans animate-pulse";
+                count = PARTICLE_MAX_LIMIT - particles.length;
+                if (count <= 0) return;
+            } else {
+                warningEl.innerText = "反应釜最大容量：250 粒子";
+                warningEl.className = "text-[10px] text-slate-500 text-center";
+            }
+
+            for (let i = 0; i < count; i++) {
+                particles.push(new Molecule(type, true));
+            }
+        }
+
+        document.getElementById('inject-n2-btn').onclick = () => injectMolecules('N2', 5);
+        document.getElementById('inject-h2-btn').onclick = () => injectMolecules('H2', 15);
+
+        document.getElementById('equilibrium-btn').onclick = () => {
+            const temp = parseInt(document.getElementById('temp-slider').value);
+            const press = parseInt(document.getElementById('press-slider').value);
+
+            if (!catalystActive) {
+                document.getElementById('catalyst-btn').click();
+            }
+
+            if (particles.length === 0) {
+                injectMolecules('N2', 20);
+                injectMolecules('H2', 60);
+            }
+
+            // 先锁定平衡态，然后再重新定量分配，确保分子数目精确且恒定
+            isLockedEquilibrium = true; 
+
+            const tempLimitFactor = Math.max(0.01, 1.0 - 0.7333 * Math.pow((temp - 25) / 425, 0.43)); 
+            const pressScaleTerm = 1.0 + 1.2 * Math.pow((press - 1) / 449, 0.5); 
+            let targetYield = 0.30 * tempLimitFactor * pressScaleTerm;
+            if (targetYield > 0.70) targetYield = 0.70;
+            if (targetYield < 0.01) targetYield = 0.01;
+
+            let n2Particles = particles.filter(p => p.type === 'N2');
+            let nh3Particles = particles.filter(p => p.type === 'NH3');
+            const totalN = n2Particles.length + nh3Particles.length;
+
+            const targetNh3Count = Math.round(totalN * targetYield);
+            let currentNh3Count = nh3Particles.length;
+
+            if (currentNh3Count < targetNh3Count) {
+                let needed = targetNh3Count - currentNh3Count;
+                for (let p of particles) {
+                    if (p.type === 'N2' && needed > 0) {
+                        p.type = 'NH3';
+                        p.r = 8;
+                        needed--;
+                    }
+                }
+            } else if (currentNh3Count > targetNh3Count) {
+                let surplus = currentNh3Count - targetNh3Count;
+                for (let p of particles) {
+                    if (p.type === 'NH3' && surplus > 0) {
+                        p.type = 'N2';
+                        p.r = 6;
+                        surplus--;
+                    }
+                }
+            }
+
+            // 一键达到平衡时，计时器直接计算并显示瞬时反应的平衡时间，然后定格
+            hasReachedEquilibriumState = true;
+            
+            const baseRate = Math.exp(-1400 / 298) * Math.pow(1 / 10, 0.8) * 0.65;
+            const tempKelvin = temp + 273;
+            const currentRate = Math.exp(-1400 / tempKelvin) * Math.pow(press / 10, 0.8) * 0.65;
+            const rateRatio = currentRate / baseRate; 
+            finalEquilibriumTime = 86400 / rateRatio;
+
+            timerDisplay.innerText = formatSimulatedTime(finalEquilibriumTime) + " (一键平衡)";
+            timerDisplay.className = "text-xs font-mono text-emerald-400 font-bold";
+
+            catalystLoadTime = 3600;
+
+            for (let i = 0; i < 15; i++) {
+                reactionsList.push({
+                    x: 100 + Math.random() * (canvas.width - 200),
+                    y: 190 + Math.random() * 130,
+                    radius: 4,
+                    alpha: 1.0
+                });
+            }
+        };
+
+        viewMacroBtn.onclick = () => {
+            currentView = 'macro';
+            viewMacroBtn.className = 'py-1.5 bg-blue-600 rounded-xl text-xs font-bold transition-all border border-blue-400';
+            viewMicroBtn.className = 'py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-bold transition-all border border-transparent';
+            reactorViewTitle.innerText = "HIGH PERFORMANCE HABER CONVERTER";
+        };
+
+        viewMicroBtn.onclick = () => {
+            currentView = 'micro';
+            viewMicroBtn.className = 'py-1.5 bg-blue-600 rounded-xl text-xs font-bold transition-all border border-blue-400';
+            viewMacroBtn.className = 'py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold transition-all border border-transparent';
+            reactorViewTitle.innerText = "SINGLE BOND COLLISION STUDY (ZOOM VIEW)";
+            microReactionState = 'colliding';
+            microN2.x = 180;
+            microH2.x = 470;
+            microN2.vx = 1.2;
+            microH2.vx = -2.2;
+            transientReactionGlow = 0;
+        };
+
+        document.getElementById('catalyst-btn').onclick = function() {
+            catalystActive = !catalystActive;
+            if (!catalystActive) {
+                isLockedEquilibrium = false; // 卸载催化剂解除锁定并重置计时
+                resetEquilibriumTimer();
+            }
+            this.innerText = catalystActive ? '卸载铁触媒' : '装填铁触媒 (Fe Catalyst)';
+            this.className = catalystActive ? 
+                'w-full py-2 bg-slate-700 rounded-lg font-bold transition-all shadow-lg active:scale-95 border border-blue-500/50 catalyst-glow' : 
+                'w-full py-2 bg-blue-600 rounded-lg font-bold transition-all shadow-lg active:scale-95';
+        };
+
+        document.getElementById('reset-btn').onclick = () => {
+            isLockedEquilibrium = false;
+            resetEquilibriumTimer();
+            location.reload();
+        }
+        window.onload = () => { init(); animate(); };
+    </script>
+</body>
+</html>

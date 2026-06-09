@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强酸 vs 弱酸解离对比实验</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #F5F5F5;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            cursor: grab;
+            touch-action: none;
+        }
+        #canvas-container:active {
+            cursor: grabbing;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 320px;
+            border: 1px solid #e2e8f0;
+            pointer-events: auto;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .section-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-top: 12px;
+            margin-bottom: 6px;
+            font-weight: 700;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 4px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+            font-size: 13px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #334155;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">酸的解离对比</h2>
+        
+        <div class="mb-4 text-xs text-slate-600 bg-blue-50 p-2 rounded border border-blue-100 leading-relaxed">
+            👋 <strong>实验说明：</strong><br>
+            拖拽分子进入水中。<br>
+            <strong>HCl (强酸)</strong>：入水即刻完全解离。<br>
+            <strong>CH₃COOH (弱酸)</strong>：入水后<strong>绝大部分保持完整分子状态</strong>，极难解离。
+        </div>
+
+        <!-- 强酸部分 -->
+        <div class="section-title">强酸 (HCl)</div>
+        <div class="legend-item">
+            <span class="dot" style="background: linear-gradient(90deg, #4CAF50 50%, #FF5252 50%);"></span> 
+            <span>HCl 分子</span>
+        </div>
+        <div class="legend-item">
+            <span class="dot" style="background: #4CAF50;"></span> 
+            <span>Cl⁻ (氯离子)</span>
+        </div>
+        
+        <div class="bg-slate-50 p-2 rounded mt-2">
+            <div class="stat-row">
+                <span>HCl 分子数:</span>
+                <span id="hcl-mol-count" class="font-bold text-slate-700">0</span>
+            </div>
+            <div class="stat-row">
+                <span>Cl⁻ 离子数:</span>
+                <span id="cl-ion-count" class="font-bold text-green-600">0</span>
+            </div>
+            <div class="mt-1 text-xs text-gray-500">解离率: <span id="hcl-ratio">0%</span></div>
+        </div>
+
+        <!-- 弱酸部分 -->
+        <div class="section-title mt-4">弱酸 (CH₃COOH)</div>
+        <div class="legend-item">
+            <span class="dot" style="background: linear-gradient(90deg, #9C27B0 60%, #FF5252 40%);"></span> 
+            <span>CH₃COOH 分子</span>
+        </div>
+        <div class="legend-item">
+            <span class="dot" style="background: #9C27B0;"></span> 
+            <span>Ac⁻ (醋酸根)</span>
+        </div>
+
+        <div class="bg-slate-50 p-2 rounded mt-2">
+            <div class="stat-row">
+                <span>CH₃COOH 分子数:</span>
+                <span id="ac-mol-count" class="font-bold text-slate-700">0</span>
+            </div>
+            <div class="stat-row">
+                <span>Ac⁻ 离子数:</span>
+                <span id="ac-ion-count" class="font-bold text-purple-600">0</span>
+            </div>
+            <div class="mt-1 text-xs text-gray-500">解离率: <span id="ac-ratio">0%</span></div>
+        </div>
+
+        <!-- 通用 -->
+        <div class="section-title mt-4">通用离子</div>
+        <div class="legend-item">
+            <span class="dot" style="background: #FF5252;"></span> 
+            <span>H⁺ (氢离子)</span>
+            <span class="ml-auto font-bold text-red-500" id="h-total-count">0</span>
+        </div>
+
+        <button id="btn-reset" class="mt-4 w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 py-2 px-4 rounded font-medium transition-colors shadow-sm text-sm">
+            重置实验
+        </button>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Elements
+    const ui = {
+        hclMol: document.getElementById('hcl-mol-count'),
+        clIon: document.getElementById('cl-ion-count'),
+        hclRatio: document.getElementById('hcl-ratio'),
+        acMol: document.getElementById('ac-mol-count'),
+        acIon: document.getElementById('ac-ion-count'),
+        acRatio: document.getElementById('ac-ratio'),
+        hTotal: document.getElementById('h-total-count'),
+        btnReset: document.getElementById('btn-reset')
+    };
+
+    // Constants
+    const CONFIG = {
+        MOLECULE_COUNT_HCL: 10,
+        MOLECULE_COUNT_AC: 10,
+        RAD_CL: 16,
+        RAD_AC: 22, 
+        RAD_H: 7,
+        WATER_LEVEL_RATIO: 0.55
+    };
+
+    let width, height, waterLevel;
+    let entities = [];
+    
+    let dragState = {
+        entity: null,
+        offsetX: 0,
+        offsetY: 0
+    };
+
+    // --- Classes ---
+
+    class Entity {
+        constructor(x, y, vx, vy) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.isDragging = false;
+            this.markedForDeletion = false;
+        }
+
+        update() {
+            if (this.isDragging) return;
+
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Walls
+            if (this.x < 10 || this.x > width - 10) this.vx *= -1;
+            this.x = Math.max(10, Math.min(width - 10, this.x));
+
+            // Floor/Ceiling
+            if (this.y < 10) { this.y = 10; this.vy *= -1; }
+            if (this.y > height - 10) { this.y = height - 10; this.vy *= -1; }
+        }
+
+        isMouseOver(mx, my) {
+            const r = 25; 
+            return (this.x - mx)**2 + (this.y - my)**2 < r*r;
+        }
+    }
+
+    class Molecule extends Entity {
+        constructor(x, y, type) {
+            super(x, y, (Math.random() - 0.5) * 1.5, (Math.random() - 0.5) * 1.5);
+            this.type = type; // 'HCl' or 'CH3COOH'
+            this.angle = Math.random() * Math.PI * 2;
+            this.rotSpeed = (Math.random() - 0.5) * 0.1;
+            
+            if (type === 'HCl') {
+                this.radMain = CONFIG.RAD_CL;
+                this.colorMain = '#4CAF50';
+                this.labelMain = 'Cl';
+                this.bondDist = CONFIG.RAD_CL + CONFIG.RAD_H - 4;
+            } else {
+                this.radMain = CONFIG.RAD_AC;
+                this.colorMain = '#9C27B0'; 
+                this.labelMain = 'Ac'; 
+                this.bondDist = CONFIG.RAD_AC + CONFIG.RAD_H - 4;
+            }
+        }
+
+        update() {
+            super.update();
+            if (!this.isDragging) {
+                this.angle += this.rotSpeed;
+
+                // Air physics vs Water physics
+                if (this.y < waterLevel) {
+                    this.vy += 0.02; // Gravity in air
+                } else {
+                    this.vx *= 0.95; // Drag in water
+                    this.vy *= 0.95;
+                }
+            }
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+
+            // Bond
+            ctx.beginPath();
+            ctx.moveTo(-this.bondDist/2, 0);
+            ctx.lineTo(this.bondDist/2, 0);
+            ctx.strokeStyle = "#888";
+            ctx.lineWidth = 6;
+            ctx.lineCap = "round";
+            ctx.stroke();
+
+            // Main Atom (Cl or Ac)
+            ctx.beginPath();
+            ctx.arc(-this.bondDist/2 + 4, 0, this.radMain, 0, Math.PI * 2);
+            ctx.fillStyle = this.colorMain;
+            ctx.fill();
+            ctx.strokeStyle = "rgba(0,0,0,0.2)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            ctx.fillStyle = "white";
+            ctx.font = "bold 11px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(this.labelMain, -this.bondDist/2 + 4, 0);
+
+            // H Atom
+            ctx.beginPath();
+            ctx.arc(this.bondDist/2, 0, CONFIG.RAD_H, 0, Math.PI * 2);
+            ctx.fillStyle = "#FF5252";
+            ctx.fill();
+
+            ctx.restore();
+        }
+    }
+
+    class Ion extends Entity {
+        constructor(x, y, type) {
+            super(x, y, (Math.random()-0.5)*2, (Math.random()-0.5)*2);
+            this.type = type; 
+            
+            if (type === 'Cl') {
+                this.radius = CONFIG.RAD_CL;
+                this.color = '#4CAF50';
+                this.label = '-';
+            } else if (type === 'Ac') {
+                this.radius = CONFIG.RAD_AC;
+                this.color = '#9C27B0';
+                this.label = '-';
+            } else {
+                this.radius = CONFIG.RAD_H;
+                this.color = '#FF5252';
+                this.label = '+';
+            }
+        }
+
+        update() {
+            if (this.isDragging) return;
+            super.update();
+
+            // Water constraint
+            if (this.y < waterLevel + this.radius) {
+                this.y = waterLevel + this.radius;
+                this.vy = Math.abs(this.vy) * 0.6; 
+            }
+
+            this.vx += (Math.random() - 0.5) * 0.3;
+            this.vy += (Math.random() - 0.5) * 0.3;
+            
+            this.vx *= 0.98;
+            this.vy *= 0.98;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            
+            if (this.y > waterLevel) {
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 10;
+            }
+            ctx.strokeStyle = "rgba(255,255,255,0.4)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = "white";
+            ctx.font = "bold 14px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(this.label, this.x, this.y);
+            
+            if (this.type === 'Ac') {
+                ctx.font = "9px Arial";
+                ctx.fillText("Ac", this.x, this.y + 8);
+            }
+        }
+    }
+
+    // --- Core Functions ---
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        waterLevel = height * CONFIG.WATER_LEVEL_RATIO;
+    }
+    window.addEventListener('resize', resize);
+
+    function init() {
+        resize();
+        entities = [];
+        
+        for (let i = 0; i < CONFIG.MOLECULE_COUNT_HCL; i++) {
+            const x = Math.random() * (width/2 - 50) + 20;
+            const y = Math.random() * (waterLevel - 100) + 50;
+            entities.push(new Molecule(x, y, 'HCl'));
+        }
+
+        for (let i = 0; i < CONFIG.MOLECULE_COUNT_AC; i++) {
+            const x = Math.random() * (width/2 - 50) + width/2 + 20;
+            const y = Math.random() * (waterLevel - 100) + 50;
+            entities.push(new Molecule(x, y, 'CH3COOH'));
+        }
+    }
+
+    function handleDissociation() {
+        let newEntities = [];
+        
+        entities.forEach(e => {
+            if ((e.type === 'HCl' || e.type === 'CH3COOH') && e.y > waterLevel + 10 && !e.isDragging) {
+                
+                let chance = 0;
+                
+                if (e.type === 'HCl') {
+                    // Strong acid: High chance
+                    chance = 0.2; 
+                } else if (e.type === 'CH3COOH') {
+                    // Weak acid: Extremely low chance (Modified as requested)
+                    chance = 0.0008; 
+                }
+
+                if (Math.random() < chance) {
+                    e.markedForDeletion = true;
+                    const ionMainType = e.type === 'HCl' ? 'Cl' : 'Ac';
+                    newEntities.push(new Ion(e.x - 5, e.y, -1, 0, ionMainType));
+                    newEntities.push(new Ion(e.x + 5, e.y, 1, 0, 'H'));
+                }
+            }
+        });
+        
+        if (newEntities.length > 0) {
+            entities.push(...newEntities);
+            entities = entities.filter(e => !e.markedForDeletion);
+        }
+    }
+
+    function handleReassociation() {
+        let hIons = entities.filter(e => e.type === 'H' && !e.markedForDeletion);
+        let acIons = entities.filter(e => e.type === 'Ac' && !e.markedForDeletion);
+        
+        for (let h of hIons) {
+            if (h.markedForDeletion) continue;
+            
+            for (let ac of acIons) {
+                if (ac.markedForDeletion) continue;
+
+                const dx = h.x - ac.x;
+                const dy = h.y - ac.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < CONFIG.RAD_AC + CONFIG.RAD_H) {
+                    h.markedForDeletion = true;
+                    ac.markedForDeletion = true;
+                    
+                    const mx = (h.x + ac.x) / 2;
+                    const my = (h.y + ac.y) / 2;
+                    const newMol = new Molecule(mx, my, 'CH3COOH');
+                    newMol.vx = (h.vx + ac.vx) / 2;
+                    newMol.vy = (h.vy + ac.vy) / 2;
+                    entities.push(newMol);
+                    
+                    break; 
+                }
+            }
+        }
+        
+        entities = entities.filter(e => !e.markedForDeletion);
+    }
+
+    function updateStats() {
+        const counts = {
+            hclMol: 0, clIon: 0,
+            acMol: 0, acIon: 0,
+            hTotal: 0
+        };
+
+        entities.forEach(e => {
+            if (e.type === 'HCl') counts.hclMol++;
+            else if (e.type === 'Cl') counts.clIon++;
+            else if (e.type === 'CH3COOH') counts.acMol++;
+            else if (e.type === 'Ac') counts.acIon++;
+            else if (e.type === 'H') counts.hTotal++;
+        });
+
+        ui.hclMol.textContent = counts.hclMol;
+        ui.clIon.textContent = counts.clIon;
+        ui.acMol.textContent = counts.acMol;
+        ui.acIon.textContent = counts.acIon;
+        ui.hTotal.textContent = counts.hTotal;
+
+        const totalHCL = counts.hclMol + counts.clIon;
+        const totalAc = counts.acMol + counts.acIon;
+        
+        ui.hclRatio.textContent = totalHCL ? Math.round((counts.clIon / totalHCL) * 100) + "%" : "0%";
+        ui.acRatio.textContent = totalAc ? Math.round((counts.acIon / totalAc) * 100) + "%" : "0%";
+    }
+
+    function drawEnv() {
+        ctx.fillStyle = "#F8FAFC";
+        ctx.fillRect(0, 0, width, waterLevel);
+
+        const grad = ctx.createLinearGradient(0, waterLevel, 0, height);
+        grad.addColorStop(0, "rgba(224, 247, 250, 0.9)");
+        grad.addColorStop(1, "rgba(2, 136, 209, 0.8)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, waterLevel, width, height - waterLevel);
+
+        ctx.beginPath();
+        ctx.moveTo(0, waterLevel);
+        ctx.lineTo(width, waterLevel);
+        ctx.strokeStyle = "#4FC3F7";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.font = "bold 60px Arial";
+        ctx.fillStyle = "rgba(0,0,0,0.03)";
+        ctx.textAlign = "center";
+        ctx.fillText("AIR", width/2, waterLevel/2);
+        
+        ctx.fillStyle = "rgba(2, 119, 189, 0.1)";
+        ctx.fillText("WATER", width/2, waterLevel + (height-waterLevel)/2);
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        drawEnv();
+        handleDissociation();
+        handleReassociation();
+        entities.forEach(e => {
+            e.update();
+            e.draw();
+        });
+        updateStats();
+        requestAnimationFrame(animate);
+    }
+    
+    function getPointerPos(e) {
+        if (e.touches) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    }
+
+    function handleStart(e) {
+        const {x, y} = getPointerPos(e);
+        for (let i = entities.length - 1; i >= 0; i--) {
+            if (entities[i].isMouseOver(x, y)) {
+                dragState.entity = entities[i];
+                dragState.offsetX = entities[i].x - x;
+                dragState.offsetY = entities[i].y - y;
+                dragState.entity.isDragging = true;
+                dragState.entity.vx = 0;
+                dragState.entity.vy = 0;
+                break;
+            }
+        }
+    }
+
+    function handleMove(e) {
+        if (dragState.entity) {
+            e.preventDefault();
+            const {x, y} = getPointerPos(e);
+            dragState.entity.x = x + dragState.offsetX;
+            dragState.entity.y = y + dragState.offsetY;
+        }
+        
+        const {x, y} = getPointerPos(e);
+        let hover = false;
+        for (let ent of entities) {
+            if (ent.isMouseOver(x, y)) { hover = true; break; }
+        }
+        canvas.style.cursor = dragState.entity ? 'grabbing' : (hover ? 'grab' : 'default');
+    }
+
+    function handleEnd() {
+        if (dragState.entity) {
+            dragState.entity.isDragging = false;
+            dragState.entity.vx = (Math.random()-0.5);
+            dragState.entity.vy = 1;
+            dragState.entity = null;
+        }
+    }
+
+    canvas.addEventListener('mousedown', handleStart);
+    canvas.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+
+    canvas.addEventListener('touchstart', handleStart, {passive: false});
+    canvas.addEventListener('touchmove', handleMove, {passive: false});
+    window.addEventListener('touchend', handleEnd);
+
+    ui.btnReset.addEventListener('click', init);
+
+    init();
+    animate();
+
+</script>
+</body>
+</html>

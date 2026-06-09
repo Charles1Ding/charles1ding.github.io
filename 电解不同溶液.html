@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电解实验室 - 氯化钠电解微观模拟 (多模式版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        canvas { cursor: crosshair; }
+        input[type=range] { height: 6px; -webkit-appearance: none; background: #e2e8f0; border-radius: 5px; }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; 
+            background: #2563eb; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); 
+        }
+        .mode-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer; border: 2px solid #f1f5f9; position: relative; overflow: hidden; }
+        .mode-card.active { border-color: #2563eb; background-color: #eff6ff; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.1); }
+        .mode-card.active::after { content: '✓'; position: absolute; top: 8px; right: 8px; color: #2563eb; font-weight: bold; font-size: 12px; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 lg:p-8">
+
+    <div class="flex flex-col gap-6 p-6 bg-white rounded-3xl shadow-2xl w-full max-w-[1100px] border border-slate-100">
+        <!-- 顶部标题与主控栏 -->
+        <div class="flex flex-col gap-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex flex-col">
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="3"><path d="M12 2v20M2 12h20"/></svg>
+                        </div>
+                        NaCl 电解微观模拟
+                    </h2>
+                    <p class="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest ml-12 italic">Selective Discharge & Dilution Effect</p>
+                </div>
+                
+                <div class="flex items-center gap-6 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-100 flex-1 max-w-sm">
+                    <span class="text-xs font-bold text-slate-500 whitespace-nowrap">电流强度</span>
+                    <input type="range" id="speedSlider" min="0.5" max="5" step="0.1" value="1.8" class="w-full">
+                    <span id="speedValue" class="text-xs font-mono font-bold text-blue-600 w-10 text-center">1.8</span>
+                </div>
+
+                <div class="flex gap-3">
+                    <button id="toggleBtn" class="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl font-bold transition-all transform active:scale-95 shadow-xl shadow-blue-200 hover:bg-blue-700">
+                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon id="playPolygon" points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <span id="btnText">开始实验</span>
+                    </button>
+                    <button id="resetBtn" class="p-3 rounded-xl border-2 border-slate-100 text-slate-400 hover:bg-slate-50 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 模式选择器 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div id="modeMolten" class="mode-card active p-4 rounded-2xl flex flex-col gap-1">
+                    <span class="text-xs font-black text-slate-700">熔融 NaCl (Molten)</span>
+                    <p class="text-[10px] text-slate-500">仅 Na⁺/Cl⁻。阴极析出金属钠，阳极产生氯气。</p>
+                </div>
+                <div id="modeAqueous" class="mode-card p-4 rounded-2xl flex flex-col gap-1">
+                    <span class="text-xs font-black text-slate-700">浓 NaCl 溶液 (Concentrated)</span>
+                    <p class="text-[10px] text-slate-500">高浓度 Cl⁻。阳极产生 Cl₂，阴极产生 H₂。</p>
+                </div>
+                <div id="modeDilute" class="mode-card p-4 rounded-2xl flex flex-col gap-1">
+                    <span class="text-xs font-black text-slate-700">稀 NaCl 溶液 (Dilute)</span>
+                    <p class="text-[10px] text-slate-500">Na⁺/Cl⁻ 极少。阳极 OH⁻ 放电产 O₂，阴极 H⁺ 产 H₂。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心画布区 -->
+        <div class="relative bg-slate-50 rounded-2xl border-2 border-slate-100 overflow-hidden shadow-inner">
+            <canvas id="electrolysisCanvas" width="900" height="500" class="w-full h-auto"></canvas>
+            
+            <!-- 统计面板 -->
+            <div class="absolute top-4 right-4 bg-white/90 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm space-y-1 pointer-events-none text-[10px] min-w-[130px]">
+                <div class="flex justify-between font-bold"><span>Na⁺:</span> <span id="countNa" class="text-orange-500">0</span></div>
+                <div class="flex justify-between font-bold"><span>Cl⁻:</span> <span id="countCl" class="text-green-600">0</span></div>
+                <div id="aqueousStats" class="hidden space-y-1">
+                    <div class="border-t border-slate-100 my-1"></div>
+                    <div class="flex justify-between font-bold"><span>H⁺:</span> <span id="countH" class="text-blue-400">0</span></div>
+                    <div class="flex justify-between font-bold"><span>OH⁻:</span> <span id="countOH" class="text-pink-500">0</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部说明区 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-2 text-left">
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <h4 class="font-bold text-slate-800 text-xs uppercase mb-2">阴极动力学 (Cathode -)</h4>
+                <div id="cathodeLogic" class="space-y-1">
+                    <p class="text-lg font-mono font-bold text-blue-600" id="eqCathode">Na⁺ + e⁻ → Na</p>
+                    <p id="descCathode" class="text-[10px] text-slate-500 leading-tight">阳离子受吸引。溶液中 H⁺ 获电子能力强，优先放电。</p>
+                </div>
+            </div>
+            <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
+                <h4 class="font-bold text-slate-800 text-xs uppercase mb-2">阳极动力学 (Anode +)</h4>
+                <div id="anodeLogic" class="space-y-1">
+                    <p class="text-lg font-mono font-bold text-green-600" id="eqAnode">2Cl⁻ - 2e⁻ → Cl₂↑</p>
+                    <p id="descAnode" class="text-[10px] text-slate-500 leading-tight">阴离子受吸引。稀溶液中 OH⁻ 优先失电子产生 O₂。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('electrolysisCanvas');
+        const ctx = canvas.getContext('2d');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const btnText = document.getElementById('btnText');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValueDisplay = document.getElementById('speedValue');
+        
+        const modeMolten = document.getElementById('modeMolten');
+        const modeAqueous = document.getElementById('modeAqueous');
+        const modeDilute = document.getElementById('modeDilute');
+        
+        const aqueousStats = document.getElementById('aqueousStats');
+        const countNa = document.getElementById('countNa');
+        const countCl = document.getElementById('countCl');
+        const countH = document.getElementById('countH');
+        const countOH = document.getElementById('countOH');
+        const eqCathode = document.getElementById('eqCathode');
+        const eqAnode = document.getElementById('eqAnode');
+
+        let isActive = false;
+        let ions = [];
+        let electrons = [];
+        let bubbles = [];
+        let deposits = [];
+        let currentMode = 'molten'; 
+        let electrolysisSpeed = 1.8;
+
+        const anodeX = 220, cathodeX = 680, startY = 220;
+        const electrodeH = 220, electrodeY = 180, electrodeW = 30;
+
+        function init() {
+            ions = []; bubbles = []; deposits = []; electrons = [];
+            for (let i = 0; i < 12; i++) electrons.push({ pos: i / 12, speed: 0.0025 });
+
+            if (currentMode === 'molten') {
+                for (let i = 0; i < 25; i++) ions.push(createIon('na'));
+                for (let i = 0; i < 25; i++) ions.push(createIon('cl'));
+                aqueousStats.classList.add('hidden');
+                eqCathode.innerText = "Na⁺ + e⁻ → Na";
+                eqAnode.innerText = "2Cl⁻ - 2e⁻ → Cl₂↑";
+            } else if (currentMode === 'aqueous') {
+                for (let i = 0; i < 20; i++) ions.push(createIon('na'));
+                for (let i = 0; i < 20; i++) ions.push(createIon('cl'));
+                for (let i = 0; i < 12; i++) ions.push(createIon('h'));
+                for (let i = 0; i < 12; i++) ions.push(createIon('oh'));
+                aqueousStats.classList.remove('hidden');
+                eqCathode.innerText = "2H⁺ + 2e⁻ → H₂↑";
+                eqAnode.innerText = "2Cl⁻ - 2e⁻ → Cl₂↑";
+            } else { // Dilute
+                for (let i = 0; i < 8; i++) ions.push(createIon('na'));
+                for (let i = 0; i < 8; i++) ions.push(createIon('cl'));
+                for (let i = 0; i < 25; i++) ions.push(createIon('h'));
+                for (let i = 0; i < 25; i++) ions.push(createIon('oh'));
+                aqueousStats.classList.remove('hidden');
+                eqCathode.innerText = "2H⁺ + 2e⁻ → H₂↑";
+                eqAnode.innerText = "4OH⁻ - 4e⁻ → O₂↑ + 2H₂O";
+            }
+            updateStats();
+            updateModeCards();
+        }
+
+        function createIon(type, x, y) {
+            const config = {
+                na: { color: '#f97316', label: 'Na⁺' },
+                cl: { color: '#16a34a', label: 'Cl⁻' },
+                h:  { color: '#38bdf8', label: 'H⁺' },
+                oh: { color: '#ec4899', label: 'OH⁻' }
+            };
+            return {
+                x: x || (230 + Math.random() * 440),
+                y: y || (240 + Math.random() * 160),
+                type: type, color: config[type].color, label: config[type].label,
+                vx: (Math.random()-0.5)*0.8, vy: (Math.random()-0.5)*0.8
+            };
+        }
+
+        function updateStats() {
+            countNa.innerText = ions.filter(i => i.type === 'na').length;
+            countCl.innerText = ions.filter(i => i.type === 'cl').length;
+            countH.innerText = ions.filter(i => i.type === 'h').length;
+            countOH.innerText = ions.filter(i => i.type === 'oh').length;
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 容器与环境
+            ctx.strokeStyle = '#64748b'; ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.moveTo(100, startY); ctx.lineTo(100, startY+250); ctx.lineTo(800, startY+250); ctx.lineTo(800, startY); ctx.stroke();
+            ctx.fillStyle = currentMode === 'molten' ? 'rgba(255, 237, 213, 0.5)' : (currentMode === 'dilute' ? 'rgba(239, 246, 255, 0.4)' : 'rgba(239, 246, 255, 0.7)');
+            ctx.fillRect(103, startY+2, 694, 245);
+
+            // 2. 电极
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(anodeX - electrodeW/2, electrodeY, electrodeW, electrodeH);
+            ctx.fillRect(cathodeX - electrodeW/2, electrodeY, electrodeW, electrodeH);
+            ctx.fillStyle = '#ef4444'; ctx.font='900 24px sans-serif'; ctx.textAlign='center'; ctx.fillText('+', anodeX, 205);
+            ctx.fillStyle = '#2563eb'; ctx.fillText('-', cathodeX, 205);
+
+            // 3. 产物渲染
+            deposits.forEach(d => {
+                ctx.fillStyle = '#cbd5e1'; ctx.beginPath(); ctx.arc(d.x, d.y, 6, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1; ctx.stroke();
+            });
+            bubbles.forEach(b => {
+                b.y -= (0.8 + electrolysisSpeed * 0.4); b.x += b.vx;
+                ctx.fillStyle = b.type === 'cl2' ? 'rgba(74, 222, 128, 0.4)' : 'rgba(255,255,255,0.4)';
+                ctx.strokeStyle = b.type === 'cl2' ? '#166534' : '#94a3b8';
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            });
+            bubbles = bubbles.filter(b => b.y > 150);
+
+            // 4. 离子选择性放电逻辑
+            for (let i = ions.length - 1; i >= 0; i--) {
+                const ion = ions[i];
+                if (isActive) {
+                    if (ion.type === 'na' || ion.type === 'h') {
+                        ion.x += electrolysisSpeed * 1.1; // 阴极吸引
+                        if (ion.x >= cathodeX - 15) {
+                            if (currentMode === 'molten' && ion.type === 'na') {
+                                deposits.push({ x: (cathodeX - 15) + Math.random()*30, y: electrodeY + Math.random()*electrodeH });
+                                ions.splice(i, 1);
+                            } else if ((currentMode === 'aqueous' || currentMode === 'dilute') && ion.type === 'h') {
+                                bubbles.push({ x: cathodeX - 15, y: ion.y, r: 4 + Math.random()*4, vx: (Math.random()-0.5)*0.4, type: 'h2' });
+                                ions.splice(i, 1);
+                            } else {
+                                // Na+ 聚集但不反应
+                                ion.x = cathodeX - 16 - Math.random()*10; ion.vx = -Math.random()*1.5;
+                            }
+                            updateStats(); continue;
+                        }
+                    } else if (ion.type === 'cl' || ion.type === 'oh') {
+                        ion.x -= electrolysisSpeed * 1.1; // 阳极吸引
+                        if (ion.x <= anodeX + 15) {
+                            if (currentMode !== 'dilute' && ion.type === 'cl') {
+                                // 熔融或浓溶液：Cl- 放电
+                                bubbles.push({ x: anodeX - 10, y: ion.y, r: 5 + Math.random()*5, vx: (Math.random()-0.5)*0.4, type: 'cl2' });
+                                ions.splice(i, 1);
+                            } else if (currentMode === 'dilute' && ion.type === 'oh') {
+                                // 稀溶液：OH- 优先放电产生 O2
+                                bubbles.push({ x: anodeX - 10, y: ion.y, r: 4 + Math.random()*4, vx: (Math.random()-0.5)*0.4, type: 'o2' });
+                                ions.splice(i, 1);
+                            } else {
+                                // 聚集但不反应 (OH- 在浓溶液中，Cl- 在稀溶液中)
+                                ion.x = anodeX + 16 + Math.random()*10; ion.vx = Math.random()*1.5;
+                            }
+                            updateStats(); continue;
+                        }
+                    }
+                } else {
+                    ion.x += ion.vx; ion.y += ion.vy;
+                    if (ion.x < 120 || ion.x > 780) ion.vx *= -1;
+                    if (ion.y < 230 || ion.y > 440) ion.vy *= -1;
+                }
+                ctx.fillStyle = ion.color;
+                ctx.beginPath(); ctx.arc(ion.x, ion.y, 14, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 9px sans-serif';
+                ctx.fillText(ion.label, ion.x, ion.y + 4);
+            }
+
+            // 5. 电子循环
+            ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(anodeX, electrodeY); ctx.lineTo(anodeX, 80); ctx.lineTo(410, 80); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(490, 80); ctx.lineTo(cathodeX, 80); ctx.lineTo(cathodeX, electrodeY); ctx.stroke();
+
+            if (isActive) {
+                electrons.forEach(e => {
+                    e.pos += e.speed * (electrolysisSpeed / 1.5);
+                    if (e.pos > 1) e.pos = 0;
+                    let x, y;
+                    if (e.pos < 0.5) { let t = e.pos/0.5; x = anodeX + t * (410 - anodeX); y = (t < 0.2) ? 180 - (t/0.2)*100 : 80; }
+                    else { let t = (e.pos-0.5)/0.5; x = 490 + t * (cathodeX - 490); y = (t > 0.8) ? 80 + ((t-0.8)/0.2)*100 : 80; }
+                    ctx.fillStyle = '#facc15'; ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#1e293b'; ctx.font = 'bold 8px sans-serif'; ctx.fillText('e⁻', x, y+3);
+                });
+            }
+
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(390, 40, 120, 80);
+            ctx.fillStyle = '#fff'; ctx.font='bold 12px sans-serif'; ctx.fillText('直流电源', 450, 75);
+            ctx.fillStyle = '#f87171'; ctx.fillText('+', 410, 105); ctx.fillStyle = '#60a5fa'; ctx.fillText('-', 490, 105);
+
+            requestAnimationFrame(draw);
+        }
+
+        function updateModeCards() {
+            [modeMolten, modeAqueous, modeDilute].forEach(m => m.classList.remove('active'));
+            if(currentMode === 'molten') modeMolten.classList.add('active');
+            else if(currentMode === 'aqueous') modeAqueous.classList.add('active');
+            else modeDilute.classList.add('active');
+        }
+
+        function updateBtnUI() {
+            btnText.innerText = isActive ? "暂停实验" : "开始实验";
+            toggleBtn.className = isActive ? "flex items-center gap-2 px-8 py-3 bg-orange-100 text-orange-600 rounded-xl font-bold border-2 border-orange-200" : "flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-xl shadow-blue-200";
+        }
+
+        speedSlider.oninput = (e) => {
+            electrolysisSpeed = parseFloat(e.target.value);
+            speedValueDisplay.innerText = electrolysisSpeed.toFixed(1);
+        };
+
+        toggleBtn.onclick = () => { isActive = !isActive; updateBtnUI(); };
+        resetBtn.onclick = () => { isActive=false; init(); updateBtnUI(); };
+        modeMolten.onclick = () => { currentMode = 'molten'; init(); };
+        modeAqueous.onclick = () => { currentMode = 'aqueous'; init(); };
+        modeDilute.onclick = () => { currentMode = 'dilute'; init(); };
+
+        window.onload = () => { init(); draw(); };
+    </script>
+</body>
+</html>

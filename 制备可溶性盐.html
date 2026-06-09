@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>制备氯化铜：碳酸铜与盐酸反应</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #ECEFF1;
+            font-family: 'Segoe U   I', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 340px;
+            border: 1px solid #e2e8f0;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .btn {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn:active { transform: scale(0.95); }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #334155;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .doublet {
+            display: flex;
+            align-items: center;
+            margin-right: 8px;
+        }
+        .doublet span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">盐的制备: CuCl₂</h2>
+        <div class="text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded border border-slate-200">
+            <strong>反应方程式：</strong><br>
+            CuCO₃(s) + 2HCl → CuCl₂ + H₂O + CO₂↑<br>
+            <span class="text-slate-400 mt-1 block">目的：消耗完所有酸，并过滤多余固体。</span>
+        </div>
+
+        <div class="space-y-2 mb-4">
+            <button id="btn-add-hcl" class="btn w-full bg-red-100 hover:bg-red-200 text-red-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-red-200">
+                <span>1. 加入 稀盐酸 (HCl)</span>
+                <span class="text-xs bg-red-500 text-white px-2 py-1 rounded">10 H⁺</span>
+            </button>
+            <button id="btn-add-cuco3" class="btn w-full bg-emerald-100 hover:bg-emerald-200 text-emerald-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-emerald-200">
+                <span>2. 加入 碳酸铜固体</span>
+                <span class="text-xs bg-emerald-500 text-white px-2 py-1 rounded">5 单元</span>
+            </button>
+        </div>
+
+        <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-4">
+            <h3 class="text-sm font-bold text-gray-700 mb-2">当前溶液状态分析:</h3>
+            <div id="analysis-text" class="text-xs text-gray-600 mb-2">请加入试剂...</div>
+            <button id="btn-filter" disabled class="btn w-full bg-slate-300 text-slate-500 py-2 px-3 rounded font-bold text-sm cursor-not-allowed transition-colors">
+                3. 过滤分离 (需有固体残留)
+            </button>
+        </div>
+        
+        <button id="btn-reset" class="btn w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-3 rounded font-bold border border-slate-200 text-sm mb-4">
+            清空烧杯
+        </button>
+
+        <div class="border-t border-slate-200 pt-3">
+            <div class="text-xs font-bold text-slate-400 uppercase mb-2">图例</div>
+            
+            <div class="legend-item">
+                <div class="doublet">
+                    <span style="background: #1976D2; margin-right:-2px;"></span>
+                    <span style="background: #388E3C; margin-left:-2px;"></span>
+                </div>
+                CuCO₃ (固体)
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #FF5252;"></span> H⁺ (酸)
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #2962FF;"></span> Cu²⁺ (铜离子)
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #90A4AE; opacity: 0.6;"></span> CO₂ (气泡)
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Refs
+    const ui = {
+        analysis: document.getElementById('analysis-text'),
+        btnFilter: document.getElementById('btn-filter')
+    };
+
+    // Parameters
+    let width, height;
+    let beaker = { x: 0, y: 0, w: 0, h: 0, wallThick: 5, waterLevel: 0 };
+    
+    // Radii
+    const RAD_H = 8;     
+    const RAD_CL = 10;
+    const RAD_CU = 12;   
+    const RAD_SOLID = 14; 
+    const RAD_GAS = 10;
+    const RAD_H2O = 12;
+
+    let entities = [];
+    let effects = [];
+    let isFiltered = false;
+
+    // --- Entity Class ---
+
+    class Particle {
+        constructor(x, y, type) {
+            this.x = x;
+            this.y = y;
+            this.type = type;
+            this.markedForDeletion = false;
+            
+            this.vx = (Math.random() - 0.5) * 2;
+            this.vy = (Math.random() - 0.5) * 2 + 2;
+            
+            this.isSolid = false;
+            this.settled = false;
+            this.isGas = false;
+
+            if (type === 'H') {
+                this.radius = RAD_H;
+                this.color = '#FF5252'; 
+                this.label = 'H⁺';
+            } else if (type === 'Cl') {
+                this.radius = RAD_CL;
+                this.color = '#A5D6A7'; 
+                this.label = 'Cl⁻';
+                this.spectator = true;
+            } else if (type === 'CuCO3') {
+                this.radius = RAD_SOLID;
+                this.label = '';
+                this.isSolid = true;
+                this.vx = 0;
+                this.vy = 2; // Sinks
+                this.hits = 0; // H+ hits
+                this.angle = Math.random() * Math.PI * 2; // Random orientation for the pair
+            } else if (type === 'Cu') {
+                this.radius = RAD_CU;
+                this.color = '#2962FF'; // Blue
+                this.label = 'Cu²⁺';
+            } else if (type === 'CO2') {
+                this.radius = RAD_GAS;
+                this.color = 'rgba(144, 164, 174, 0.5)';
+                this.label = 'CO₂';
+                this.isGas = true;
+                this.vy = -1.5 - Math.random();
+            } else if (type === 'H2O') {
+                this.radius = RAD_H2O;
+                this.color = '#0288D1';
+                this.label = 'H₂O';
+                this.spectator = true; 
+            }
+        }
+
+        update() {
+            if (this.settled) return;
+
+            this.x += this.vx;
+            this.y += this.vy;
+
+            const leftWall = beaker.x + beaker.wallThick;
+            const rightWall = beaker.x + beaker.w - beaker.wallThick;
+            const floor = beaker.y + beaker.h - beaker.wallThick;
+
+            // Gas Logic
+            if (this.isGas) {
+                if (this.y < -20) this.markedForDeletion = true;
+                return;
+            }
+
+            // Solid Logic
+            if (this.isSolid) {
+                if (this.y > floor - this.radius) {
+                    this.y = floor - this.radius;
+                    this.settled = true;
+                    this.vx = 0;
+                    this.vy = 0;
+                }
+                if (this.x < leftWall + this.radius) this.x = leftWall + this.radius;
+                if (this.x > rightWall - this.radius) this.x = rightWall - this.radius;
+                return;
+            }
+
+            // Solution Logic
+            if (this.x < leftWall + this.radius) { this.x = leftWall + this.radius; this.vx *= -1; }
+            if (this.x > rightWall - this.radius) { this.x = rightWall - this.radius; this.vx *= -1; }
+            if (this.y > floor - this.radius) { this.y = floor - this.radius; this.vy *= -1; }
+
+            // Water surface
+            if (this.y > beaker.waterLevel + this.radius) {
+                 // Keep inside
+            }
+            
+            // Drag/Brownian
+            if (this.y > beaker.waterLevel) {
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+                this.vx += (Math.random()-0.5) * 0.4;
+                this.vy += (Math.random()-0.5) * 0.4;
+            } else {
+                this.vy += 0.1; // Gravity in air
+            }
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+
+            if (this.type === 'CuCO3') {
+                // Draw as a doublet (Two ions stuck together)
+                ctx.rotate(this.angle);
+                
+                // Cu Part
+                ctx.beginPath();
+                ctx.arc(-6, 0, 8, 0, Math.PI*2);
+                ctx.fillStyle = '#1976D2'; // Blue
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)'; ctx.lineWidth=1; ctx.stroke();
+                
+                // CO3 Part
+                ctx.beginPath();
+                ctx.arc(6, 0, 8, 0, Math.PI*2);
+                ctx.fillStyle = '#388E3C'; // Green
+                ctx.fill();
+                ctx.stroke();
+
+                // Labels (Small)
+                ctx.fillStyle = 'white';
+                ctx.font = "bold 8px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("Cu", -6, 0);
+                ctx.fillText("CO₃", 6, 0);
+
+                // Highlight if hit
+                if (this.hits > 0) {
+                    ctx.strokeStyle = '#FF5252'; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.arc(0,0, 16, 0, Math.PI*2); ctx.stroke();
+                }
+
+            } else if (this.isGas) {
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI*2);
+                ctx.fillStyle = this.color; ctx.fill();
+                ctx.strokeStyle = '#607D8B'; ctx.stroke();
+                ctx.fillStyle = '#455A64'; ctx.font = "10px Arial";
+                ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText(this.label, 0, 0);
+
+            } else if (this.type === 'H2O') {
+                // Simple Mickey mouse
+                ctx.fillStyle = this.color;
+                ctx.beginPath(); ctx.arc(0, 0, this.radius*0.6, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#E1F5FE';
+                ctx.beginPath(); ctx.arc(-5, -5, 4, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(5, -5, 4, 0, Math.PI*2); ctx.fill();
+            } else {
+                // Ions
+                ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI*2);
+                ctx.fillStyle = this.color; ctx.fill();
+                ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.stroke();
+                
+                ctx.fillStyle = "white";
+                ctx.font = this.spectator ? "10px Arial" : "bold 11px Arial";
+                ctx.textAlign = "center"; ctx.textBaseline = "middle";
+                ctx.fillText(this.label, 0, 0);
+            }
+
+            ctx.restore();
+        }
+    }
+
+    class VisualEffect {
+        constructor(x, y, text) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+            this.life = 1.0;
+            this.dy = -0.5;
+        }
+        update() {
+            this.y += this.dy;
+            this.life -= 0.02;
+        }
+        draw() {
+            if (this.life <= 0) return;
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = "#263238";
+            ctx.font = "bold 12px Arial";
+            ctx.textAlign = "center";
+            ctx.fillText(this.text, this.x, this.y);
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    // --- Core Logic ---
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        
+        const bW = Math.min(400, width * 0.6);
+        const bH = Math.min(500, height * 0.7);
+        beaker = {
+            w: bW,
+            h: bH,
+            x: (width - bW) / 2,
+            y: height - bH - 50,
+            wallThick: 6,
+            waterLevel: height - bH - 50 + (bH * 0.3)
+        };
+    }
+    window.addEventListener('resize', resize);
+
+    function addHCl() {
+        // Add 10 H+, 10 Cl-
+        for(let i=0; i<10; i++) {
+            const x = beaker.x + beaker.wallThick + Math.random() * (beaker.w - 2*beaker.wallThick);
+            const y = beaker.y - 50 - Math.random() * 50; 
+            entities.push(new Particle(x, y, 'H'));
+            entities.push(new Particle(x+10, y-10, 'Cl'));
+        }
+        isFiltered = false;
+        checkStatus();
+    }
+
+    function addCuCO3() {
+        // Add 5 CuCO3 units (Needs 10 H+ to consume)
+        for(let i=0; i<5; i++) {
+            const x = beaker.x + beaker.wallThick + Math.random() * (beaker.w - 2*beaker.wallThick);
+            const y = beaker.y - 50 - Math.random() * 50;
+            entities.push(new Particle(x, y, 'CuCO3'));
+        }
+        isFiltered = false;
+        checkStatus();
+    }
+
+    function handleInteractions() {
+        let hIons = entities.filter(e => e.type === 'H' && !e.markedForDeletion);
+        let solids = entities.filter(e => e.type === 'CuCO3' && !e.markedForDeletion);
+
+        // Reaction: 2 H+ + CuCO3 -> Cu2+ + H2O + CO2
+        for (let s of solids) {
+            if (s.markedForDeletion) continue;
+
+            for (let h of hIons) {
+                if (h.markedForDeletion) continue;
+
+                const dx = s.x - h.x;
+                const dy = s.y - h.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                // Attraction
+                if (dist < 80) {
+                     h.vx += dx * 0.005;
+                     h.vy += dy * 0.005;
+                }
+
+                if (dist < s.radius + h.radius) {
+                    h.markedForDeletion = true;
+                    s.hits++;
+                    
+                    // Simple pop effect
+                    h.vx *= -1; h.vy *= -1; 
+                    
+                    // Need 2 H+ to break 1 CuCO3
+                    if (s.hits >= 2) {
+                        s.markedForDeletion = true;
+                        
+                        // Products
+                        entities.push(new Particle(s.x, s.y, 'Cu'));
+                        entities.push(new Particle(s.x, s.y-10, 'CO2'));
+                        entities.push(new Particle(s.x+5, s.y+5, 'H2O'));
+                        
+                        effects.push(new VisualEffect(s.x, s.y-20, "反应!"));
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Solid Stacking
+        let allSolids = entities.filter(e => e.isSolid && !e.markedForDeletion);
+        for (let s1 of allSolids) {
+            if (s1.settled) continue; 
+            for (let s2 of allSolids) {
+                if (s1 === s2) continue;
+                if (s2.y < s1.y) continue; 
+                const d = Math.sqrt((s1.x-s2.x)**2 + (s1.y-s2.y)**2);
+                if (d < s1.radius + s2.radius - 2) {
+                    if (s2.settled) {
+                        s1.settled = true;
+                        s1.y = s2.y - (s1.radius + s2.radius) * 0.9;
+                    }
+                }
+            }
+        }
+
+        entities = entities.filter(e => !e.markedForDeletion);
+    }
+
+    function checkStatus() {
+        if (isFiltered) return; // Status is static after filter
+
+        const hCount = entities.filter(e => e.type === 'H').length;
+        const solidCount = entities.filter(e => e.type === 'CuCO3').length;
+        const cuCount = entities.filter(e => e.type === 'Cu').length;
+
+        let statusHTML = "";
+        let canFilter = false;
+
+        if (cuCount === 0 && hCount === 0 && solidCount === 0) {
+            statusHTML = `<span class="text-gray-500">空烧杯。请加入酸和碳酸铜。</span>`;
+        } else if (hCount > 0 && solidCount > 0) {
+            statusHTML = `<span class="text-orange-600">⚠️ 反应进行中...</span>`;
+        } else if (hCount > 0 && solidCount === 0) {
+            statusHTML = `<span class="text-red-600">❌ 酸过量 (Impure)</span><br>溶液中含有剩余的 HCl。无法通过过滤分离。请加入更多碳酸铜。`;
+        } else if (hCount === 0 && solidCount > 0) {
+            statusHTML = `<span class="text-emerald-600">✅ 反应完成 (Ready)</span><br>酸已耗尽，底部有固体剩余。<br><strong>现在可以过滤！</strong>`;
+            canFilter = true;
+        } else if (hCount === 0 && solidCount === 0 && cuCount > 0) {
+            statusHTML = `<span class="text-blue-600">恰好完全反应。</span>`;
+        }
+
+        ui.analysis.innerHTML = statusHTML;
+        
+        if (canFilter) {
+            ui.btnFilter.disabled = false;
+            ui.btnFilter.classList.remove('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
+            ui.btnFilter.classList.add('bg-blue-500', 'hover:bg-blue-600', 'text-white');
+        } else {
+            ui.btnFilter.disabled = true;
+            ui.btnFilter.classList.add('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
+            ui.btnFilter.classList.remove('bg-blue-500', 'hover:bg-blue-600', 'text-white');
+        }
+    }
+
+    function filterSolution() {
+        // Remove all solids
+        entities = entities.filter(e => e.type !== 'CuCO3');
+        isFiltered = true;
+        
+        // Show success message
+        ui.analysis.innerHTML = `<span class="text-emerald-700 font-bold text-lg">🎉 成功!</span><br>已滤去固体。获得纯净的 <span class="text-blue-600 font-bold">CuCl₂</span> 溶液。`;
+        
+        // Reset filter button
+        ui.btnFilter.disabled = true;
+        ui.btnFilter.classList.add('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
+        ui.btnFilter.classList.remove('bg-blue-500', 'hover:bg-blue-600', 'text-white');
+        
+        // Visual effect
+        effects.push(new VisualEffect(width/2, height/2, "过滤完成"));
+    }
+
+    function drawBeaker() {
+        ctx.save();
+        
+        // Dynamic water color based on Cu2+ concentration
+        const cuCount = entities.filter(e => e.type === 'Cu').length;
+        const maxCu = 50; 
+        const opacity = Math.min(0.8, 0.1 + (cuCount / maxCu) * 0.6);
+        
+        const liquidTop = beaker.waterLevel;
+        const liquidH = beaker.y + beaker.h - beaker.wallThick - liquidTop;
+        
+        // Solution Color: Blue-Green for CuCl2
+        ctx.fillStyle = `rgba(0, 150, 136, ${opacity})`; 
+        ctx.fillRect(beaker.x + beaker.wallThick, liquidTop, beaker.w - 2*beaker.wallThick, liquidH);
+
+        // Glass
+        ctx.lineWidth = beaker.wallThick;
+        ctx.strokeStyle = "rgba(189, 189, 189, 0.6)"; 
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(beaker.x, beaker.y); 
+        ctx.lineTo(beaker.x, beaker.y + beaker.h);
+        ctx.lineTo(beaker.x + beaker.w, beaker.y + beaker.h);
+        ctx.lineTo(beaker.x + beaker.w, beaker.y);
+        ctx.stroke();
+        
+        // Ticks
+        ctx.strokeStyle = "rgba(189, 189, 189, 0.8)";
+        ctx.lineWidth = 2;
+        for(let i=1; i<4; i++) {
+            const y = beaker.y + beaker.h - (i * beaker.h / 4);
+            ctx.beginPath(); ctx.moveTo(beaker.x + 10, y); ctx.lineTo(beaker.x + 30, y); ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        
+        drawBeaker();
+        handleInteractions();
+        
+        entities.forEach(e => {
+            if (e.spectator) { e.update(); e.draw(); }
+        });
+        entities.forEach(e => {
+            if (!e.spectator && !e.isSolid && !e.isGas) { e.update(); e.draw(); }
+        });
+        entities.forEach(e => {
+            if (e.isSolid || e.isGas) { e.update(); e.draw(); }
+        });
+        
+        effects.forEach((e, i) => {
+            e.update(); e.draw();
+            if (e.life <= 0) effects.splice(i, 1);
+        });
+
+        // Periodic check to update UI based on particle counts
+        if (!isFiltered) checkStatus();
+
+        requestAnimationFrame(animate);
+    }
+
+    // Init
+    resize();
+    
+    // UI Bindings
+    document.getElementById('btn-add-hcl').onclick = addHCl;
+    document.getElementById('btn-add-cuco3').onclick = addCuCO3;
+    document.getElementById('btn-filter').onclick = filterSolution;
+    document.getElementById('btn-reset').onclick = () => { 
+        entities = []; 
+        isFiltered = false; 
+        checkStatus(); 
+    };
+
+    animate();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AQA AL Chemistry - Mass Spectrometer 工作原理模型</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #1a1a2e; color: #eee;
+    display: flex; justify-content: center; align-items: center;
+    min-height: 100vh; padding: 20px;
+  }
+  .container {
+    max-width: 1300px; width: 100%;
+    background: #16213e; border-radius: 20px;
+    padding: 25px; box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  }
+  h1 {
+    text-align: center; font-size: 24px; margin-bottom: 6px;
+    background: linear-gradient(135deg, #00d2ff, #3a7bd5);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .subtitle {
+    text-align: center; color: #8899aa; font-size: 13px;
+    margin-bottom: 15px;
+  }
+  .main-area {
+    display: flex; gap: 20px; flex-wrap: wrap;
+  }
+  .viz-panel {
+    flex: 2; min-width: 700px;
+    background: #0f3460; border-radius: 15px;
+    padding: 15px; position: relative;
+  }
+  .info-panel {
+    flex: 1; min-width: 280px;
+    background: #0f3460; border-radius: 15px;
+    padding: 15px; display: flex; flex-direction: column;
+  }
+  canvas {
+    width: 100%; height: auto; display: block;
+    border-radius: 10px; background: #0a1628;
+    cursor: pointer;
+  }
+  .controls {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-top: 12px; align-items: center;
+  }
+  button {
+    background: #1a5276; color: #eee; border: none;
+    padding: 8px 16px; border-radius: 8px;
+    font-size: 13px; cursor: pointer; transition: all 0.2s;
+    font-family: inherit;
+  }
+  button:hover { background: #2980b9; transform: translateY(-1px); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+  button.primary { background: #e67e22; }
+  button.primary:hover { background: #f39c12; }
+  button.active { background: #27ae60; }
+  button.danger { background: #c0392b; }
+  button.danger:hover { background: #e74c3c; }
+  .mode-tabs {
+    display: flex; gap: 0; margin-bottom: 10px;
+  }
+  .mode-tab {
+    padding: 6px 14px; font-size: 12px; border-radius: 6px 6px 0 0;
+    background: #1a1a3e; cursor: pointer; transition: 0.2s;
+    border: 1px solid #2a2a5e; border-bottom: none;
+  }
+  .mode-tab.active { background: #0f3460; color: #00d2ff; font-weight: bold; }
+  .step-indicator {
+    display: flex; gap: 4px; margin: 8px 0;
+  }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: #1a1a3e; display: flex; align-items: center;
+    justify-content: center; font-size: 11px; font-weight: bold;
+    border: 2px solid #2a2a5e; transition: 0.3s;
+  }
+  .step-dot.active { border-color: #00d2ff; background: #0f3460; color: #00d2ff; }
+  .step-dot.done { border-color: #27ae60; background: #27ae60; color: #fff; }
+  .info-box {
+    flex: 1; overflow-y: auto;
+    background: #0a1628; border-radius: 10px;
+    padding: 12px; margin-top: 8px; font-size: 13px; line-height: 1.6;
+  }
+  .info-box h3 { color: #00d2ff; font-size: 15px; margin-bottom: 6px; }
+  .info-box .highlight { color: #f39c12; font-weight: bold; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; margin-top: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .spectrum-container {
+    margin-top: 15px; padding: 10px;
+    background: #0a1628; border-radius: 10px;
+  }
+  .spectrum-container h3 { color: #00d2ff; font-size: 14px; margin-bottom: 6px; }
+  .speed-control {
+    display: flex; align-items: center; gap: 8px; margin-left: auto;
+  }
+  .speed-control input { width: 80px; }
+  label { font-size: 12px; color: #8899aa; }
+  .result-data {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 4px 16px; font-size: 12px; margin-top: 6px;
+  }
+  .result-data .val { color: #00d2ff; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Mass Spectrometer 质谱仪工作原理</h1>
+  <p class="subtitle">AQA A-Level Chemistry | Interactive Model 交互式模型</p>
+
+  <div class="mode-tabs">
+    <div class="mode-tab active" data-mode="ei" onclick="setMode('ei')">
+      &#9889; Electron Impact (EI)
+    </div>
+    <div class="mode-tab" data-mode="esi" onclick="setMode('esi')">
+      &#127788; Electrospray Ionisation (ESI)
+    </div>
+  </div>
+
+  <div class="main-area">
+    <div class="viz-panel">
+      <canvas id="canvas" width="1100" height="480"></canvas>
+
+      <div class="step-indicator">
+        <div class="step-dot" data-step="0">1</div>
+        <div class="step-dot" data-step="1">2</div>
+        <div class="step-dot" data-step="2">3</div>
+        <div class="step-dot" data-step="3">4</div>
+        <div class="step-dot" data-step="4">5</div>
+        <div class="step-dot" data-step="5">6</div>
+      </div>
+
+      <div class="controls">
+        <button class="primary" id="btnPlay">&#9654; 自动播放</button>
+        <button id="btnPrev">&#9664; 上一步</button>
+        <button id="btnNext">下一步 &#9654;</button>
+        <button class="danger" id="btnReset">&#8635; 重置</button>
+        <div class="speed-control">
+          <label>速度</label>
+          <input type="range" id="speedRange" min="1" max="10" value="5">
+        </div>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#f39c12"></span> 微粒/离子</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#e74c3c"></span> 电子</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#2ecc71"></span> 溶剂液滴</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#e91e63"></span> 轻离子 (m/z 小)</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#9b59b6"></span> 重离子 (m/z 大)</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#00d2ff"></span> 电场/电压</span>
+      </div>
+    </div>
+
+    <div class="info-panel">
+      <div class="info-box" id="infoBox">
+        <h3 id="stepTitle">Step 0: 准备开始</h3>
+        <p id="stepDesc">点击"下一步"或播放按钮，逐步观察质谱仪的工作原理。你可以切换 Electron Impact (EI) 和 Electrospray Ionisation (ESI) 两种离子化方式。</p>
+        <div id="extraInfo"></div>
+      </div>
+
+      <div class="spectrum-container" id="spectrumPanel">
+        <h3>Mass Spectrum 质谱图</h3>
+        <canvas id="spectrumCanvas" width="400" height="200"></canvas>
+        <div id="specData" class="result-data"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ CONFIG ============
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const sc = document.getElementById('spectrumCanvas');
+const sctx = sc.getContext('2d');
+
+const W = 1100, H = 480;
+canvas.width = W; canvas.height = H;
+sc.width = 400; sc.height = 200;
+
+// ============ STATE ============
+let mode = 'ei'; // 'ei' or 'esi'
+let currentStep = 0; // 0=vacuum, 1=ionisation, 2=accel, 3=drift, 4=detection, 5=spectrum
+let playing = false;
+let playTimer = null;
+let speed = 5;
+let animTime = 0;
+let particles = [];
+let droplets = [];
+let electrons = [];
+let spectrumData = {};
+let detectedIons = [];
+let flightLog = [];
+
+// Sample settings
+const SAMPLES = mode === 'ei'
+  ? [
+      { name: '¹²C', mass: 12, charge: 1, color: '#e91e63', abundance: 100 },
+      { name: '¹³C', mass: 13, charge: 1, color: '#9b59b6', abundance: 10 },
+    ]
+  : [
+      { name: 'C₆H₁₂O₆+H', mass: 181, charge: 1, color: '#e91e63', abundance: 100 },
+      { name: 'C₆H₁₂O₆+Na', mass: 203, charge: 1, color: '#9b59b6', abundance: 15 },
+    ];
+
+let stepStartTime = 0;
+let stepAnimating = false;
+let stepAnimDone = false;
+let beamParticles = [];
+
+// Layout positions
+const LAYOUT = {
+  sample: { x: 40, y: 220 },
+  ionChamber: { x: 130, y: 240, w: 90, h: 70 },
+  accelPlate1: { x: 280, y: 180, w: 8, h: 120 },
+  accelPlate2: { x: 330, y: 180, w: 8, h: 120 },
+  flightTube: { x: 340, y: 200, w: 400, h: 80 },
+  detector: { x: 760, y: 175, w: 20, h: 130 },
+  vacuumPump: { x: 850, y: 360 },
+  filament: { x: 155, y: 195 },
+  needle: { x: 150, y: 260 },
+  hvSupply: { x: 50, y: 340 },
+};
+
+// ============ MODE SWITCH ============
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('.mode-tab').forEach(el => el.classList.toggle('active', el.dataset.mode === m));
+  resetAll();
+}
+
+// ============ DRAWING HELPERS ============
+function drawLabel(x, y, text, color) {
+  ctx.fillStyle = color || '#8899aa';
+  ctx.font = '11px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(text, x, y);
+}
+
+function drawRoundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y);
+  ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r);
+  ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h);
+  ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r);
+  ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+
+// ============ STAGE DESCRIPTIONS ============
+const STAGE_INFO = {
+  ei: [
+    { title: 'Step 1: Vacuum System 真空状态',
+      desc: '整个质谱仪内部处于高真空状态 (约10⁻⁶ Torr)。真空非常重要：它可以防止离子与空气中的气体分子碰撞而偏转或减速，确保离子能沿直线飞行到达检测器。',
+      extra: '如果没有真空：离子会在数微秒内与气体分子碰撞数十次，无法到达检测器。' },
+    { title: 'Step 2: Ionisation (EI) 电子轰击离子化',
+      desc: '样品被加热气化后进入离子化室。由发热灯丝(filament)发射高能电子 (70 eV)，电子撞击样品分子(M)，使其失去一个电子，形成带正电的分子离子：<br><b>M(g) + e⁻ → M⁺(g) + 2e⁻</b><br>分子离子可能进一步碎裂成碎片离子。',
+      extra: 'EI法会产生较多碎片，适合结构分析。所有正离子被微弱的正电压推出离子化室。' },
+    { title: 'Step 3: Acceleration 加速',
+      desc: '正离子被吸引向带负电的加速板(negatively charged plate)。离子穿过狭缝时被高压电场加速。<br><br>动能公式：<b>KE = ½mv² = eV</b><br>其中 V 为加速电压。<br><br>要点：<span class="highlight">轻离子和电荷高的离子获得更高的速度</span>。所有带相同电荷的离子获得相同的动能。',
+      extra: '加速电压通常为 4-10 kV。' },
+    { title: 'Step 4: Ion Drift 离子漂移 (飞行管)',
+      desc: '所有具有相同动能的离子穿过负极端的小孔，形成离子束，进入飞行管(flight tube)。<br><br>公式：<b>KE = ½mv² = eV → v = √(2eV/m)</b><br><br>由于动能相同，<span class="highlight">质量越小的离子速度越快</span>，先到达检测器。<br><br>飞行时间：<b>t = d / v = d √(m / 2eV)</b>',
+      extra: '从 m/z 可以计算出离子的质荷比 (mass/charge ratio)。' },
+    { title: 'Step 5: Detection 检测',
+      desc: '当离子到达检测器时，正离子从检测器获得一个电子而中和（<b>M⁺ + e⁻ → M</b>），产生电流。<br><br>检测器记录每个离子的<span class="highlight">飞行时间(Time of Flight, ToF)</span>。<br><br>轻离子先到达（速度更快），重离子后到达。检测器将飞行时间转换为质荷比(m/z)。',
+      extra: '电流大小与离子数量成正比，用于计算相对丰度(relative abundance)。' },
+    { title: 'Step 6: Mass Spectrum 质谱分析',
+      desc: '最后生成质谱图：<br><br>• <b>横轴 (x轴)</b>：m/z (质荷比)，反映相对原子/分子质量<br>• <b>纵轴 (y轴)</b>：相对丰度 (Relative Abundance %)<br><br>• 最高的峰设为基峰(base peak)，定标为100%<br>• 其他峰按比例计算相对丰度<br>• 可用于确定相对原子质量、分子结构、同位素比例等',
+      extra: '应用：确定相对原子质量、鉴别化合物、分析同位素丰度、蛋白质鉴定等。' },
+  ],
+  esi: [
+    { title: 'Step 1: Vacuum System 真空状态',
+      desc: '整个质谱仪内部处于高真空状态 (约10⁻⁶ Torr)。真空非常重要：它可以防止离子与空气中的气体分子碰撞而偏转或减速，确保离子能沿直线飞行到达检测器。',
+      extra: '如果没有真空：离子会在数微秒内与气体分子碰撞数十次，无法到达检测器。' },
+    { title: 'Step 2: Ionisation (ESI) 电喷雾离子化',
+      desc: '样品溶解在挥发性溶剂(如甲醇/水+乙酸)中，通过一根连接高压电源正极的细针(needle)喷出。<br><br>高压(3-5 kV)使液滴带上正电荷（液滴失去电子给电源）。<br><br>溶剂在真空中迅速蒸发，液滴不断变小，电荷密度增大，最终液滴表面电荷斥力超过表面张力（库仑爆炸），产生单个带正电的离子：<br><b>[M+H]⁺</b>',
+      extra: 'ESI被称为"软离子化"技术，几乎不产生碎片，适合分析大分子(蛋白质、多肽、药物等)。' },
+    { title: 'Step 3: Acceleration 加速',
+      desc: '正离子被吸引向带负电的加速板(negatively charged plate)。离子穿过狭缝时被高压电场加速。<br><br>动能公式：<b>KE = ½mv² = eV</b><br>其中 V 为加速电压。<br><br>要点：<span class="highlight">轻离子和电荷高的离子获得更高的速度</span>。所有带相同电荷的离子获得相同的动能。',
+      extra: '加速电压通常为 4-10 kV。' },
+    { title: 'Step 4: Ion Drift 离子漂移 (飞行管)',
+      desc: '所有具有相同动能的离子穿过负极端的小孔，形成离子束，进入飞行管(flight tube)。<br><br>公式：<b>KE = ½mv² = eV → v = √(2eV/m)</b><br><br>由于动能相同，<span class="highlight">质量越小的离子速度越快</span>，先到达检测器。<br><br>飞行时间：<b>t = d / v = d √(m / 2eV)</b>',
+      extra: '从 m/z 可以计算出离子的质荷比 (mass/charge ratio)。' },
+    { title: 'Step 5: Detection 检测',
+      desc: '当离子到达检测器时，正离子从检测器获得一个电子而中和（<b>M⁺ + e⁻ → M</b>），产生电流。<br><br>检测器记录每个离子的<span class="highlight">飞行时间(Time of Flight, ToF)</span>。<br><br>轻离子先到达（速度更快），重离子后到达。检测器将飞行时间转换为质荷比(m/z)。',
+      extra: '电流大小与离子数量成正比，用于计算相对丰度(relative abundance)。' },
+    { title: 'Step 6: Mass Spectrum 质谱分析',
+      desc: '最后生成质谱图：<br><br>• <b>横轴 (x轴)</b>：m/z (质荷比)，反映相对分子质量<br>• <b>纵轴 (y轴)</b>：相对丰度 (Relative Abundance %)<br><br>• 最高的峰设为基峰(base peak)，定标为100%<br>• 其他峰按比例计算相对丰度<br>• ESI常产生 [M+H]⁺, [M+Na]⁺ 等离子峰',
+      extra: 'ESI常用于：蛋白质组学、药物代谢研究、生物大分子分析等。' },
+  ]
+};
+
+// ============ PARTICLES ============
+class Particle {
+  constructor(x, y, mass, charge, color, name, speed) {
+    this.x = x; this.y = y;
+    this.mass = mass;
+    this.charge = charge;
+    this.color = color;
+    this.name = name;
+    this.baseSpeed = speed || 1;
+    this.vx = 0; this.vy = 0;
+    this.radius = 4 + (mass > 100 ? 3 : mass > 50 ? 2 : 0);
+    this.trail = [];
+    this.detected = false;
+    this.flightTime = 0;
+    this.startX = x;
+  }
+}
+
+class Droplet {
+  constructor(x, y, size, charge) {
+    this.x = x; this.y = y;
+    this.size = size;
+    this.charge = charge;
+    this.life = 0;
+    this.maxLife = 80 + Math.random() * 40;
+  }
+}
+
+// ============ RESET ============
+function resetAll() {
+  stopPlay();
+  currentStep = 0;
+  animTime = 0;
+  particles = [];
+  droplets = [];
+  electrons = [];
+  detectedIons = [];
+  beamParticles = [];
+  flightLog = [];
+  spectrumData = {};
+  stepAnimating = false;
+  stepAnimDone = false;
+  updateStepDots();
+  updateInfo();
+  draw();
+}
+
+// ============ STEP CONTROL ============
+function goToStep(n) {
+  if (n < 0 || n > 5) return;
+  currentStep = n;
+  stepAnimating = false;
+  stepAnimDone = false;
+  animTime = 0;
+  particles = [];
+  droplets = [];
+  electrons = [];
+  beamParticles = [];
+  if (n === 0) { detectedIons = []; flightLog = []; spectrumData = {}; }
+  if (n < 4) { detectedIons = []; flightLog = []; spectrumData = {}; }
+  if (n < 5) { /* spectrum data kept until step 5 reset */ }
+  updateStepDots();
+  updateInfo();
+  draw();
+  drawSpectrum();
+}
+
+function nextStep() {
+  if (currentStep < 5) {
+    goToStep(currentStep + 1);
+  } else {
+    stopPlay();
+  }
+}
+
+function prevStep() {
+  if (currentStep > 0) {
+    goToStep(currentStep - 1);
+  }
+}
+
+function togglePlay() {
+  if (playing) {
+    stopPlay();
+  } else {
+    startPlay();
+  }
+}
+
+function startPlay() {
+  if (playing) return;
+  playing = true;
+  document.getElementById('btnPlay').textContent = '⏸ 暂停';
+  document.getElementById('btnPlay').classList.add('active');
+  stepAnimating = true;
+  stepAnimDone = false;
+  animTime = 0;
+  initStepAnimation();
+  playTimer = requestAnimationFrame(playLoop);
+}
+
+function stopPlay() {
+  playing = false;
+  if (playTimer) { cancelAnimationFrame(playTimer); playTimer = null; }
+  document.getElementById('btnPlay').textContent = '&#9654; 自动播放';
+  document.getElementById('btnPlay').classList.remove('active');
+}
+
+// ============ STEP ANIMATIONS ============
+function initStepAnimation() {
+  particles = [];
+  droplets = [];
+  electrons = [];
+  beamParticles = [];
+  const L = LAYOUT;
+
+  if (currentStep === 0) {
+    // Vacuum: show air molecules disappearing
+    stepAnimating = true;
+    stepAnimDone = false;
+    animTime = 0;
+  } else if (currentStep === 1) {
+    // Ionisation
+    const samples = mode === 'ei'
+      ? [{m:12,c:'#f39c12'},{m:12,c:'#f39c12'},{m:13,c:'#9b59b6'}]
+      : [{m:181,c:'#e91e63'},{m:181,c:'#e91e63'},{m:203,c:'#9b59b6'}];
+    if (mode === 'ei') {
+      // Electrons from filament
+      for (let i = 0; i < 5; i++) {
+        electrons.push({ x: L.filament.x, y: L.filament.y - 5 + i * 3, vx: 2 + Math.random(), vy: (Math.random()-0.5)*0.5, life: 60 });
+      }
+      // Neutral particles
+      samples.forEach((s, i) => {
+        const p = new Particle(L.ionChamber.x + 20 + i*25, L.ionChamber.y + 20 + (i%2)*15, s.m, 0, s.c, s.m+'u', 0);
+        particles.push(p);
+      });
+    } else {
+      // ESI: droplets
+      for (let i = 0; i < 5; i++) {
+        droplets.push(new Droplet(L.needle.x - 10 + i * 3, L.needle.y - 10 + (i%3)*8, 8 + Math.random()*6, 1));
+      }
+      // ions inside droplets (hidden)
+    }
+  } else if (currentStep === 2) {
+    // Acceleration
+    const samples = mode === 'ei'
+      ? [{m:12,c:'#e91e63',name:'¹²C⁺'},{m:12,c:'#e91e63',name:'¹²C⁺'},{m:13,c:'#9b59b6',name:'¹³C⁺'}]
+      : [{m:181,c:'#e91e63',name:'M+H⁺'},{m:181,c:'#e91e63',name:'M+H⁺'},{m:203,c:'#9b59b6',name:'M+Na⁺'}];
+    samples.forEach((s, i) => {
+      const p = new Particle(L.accelPlate1.x - 30 - i*20, L.accelPlate1.y + 30 + i*25, s.m, 1, s.c, s.name, 0);
+      p.vx = 0.3 + s.m/1000;
+      particles.push(p);
+    });
+  } else if (currentStep === 3) {
+    // Drift - create beam of ions with different speeds
+    const samples = mode === 'ei'
+      ? [{m:12,c:'#e91e63',name:'¹²C⁺'},{m:13,c:'#9b59b6',name:'¹³C⁺'}]
+      : [{m:181,c:'#e91e63',name:'M+H⁺'},{m:203,c:'#9b59b6',name:'M+Na⁺'}];
+    // Light ions (faster)
+    for (let i = 0; i < 3; i++) {
+      const s = samples[0];
+      const spd = 2.0 * Math.sqrt(100/s.m) * (0.9 + Math.random()*0.2);
+      const p = new Particle(L.flightTube.x + 10, L.flightTube.y + 15 + i*20, s.m, 1, s.c, s.name, spd);
+      p.vx = spd;
+      particles.push(p);
+    }
+    // Heavy ions (slower)
+    for (let i = 0; i < 2; i++) {
+      const s = samples[1];
+      const spd = 2.0 * Math.sqrt(100/s.m) * (0.9 + Math.random()*0.2);
+      const p = new Particle(L.flightTube.x + 10, L.flightTube.y + 35 + i*20, s.m, 1, s.c, s.name, spd);
+      p.vx = spd;
+      particles.push(p);
+    }
+  } else if (currentStep === 4) {
+    // Detection - show ions arriving
+    const samples = mode === 'ei'
+      ? [{m:12,c:'#e91e63',name:'¹²C⁺',t:1},{m:12,c:'#e91e63',name:'¹²C⁺',t:1.1},{m:13,c:'#9b59b6',name:'¹³C⁺',t:1.8},{m:13,c:'#9b59b6',name:'¹³C⁺',t:2.0}]
+      : [{m:181,c:'#e91e63',name:'M+H⁺',t:1},{m:181,c:'#e91e63',name:'M+H⁺',t:1.2},{m:203,c:'#9b59b6',name:'M+Na⁺',t:1.9},{m:203,c:'#9b59b6',name:'M+Na⁺',t:2.1}];
+    particles = [];
+    samples.forEach((s, i) => {
+      const delay = s.t * 30;
+      const p = new Particle(L.detector.x + 30 + delay, L.detector.y - 20 + i*30, s.m, 1, s.c, s.name, 2);
+      p.vx = -1.5;
+      p.detected = false;
+      particles.push(p);
+    });
+  } else if (currentStep === 5) {
+    // Spectrum - generate data
+    generateSpectrumData();
+    stepAnimDone = true;
+    draw();
+    drawSpectrum();
+    updateInfo();
+    return;
+  }
+  stepAnimating = true;
+  stepAnimDone = false;
+  animTime = 0;
+}
+
+function generateSpectrumData() {
+  const samples = mode === 'ei'
+    ? [
+        { name: '¹²C⁺', mz: 12, abundance: 100, color: '#e91e63' },
+        { name: '¹³C⁺', mz: 13, abundance: 10.5, color: '#9b59b6' },
+      ]
+    : [
+        { name: '[M+H]⁺', mz: 181, abundance: 100, color: '#e91e63' },
+        { name: '[M+Na]⁺', mz: 203, abundance: 15, color: '#9b59b6' },
+      ];
+  const totalAbund = samples.reduce((s, x) => s + x.abundance, 0);
+  spectrumData = {
+    samples: samples,
+    total: totalAbund,
+    mostAbundant: samples[0],
+  };
+  // Add some detection data
+  detectedIons = [];
+  samples.forEach(s => {
+    const count = Math.round(s.abundance / 5) + 1;
+    for (let i = 0; i < count; i++) {
+      detectedIons.push({ mz: s.mz, name: s.name, color: s.color, time: s.mz * 0.15 + Math.random()*0.1 });
+    }
+  });
+}
+
+// ============ PLAY LOOP ============
+let lastTime = 0;
+
+function playLoop(timestamp) {
+  if (!playing) return;
+  const dt = lastTime ? (timestamp - lastTime) / 16 : 1;
+  lastTime = timestamp;
+
+  const speedFactor = speed / 5;
+  animTime += dt * speedFactor;
+
+  updateAnimation(dt * speedFactor);
+
+  draw();
+  drawSpectrum();
+
+  if (!stepAnimDone) {
+    playTimer = requestAnimationFrame(playLoop);
+  } else {
+    // Move to next step
+    if (currentStep < 5) {
+      goToStep(currentStep + 1);
+      // If still playing, continue
+      if (playing) {
+        stepAnimating = true;
+        stepAnimDone = false;
+        animTime = 0;
+        initStepAnimation();
+        playTimer = requestAnimationFrame(playLoop);
+      }
+    } else {
+      stopPlay();
+    }
+  }
+}
+
+function updateAnimation(dt) {
+  const L = LAYOUT;
+  const duration = 80; // base duration
+
+  if (currentStep === 0) {
+    // Vacuum: air molecules fade out
+    if (animTime > duration * 0.3) {
+      stepAnimDone = true;
+    }
+  } else if (currentStep === 1) {
+    if (mode === 'ei') {
+      // Move electrons, turn neutrals into ions
+      electrons.forEach(e => { e.x += e.vx * dt; e.y += e.vy * dt; e.life -= dt; });
+      electrons = electrons.filter(e => e.life > 0 && e.x < L.ionChamber.x + L.ionChamber.w);
+
+      particles.forEach(p => { p.color = '#e91e63'; p.charge = 1; });
+
+      if (animTime > duration) stepAnimDone = true;
+    } else {
+      // ESI: droplets shrink, release ions
+      droplets.forEach(d => {
+        d.life += dt;
+        d.size = Math.max(2, d.size - 0.05 * dt);
+        d.x -= 0.2 * dt;
+      });
+      if (animTime > duration * 0.8) {
+        // Release ions
+        if (particles.length === 0) {
+          const samples = [{m:181,c:'#e91e63',n:'M+H⁺'},{m:203,c:'#9b59b6',n:'M+Na⁺'}];
+          samples.forEach((s,i) => {
+            const p = new Particle(L.ionChamber.x + 40, L.ionChamber.y + 15 + i*30, s.m, 1, s.c, s.n, 0);
+            particles.push(p);
+          });
+        }
+        if (animTime > duration * 1.5) stepAnimDone = true;
+      }
+    }
+  } else if (currentStep === 2) {
+    // Acceleration
+    particles.forEach(p => {
+      p.vx += 0.05 * dt;
+      p.x += p.vx * dt;
+      // Trail
+      p.trail.push({x:p.x, y:p.y});
+      if (p.trail.length > 15) p.trail.shift();
+    });
+    if (particles.some(p => p.x > L.accelPlate2.x + 30)) {
+      stepAnimDone = true;
+    }
+  } else if (currentStep === 3) {
+    // Drift - ions move at different speeds
+    particles.forEach(p => {
+      p.x += p.vx * dt;
+      p.flightTime += dt;
+      p.trail.push({x:p.x, y:p.y});
+      if (p.trail.length > 20) p.trail.shift();
+    });
+    // Check if any reached detector
+    particles.forEach(p => {
+      if (p.x > L.detector.x - 5 && !p.detected) {
+        p.detected = true;
+        detectedIons.push({mz: p.mass, time: p.flightTime, name: p.name, color: p.color});
+      }
+    });
+    if (particles.every(p => p.detected || p.x > L.detector.x + 50)) {
+      stepAnimDone = true;
+    }
+  } else if (currentStep === 4) {
+    // Detection
+    particles.forEach(p => {
+      p.x += p.vx * dt;
+      if (p.x < L.detector.x + 10 && !p.detected) {
+        p.detected = true;
+        detectedIons.push({mz: p.mass, time: Math.abs(p.x - L.detector.x)/1.5, name: p.name, color: p.color});
+      }
+    });
+    if (particles.every(p => p.detected || p.x < L.detector.x - 50)) {
+      stepAnimDone = true;
+    }
+  }
+}
+
+// ============ DRAW MAIN ============
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  const L = LAYOUT;
+
+  // ---- Background ----
+  ctx.fillStyle = '#0a1628';
+  ctx.fillRect(0, 0, W, H);
+
+  // ---- Vacuum chamber outline ----
+  ctx.strokeStyle = '#1a3a5a';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 5]);
+  drawRoundRect(20, 120, 800, 230, 15);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  drawLabel(30, 140, 'Vacuum Chamber (真空腔)', '#2a5a8a');
+
+  // ---- Vacuum pump ----
+  ctx.fillStyle = '#1a3a5a';
+  drawRoundRect(830, 330, 70, 50, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#3a6a9a';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  drawLabel(865, 350, 'Vacuum', '#00d2ff');
+  drawLabel(865, 363, 'Pump 真空泵', '#00d2ff');
+  // Arrows
+  ctx.fillStyle = '#2a5a8a';
+  for (let i = 0; i < 3; i++) {
+    const ax = 845 + i*20;
+    ctx.beginPath();
+    ctx.moveTo(ax, 380); ctx.lineTo(ax+6, 388); ctx.lineTo(ax-6, 388);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // ---- Step 0: Vacuum particles (fading) ----
+  if (currentStep === 0) {
+    const fadeOut = Math.max(0, 1 - animTime / (80 * 0.3));
+    for (let i = 0; i < 30; i++) {
+      const bx = 60 + (i*37 + 13) % 720;
+      const by = 150 + (i*53 + 7) % 180;
+      ctx.fillStyle = `rgba(100, 150, 200, ${0.3 * fadeOut})`;
+      ctx.font = '8px Arial';
+      ctx.fillText('●', bx, by);
+    }
+    if (animTime > 80 * 0.3) {
+      ctx.fillStyle = '#00d2ff';
+      ctx.font = '14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('✓ 真空已建立 (Vacuum achieved)', 400, 280);
+    }
+  }
+
+  // ---- Sample inlet ----
+  ctx.fillStyle = '#2a3a5a';
+  drawRoundRect(L.sample.x, L.sample.y - 20, 50, 40, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#4a6a8a';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  drawLabel(L.sample.x + 25, L.sample.y - 2, 'Sample 样品', '#aaa');
+
+  // Arrow from sample to ion chamber
+  ctx.strokeStyle = '#4a6a8a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(L.sample.x + 50, L.sample.y);
+  ctx.lineTo(L.ionChamber.x, L.sample.y);
+  ctx.stroke();
+
+  // ---- Ionisation Chamber ----
+  ctx.fillStyle = '#0f2040';
+  drawRoundRect(L.ionChamber.x, L.ionChamber.y, L.ionChamber.w, L.ionChamber.h, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#3a7bd5';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  drawLabel(L.ionChamber.x + L.ionChamber.w/2, L.ionChamber.y - 8, 'Ionisation Chamber 离子化室', '#3a7bd5');
+
+  if (mode === 'ei') {
+    // Filament
+    ctx.strokeStyle = '#ff6b35';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(L.filament.x - 20, L.filament.y);
+    ctx.lineTo(L.filament.x + 20, L.filament.y);
+    ctx.stroke();
+    // Filament glow
+    const glow = Math.sin(animTime * 0.1) * 0.3 + 0.7;
+    ctx.fillStyle = `rgba(255, 107, 53, ${glow * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(L.filament.x, L.filament.y, 12, 0, Math.PI*2);
+    ctx.fill();
+    drawLabel(L.filament.x, L.filament.y - 12, 'Filament 灯丝 (~70eV)', '#ff6b35');
+
+    // Electrons (in step 1)
+    if (currentStep >= 1) {
+      electrons.forEach(e => {
+        ctx.fillStyle = '#e74c3c';
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, 2, 0, Math.PI*2);
+        ctx.fill();
+      });
+    }
+  } else {
+    // ESI: Needle
+    ctx.strokeStyle = '#aaa';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(L.needle.x - 25, L.needle.y);
+    ctx.lineTo(L.needle.x, L.needle.y);
+    ctx.stroke();
+    // Needle tip
+    ctx.fillStyle = '#aaa';
+    ctx.beginPath();
+    ctx.moveTo(L.needle.x, L.needle.y - 5);
+    ctx.lineTo(L.needle.x + 8, L.needle.y);
+    ctx.lineTo(L.needle.x, L.needle.y + 5);
+    ctx.closePath();
+    ctx.fill();
+    drawLabel(L.needle.x - 10, L.needle.y - 14, 'Needle 针 (+HV)', '#ff6b35');
+  }
+
+  // ---- HV Supply ----
+  ctx.fillStyle = '#1a1a3e';
+  drawRoundRect(L.hvSupply.x, L.hvSupply.y, 60, 30, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#ff6b35';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  drawLabel(L.hvSupply.x + 30, L.hvSupply.y + 12, mode === 'ei' ? 'HV (+)' : 'HV (+3-5kV)', '#ff6b35');
+
+  // Dr particles / droplets in ion chamber
+  if (currentStep === 1) {
+    if (mode === 'esi') {
+      droplets.forEach(d => {
+        const alpha = Math.max(0, 1 - d.life/d.maxLife);
+        ctx.fillStyle = `rgba(46, 204, 113, ${alpha * 0.5})`;
+        ctx.beginPath();
+        ctx.arc(d.x, d.y, d.size * 0.6, 0, Math.PI*2);
+        ctx.fill();
+        ctx.strokeStyle = `rgba(46, 204, 204, ${alpha})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // + signs on droplet
+        if (d.size > 4) {
+          ctx.fillStyle = '#fff';
+          ctx.font = '8px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText('+', d.x-2, d.y-3);
+          ctx.fillText('+', d.x+3, d.y+5);
+        }
+      });
+    }
+    // Show ions
+    particles.forEach(p => {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '9px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('+', p.x, p.y+3);
+    });
+  }
+
+  // ---- Acceleration plates ----
+  ctx.fillStyle = '#3a5a8a';
+  ctx.fillRect(L.accelPlate1.x, L.accelPlate1.y, L.accelPlate1.w, L.accelPlate1.h);
+  ctx.fillRect(L.accelPlate2.x, L.accelPlate2.y, L.accelPlate2.w, L.accelPlate2.h);
+  drawLabel(L.accelPlate1.x + L.accelPlate1.w/2, L.accelPlate1.y - 10, 'Plate (+) 正极', '#ff6b35');
+  drawLabel(L.accelPlate2.x + L.accelPlate2.w/2, L.accelPlate2.y - 10, 'Plate (-) 负极', '#00d2ff');
+  // Gap label
+  drawLabel(L.accelPlate1.x + (L.accelPlate2.x-L.accelPlate1.x)/2 + L.accelPlate1.w, L.accelPlate2.y + L.accelPlate2.h + 15, '加速电场 E', '#00d2ff');
+  // Electric field arrows
+  for (let i = 0; i < 3; i++) {
+    const ey = L.accelPlate1.y + 20 + i*35;
+    const sx = L.accelPlate1.x + L.accelPlate1.w + 5;
+    ctx.strokeStyle = 'rgba(0, 210, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(sx, ey);
+    ctx.lineTo(sx + 30 + i*5, ey);
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(0, 210, 255, 0.4)';
+    ctx.beginPath();
+    ctx.moveTo(sx + 35 + i*5, ey);
+    ctx.lineTo(sx + 28 + i*5, ey-3);
+    ctx.lineTo(sx + 28 + i*5, ey+3);
+    ctx.closePath(); ctx.fill();
+  }
+
+  // ---- Accelerating ions (step 2) ----
+  if (currentStep === 2) {
+    particles.forEach(p => {
+      // Trail
+      p.trail.forEach((t, idx) => {
+        ctx.fillStyle = `rgba(233, 30, 99, ${idx/p.trail.length * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 2, 0, Math.PI*2);
+        ctx.fill();
+      });
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '8px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(p.name, p.x, p.y-10);
+    });
+    // Speed labels
+    if (animTime > 20) {
+      ctx.fillStyle = '#f39c12';
+      ctx.font = '11px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('KE = ½mv² = eV', 280, 310);
+      ctx.fillStyle = '#aaa';
+      ctx.font = '10px Arial';
+      ctx.fillText('轻离子 → 速度更快！', 280, 325);
+    }
+  }
+
+  // ---- Flight Tube ----
+  ctx.strokeStyle = '#2a4a6a';
+  ctx.lineWidth = 2;
+  drawRoundRect(L.flightTube.x - 5, L.flightTube.y - 5, L.flightTube.w + 10, L.flightTube.h + 10, 8);
+  ctx.stroke();
+  drawLabel(L.flightTube.x + L.flightTube.w/2, L.flightTube.y - 12, 'Flight Tube 飞行管 (Field-free region 无场区)', '#3a7bd5');
+
+  // ---- Drift particles (step 3) ----
+  if (currentStep === 3) {
+    particles.forEach(p => {
+      // Trail
+      p.trail.forEach((t, idx) => {
+        ctx.fillStyle = `${p.color}${Math.round(idx/p.trail.length * 40).toString(16).padStart(2, '0')}`;
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, 2, 0, Math.PI*2);
+        ctx.fill();
+      });
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = '8px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(p.name, p.x, p.y-12);
+      // Speed indicator
+      ctx.fillStyle = '#8899aa';
+      ctx.font = '9px Arial';
+      ctx.fillText(`v=${p.vx.toFixed(1)}`, p.x, p.y+14);
+    });
+    // Info overlay
+    ctx.fillStyle = 'rgba(0,0,0,0.7)';
+    drawRoundRect(L.flightTube.x + 120, L.flightTube.y - 30, 200, 22, 4);
+    ctx.fill();
+    ctx.fillStyle = '#f39c12';
+    ctx.font = '11px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('相同KE → 轻离子速度快', L.flightTube.x + 220, L.flightTube.y - 15);
+  }
+
+  // ---- Detector ----
+  ctx.fillStyle = '#1a3a4a';
+  drawRoundRect(L.detector.x, L.detector.y, L.detector.w, L.detector.h, 5);
+  ctx.fill();
+  ctx.strokeStyle = '#2ecc71';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  drawLabel(L.detector.x + L.detector.w/2, L.detector.y - 10, 'Detector 检测器', '#2ecc71');
+  drawLabel(L.detector.x + L.detector.w/2, L.detector.y + L.detector.h + 12, 'M⁺ + e⁻ → M', '#2ecc71');
+  drawLabel(L.detector.x + L.detector.w/2, L.detector.y + L.detector.h + 25, '电流 signal', '#f39c12');
+
+  // ---- Detection particles (step 4) ----
+  if (currentStep === 4) {
+    particles.forEach(p => {
+      ctx.fillStyle = p.detected ? '#2ecc71' : p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+      ctx.fill();
+      if (!p.detected) {
+        ctx.fillStyle = '#fff';
+        ctx.font = '8px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(p.name, p.x, p.y-10);
+      }
+    });
+    // Detected list
+    if (detectedIons.length > 0) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      drawRoundRect(790, 140, 150, 20 + detectedIons.length * 16, 5);
+      ctx.fill();
+      ctx.fillStyle = '#2ecc71';
+      ctx.font = '10px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText('Detected:', 795, 155);
+      detectedIons.forEach((ion, i) => {
+        ctx.fillStyle = ion.color;
+        ctx.fillText(`${ion.name} t=${ion.time.toFixed(1)}`, 795, 170 + i*16);
+      });
+    }
+  }
+
+  // ---- Ions in all chambers (from prev steps) ----
+  if (currentStep >= 2 && currentStep !== 3 && currentStep !== 4) {
+    particles.forEach(p => {
+      if (p.x > L.accelPlate1.x - 10) {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI*2);
+        ctx.fill();
+      }
+    });
+  }
+
+  // ---- Spectrometer label ----
+  ctx.fillStyle = '#3a7bd5';
+  ctx.font = '10px Arial';
+  ctx.textAlign = 'left';
+  ctx.fillText('Inlet', 50, 140);
+  ctx.fillText('Ionisation', 120, 140);
+  ctx.fillText('Acceleration', 270, 140);
+  ctx.fillText('Drift (ToF)', 440, 140);
+  ctx.fillText('Detection', 740, 140);
+
+  // ---- Step labels on top ----
+  const stages = ['Vacuum', 'Ionisation', 'Accel', 'Drift', 'Detect', 'Spectrum'];
+  ctx.fillStyle = currentStep >= 0 ? '#00d2ff' : '#445';
+  ctx.font = `bold ${currentStep === 0 ? 14 : 11}px Arial`;
+  ctx.textAlign = 'center';
+  ctx.fillText(stages[0], 85, 113);
+  ctx.fillStyle = currentStep >= 1 ? '#00d2ff' : '#445';
+  ctx.fillText(stages[1], 170, 113);
+  ctx.fillStyle = currentStep >= 2 ? '#00d2ff' : '#445';
+  ctx.fillText(stages[2], 310, 113);
+  ctx.fillStyle = currentStep >= 3 ? '#00d2ff' : '#445';
+  ctx.fillText(stages[3], 540, 113);
+  ctx.fillStyle = currentStep >= 4 ? '#00d2ff' : '#445';
+  ctx.fillText(stages[4], 770, 113);
+  ctx.fillStyle = currentStep >= 5 ? '#00d2ff' : '#445';
+  ctx.fillText(stages[5], 890, 113);
+
+  // Mode label
+  ctx.fillStyle = '#ff6b35';
+  ctx.font = '12px Arial';
+  ctx.textAlign = 'right';
+  ctx.fillText(mode === 'ei' ? 'Ionisation: Electron Impact' : 'Ionisation: Electrospray (ESI)', W - 20, 30);
+}
+
+// ============ DRAW SPECTRUM ============
+function drawSpectrum() {
+  const w = sc.width, h = sc.height;
+  sctx.clearRect(0, 0, w, h);
+  sctx.fillStyle = '#0a1628';
+  sctx.fillRect(0, 0, w, h);
+
+  if (!spectrumData.samples || spectrumData.samples.length === 0) {
+    sctx.fillStyle = '#445';
+    sctx.font = '14px Arial';
+    sctx.textAlign = 'center';
+    sctx.fillText('等待质谱数据...', w/2, h/2);
+    return;
+  }
+
+  const margin = { top: 15, bottom: 30, left: 40, right: 15 };
+  const plotW = w - margin.left - margin.right;
+  const plotH = h - margin.top - margin.bottom;
+
+  // Axes
+  sctx.strokeStyle = '#556';
+  sctx.lineWidth = 1;
+  sctx.beginPath();
+  sctx.moveTo(margin.left, margin.top);
+  sctx.lineTo(margin.left, margin.top + plotH);
+  sctx.lineTo(margin.left + plotW, margin.top + plotH);
+  sctx.stroke();
+
+  // Axis labels
+  sctx.fillStyle = '#8899aa';
+  sctx.font = '10px Arial';
+  sctx.textAlign = 'center';
+  sctx.fillText('m/z (质荷比)', margin.left + plotW/2, h - 5);
+  sctx.textAlign = 'center';
+  sctx.save();
+  sctx.translate(12, margin.top + plotH/2);
+  sctx.rotate(-Math.PI/2);
+  sctx.fillText('Relative Abundance 相对丰度 (%)', 0, 0);
+  sctx.restore();
+
+  // Y axis ticks
+  sctx.fillStyle = '#667';
+  sctx.font = '9px Arial';
+  sctx.textAlign = 'right';
+  for (let i = 0; i <= 4; i++) {
+    const val = i * 25;
+    const y = margin.top + plotH - (val / 100) * plotH;
+    sctx.fillText(val + '%', margin.left - 5, y + 3);
+    sctx.strokeStyle = '#2a2a4a';
+    sctx.lineWidth = 0.5;
+    sctx.beginPath();
+    sctx.moveTo(margin.left, y);
+    sctx.lineTo(margin.left + plotW, y);
+    sctx.stroke();
+  }
+
+  const samples = spectrumData.samples;
+  const maxMz = Math.max(...samples.map(s => s.mz)) * 1.2;
+  const minMz = Math.max(0, Math.min(...samples.map(s => s.mz)) * 0.8);
+
+  // Draw peaks (step 5 animation)
+  let peakProgress = currentStep >= 5 ? 1 : Math.min(1, animTime / 40);
+  if (currentStep < 5) peakProgress = 0;
+
+  samples.forEach((s, i) => {
+    const x = margin.left + ((s.mz - minMz) / (maxMz - minMz)) * plotW;
+    const peakH = (s.abundance / 100) * plotH * peakProgress;
+    const y = margin.top + plotH - peakH;
+
+    // Peak line
+    sctx.strokeStyle = s.color;
+    sctx.lineWidth = 3;
+    sctx.beginPath();
+    sctx.moveTo(x, margin.top + plotH);
+    sctx.lineTo(x, y);
+    sctx.stroke();
+
+    // Top circle
+    if (peakProgress > 0.05) {
+      sctx.fillStyle = s.color;
+      sctx.beginPath();
+      sctx.arc(x, y, 3, 0, Math.PI*2);
+      sctx.fill();
+    }
+
+    // Label
+    sctx.fillStyle = s.color;
+    sctx.font = 'bold 10px Arial';
+    sctx.textAlign = 'center';
+    sctx.fillText(`${s.name} (m/z=${s.mz})`, x, margin.top + plotH + 15);
+
+    // Abundance label
+    sctx.fillStyle = '#eee';
+    sctx.font = '9px Arial';
+    sctx.fillText(`${s.abundance.toFixed(1)}%`, x, y - 6);
+  });
+
+  // Data table below
+  const dataDiv = document.getElementById('specData');
+  if (currentStep >= 5) {
+    let info = '';
+    samples.forEach(s => {
+      info += `<span style="color:${s.color}">${s.name}</span>: m/z=${s.mz} <span class="val">${s.abundance.toFixed(1)}%</span>`;
+      if (s.abundance === 100) info += ' (基峰)';
+      info += '<br>';
+    });
+    if (mode === 'ei') {
+      info += `<span style="color:#aaa">Relative Atomic Mass Aᵣ = (12×100 + 13×10.5) / (100+10.5) = 12.10</span>`;
+    }
+    dataDiv.innerHTML = info;
+  } else {
+    dataDiv.innerHTML = '<span style="color:#667">等待检测数据...</span>';
+  }
+}
+
+// ============ UI UPDATES ============
+function updateStepDots() {
+  document.querySelectorAll('.step-dot').forEach((dot, i) => {
+    dot.classList.toggle('active', i === currentStep);
+    dot.classList.toggle('done', i < currentStep);
+  });
+}
+
+function updateInfo() {
+  const info = STAGE_INFO[mode][currentStep];
+  document.getElementById('stepTitle').textContent = info.title;
+  document.getElementById('stepDesc').innerHTML = info.desc;
+  document.getElementById('extraInfo').innerHTML = info.extra
+    ? `<div style="margin-top:8px;padding:6px;background:#1a1a3e;border-radius:6px;border-left:3px solid #f39c12;font-size:12px;color:#f39c12"><b>💡 重要提示：</b> ${info.extra}</div>`
+    : '';
+}
+
+// ============ EVENT BINDINGS ============
+document.getElementById('btnNext').addEventListener('click', nextStep);
+document.getElementById('btnPrev').addEventListener('click', prevStep);
+document.getElementById('btnPlay').addEventListener('click', togglePlay);
+document.getElementById('btnReset').addEventListener('click', resetAll);
+document.getElementById('speedRange').addEventListener('input', function() {
+  speed = parseInt(this.value);
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight') nextStep();
+  else if (e.key === 'ArrowLeft') prevStep();
+  else if (e.key === ' ') { e.preventDefault(); togglePlay(); }
+  else if (e.key === 'r') resetAll();
+});
+
+// ============ INIT ============
+updateStepDots();
+updateInfo();
+draw();
+drawSpectrum();
+</script>
+
+</body>
+</html>

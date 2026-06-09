@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AQA Chemistry Interactive Models</title>
+  <style>
+    :root {
+      --bg: #f0f4f8;
+      --card-bg: #ffffff;
+      --accent: #1a56a0;
+      --accent-light: #e8f0fb;
+      --accent2: #0e8a6d;
+      --accent2-light: #e6f5f1;
+      --text: #1e293b;
+      --subtext: #64748b;
+      --border: #e2e8f0;
+      --tag-en: #dbeafe;
+      --tag-en-text: #1d4ed8;
+      --tag-cn: #fce7f3;
+      --tag-cn-text: #9d174d;
+      --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(135deg, #1a3a6b 0%, #1a56a0 60%, #0e8a6d 100%);
+      color: #fff;
+      padding: 48px 24px 36px;
+      text-align: center;
+    }
+    header .logo {
+      font-size: 2.6rem;
+      margin-bottom: 8px;
+    }
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    header p {
+      font-size: 1.05rem;
+      opacity: 0.85;
+    }
+    header .badge {
+      display: inline-block;
+      margin-top: 16px;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 0.88rem;
+      letter-spacing: 0.5px;
+    }
+
+    .controls {
+      max-width: 1100px;
+      margin: 24px auto 0;
+      padding: 0 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+      position: relative;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 10px 16px 10px 40px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box input:focus { border-color: var(--accent); }
+    .search-box .icon {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--subtext);
+      font-size: 1.1rem;
+    }
+    .filter-btns {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .filter-btns button {
+      padding: 7px 14px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--subtext);
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: all 0.18s;
+    }
+    .filter-btns button.active,
+    .filter-btns button:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .stats {
+      max-width: 1100px;
+      margin: 16px auto 4px;
+      padding: 0 20px;
+      font-size: 0.9rem;
+      color: var(--subtext);
+    }
+
+    .grid {
+      max-width: 1100px;
+      margin: 12px auto 48px;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 18px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      box-shadow: var(--shadow);
+      padding: 20px 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 24px rgba(26,86,160,0.13);
+      border-color: var(--accent);
+    }
+    .card-icon {
+      font-size: 1.7rem;
+      line-height: 1;
+    }
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tag {
+      display: inline-block;
+      padding: 2px 9px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+    .tag-en { background: var(--tag-en); color: var(--tag-en-text); }
+    .tag-cn { background: var(--tag-cn); color: var(--tag-cn-text); }
+    .tag-topic {
+      background: #f0fdf4;
+      color: #15803d;
+    }
+    .card-desc {
+      font-size: 0.83rem;
+      color: var(--subtext);
+      line-height: 1.5;
+    }
+
+    .no-result {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 0;
+      color: var(--subtext);
+      font-size: 1.05rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--subtext);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.4rem; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚗️</div>
+  <h1>AQA Chemistry Interactive Models</h1>
+  <p>Interactive simulations for A-Level &amp; GCSE Chemistry teaching</p>
+  <span class="badge">40 Models · A-Level AQA</span>
+</header>
+
+<div class="controls">
+  <div class="search-box">
+    <span class="icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Search models... 搜索模型..." oninput="filterCards()" />
+  </div>
+  <div class="filter-btns">
+    <button class="active" onclick="setFilter('all', this)">All</button>
+    <button onclick="setFilter('en', this)">English</button>
+    <button onclick="setFilter('cn', this)">中文</button>
+    <button onclick="setFilter('electrochemistry', this)">Electrochemistry</button>
+    <button onclick="setFilter('acids', this)">Acids &amp; Salts</button>
+    <button onclick="setFilter('metals', this)">Metals</button>
+    <button onclick="setFilter('other', this)">Other</button>
+  </div>
+</div>
+
+<div class="stats" id="statsBar">Showing all 40 models</div>
+
+<div class="grid" id="cardGrid"></div>
+
+<footer>
+  Charles Ding · AQA Chemistry · Interactive Teaching Resources
+</footer>
+
+<script>
+const models = [
+  {
+    file: "Collision.html",
+    title: "Collision Theory",
+    icon: "💥",
+    lang: "en",
+    topic: "kinetics",
+    topicLabel: "Kinetics",
+    desc: "Interactive collision theory model showing how temperature, concentration affect reaction rate."
+  },
+  {
+    file: "Copper plating.html",
+    title: "Copper Electroplating",
+    icon: "🔋",
+    lang: "en",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "Simulation of copper electroplating process, electrode reactions and ion movement."
+  },
+  {
+    file: "Extraction of Al .html",
+    title: "Extraction of Aluminium",
+    icon: "🏭",
+    lang: "en",
+    topic: "metals",
+    topicLabel: "Metals",
+    desc: "Electrolysis of aluminium oxide in molten cryolite — Hall–Héroult process."
+  },
+  {
+    file: "Extraction of al.html",
+    title: "Extraction of Al (v2)",
+    icon: "🏭",
+    lang: "en",
+    topic: "metals",
+    topicLabel: "Metals",
+    desc: "Alternative model of aluminium extraction via electrolysis."
+  },
+  {
+    file: "Haber process 公开课模型.html",
+    title: "Haber Process (Open Lesson)",
+    icon: "🌿",
+    lang: "en",
+    topic: "equilibrium",
+    topicLabel: "Equilibrium",
+    desc: "Interactive Haber process model for classroom demonstration — N₂ + H₂ → NH₃."
+  },
+  {
+    file: "Halogen displacement.html",
+    title: "Halogen Displacement",
+    icon: "🧪",
+    lang: "en",
+    topic: "other",
+    topicLabel: "Halogens",
+    desc: "Halogen displacement reactions showing reactivity order of Group 7 elements."
+  },
+  {
+    file: "Hydrogen fuel cell.html",
+    title: "Hydrogen Fuel Cell",
+    icon: "⚡",
+    lang: "en",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "Animation of hydrogen fuel cell reactions at anode and cathode."
+  },
+  {
+    file: "Mass spectrum.html",
+    title: "Mass Spectrum",
+    icon: "📊",
+    lang: "en",
+    topic: "other",
+    topicLabel: "Analytical",
+    desc: "Interactive mass spectrometry model — fragmentation patterns and m/z values."
+  },
+  {
+    file: "mass_spec_model.html",
+    title: "Mass Spec Model (v2)",
+    icon: "📊",
+    lang: "en",
+    topic: "other",
+    topicLabel: "Analytical",
+    desc: "Extended mass spectrometry simulation with isotope abundance."
+  },
+  {
+    file: "PH与食欲.html",
+    title: "pH与食欲",
+    icon: "🥗",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids",
+    desc: "探索胃酸pH与消化过程的关系，趣味化学情境模型。"
+  },
+  {
+    file: "Titration 2 .html",
+    title: "Titration (v2)",
+    icon: "🧫",
+    lang: "en",
+    topic: "acids",
+    topicLabel: "Acids & Salts",
+    desc: "Advanced acid-base titration simulation with pH curve plotting."
+  },
+  {
+    file: "铵盐与碱.html",
+    title: "铵盐与碱",
+    icon: "🔬",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids & Salts",
+    desc: "铵盐与碱反应的微观离子模型，动态展示NH₄⁺与OH⁻的反应过程。"
+  },
+  {
+    file: "沉淀的产生.html",
+    title: "沉淀的产生",
+    icon: "🌊",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Precipitation",
+    desc: "演示混合离子溶液时沉淀生成的微观过程。"
+  },
+  {
+    file: "沉淀盐的产生.html",
+    title: "沉淀盐的产生",
+    icon: "🌊",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Precipitation",
+    desc: "微观模型展示不溶性盐沉淀的形成机理。"
+  },
+  {
+    file: "触电模拟.html",
+    title: "触电模拟",
+    icon: "⚡",
+    lang: "cn",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "电流通过人体的危险情境模拟，安全教育与电化学结合。"
+  },
+  {
+    file: "滴定.html",
+    title: "滴定",
+    icon: "🧫",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids & Salts",
+    desc: "中文版酸碱滴定互动模型，动态显示pH变化曲线。"
+  },
+  {
+    file: "电池闭合回路的产生.html",
+    title: "电池闭合回路的产生",
+    icon: "🔋",
+    lang: "cn",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "演示原电池闭合回路的形成，电子流动与离子迁移的微观过程。"
+  },
+  {
+    file: "电镀电极材料.html",
+    title: "电镀电极材料",
+    icon: "🔩",
+    lang: "cn",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "比较不同电极材料对电镀过程的影响，活性与惰性电极对比。"
+  },
+  {
+    file: "电镀金模型.html",
+    title: "电镀金模型",
+    icon: "✨",
+    lang: "cn",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "黄金电镀的微观过程模拟，Au³⁺离子的迁移与沉积。"
+  },
+  {
+    file: "电解不同溶液.html",
+    title: "电解不同溶液",
+    icon: "⚗️",
+    lang: "cn",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "对比电解不同电解质溶液时阴阳极产物的变化规律。"
+  },
+  {
+    file: "电解池的微观构成.html",
+    title: "电解池的微观构成",
+    icon: "🔬",
+    lang: "cn",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "电解池结构的微观模型，离子在电场中的定向移动。"
+  },
+  {
+    file: "电解氯化铜.html",
+    title: "电解氯化铜",
+    icon: "🧲",
+    lang: "cn",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "电解CuCl₂溶液的微观动画，Cu²⁺还原与Cl⁻氧化的过程。"
+  },
+  {
+    file: "电解水.html",
+    title: "电解水",
+    icon: "💧",
+    lang: "cn",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "水的电解过程微观模型，H₂O分解生成H₂与O₂的动态演示。"
+  },
+  {
+    file: "镀铜.html",
+    title: "镀铜",
+    icon: "🔩",
+    lang: "cn",
+    topic: "electrochemistry",
+    topicLabel: "Electrochemistry",
+    desc: "铜电镀的完整微观过程，阳极溶解与阴极沉积的同步模拟。"
+  },
+  {
+    file: "反应平衡.html",
+    title: "反应平衡",
+    icon: "⚖️",
+    lang: "cn",
+    topic: "equilibrium",
+    topicLabel: "Equilibrium",
+    desc: "化学平衡的动态微观模型，正逆反应速率相等时的平衡状态演示。"
+  },
+  {
+    file: "高炉炼铁.html",
+    title: "高炉炼铁",
+    icon: "🏗️",
+    lang: "cn",
+    topic: "metals",
+    topicLabel: "Metals",
+    desc: "高炉炼铁工艺的分层模型，CO还原Fe₂O₃的各区反应动画。"
+  },
+  {
+    file: "公开课模型.html",
+    title: "公开课模型",
+    icon: "🎓",
+    lang: "cn",
+    topic: "other",
+    topicLabel: "General",
+    desc: "综合公开课演示模型，适用于课堂互动展示。"
+  },
+  {
+    file: "合金的延展性.html",
+    title: "合金的延展性",
+    icon: "🔨",
+    lang: "cn",
+    topic: "metals",
+    topicLabel: "Metals",
+    desc: "比较纯金属与合金晶体结构，说明合金延展性的微观原理。"
+  },
+  {
+    file: "碱性的中和.html",
+    title: "碱性的中和",
+    icon: "🧪",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids & Salts",
+    desc: "酸碱中和反应的微观离子过程，H⁺与OH⁻结合生成水的动画。"
+  },
+  {
+    file: "金属displacement reaction.html",
+    title: "Metal Displacement Reaction",
+    icon: "⚔️",
+    lang: "en",
+    topic: "metals",
+    topicLabel: "Metals",
+    desc: "Metal displacement reactions demonstrating reactivity series."
+  },
+  {
+    file: "金属与酸.html",
+    title: "金属与酸",
+    icon: "⚗️",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids & Metals",
+    desc: "金属与酸反应产生气泡的微观模型，活泼金属置换H⁺的过程。"
+  },
+  {
+    file: "难溶盐的制备.html",
+    title: "难溶盐的制备",
+    icon: "🧂",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Salts",
+    desc: "通过沉淀法制备难溶盐的微观过程，离子交换与沉淀生成。"
+  },
+  {
+    file: "强酸的腐蚀性.html",
+    title: "强酸的腐蚀性",
+    icon: "⚠️",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids",
+    desc: "强酸腐蚀性的微观作用机制，H⁺对金属/有机物的侵蚀动画。"
+  },
+  {
+    file: "强酸弱酸实验.html",
+    title: "强酸弱酸实验",
+    icon: "🔬",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids",
+    desc: "对比强酸与弱酸的电离程度，pH差异与导电性的实验模拟。"
+  },
+  {
+    file: "强酸与弱酸的水解.html",
+    title: "强酸与弱酸的水解",
+    icon: "💦",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids",
+    desc: "强酸与弱酸水解程度的对比模型，水解平衡常数的直观呈现。"
+  },
+  {
+    file: "酸与金属.html",
+    title: "酸与金属",
+    icon: "⚗️",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids & Metals",
+    desc: "酸腐蚀金属的微观机理，Zn/Fe等与HCl反应的离子动画。"
+  },
+  {
+    file: "碳酸根.html",
+    title: "碳酸根",
+    icon: "🫧",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids & Salts",
+    desc: "碳酸根离子与酸的反应模型，CO₂气泡产生的微观过程。"
+  },
+  {
+    file: "盐的制备1.html",
+    title: "盐的制备 (1)",
+    icon: "🧂",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Salts",
+    desc: "第一章盐的制备方法，通过多种反应途径合成可溶性盐。"
+  },
+  {
+    file: "制备可溶性盐.html",
+    title: "制备可溶性盐",
+    icon: "🧂",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Salts",
+    desc: "可溶性盐的制备方法汇总，酸碱中和与金属溶解的综合模型。"
+  },
+  {
+    file: "治疗sting.html",
+    title: "治疗Sting (蜇伤)",
+    icon: "🐝",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids",
+    desc: "用酸碱中和原理治疗蜜蜂/黄蜂蜇伤的生活化学情境模型。"
+  }
+];
+
+let currentFilter = 'all';
+
+function topicInFilter(topic, filter) {
+  if (filter === 'all') return true;
+  if (filter === 'en' || filter === 'cn') return false; // handled by lang
+  const topicMap = {
+    electrochemistry: ['electrochemistry'],
+    acids: ['acids', 'equilibrium'],
+    metals: ['metals'],
+    other: ['other', 'kinetics', 'analytical', 'equilibrium']
+  };
+  return (topicMap[filter] || []).includes(topic);
+}
+
+function renderCards(list) {
+  const grid = document.getElementById('cardGrid');
+  const stats = document.getElementById('statsBar');
+  grid.innerHTML = '';
+  if (!list.length) {
+    grid.innerHTML = '<div class="no-result">😕 No models found. Try a different search.</div>';
+    stats.textContent = 'No models found';
+    return;
+  }
+  stats.textContent = `Showing ${list.length} of 40 models`;
+  list.forEach(m => {
+    const a = document.createElement('a');
+    a.className = 'card';
+    a.href = encodeURIComponent(m.file);
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.innerHTML = `
+      <div class="card-icon">${m.icon}</div>
+      <div class="card-title">${m.title}</div>
+      <div class="card-tags">
+        <span class="tag ${m.lang === 'en' ? 'tag-en' : 'tag-cn'}">${m.lang === 'en' ? 'English' : '中文'}</span>
+        <span class="tag tag-topic">${m.topicLabel}</span>
+      </div>
+      <div class="card-desc">${m.desc}</div>
+    `;
+    grid.appendChild(a);
+  });
+}
+
+function filterCards() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  let filtered = models.filter(m => {
+    const matchLang = currentFilter === 'en' ? m.lang === 'en'
+                    : currentFilter === 'cn' ? m.lang === 'cn'
+                    : currentFilter === 'all' ? true
+                    : topicInFilter(m.topic, currentFilter);
+    const matchQ = !q || m.title.toLowerCase().includes(q) || m.desc.toLowerCase().includes(q) || m.file.toLowerCase().includes(q);
+    return matchLang && matchQ;
+  });
+  renderCards(filtered);
+}
+
+function setFilter(filter, btn) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btns button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  filterCards();
+}
+
+renderCards(models);
+</script>
+</body>
+</html>

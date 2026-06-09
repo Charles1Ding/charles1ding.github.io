@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>烧杯中的金属与酸反应 (Zn vs Cu)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #ECEFF1; /* 实验室台面背景 */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 320px;
+            border: 1px solid #e2e8f0;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .btn {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn:active { transform: scale(0.95); }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #334155;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .square {
+            width: 12px;
+            height: 12px;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">金属与酸反应 (烧杯版)</h2>
+        <div class="text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded border border-slate-200">
+            <strong>实验原理：</strong><br>
+            1. <span class="text-slate-700 font-bold">Zn + 2H⁺ → Zn²⁺ + H₂↑</span><br>
+            2. <span class="text-orange-700 font-bold">Cu + H⁺ → 不反应</span><br>
+            <span class="text-slate-400 mt-1 block">观察 H⁺ 离子如何撞击金属表面。</span>
+        </div>
+
+        <div class="space-y-3 mb-4">
+            <button id="btn-add-acid" class="btn w-full bg-red-100 hover:bg-red-200 text-red-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-red-200">
+                <span>加入 酸液 (H⁺)</span>
+                <span class="text-xs bg-red-500 text-white px-2 py-1 rounded">HCl</span>
+            </button>
+            <button id="btn-add-zn" class="btn w-full bg-slate-200 hover:bg-slate-300 text-slate-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-slate-300">
+                <span>投入 锌块 (Zn)</span>
+                <span class="text-xs bg-slate-500 text-white px-2 py-1 rounded">活泼</span>
+            </button>
+            <button id="btn-add-cu" class="btn w-full bg-orange-100 hover:bg-orange-200 text-orange-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-orange-300">
+                <span>投入 铜块 (Cu)</span>
+                <span class="text-xs bg-orange-500 text-white px-2 py-1 rounded">不活泼</span>
+            </button>
+        </div>
+        
+        <button id="btn-reset" class="btn w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-3 rounded font-bold border border-slate-200 text-sm mb-4">
+            清空烧杯
+        </button>
+
+        <div class="border-t border-slate-200 pt-3">
+            <div class="text-xs font-bold text-slate-400 uppercase mb-2">图例</div>
+            
+            <div class="legend-item">
+                <span class="square" style="background: #90A4AE;"></span> Zn 原子 (固体)
+            </div>
+            <div class="legend-item">
+                <span class="square" style="background: #FF8A65;"></span> Cu 原子 (固体)
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #FF5252;"></span> H⁺ (酸)
+            </div>
+            <div class="legend-item mt-2 pt-2 border-t border-dashed border-slate-200">
+                <span class="dot" style="background: #546E7A;"></span> Zn²⁺ (离子)
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #B0BEC5; border-radius: 50%; opacity: 0.7;"></span> H₂ (气体)
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Parameters
+    let width, height;
+    let beaker = { x: 0, y: 0, w: 0, h: 0, wall: 6, liquidLevel: 0 };
+    
+    const RAD_H = 6;
+    const RAD_METAL = 14; 
+    const RAD_ION = 12;
+    const RAD_GAS = 8;
+    
+    let entities = [];
+    let effects = [];
+
+    // --- Entity Class ---
+
+    class Entity {
+        constructor(x, y, vx, vy) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.markedForDeletion = false;
+        }
+
+        update() {
+            if (this.fixed) return; // Solids don't move (unless falling)
+
+            this.x += this.vx;
+            this.y += this.vy;
+
+            const leftWall = beaker.x + beaker.wall;
+            const rightWall = beaker.x + beaker.w - beaker.wall;
+            const floor = beaker.y + beaker.h - beaker.wall;
+
+            // 1. Gas Logic (Leaves the beaker)
+            if (this.type === 'H2') {
+                // Accelerate up
+                this.vy -= 0.05; 
+                this.vx += (Math.random() - 0.5) * 0.2; // Wobble
+                
+                // If it goes above screen, remove
+                if (this.y < -20) this.markedForDeletion = true;
+                return; 
+            }
+
+            // 2. Solid Falling Logic (Metal blocks)
+            if (this.type === 'Zn' || this.type === 'Cu') {
+                // Check floor collision
+                if (this.y > floor - this.radius) {
+                    this.y = floor - this.radius;
+                    this.fixed = true; // Stop moving
+                    this.vx = 0;
+                    this.vy = 0;
+                }
+                // Check side walls
+                if (this.x < leftWall + this.radius) this.x = leftWall + this.radius;
+                if (this.x > rightWall - this.radius) this.x = rightWall - this.radius;
+                
+                // Gravity
+                if (!this.fixed) this.vy += 0.2;
+                return;
+            }
+
+            // 3. Solution Ions Logic (H+, Zn2+)
+            
+            // Wall collisions
+            if (this.x < leftWall + this.radius) {
+                this.x = leftWall + this.radius;
+                this.vx *= -1;
+            }
+            if (this.x > rightWall - this.radius) {
+                this.x = rightWall - this.radius;
+                this.vx *= -1;
+            }
+            
+            // Floor collision
+            if (this.y > floor - this.radius) {
+                this.y = floor - this.radius;
+                this.vy *= -1;
+            }
+
+            // Surface Constraint (Simplified: Keep them mostly in liquid)
+            // If particle tries to jump high out of liquid, push it back gently unless it's just added
+            if (this.y < beaker.liquidLevel && this.y > beaker.liquidLevel - 20) {
+                 this.vy += 0.1; // Gravity pulls back to liquid
+            } else if (this.y > beaker.liquidLevel) {
+                // Inside liquid: Resistance + Brownian Motion
+                this.vx *= 0.96;
+                this.vy *= 0.96;
+                this.vx += (Math.random() - 0.5) * 0.8; // Thermal kick
+                this.vy += (Math.random() - 0.5) * 0.8;
+            } else {
+                // Falling from adding source
+                this.vy += 0.1;
+            }
+        }
+    }
+
+    class Particle extends Entity {
+        constructor(x, y, type) {
+            super(x, y, (Math.random()-0.5)*2, (Math.random()-0.5)*2);
+            this.type = type; 
+            
+            if (type === 'H') {
+                this.radius = RAD_H;
+                this.color = '#FF5252';
+                this.label = 'H⁺';
+            } else if (type === 'Zn') {
+                this.radius = RAD_METAL;
+                this.color = '#90A4AE'; // Grey Blue
+                this.label = 'Zn';
+                this.hits = 0;
+                this.vx = 0; this.vy = 2; // Initial fall
+            } else if (type === 'Cu') {
+                this.radius = RAD_METAL;
+                this.color = '#FF8A65'; // Bronze/Orange
+                this.label = 'Cu';
+                this.vx = 0; this.vy = 2; // Initial fall
+            } else if (type === 'ZnIon') {
+                this.radius = RAD_ION;
+                this.color = '#546E7A'; // Darker grey
+                this.label = 'Zn²⁺';
+                this.charge = 2;
+            } else if (type === 'H2') {
+                this.radius = RAD_GAS;
+                this.color = 'rgba(176, 190, 197, 0.6)';
+                this.label = 'H₂';
+                this.vy = -1; // Initial rise
+            }
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.save();
+            ctx.translate(this.x, this.y);
+
+            if (this.type === 'Zn' || this.type === 'Cu') {
+                // Square for solids
+                ctx.rect(-this.radius, -this.radius, this.radius*2, this.radius*2);
+            } else {
+                // Circle for others
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            }
+            
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            
+            // Reaction Feedback Outline
+            if (this.type === 'Zn' && this.hits > 0) {
+                ctx.strokeStyle = '#FF5252';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else {
+                ctx.strokeStyle = "rgba(0,0,0,0.15)";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = (this.type === 'H2' || this.type === 'Zn' || this.type === 'Cu') ? (this.type === 'H2' ? '#37474F' : 'white') : "white";
+            ctx.font = "bold 10px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            
+            if (this.type === 'H2') {
+                 // Gas dots look
+                 ctx.beginPath(); ctx.arc(-3, 0, 2, 0, Math.PI*2); ctx.fill();
+                 ctx.beginPath(); ctx.arc(3, 0, 2, 0, Math.PI*2); ctx.fill();
+            } else {
+                ctx.fillText(this.label, 0, 0);
+            }
+            ctx.restore();
+        }
+    }
+
+    class Effect {
+        constructor(x, y, text) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+            this.life = 1.0;
+            this.dy = -0.5;
+        }
+        update() {
+            this.y += this.dy;
+            this.life -= 0.02;
+        }
+        draw() {
+            if (this.life <= 0) return;
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = "#37474F";
+            ctx.font = "bold 12px Arial";
+            ctx.fillText(this.text, this.x, this.y);
+            ctx.globalAlpha = 1.0;
+        }
+    }
+
+    // --- Core Logic ---
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Define Beaker
+        const bW = Math.min(380, width * 0.7);
+        const bH = Math.min(450, height * 0.65);
+        beaker = {
+            w: bW,
+            h: bH,
+            x: (width - bW) / 2,
+            y: height - bH - 50,
+            wall: 6,
+            liquidLevel: height - bH - 50 + (bH * 0.3)
+        };
+    }
+    window.addEventListener('resize', resize);
+
+    function addAcid(amount) {
+        for(let i=0; i<amount; i++) {
+            const x = beaker.x + beaker.wall + Math.random() * (beaker.w - 2*beaker.wall);
+            const y = beaker.y - 20; // Drop from top
+            const h = new Particle(x, y, 'H');
+            h.vy = 2 + Math.random(); // Initial drop speed
+            entities.push(h);
+        }
+    }
+
+    function addMetal(type, count) {
+        // Add metals in a grid-like fashion at the bottom
+        const cols = 4;
+        const spacing = RAD_METAL * 2 + 2;
+        const startX = beaker.x + (beaker.w - (cols * spacing)) / 2 + spacing/2;
+        
+        // Add offset so different metals don't overlap perfectly if added sequentially
+        const existingMetals = entities.filter(e => e.type === 'Zn' || e.type === 'Cu').length;
+        const offsetX = (existingMetals % 2) * (spacing / 2);
+
+        for(let i=0; i<count; i++) {
+            const col = i % cols;
+            const row = Math.floor(i / cols); // Stack up
+            
+            const x = startX + col * spacing + offsetX + (Math.random()-0.5)*5;
+            const y = beaker.liquidLevel + 50; // Drop into liquid
+            
+            const metal = new Particle(x, y, type);
+            // Give them some physics to settle
+            metal.vx = (Math.random()-0.5);
+            metal.vy = 2;
+            entities.push(metal);
+        }
+    }
+
+    function handleReactions() {
+        let hIons = entities.filter(e => e.type === 'H' && !e.markedForDeletion);
+        let metals = entities.filter(e => (e.type === 'Zn' || e.type === 'Cu') && !e.markedForDeletion);
+        
+        for (let h of hIons) {
+            if (h.markedForDeletion) continue;
+            
+            for (let m of metals) {
+                if (m.markedForDeletion) continue;
+                
+                const dx = h.x - m.x;
+                const dy = h.y - m.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // Visual Attraction for Reactive Metal (Zn)
+                if (dist < 60 && m.type === 'Zn') {
+                     h.vx += (m.x - h.x) * 0.008;
+                     h.vy += (m.y - h.y) * 0.008;
+                }
+
+                // Collision Detection
+                // Using rectangular check for metal box vs circle ion roughly
+                if (dist < m.radius + h.radius) {
+                    
+                    // Bounce
+                    h.vx *= -1;
+                    h.vy *= -1;
+                    // Push out slightly
+                    h.x += h.vx * 3;
+                    h.y += h.vy * 3;
+
+                    if (m.type === 'Zn') {
+                        // REACTION
+                        h.markedForDeletion = true; // H+ Consumed
+                        m.hits++;
+                        
+                        // Stoichiometry: Zn + 2H+ -> Zn2+ + H2
+                        if (m.hits >= 2) {
+                            m.markedForDeletion = true; // Zn Atom dissolved
+                            
+                            // 1. Create Metal Ion (Zn2+)
+                            const ion = new Particle(m.x, m.y, 'ZnIon');
+                            ion.vy = -1; // Float away from surface
+                            entities.push(ion);
+
+                            // 2. Create Hydrogen Gas (H2)
+                            const gas = new Particle(m.x, m.y - 10, 'H2');
+                            entities.push(gas);
+                            
+                            effects.push(new Effect(m.x, m.y - 20, "H₂↑"));
+                        }
+                    } else if (m.type === 'Cu') {
+                        // NO REACTION
+                        // Just bounce (already handled)
+                    }
+                    
+                    break; // H handled
+                }
+            }
+        }
+        
+        entities = entities.filter(e => !e.markedForDeletion);
+    }
+
+    function drawBeaker() {
+        ctx.save();
+        
+        // Liquid
+        const liquidH = beaker.y + beaker.h - beaker.wall - beaker.liquidLevel;
+        ctx.fillStyle = "rgba(179, 229, 252, 0.3)";
+        ctx.fillRect(beaker.x + beaker.wall, beaker.liquidLevel, beaker.w - 2*beaker.wall, liquidH);
+
+        // Glass Walls
+        ctx.lineWidth = beaker.wall;
+        ctx.strokeStyle = "rgba(189, 189, 189, 0.6)"; 
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(beaker.x, beaker.y); // Top Left
+        ctx.lineTo(beaker.x, beaker.y + beaker.h); // Bottom Left
+        ctx.lineTo(beaker.x + beaker.w, beaker.y + beaker.h); // Bottom Right
+        ctx.lineTo(beaker.x + beaker.w, beaker.y); // Top Right
+        ctx.stroke();
+        
+        // Beaker Rim/Lip hints
+        ctx.beginPath(); ctx.moveTo(beaker.x-5, beaker.y); ctx.lineTo(beaker.x+5, beaker.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(beaker.x+beaker.w-5, beaker.y); ctx.lineTo(beaker.x+beaker.w+5, beaker.y); ctx.stroke();
+
+        ctx.restore();
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        
+        drawBeaker();
+        
+        handleReactions();
+        
+        entities.forEach(e => {
+            e.update();
+            e.draw();
+        });
+        
+        effects.forEach((e, i) => {
+            e.update();
+            e.draw();
+            if (e.life <= 0) effects.splice(i, 1);
+        });
+
+        requestAnimationFrame(animate);
+    }
+
+    // Init
+    resize();
+    addAcid(5); // Start with a little acid
+    
+    // UI
+    document.getElementById('btn-add-acid').onclick = () => addAcid(8);
+    document.getElementById('btn-add-zn').onclick = () => addMetal('Zn', 4);
+    document.getElementById('btn-add-cu').onclick = () => addMetal('Cu', 4);
+    document.getElementById('btn-reset').onclick = () => { entities = []; addAcid(5); };
+
+    animate();
+
+</script>
+</body>
+</html>

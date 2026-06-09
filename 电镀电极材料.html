@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级电镀物理实验室 - 离子迁移与双金属沉积</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        canvas { cursor: crosshair; }
+        input[type=range] { height: 6px; -webkit-appearance: none; background: #e2e8f0; border-radius: 5px; }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; 
+            background: #f59e0b; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); 
+        }
+        .select-card { transition: all 0.2s ease; cursor: pointer; border: 2px solid #f1f5f9; }
+        .select-card.active { border-color: #f59e0b; background-color: #fffbeb; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 lg:p-8">
+
+    <div class="flex flex-col gap-6 p-6 bg-white rounded-3xl shadow-2xl w-full max-w-[1100px] border border-slate-100">
+        <!-- 顶部控制栏 -->
+        <div class="flex flex-col gap-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex flex-col">
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                        <div class="p-2 bg-amber-100 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="3"><path d="M12 2v20M2 12h20"/></svg>
+                        </div>
+                        电镀实验室：双金属沉积模拟
+                    </h2>
+                    <p class="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest ml-12 italic">Cation Co-Deposition Model (Au & Ag)</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button id="toggleBtn" class="flex items-center gap-2 px-8 py-3 bg-amber-500 text-white rounded-xl font-bold transition-all transform active:scale-95 shadow-xl shadow-amber-200 hover:bg-amber-600">
+                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon id="playPolygon" points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <span id="btnText">开始实验</span>
+                    </button>
+                    <button id="resetBtn" class="p-3 rounded-xl border-2 border-slate-100 text-slate-400 hover:bg-slate-50 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 实验参数选择 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">阴极材料 (Cathode -)</span>
+                    <div class="flex gap-2">
+                        <button id="btnCathodeInert" class="select-card flex-1 p-2 rounded-xl text-xs font-bold text-slate-600 flex flex-col items-center gap-1">
+                            <div class="w-6 h-6 bg-slate-600 rounded-full border border-slate-500"></div>
+                            惰性电极
+                        </button>
+                        <button id="btnCathodeAg" class="select-card active flex-1 p-2 rounded-xl text-xs font-bold text-slate-600 flex flex-col items-center gap-1">
+                            <div class="w-6 h-6 bg-slate-300 rounded-full border border-slate-400"></div>
+                            银棒 (Ag)
+                        </button>
+                        <button id="btnCathodeLeaf" class="select-card flex-1 p-2 rounded-xl text-xs font-bold text-slate-600 flex flex-col items-center gap-1">
+                            <div class="w-6 h-6 bg-green-500 rounded-full border border-green-600 flex items-center justify-center text-white text-[10px]">🍃</div>
+                            树叶 (绝缘)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">阳极材料 (Anode +)</span>
+                    <div class="flex gap-2">
+                        <button id="btnAnodeInert" class="select-card active flex-1 p-2 rounded-xl text-xs font-bold text-slate-600 flex flex-col items-center gap-1">
+                            <div class="w-6 h-6 bg-slate-600 rounded-full"></div>
+                            惰性电极
+                        </button>
+                        <button id="btnAnodeAg" class="select-card flex-1 p-2 rounded-xl text-xs font-bold text-slate-600 flex flex-col items-center gap-1">
+                            <div class="w-6 h-6 bg-slate-300 rounded-full border border-slate-400"></div>
+                            银阳极 (溶出Ag⁺)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col justify-center">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase mb-2 block">电流强度设置</span>
+                    <div class="flex items-center gap-3">
+                        <input type="range" id="speedSlider" min="0.5" max="8" step="0.5" value="3.5" class="flex-1">
+                        <span id="speedValue" class="text-xs font-mono font-bold text-amber-600 w-6">3.5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心画布区 -->
+        <div class="relative bg-slate-50 rounded-2xl border-2 border-slate-100 overflow-hidden shadow-inner">
+            <canvas id="platingCanvas" width="900" height="500" class="w-full h-auto"></canvas>
+            
+            <div class="absolute top-4 right-4 bg-white/90 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 pointer-events-none">
+                <div class="flex items-center justify-between gap-8">
+                    <span class="text-xs font-bold text-amber-600">溶液 Au³⁺:</span>
+                    <span id="auCount" class="text-sm font-mono font-bold text-slate-800">0</span>
+                </div>
+                <div class="flex items-center justify-between gap-8">
+                    <span class="text-xs font-bold text-slate-400">溶液 Ag⁺:</span>
+                    <span id="agCount" class="text-sm font-mono font-bold text-slate-800">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部说明区 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-2 text-left">
+            <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                <h4 class="font-bold text-amber-800 text-xs uppercase mb-2">微观动力学观察</h4>
+                <div class="space-y-2 text-[11px] text-slate-600 leading-tight">
+                    <p id="descStatus"><b>当前状态：</b>等待启动</p>
+                    <p><b>阳极 (Anode):</b> 银原子溶解产生 Ag⁺。<b>阴极 (Cathode):</b> 吸引 Au³⁺ 和 Ag⁺。</p>
+                    <p><b>沉积现象：</b>金黄色颗粒为金层，银灰色颗粒为银层。两者都会在电极表面附着。</p>
+                </div>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl flex items-center shadow-xl">
+                <div class="flex flex-col gap-1 w-full text-left">
+                    <div class="flex justify-between text-[10px] font-bold">
+                        <span class="text-slate-400">回路电流指数</span>
+                        <span id="speedIndicator" class="text-amber-500">0%</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-800 rounded-full mt-1">
+                        <div id="conductiveBar" class="h-full bg-amber-500 rounded-full transition-all duration-700" style="width: 0%"></div>
+                    </div>
+                    <p class="text-[9px] text-slate-500 mt-2 italic text-center">注意：金离子的还原电位较高，通常会优先析出。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('platingCanvas');
+        const ctx = canvas.getContext('2d');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const btnText = document.getElementById('btnText');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const btnCathodeInert = document.getElementById('btnCathodeInert');
+        const btnCathodeAg = document.getElementById('btnCathodeAg');
+        const btnCathodeLeaf = document.getElementById('btnCathodeLeaf');
+        const btnAnodeInert = document.getElementById('btnAnodeInert');
+        const btnAnodeAg = document.getElementById('btnAnodeAg');
+        const conductiveBar = document.getElementById('conductiveBar');
+        const descStatus = document.getElementById('descStatus');
+        const speedIndicator = document.getElementById('speedIndicator');
+        const auCountDisplay = document.getElementById('auCount');
+        const agCountDisplay = document.getElementById('agCount');
+
+        let isActive = false;
+        let ions = [];
+        let electrons = [];
+        let bubbles = [];
+        let depositedParticles = []; // 存储所有沉积物（金或银）
+        let platingSpeed = 3.5;
+
+        let cathodeMaterial = 'Ag'; 
+        let anodeMaterial = 'Inert'; 
+        let anodeVolume = 1.0; 
+
+        const anodeX = 220, cathodeX = 680, startY = 220;
+        const electrodeH = 220, electrodeY = 180, electrodeW = 30;
+
+        function init() {
+            ions = [];
+            anodeVolume = 1.0;
+            // 初始金离子
+            for (let i = 0; i < 30; i++) ions.push(createIon('au'));
+            // 硫酸根
+            for (let i = 0; i < 10; i++) ions.push(createIon('so4'));
+            // 电子
+            electrons = [];
+            for (let i = 0; i < 10; i++) electrons.push({ pos: i / 10, speed: 0.002 });
+            
+            bubbles = [];
+            depositedParticles = [];
+            updateButtons();
+        }
+
+        function createIon(type, x, y) {
+            const colors = { au: '#fbbf24', so4: '#c4b5fd', ag: '#e2e8f0' };
+            const startX = x || (230 + Math.random() * 440);
+            const startYPos = y || (240 + Math.random() * 160);
+            return {
+                x: startX,
+                y: startYPos,
+                type: type,
+                color: colors[type],
+                vx: (Math.random()-0.5)*0.5,
+                vy: (Math.random()-0.5)*0.5
+            };
+        }
+
+        function drawLeaf(x, y, w, h) {
+            ctx.save();
+            ctx.translate(x, y + h/2);
+            ctx.fillStyle = '#22c55e';
+            ctx.beginPath();
+            ctx.moveTo(0, -h/2);
+            ctx.quadraticCurveTo(w * 1.5, -h/4, 0, h/2);
+            ctx.quadraticCurveTo(-w * 1.5, -h/4, 0, -h/2);
+            ctx.fill();
+            ctx.strokeStyle = '#166534'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(0, -h/2); ctx.lineTo(0, h/2); ctx.stroke();
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 容器
+            ctx.strokeStyle = '#64748b'; ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.moveTo(100, startY); ctx.lineTo(100, startY+250); ctx.lineTo(800, startY+250); ctx.lineTo(800, startY); ctx.stroke();
+            ctx.fillStyle = 'rgba(241, 245, 249, 0.5)'; ctx.fillRect(103, startY+2, 694, 245);
+
+            // 电路判定
+            const canConduct = (cathodeMaterial !== 'Leaf') && (anodeVolume > 0.01);
+            const isCircuitWorking = isActive && canConduct;
+
+            // 2. 绘制阳极
+            if (anodeVolume > 0.01) {
+                ctx.fillStyle = (anodeMaterial === 'Ag') ? '#94a3b8' : '#334155';
+                const currentW = anodeMaterial === 'Ag' ? electrodeW * anodeVolume : electrodeW;
+                ctx.fillRect(anodeX - currentW/2, electrodeY, currentW, electrodeH);
+            }
+            
+            // 3. 绘制阴极
+            if (cathodeMaterial === 'Leaf') {
+                drawLeaf(cathodeX, electrodeY, 40, electrodeH);
+            } else {
+                ctx.fillStyle = (cathodeMaterial === 'Ag') ? '#94a3b8' : '#334155';
+                ctx.fillRect(cathodeX - 15, electrodeY, 30, electrodeH);
+            }
+
+            // 4. 绘制沉积层（金和银）
+            depositedParticles.forEach(p => {
+                ctx.fillStyle = p.type === 'au' ? '#f59e0b' : '#cbd5e1'; // 金黄色或银灰色
+                ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = p.type === 'au' ? '#d97706' : '#94a3b8'; ctx.lineWidth = 0.5; ctx.stroke();
+            });
+
+            // 5. 离子迁移与双金属沉积逻辑
+            for (let i = ions.length - 1; i >= 0; i--) {
+                const ion = ions[i];
+                if (isCircuitWorking) {
+                    if (ion.type === 'au' || ion.type === 'ag') {
+                        // 阳离子全部被吸引向阴极
+                        ion.x += platingSpeed;
+                        if (ion.x >= cathodeX - 15) {
+                            // 修正逻辑：金离子和银离子现在都会在阴极析出
+                            depositedParticles.push({ 
+                                type: ion.type, 
+                                x: (cathodeX - 15) + Math.random() * 30, 
+                                y: electrodeY + Math.random() * electrodeH 
+                            });
+                            ions.splice(i, 1);
+                            continue;
+                        }
+                    } else if (ion.type === 'so4') {
+                        ion.x -= platingSpeed;
+                        if (ion.x <= anodeX + 15) {
+                            if(anodeMaterial === 'Inert' && Math.random() > 0.9) {
+                                bubbles.push({ x: anodeX - 10, y: ion.y, r: 2 + Math.random() * 4, vx: (Math.random() - 0.5) * 0.4 });
+                            }
+                            ion.x = cathodeX - 30;
+                        }
+                    }
+                } else {
+                    ion.x += ion.vx; ion.y += ion.vy;
+                    if (ion.x < 120 || ion.x > 780) ion.vx *= -1;
+                    if (ion.y < 230 || ion.y > 440) ion.vy *= -1;
+                }
+                
+                ctx.fillStyle = ion.color;
+                ctx.beginPath(); ctx.arc(ion.x, ion.y, 14, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = ion.type === 'ag' ? '#475569' : '#fff';
+                ctx.font = 'bold 9px sans-serif'; ctx.textAlign = 'center';
+                const labelMap = { au: 'Au³⁺', so4: 'SO₄²⁻', ag: 'Ag⁺' };
+                ctx.fillText(labelMap[ion.type], ion.x, ion.y + 4);
+            }
+
+            // 6. 阳极产出 Ag⁺
+            if (isCircuitWorking && anodeMaterial === 'Ag') {
+                anodeVolume -= 0.0004 * platingSpeed;
+                if (Math.random() > 0.97) {
+                    ions.push(createIon('ag', anodeX + 10, electrodeY + Math.random() * electrodeH)); 
+                }
+                if (anodeVolume <= 0.01) { anodeVolume = 0; isActive = false; updateBtnUI(); }
+            }
+            bubbles.forEach(b => { b.y -= 1.2; b.x += b.vx; ctx.fillStyle='rgba(255,255,255,0.4)'; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI*2); ctx.fill(); });
+            bubbles = bubbles.filter(b => b.y > 150);
+
+            // 7. 外部电路
+            ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(anodeX, electrodeY); ctx.lineTo(anodeX, 80); ctx.lineTo(410, 80); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(490, 80); ctx.lineTo(cathodeX, 80); ctx.lineTo(cathodeX, electrodeY); ctx.stroke();
+
+            if (isCircuitWorking) {
+                electrons.forEach(e => {
+                    e.pos += e.speed * (platingSpeed / 3);
+                    if (e.pos > 1) e.pos = 0;
+                    let x, y;
+                    if (e.pos < 0.5) { let t = e.pos/0.5; x = anodeX + t * (410 - anodeX); y = (t < 0.2) ? 180 - (t/0.2)*100 : 80; }
+                    else { let t = (e.pos-0.5)/0.5; x = 490 + t * (cathodeX - 490); y = (t > 0.8) ? 80 + ((t-0.8)/0.2)*100 : 80; }
+                    ctx.fillStyle = '#60a5fa'; ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2); ctx.fill();
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign='center'; ctx.fillText('e⁻', x, y+3);
+                });
+            }
+
+            // 8. 标注
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(390, 40, 120, 80);
+            ctx.fillStyle = '#fff'; ctx.font='bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('直流电源', 450, 75);
+            ctx.fillStyle = '#f87171'; ctx.fillText('+', 410, 105); ctx.fillStyle = '#60a5fa'; ctx.fillText('-', 490, 105);
+            ctx.fillStyle = '#ef4444'; ctx.font='900 24px sans-serif'; ctx.fillText('+', anodeX, 205);
+            ctx.fillStyle = '#3b82f6'; ctx.fillText('-', cathodeX, 205);
+
+            auCountDisplay.innerText = ions.filter(i=>i.type==='au').length;
+            agCountDisplay.innerText = ions.filter(i=>i.type==='ag').length;
+            speedValue.innerText = platingSpeed.toFixed(1);
+            speedIndicator.innerText = isCircuitWorking ? Math.round((platingSpeed/8)*100) + "%" : "0%";
+            conductiveBar.style.width = (canConduct && isActive ? 100 : 0) + "%";
+
+            if (!isActive) {
+                descStatus.innerHTML = "<b>状态：</b>就绪";
+            } else if (!canConduct) {
+                descStatus.innerHTML = "<span class='text-red-500 font-bold'>状态：回路中断</span>";
+            } else {
+                descStatus.innerHTML = "<span class='text-green-600 font-bold'>状态：实验进行中</span>";
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        function updateBtnUI() {
+            btnText.innerText = isActive ? "暂停实验" : "开始实验";
+            toggleBtn.className = isActive ? "flex items-center gap-2 px-8 py-3 bg-orange-100 text-orange-600 rounded-xl font-bold border-2 border-orange-200" : "flex items-center gap-2 px-8 py-3 bg-amber-500 text-white rounded-xl font-bold shadow-xl shadow-amber-200";
+        }
+
+        function updateButtons() {
+            [btnCathodeAg, btnCathodeInert, btnCathodeLeaf].forEach(b => b.classList.remove('active'));
+            if(cathodeMaterial === 'Ag') btnCathodeAg.classList.add('active');
+            else if(cathodeMaterial === 'Inert') btnCathodeInert.classList.add('active');
+            else btnCathodeLeaf.classList.add('active');
+
+            [btnAnodeAg, btnAnodeInert].forEach(b => b.classList.remove('active'));
+            if(anodeMaterial === 'Ag') btnAnodeAg.classList.add('active');
+            else btnAnodeInert.classList.add('active');
+        }
+
+        toggleBtn.onclick = () => { isActive = !isActive; updateBtnUI(); };
+        resetBtn.onclick = () => { isActive=false; init(); updateBtnUI(); };
+        btnCathodeInert.onclick = () => { cathodeMaterial='Inert'; init(); };
+        btnCathodeAg.onclick = () => { cathodeMaterial='Ag'; init(); };
+        btnCathodeLeaf.onclick = () => { cathodeMaterial='Leaf'; init(); };
+        btnAnodeInert.onclick = () => { anodeMaterial='Inert'; init(); };
+        btnAnodeAg.onclick = () => { anodeMaterial='Ag'; init(); };
+        speedSlider.oninput = (e) => { platingSpeed = parseFloat(e.target.value); };
+
+        window.onload = () => { init(); draw(); };
+    </script>
+</body>
+</html>

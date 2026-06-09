@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>工业电解铝仿真 - 强引力慢反应版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]:focus { outline: none; }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 3px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+        .temp-slider::-webkit-slider-thumb { background: #f97316; box-shadow: 0 0 10px rgba(249, 115, 22, 0.5); }
+
+        canvas {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 lg:p-8 flex flex-col items-center">
+
+    <div class="max-w-7xl w-full bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-200">
+        
+        <!-- 左侧演示区域 -->
+        <div class="flex-1 p-6 lg:p-10 bg-[#f8fafc] flex flex-col items-center justify-center relative min-h-[600px]">
+            <div class="absolute top-8 left-10 text-left">
+                <h2 class="text-3xl font-black text-slate-800 tracking-tighter uppercase leading-none">
+                    Aluminum <span class="text-blue-600 tracking-normal">Ion</span> Flow
+                </h2>
+                <p class="text-slate-400 text-xs font-black mt-1 tracking-widest uppercase italic leading-none">Strong Anode Attraction & Slow Oxidation Decay</p>
+            </div>
+
+            <div class="relative p-8 bg-white rounded-[3.5rem] shadow-2xl border border-slate-100">
+                <canvas id="electrolysisCanvas" width="650" height="450" class="rounded-[2.5rem]"></canvas>
+            </div>
+            
+            <div class="mt-8 flex flex-wrap justify-center gap-6 px-10 py-4 bg-white rounded-full border border-slate-100 shadow-xl">
+                <div class="flex items-center gap-2 font-mono text-sm bg-slate-50 px-4 py-1 rounded-full border border-slate-200 shadow-inner">
+                    <span class="text-slate-400 uppercase font-black text-[10px]">Active Ions:</span>
+                    <span id="activeIonsCount" class="font-black text-blue-600 ml-2">--</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs font-bold text-slate-600">
+                    <div class="w-4 h-4 rounded-full bg-blue-500 shadow-md"></div> Al³⁺ 离子
+                    <div class="w-4 h-4 rounded-full bg-red-500 ml-2 shadow-md"></div> O²⁻ 离子
+                    <div class="w-4 h-4 rounded-full bg-emerald-400 ml-2 shadow-md"></div> 冰晶石 (Cry)
+                </div>
+            </div>
+
+            <div class="absolute top-10 right-10 flex flex-col gap-4 text-center">
+                <div class="bg-white/95 backdrop-blur px-8 py-5 rounded-[2rem] shadow-xl border border-slate-100 flex items-center gap-6">
+                    <div id="powerIconBox" class="p-4 rounded-2xl bg-slate-100 text-slate-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    </div>
+                    <div class="text-left">
+                        <div class="text-[10px] text-slate-400 font-black uppercase tracking-widest mb-1 leading-none">DC Cell Power</div>
+                        <div id="powerValueDisplay" class="font-mono text-3xl font-black tracking-tighter text-slate-800">0 A</div>
+                    </div>
+                </div>
+                <div id="criticalAnodeAlert" class="hidden bg-red-500 text-white px-4 py-2 rounded-full text-xs font-black animate-bounce shadow-lg">Critical Anode Decay!</div>
+            </div>
+        </div>
+
+        <!-- 右侧控制面板 -->
+        <div class="w-full md:w-80 p-8 flex flex-col gap-5 bg-white border-l border-slate-50 shadow-inner overflow-y-auto max-h-screen">
+            <div class="space-y-1"><h3 class="text-xl font-black text-slate-800 tracking-tighter uppercase underline decoration-blue-500 decoration-4 underline-offset-4">控制终端</h3></div>
+            
+            <section class="space-y-3 mt-2">
+                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">1. 化学辅料</label>
+                <button id="cryoliteBtn" class="w-full flex items-center justify-center gap-2 py-4 px-4 rounded-2xl font-black transition-all shadow-md bg-emerald-600 text-white hover:bg-emerald-700 active:scale-95 text-sm">加入冰晶石 (Na₃AlF₆)</button>
+                <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 shadow-inner">
+                    <div class="flex justify-between text-[10px] font-black text-slate-500 mb-2 uppercase tracking-tighter leading-none">
+                        <span>2. 系统温度控制</span>
+                        <span id="tempVal" class="text-orange-600 font-bold">25°C</span>
+                    </div>
+                    <input type="range" id="tempSlider" min="25" max="2500" value="25" class="w-full h-2 temp-slider rounded-lg appearance-none cursor-pointer accent-orange-500">
+                    <div class="flex justify-between font-mono text-[9px] text-slate-400 mt-1">
+                        <span>25°C</span>
+                        <span id="meltingPointTag" class="font-bold text-orange-600">熔点: 2050°C</span>
+                        <span>2500°C</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="space-y-3">
+                <div class="flex items-center gap-2 text-blue-600 font-black uppercase tracking-widest text-[10px]">3. 失去电子速度控制</div>
+                <div class="bg-blue-50 p-4 rounded-2xl border border-blue-100 shadow-inner">
+                    <input type="range" id="speedSlider" min="5" max="100" value="30" class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                </div>
+            </section>
+
+            <section class="space-y-4">
+                <button id="powerBtn" class="w-full flex items-center justify-center gap-2 py-5 px-4 rounded-2xl font-black transition-all shadow-lg active:scale-95 bg-yellow-400 text-slate-900 hover:bg-yellow-500">开启直流电解</button>
+            </section>
+
+            <section class="space-y-3 pt-2 border-t border-slate-50">
+                <label class="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">生产控制</label>
+                <button id="replenishBtn" class="w-full py-3 rounded-xl font-black bg-blue-50 text-blue-700 hover:bg-blue-100 transition-all active:scale-95">补充氧化铝原料</button>
+                <button id="replaceAnodeBtn" class="w-full py-3 rounded-xl font-black bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all active:scale-95">Replace Anodes</button>
+                <button id="flushBtn" class="w-full py-4 rounded-xl font-black bg-slate-900 text-white hover:bg-black active:scale-95">一键排空铝液</button>
+            </section>
+
+            <div class="mt-auto space-y-4 border-t border-slate-100 pt-6">
+                <div class="bg-slate-900 text-white p-5 rounded-[1.5rem] shadow-2xl">
+                    <div class="flex justify-between items-baseline mb-3 text-slate-400 uppercase leading-none">
+                        <span class="text-[10px] font-black uppercase">液态铝积聚量</span>
+                        <span id="yieldValue" class="text-xl font-mono font-black text-blue-400">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5">
+                        <div id="yieldBar" class="bg-gradient-to-r from-blue-500 to-cyan-400 h-full rounded-full transition-all duration-700 shadow-[0_0_15px_rgba(59,130,246,0.6)]" style="width: 0%"></div>
+                    </div>
+                </div>
+                <button id="resetBtn" class="w-full py-2 text-slate-400 hover:text-red-500 font-black text-xs transition-all uppercase">重置系统 (Reset)</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 核心物理常量 ---
+        const CANVAS_WIDTH = 650;
+        const CANVAS_HEIGHT = 450;
+        const CELL_X = 120;
+        const CELL_Y = 100;
+        const CELL_W = 480;
+        const CELL_H = 300;
+
+        const MELTING_POINT_PURE = 2050;
+        const MELTING_POINT_CRYOLITE = 950;
+        
+        const VISCOSITY_BASE = 0.92; 
+        const RADIUS_AL = 12;
+        const RADIUS_O = 16;
+        const RADIUS_ATOM = 13;
+        const RADIUS_CRYOLITE = 11;
+
+        const ANODE_COUNT = 4;
+        const BASE_ANODE_W = 60;
+        const BASE_ANODE_H = 80;
+        const ANODE_SPACING = (CELL_W - 120) / (ANODE_COUNT - 1);
+
+        // --- 系统状态 ---
+        const state = {
+            stage: 'solid',
+            isPowerOn: false,
+            temp: 25,
+            hasCryolite: false,
+            aluminumYield: 0,
+            isTapping: false,
+            reactionSpeed: 30, // 初始调低反应速度，让氧气产生更慢
+            anodeHealth: 100,
+            particles: [],
+            bubbles: [],
+            electronEffects: []
+        };
+
+        const canvas = document.getElementById('electrolysisCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function initParticles(append = false) {
+            const newParticles = [];
+            const rows = 5;
+            const cols = 12;
+            const spacingX = 38;
+            const spacingY = 32;
+            const startX = CELL_X + 25;
+            const startY = 220; 
+
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    const isAl = (i + j) % 5 < 2;
+                    newParticles.push({
+                        x: startX + j * spacingX,
+                        y: startY + i * spacingY,
+                        originX: startX + j * spacingX,
+                        originY: startY + i * spacingY,
+                        type: isAl ? 'Al3+' : 'O2-',
+                        vx: 0, vy: 0,
+                        state: 'ion',
+                        id: Math.random()
+                    });
+                }
+            }
+            if (append) state.particles.push(...newParticles.slice(0, 10));
+            else state.particles = newParticles;
+        }
+
+        function addCryoliteParticles() {
+            const startX = CELL_X + 40;
+            const startY = 135; 
+            for (let i = 0; i < 2; i++) {
+                for (let j = 0; j < 10; j++) {
+                    state.particles.push({
+                        x: startX + j * 42,
+                        y: startY + i * 35,
+                        originX: startX + j * 42,
+                        originY: startY + i * 35,
+                        type: 'Cryolite',
+                        vx: 0, vy: 0,
+                        state: 'ion',
+                        id: Math.random()
+                    });
+                }
+            }
+        }
+
+        function update() {
+            const currentMeltingPoint = state.hasCryolite ? MELTING_POINT_CRYOLITE : MELTING_POINT_PURE;
+            state.stage = state.temp >= currentMeltingPoint ? (state.isPowerOn ? 'electrolysis' : 'molten') : 'solid';
+
+            const speedFactor = state.reactionSpeed / 50;
+            const thermalAgitation = (state.temp / 2500) * 1.5; 
+
+            state.particles.forEach((p, i) => {
+                const r = p.type === 'Cryolite' ? RADIUS_CRYOLITE : (p.state === 'atom' ? RADIUS_ATOM : (p.type === 'Al3+' ? RADIUS_AL : RADIUS_O));
+
+                if (state.stage === 'solid') {
+                    const vibeScale = (state.temp / currentMeltingPoint) * 5; 
+                    p.x = p.originX + Math.sin(Date.now() / 40 + p.id * 10) * vibeScale;
+                    p.y = p.originY + Math.cos(Date.now() / 40 + p.id * 10) * vibeScale;
+                    p.vx = 0; p.vy = 0;
+                } else {
+                    p.vy += 0.08; 
+                    const visFactor = state.temp > 1500 ? 0.96 : 0.92;
+                    p.vx *= visFactor;
+                    p.vy *= visFactor;
+
+                    p.vx += (Math.random() - 0.5) * thermalAgitation;
+                    p.vy += (Math.random() - 0.5) * thermalAgitation;
+
+                    if (state.stage === 'electrolysis' && p.type !== 'Cryolite') {
+                        if (p.type === 'Al3+') {
+                            const electroForce = 0.15 * speedFactor;
+                            p.vy += electroForce; 
+                        } else if (p.type === 'O2-') {
+                            // --- 强化 Anode 吸引逻辑 ---
+                            // 所有的氧离子一旦通电，立即表现出极其强烈的向阳极趋势
+                            const strongElectroForce = 0.6 * speedFactor; // 大幅增加引力
+                            
+                            let closestAnodeX = CELL_X + CELL_W / 2;
+                            let minXDist = Infinity;
+                            for(let k=0; k < ANODE_COUNT; k++) {
+                                const ax = CELL_X + 60 + k * ANODE_SPACING + BASE_ANODE_W/2;
+                                const d = Math.abs(p.x - ax);
+                                if (d < minXDist) { minXDist = d; closestAnodeX = ax; }
+                            }
+                            
+                            p.vy -= strongElectroForce; // 强力向上
+                            p.vx += (closestAnodeX - p.x) * 0.15 * speedFactor; // 强力水平靠拢
+                        }
+                    }
+
+                    if (state.isTapping && p.state === 'atom') {
+                        p.vx += (CELL_X - p.x) * 0.2;
+                        p.vy += (CELL_Y + CELL_H - 35 - p.y) * 0.2;
+                    }
+
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    // 碰撞逻辑
+                    for (let j = i + 1; j < state.particles.length; j++) {
+                        const p2 = state.particles[j];
+                        const r2 = p2.type === 'Cryolite' ? RADIUS_CRYOLITE : (p2.state === 'atom' ? RADIUS_ATOM : (p2.type === 'Al3+' ? RADIUS_AL : RADIUS_O));
+                        const dx = p2.x - p.x;
+                        const dy = p2.y - p.y;
+                        const minDist = r + r2;
+                        const distSq = dx * dx + dy * dy;
+
+                        if (distSq < minDist * minDist) {
+                            const dist = Math.sqrt(distSq) || 1;
+                            const overlap = (minDist - dist) * 0.5;
+                            const nx = dx / dist;
+                            const ny = dy / dist;
+                            p.x -= nx * overlap; p.y -= ny * overlap;
+                            p2.x += nx * overlap; p2.y += ny * overlap;
+                            const damping = 0.3 + thermalAgitation * 0.1;
+                            p.vx -= nx * damping; p.vy -= ny * damping;
+                            p2.vx += nx * damping; p2.vy += ny * damping;
+                        }
+                    }
+
+                    if (p.x < CELL_X + r + 5) { p.vx *= -0.5; p.x = CELL_X + r + 5; }
+                    if (p.x > CELL_X + CELL_W - r - 5) { p.vx *= -0.5; p.x = CELL_X + CELL_W - r - 5; }
+                    if (p.y > CELL_Y + CELL_H - r - 20) { p.vy *= -0.3; p.y = CELL_Y + CELL_H - r - 20; }
+                    if (p.y < CELL_Y + r + 15) { p.vy *= -0.2; p.y = CELL_Y + r + 15; }
+                }
+            });
+
+            // 过滤排出系统或发生反应的微粒
+            state.particles = state.particles.filter(p => {
+                if (state.isTapping && p.state === 'atom' && p.x < CELL_X + 15) return false;
+                
+                if (state.stage === 'electrolysis' && p.state === 'ion' && state.anodeHealth > 5 && p.type !== 'Cryolite') {
+                    // --- 慢速反应逻辑 ---
+                    const cathProb = 0.15 * speedFactor; // 阴极反应维持正常速度
+                    const anodeProb = 0.02 * speedFactor; // 显著调低阳极反应概率，使其“变慢”
+
+                    if (p.type === 'Al3+' && p.y > CELL_Y + CELL_H - 65) {
+                        if (Math.random() < cathProb) {
+                            state.aluminumYield = Math.min(100, state.aluminumYield + 1.5);
+                            for(let i=0; i<3; i++) state.electronEffects.push({startX: p.x, startY: CELL_Y + CELL_H, endX: p.x, endY: p.y, progress: 0});
+                            p.state = 'atom';
+                        }
+                    }
+                    if (p.type === 'O2-' && p.y < CELL_Y + 75) {
+                        const inAnodeRange = Array.from({length: ANODE_COUNT}).some((_, k) => {
+                            const ax = CELL_X + 60 + k * ANODE_SPACING;
+                            return p.x > ax - 5 && p.x < ax + BASE_ANODE_W + 5;
+                        });
+                        // 即使被强力吸引到了阳极，失去电子的速度也非常缓慢
+                        if (inAnodeRange && Math.random() < anodeProb) {
+                            state.anodeHealth = Math.max(0, state.anodeHealth - 2.5);
+                            for(let i=0; i<2; i++) state.electronEffects.push({startX: p.x, startY: p.y, endX: p.x, endY: CELL_Y + 20, progress: 0});
+                            if (Math.random() > 0.3) state.bubbles.push({ x: p.x, y: p.y, r: 4, opacity: 1 });
+                            return false; 
+                        }
+                    }
+                }
+                return true;
+            });
+
+            state.electronEffects = state.electronEffects.map(e => ({ ...e, progress: e.progress + 0.15 })).filter(e => e.progress < 1);
+            state.bubbles = state.bubbles.map(b => ({ ...b, y: b.y - 1.2, r: b.r + 0.15, opacity: b.opacity - 0.01 })).filter(b => b.opacity > 0);
+            if (state.isTapping && state.aluminumYield > 0) state.aluminumYield = Math.max(0, state.aluminumYield - 0.5);
+        }
+
+        function renderLoop() {
+            update();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const heatAlpha = Math.max(0, (state.temp - 500) / 4000);
+            ctx.fillStyle = `rgba(255, 69, 0, ${heatAlpha})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(0, CELL_Y + CELL_H - 10, CELL_X - 40, 40);
+            if (state.isTapping && state.aluminumYield > 0) {
+                const tapY = CELL_Y + CELL_H - 35;
+                ctx.beginPath(); ctx.moveTo(CELL_X, tapY);
+                ctx.bezierCurveTo(CELL_X - 40, tapY, CELL_X - 70, tapY + 20, CELL_X - 70, CANVAS_HEIGHT);
+                ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 18; ctx.lineCap = 'round'; ctx.stroke();
+                ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 6; ctx.setLineDash([15, 8]); ctx.lineDashOffset = Date.now() / 15; ctx.stroke();
+            }
+
+            if (state.stage !== 'solid') {
+                ctx.fillStyle = '#fff7ed'; ctx.globalAlpha = 0.5;
+                ctx.fillRect(CELL_X + 5, CELL_Y + 45, CELL_W - 10, CELL_H - 65);
+                ctx.globalAlpha = 1.0;
+            }
+            ctx.strokeStyle = '#334155'; ctx.lineWidth = 12; ctx.lineJoin = 'round';
+            ctx.strokeRect(CELL_X, CELL_Y, CELL_W, CELL_H);
+
+            for(let k=0; k < ANODE_COUNT; k++) {
+                const ax = CELL_X + 60 + k * ANODE_SPACING;
+                const currentW = BASE_ANODE_W * (0.7 + (state.anodeHealth/100) * 0.3);
+                const currentH = BASE_ANODE_H * (state.anodeHealth / 100);
+                const drawX = ax + (BASE_ANODE_W - currentW) / 2;
+                const grad = ctx.createLinearGradient(drawX, CELL_Y - 50, drawX + currentW, CELL_Y - 50);
+                grad.addColorStop(0, '#1e293b'); grad.addColorStop(0.5, '#4b5563'); grad.addColorStop(1, '#0f172a');
+                ctx.fillStyle = grad;
+                if (state.anodeHealth > 0) ctx.fillRect(drawX, CELL_Y - 50, currentW, currentH);
+            }
+
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(CELL_X + 6, CELL_Y + CELL_H - 22, CELL_W - 12, 18);
+            ctx.fillStyle = '#94a3b8'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText("Cathode (-) Carbon Lining", CELL_X + CELL_W / 2, CELL_Y + CELL_H + 25);
+            ctx.fillStyle = '#334155'; ctx.font = 'bold 16px sans-serif';
+            ctx.fillText("Anode (+) Graphite", CELL_X + CELL_W / 2, CELL_Y - 80);
+
+            state.particles.forEach(p => {
+                const r = p.type === 'Cryolite' ? RADIUS_CRYOLITE : (p.state === 'atom' ? RADIUS_ATOM : (p.type === 'Al3+' ? RADIUS_AL : RADIUS_O));
+                ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+                const grad = ctx.createRadialGradient(p.x - r/3, p.y - r/3, r/10, p.x, p.y, r);
+                if (p.type === 'Cryolite') {
+                    grad.addColorStop(0, '#ecfdf5'); grad.addColorStop(0.4, '#34d399'); grad.addColorStop(1, '#065f46');
+                } else if (p.state === 'atom') {
+                    grad.addColorStop(0, '#f8fafc'); grad.addColorStop(0.4, '#cbd5e1'); grad.addColorStop(1, '#475569');
+                } else if (p.type === 'Al3+') {
+                    grad.addColorStop(0, '#dbeafe'); grad.addColorStop(0.4, '#60a5fa'); grad.addColorStop(1, '#1e40af');
+                } else {
+                    grad.addColorStop(0, '#fee2e2'); grad.addColorStop(0.4, '#f87171'); grad.addColorStop(1, '#991b1b');
+                }
+                ctx.fillStyle = grad; ctx.fill();
+                ctx.fillStyle = (p.state === 'atom' || p.type === 'Cryolite') ? '#0f172a' : 'white';
+                ctx.font = `bold ${r * 0.7}px Arial`; 
+                let label = p.state === 'atom' ? 'Al' : (p.type === 'Al3+' ? 'Al³' : (p.type === 'O2-' ? 'O²' : 'Cry'));
+                ctx.fillText(label, p.x, p.y + (r*0.3));
+            });
+
+            state.electronEffects.forEach(e => {
+                const curX = e.startX + (e.endX - e.startX) * e.progress;
+                const curY = e.startY + (e.endY - e.startY) * e.progress;
+                ctx.beginPath(); ctx.arc(curX, curY, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#fbbf24'; ctx.shadowBlur = 12; ctx.shadowColor = '#fbbf24';
+                ctx.fill(); ctx.shadowBlur = 0;
+            });
+
+            if (state.aluminumYield > 0) {
+                const grad = ctx.createLinearGradient(0, CELL_Y + CELL_H - 22 - (state.aluminumYield * 0.6), 0, CELL_Y + CELL_H - 22);
+                grad.addColorStop(0, '#f8fafc'); grad.addColorStop(0.5, '#cbd5e1'); grad.addColorStop(1, '#64748b');
+                ctx.fillStyle = grad;
+                const liquidH = Math.min(state.aluminumYield * 0.6, 95);
+                ctx.fillRect(CELL_X + 6, CELL_Y + CELL_H - 22 - liquidH, CELL_W - 12, liquidH);
+            }
+
+            state.bubbles.forEach(b => {
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(224, 242, 254, ${b.opacity})`; ctx.strokeStyle = `rgba(186, 230, 253, ${b.opacity})`;
+                ctx.lineWidth = 1; ctx.stroke(); ctx.fill();
+                if (b.opacity > 0.5) { ctx.fillStyle = `rgba(71, 85, 105, ${b.opacity})`; ctx.font = `${b.r * 0.6}px sans-serif`; ctx.fillText("CO₂", b.x, b.y + b.r * 0.3); }
+            });
+
+            if (state.isPowerOn) {
+                ctx.beginPath();
+                if (state.stage === 'electrolysis' && state.anodeHealth > 5) {
+                    ctx.setLineDash([10, 5]); ctx.lineDashOffset = -Date.now() / 15;
+                    ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 6;
+                } else { ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 3; }
+                ctx.moveTo(CELL_X + CELL_W, CELL_Y + CELL_H - 12);
+                ctx.lineTo(CANVAS_WIDTH - 15, CELL_Y + CELL_H - 12);
+                ctx.lineTo(CANVAS_WIDTH - 15, CELL_Y - 30);
+                ctx.lineTo(CELL_X + CELL_W - 80, CELL_Y - 30);
+                ctx.stroke(); ctx.setLineDash([]);
+            }
+
+            const ionsEl = document.getElementById('activeIonsCount');
+            if (ionsEl) {
+                const count = state.particles.filter(p => p.state === 'ion').length;
+                ionsEl.innerText = count;
+                ionsEl.className = `font-black ml-2 ${count < 10 ? 'text-red-500 animate-pulse' : 'text-blue-600'}`;
+            }
+            document.getElementById('yieldValue').innerText = Math.floor(state.aluminumYield) + '%';
+            document.getElementById('yieldBar').style.width = state.aluminumYield + '%';
+            document.getElementById('criticalAnodeAlert').classList.toggle('hidden', state.anodeHealth >= 20);
+            document.getElementById('powerValueDisplay').innerText = (state.stage === 'electrolysis' && state.anodeHealth > 5) ? '420 kA' : '0 A';
+            document.getElementById('powerIconBox').className = `p-4 rounded-2xl ${state.isPowerOn && state.stage === 'electrolysis' && state.anodeHealth > 5 ? 'bg-yellow-100 text-yellow-600 animate-pulse' : 'bg-slate-100 text-slate-400'}`;
+
+            requestAnimationFrame(renderLoop);
+        }
+
+        document.getElementById('tempSlider').addEventListener('input', (e) => {
+            state.temp = parseInt(e.target.value);
+            document.getElementById('tempVal').innerText = state.temp + '°C';
+        });
+
+        document.getElementById('speedSlider').addEventListener('input', (e) => {
+            state.reactionSpeed = parseInt(e.target.value);
+        });
+
+        document.getElementById('cryoliteBtn').addEventListener('click', () => {
+            state.hasCryolite = true;
+            addCryoliteParticles();
+            document.getElementById('cryoliteBtn').disabled = true;
+            document.getElementById('cryoliteBtn').innerText = '冰晶石已加入并正在溶解 Al₂O₃';
+            document.getElementById('cryoliteBtn').className = "w-full py-4 px-4 rounded-2xl font-black bg-emerald-50 text-emerald-600 border border-emerald-200 cursor-default text-xs";
+            document.getElementById('meltingPointTag').innerText = '熔点: 950°C';
+        });
+
+        document.getElementById('powerBtn').addEventListener('click', () => {
+            state.isPowerOn = !state.isPowerOn;
+            const btn = document.getElementById('powerBtn');
+            if (state.isPowerOn) {
+                btn.innerText = '切断直流电源'; btn.classList.replace('bg-yellow-400', 'bg-red-500'); btn.classList.add('text-white');
+            } else {
+                btn.innerText = '开启直流电解'; btn.classList.replace('bg-red-500', 'bg-yellow-400'); btn.classList.remove('text-white');
+            }
+        });
+
+        document.getElementById('flushBtn').addEventListener('click', () => {
+            if (state.aluminumYield > 0) {
+                state.isTapping = !state.isTapping;
+                document.getElementById('flushBtn').innerText = state.isTapping ? '停止排铝...' : '一键排空铝液';
+                if (state.isTapping) document.getElementById('flushBtn').classList.add('bg-orange-600', 'animate-pulse');
+                else document.getElementById('flushBtn').classList.remove('bg-orange-600', 'animate-pulse');
+            }
+        });
+
+        document.getElementById('replenishBtn').addEventListener('click', () => initParticles(true));
+        document.getElementById('replaceAnodeBtn').addEventListener('click', () => state.anodeHealth = 100);
+        document.getElementById('resetBtn').addEventListener('click', () => window.location.reload());
+
+        window.onload = () => { initParticles(); renderLoop(); };
+    </script>
+</body>
+</html>

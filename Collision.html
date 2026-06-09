@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>碰撞理论：双窗口对比实验</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .canvas-container {
+            background: radial-gradient(circle, #0f172a 0%, #000000 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        canvas {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: width 0.3s ease, height 0.3s ease;
+        }
+        .stats-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        input[type=range] {
+            height: 4px;
+            -webkit-appearance: none;
+            background: #374151;
+            border-radius: 5px;
+            width: 100%;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 14px;
+            width: 14px;
+            border-radius: 50%;
+            background: #60a5fa;
+            cursor: pointer;
+            border: 1px solid white;
+        }
+        .group-label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.6);
+            padding: 2px 10px;
+            border-radius: 99px;
+            font-size: 12px;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen p-2 md:p-6 font-sans">
+
+    <div class="max-w-7xl mx-auto space-y-6">
+        <header class="text-center">
+            <h1 class="text-3xl font-black text-white">碰撞理论：对比实验模拟器</h1>
+            <p class="text-slate-400 text-sm">调节温度、浓度或压强（体积），观察对反应速率的影响</p>
+        </header>
+
+        <!-- Simulation Area -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            
+            <!-- Group A -->
+            <div class="space-y-4">
+                <div class="canvas-container aspect-video rounded-2xl border-2 border-slate-700 shadow-xl" id="containerA">
+                    <div class="group-label text-blue-400 border border-blue-400">实验组 A</div>
+                    <canvas id="canvasA"></canvas>
+                </div>
+                
+                <div class="stats-card p-4 rounded-xl grid grid-cols-4 gap-2 text-center text-sm">
+                    <div><span class="block text-blue-400 font-bold text-[10px] uppercase">H₂</span> <span id="h2-A">0</span></div>
+                    <div><span class="block text-green-400 font-bold text-[10px] uppercase">Cl₂</span> <span id="cl2-A">0</span></div>
+                    <div><span class="block text-purple-400 font-bold text-[10px] uppercase">HCl</span> <span id="hcl-A">0</span></div>
+                    <div class="border-l border-white/10 ml-1">
+                        <span class="block text-yellow-400 font-bold text-[10px] uppercase">Successful Collisions</span>
+                        <span id="success-A" class="text-lg font-black text-yellow-400">0</span>
+                    </div>
+                </div>
+
+                <div class="stats-card p-4 rounded-xl space-y-4">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500">温度: <span id="val-tempA">300</span>K</label>
+                            <input type="range" id="slider-tempA" min="100" max="1000" value="300">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500">浓度: <span id="val-concA">8</span>对</label>
+                            <input type="range" id="slider-concA" min="2" max="20" value="8">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500">压强: <span id="val-pressA">1.0</span>atm</label>
+                            <input type="range" id="slider-pressA" min="10" max="20" value="10" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Group B -->
+            <div class="space-y-4">
+                <div class="canvas-container aspect-video rounded-2xl border-2 border-slate-700 shadow-xl" id="containerB">
+                    <div class="group-label text-orange-400 border border-orange-400">实验组 B</div>
+                    <canvas id="canvasB"></canvas>
+                </div>
+
+                <div class="stats-card p-4 rounded-xl grid grid-cols-4 gap-2 text-center text-sm">
+                    <div><span class="block text-blue-400 font-bold text-[10px] uppercase">H₂</span> <span id="h2-B">0</span></div>
+                    <div><span class="block text-green-400 font-bold text-[10px] uppercase">Cl₂</span> <span id="cl2-B">0</span></div>
+                    <div><span class="block text-purple-400 font-bold text-[10px] uppercase">HCl</span> <span id="hcl-B">0</span></div>
+                    <div class="border-l border-white/10 ml-1">
+                        <span class="block text-yellow-400 font-bold text-[10px] uppercase">Successful Collisions</span>
+                        <span id="success-B" class="text-lg font-black text-yellow-400">0</span>
+                    </div>
+                </div>
+
+                <div class="stats-card p-4 rounded-xl space-y-4">
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500">温度: <span id="val-tempB">600</span>K</label>
+                            <input type="range" id="slider-tempB" min="100" max="1000" value="600">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500">浓度: <span id="val-concB">8</span>对</label>
+                            <input type="range" id="slider-concB" min="2" max="20" value="8">
+                        </div>
+                        <div class="space-y-1">
+                            <label class="text-[10px] uppercase font-bold text-slate-500">压强: <span id="val-pressB">1.0</span>atm</label>
+                            <input type="range" id="slider-pressB" min="10" max="20" value="10" step="1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="stats-card p-6 rounded-2xl flex flex-col justify-center gap-4">
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs font-bold text-yellow-500 uppercase">
+                        <span>活化能门槛 (Ea)</span>
+                        <span id="val-ea">50</span>
+                    </div>
+                    <input type="range" id="slider-ea" min="10" max="100" value="50">
+                </div>
+                <button id="btn-reset" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl transition-all active:scale-95 shadow-lg">
+                    同步重置两个实验
+                </button>
+            </div>
+
+            <div class="lg:col-span-2 stats-card p-6 rounded-2xl overflow-x-auto">
+                <h3 class="text-sm font-bold text-slate-400 mb-4 uppercase tracking-widest">物理特性实时监测</h3>
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-[10px] text-slate-500 border-b border-slate-800">
+                            <th class="pb-2">组别</th>
+                            <th class="pb-2">H₂ 平均动能</th>
+                            <th class="pb-2">Cl₂ 平均动能</th>
+                            <th class="pb-2">理论碰撞成功率</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm">
+                        <tr>
+                            <td class="py-3 text-blue-400 font-bold">实验组 A</td>
+                            <td id="ek-h2-A">0.00</td>
+                            <td id="ek-cl2-A">0.00</td>
+                            <td id="rate-A">--</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 text-orange-400 font-bold">实验组 B</td>
+                            <td id="ek-h2-B">0.00</td>
+                            <td id="ek-cl2-B">0.00</td>
+                            <td id="rate-B">--</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const H_RADIUS = 10, CL_RADIUS = 15;
+        const H_MASS = 1.0, CL_MASS = 2.5;
+        const BASE_VELOCITY = 1.5; 
+
+        // 定义微粒类
+        class Particle {
+            constructor(type, canvasW, canvasH, temp, vx, vy) {
+                this.type = type;
+                this.mass = type === 'H2' ? H_MASS : (type === 'Cl2' ? CL_MASS : (H_MASS + CL_MASS)/2);
+                this.radius = type === 'H2' ? H_RADIUS : (type === 'Cl2' ? CL_RADIUS : (H_RADIUS + CL_RADIUS)*0.6);
+                this.x = Math.random() * (canvasW - this.radius * 2) + this.radius;
+                this.y = Math.random() * (canvasH - this.radius * 2) + this.radius;
+                
+                const speedScale = Math.sqrt(temp / 300);
+                this.vx = vx || (Math.random() - 0.5) * BASE_VELOCITY * speedScale;
+                this.vy = vy || (Math.random() - 0.5) * BASE_VELOCITY * speedScale;
+            }
+
+            update(w, h) {
+                this.x += this.vx; this.y += this.vy;
+                // 边界碰撞检测
+                if (this.x < this.radius) { this.vx = Math.abs(this.vx); this.x = this.radius; }
+                if (this.x > w - this.radius) { this.vx = -Math.abs(this.vx); this.x = w - this.radius; }
+                if (this.y < this.radius) { this.vy = Math.abs(this.vy); this.y = this.radius; }
+                if (this.y > h - this.radius) { this.vy = -Math.abs(this.vy); this.y = h - this.radius; }
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(Math.atan2(this.vy, this.vx));
+                const d = this.radius * 0.4;
+                if (this.type === 'H2') this.drawBonded(ctx, -d, d, H_RADIUS, '#3b82f6', H_RADIUS, '#60a5fa');
+                else if (this.type === 'Cl2') this.drawBonded(ctx, -d, d, CL_RADIUS, '#10b981', CL_RADIUS, '#34d399');
+                else this.drawBonded(ctx, -d, d, H_RADIUS, '#3b82f6', CL_RADIUS, '#10b981');
+                ctx.restore();
+            }
+
+            drawBonded(ctx, d1, d2, r1, c1, r2, c2) {
+                ctx.beginPath(); ctx.fillStyle = c1; ctx.arc(d1, 0, r1, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.fillStyle = c2; ctx.arc(d2, 0, r2, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = "rgba(255,255,255,0.2)"; ctx.lineWidth = 3;
+                ctx.beginPath(); ctx.moveTo(d1, 0); ctx.lineTo(d2, 0); ctx.stroke();
+            }
+
+            getEk() { return 0.5 * this.mass * (this.vx**2 + this.vy**2); }
+        }
+
+        // 成功碰撞特效
+        class Spark {
+            constructor(x, y) { this.x = x; this.y = y; this.life = 1.0; }
+            draw(ctx) {
+                ctx.beginPath(); ctx.arc(this.x, this.y, (1-this.life)*40, 0, Math.PI*2);
+                ctx.strokeStyle = `rgba(253, 224, 71, ${this.life})`; ctx.lineWidth = 2; ctx.stroke();
+                this.life -= 0.05;
+            }
+        }
+
+        // 模拟核心逻辑
+        class Simulation {
+            constructor(canvasId, containerId, sliders) {
+                this.canvas = document.getElementById(canvasId);
+                this.container = document.getElementById(containerId);
+                this.ctx = this.canvas.getContext('2d');
+                this.sliders = sliders;
+                this.particles = [];
+                this.effects = [];
+                this.successCount = 0;
+                this.init();
+            }
+
+            init() {
+                // 根据压强缩放画布（模拟体积变化：V = 1/P）
+                const pressureScale = 10 / parseInt(this.sliders.press.value); 
+                const baseW = this.container.offsetWidth;
+                const baseH = this.container.offsetHeight;
+                
+                this.canvas.width = baseW * pressureScale;
+                this.canvas.height = baseH * pressureScale;
+                
+                this.particles = [];
+                this.effects = [];
+                this.successCount = 0;
+                const count = parseInt(this.sliders.conc.value);
+                const temp = parseInt(this.sliders.temp.value);
+                for(let i=0; i<count; i++) {
+                    this.particles.push(new Particle('H2', this.canvas.width, this.canvas.height, temp));
+                    this.particles.push(new Particle('Cl2', this.canvas.width, this.canvas.height, temp));
+                }
+            }
+
+            update() {
+                const ea = parseInt(document.getElementById('slider-ea').value);
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+
+                for(let i=0; i<this.particles.length; i++) {
+                    for(let j=i+1; j<this.particles.length; j++) {
+                        const p1 = this.particles[i]; const p2 = this.particles[j];
+                        const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+                        if (dist < p1.radius + p2.radius) {
+                            this.resolveCollision(p1, p2);
+                            // 判断是否为反应碰撞（H2 + Cl2）
+                            if((p1.type === 'H2' && p2.type === 'Cl2') || (p1.type === 'Cl2' && p2.type === 'H2')) {
+                                const relV2 = (p1.vx-p2.vx)**2 + (p1.vy-p2.vy)**2;
+                                const energy = 0.5 * ((p1.mass+p2.mass)/2) * relV2;
+                                if (energy > ea * 0.7) {
+                                    this.successCount++;
+                                    const mx = (p1.x+p2.x)/2, my = (p1.y+p2.y)/2;
+                                    const v1x = p1.vx, v1y = p1.vy, v2x = p2.vx, v2y = p2.vy;
+                                    this.effects.push(new Spark(mx, my));
+                                    this.particles.splice(j, 1); this.particles.splice(i, 1);
+                                    this.particles.push(new Particle('HCl', w, h, 0, v1x, v1y));
+                                    this.particles.push(new Particle('HCl', w, h, 0, v2x, v2y));
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+                this.particles.forEach(p => p.update(w, h));
+                this.effects = this.effects.filter(e => e.life > 0);
+            }
+
+            resolveCollision(p1, p2) {
+                const dx = p2.x - p1.x, dy = p2.y - p1.y;
+                const d = Math.hypot(dx, dy);
+                if (d === 0) return;
+                const nx = dx/d, ny = dy/d;
+                const v1n = p1.vx*nx + p1.vy*ny, v2n = p2.vx*nx + p2.vy*ny;
+                if (v1n < v2n) return;
+                const mSum = p1.mass + p2.mass;
+                const v1nF = (v1n*(p1.mass - p2.mass) + 2*p2.mass*v2n)/mSum;
+                const v2nF = (v2n*(p2.mass - p1.mass) + 2*p1.mass*v1n)/mSum;
+                p1.vx += (v1nF-v1n)*nx; p1.vy += (v1nF-v1n)*ny;
+                p2.vx += (v2nF-v2n)*nx; p2.vy += (v2nF-v2n)*ny;
+            }
+
+            draw() {
+                this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+                this.particles.forEach(p => p.draw(this.ctx));
+                this.effects.forEach(e => e.draw(this.ctx));
+            }
+
+            getData() {
+                const h2 = this.particles.filter(p => p.type === 'H2');
+                const cl2 = this.particles.filter(p => p.type === 'Cl2');
+                const hcl = this.particles.filter(p => p.type === 'HCl');
+                const ekH2 = h2.length ? h2.reduce((s,p)=>s+p.getEk(),0)/h2.length : 0;
+                const ekCl2 = cl2.length ? cl2.reduce((s,p)=>s+p.getEk(),0)/cl2.length : 0;
+                return { h2: h2.length, cl2: cl2.length, hcl: hcl.length, ekH2, ekCl2, success: this.successCount };
+            }
+        }
+
+        const slidersA = { 
+            temp: document.getElementById('slider-tempA'), 
+            conc: document.getElementById('slider-concA'),
+            press: document.getElementById('slider-pressA')
+        };
+        const slidersB = { 
+            temp: document.getElementById('slider-tempB'), 
+            conc: document.getElementById('slider-concB'),
+            press: document.getElementById('slider-pressB')
+        };
+        
+        const simA = new Simulation('canvasA', 'containerA', slidersA);
+        const simB = new Simulation('canvasB', 'containerB', slidersB);
+
+        function updateUI() {
+            const dataA = simA.getData();
+            const dataB = simB.getData();
+
+            document.getElementById('h2-A').innerText = dataA.h2;
+            document.getElementById('cl2-A').innerText = dataA.cl2;
+            document.getElementById('hcl-A').innerText = dataA.hcl;
+            document.getElementById('success-A').innerText = dataA.success;
+            document.getElementById('ek-h2-A').innerText = dataA.ekH2.toFixed(2);
+            document.getElementById('ek-cl2-A').innerText = dataA.ekCl2.toFixed(2);
+            
+            document.getElementById('h2-B').innerText = dataB.h2;
+            document.getElementById('cl2-B').innerText = dataB.cl2;
+            document.getElementById('hcl-B').innerText = dataB.hcl;
+            document.getElementById('success-B').innerText = dataB.success;
+            document.getElementById('ek-h2-B').innerText = dataB.ekH2.toFixed(2);
+            document.getElementById('ek-cl2-B').innerText = dataB.ekCl2.toFixed(2);
+
+            document.getElementById('val-ea').innerText = document.getElementById('slider-ea').value;
+            document.getElementById('val-tempA').innerText = slidersA.temp.value;
+            document.getElementById('val-concA').innerText = slidersA.conc.value;
+            document.getElementById('val-pressA').innerText = (slidersA.press.value / 10).toFixed(1);
+            document.getElementById('val-tempB').innerText = slidersB.temp.value;
+            document.getElementById('val-concB').innerText = slidersB.conc.value;
+            document.getElementById('val-pressB').innerText = (slidersB.press.value / 10).toFixed(1);
+
+            const ea = document.getElementById('slider-ea').value;
+            document.getElementById('rate-A').innerText = (Math.exp(-ea/(slidersA.temp.value/10)) * 100).toFixed(1) + "%";
+            document.getElementById('rate-B').innerText = (Math.exp(-ea/(slidersB.temp.value/10)) * 100).toFixed(1) + "%";
+        }
+
+        function mainLoop() {
+            simA.update(); simA.draw();
+            simB.update(); simB.draw();
+            if(Math.random() > 0.8) updateUI();
+            requestAnimationFrame(mainLoop);
+        }
+
+        // 监听滑块变化
+        [slidersA.temp, slidersA.conc, slidersA.press, slidersB.temp, slidersB.conc, slidersB.press].forEach(s => {
+            s.addEventListener('input', () => {
+                const isA = s.id.includes('A');
+                const sim = isA ? simA : simB;
+                
+                if(s.id.includes('conc') || s.id.includes('press')) {
+                    sim.init();
+                }
+                
+                if(s.id.includes('temp')) {
+                    const scale = Math.sqrt(s.value / 300);
+                    sim.particles.forEach(p => {
+                        const currentV = Math.hypot(p.vx, p.vy);
+                        const targetV = (Math.random() + 0.5) * BASE_VELOCITY * scale;
+                        if(currentV !== 0) { p.vx *= (targetV / currentV); p.vy *= (targetV / currentV); }
+                    });
+                }
+                updateUI();
+            });
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => { simA.init(); simB.init(); updateUI(); });
+        window.addEventListener('resize', () => { simA.init(); simB.init(); });
+        window.onload = () => { updateUI(); mainLoop(); };
+    </script>
+</body>
+</html>

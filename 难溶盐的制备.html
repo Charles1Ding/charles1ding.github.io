@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>制备硫酸铅：方法对比实验 (可调数量)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #ECEFF1;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 340px;
+            border: 1px solid #e2e8f0;
+            max-height: 95vh;
+            overflow-y: auto;
+        }
+        .btn {
+            transition: all 0.2s;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn:active { transform: scale(0.98); }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+            font-size: 12px;
+            color: #334155;
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .square {
+            width: 10px;
+            height: 10px;
+            margin-right: 6px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+        .method-btn {
+            text-align: left;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background: #f8fafc;
+        }
+        .method-btn:hover { background: #f1f5f9; border-color: #94a3b8; }
+        .method-btn.active { background: #e0f2fe; border-color: #3b82f6; ring: 2px solid #3b82f6; }
+        
+        /* Custom range slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #cbd5e1;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h2 class="text-lg font-bold text-slate-800 mb-2">制备硫酸铅 (PbSO₄)</h2>
+        <div class="text-xs text-slate-500 mb-3 bg-slate-50 p-2 rounded border border-slate-200 leading-relaxed">
+            <strong>目标：</strong>制备纯净的难溶盐 PbSO₄。<br>
+            <strong>挑战：</strong>固体原料会导致产物不纯。请通过下方滑块调整反应物比例。
+        </div>
+
+        <!-- 数量调整区域 -->
+        <div class="mb-4 bg-slate-50 p-3 rounded border border-slate-200">
+            <div class="text-xs font-bold text-slate-700 mb-3">🛠️ 数量设置</div>
+            
+            <div class="mb-3">
+                <div class="flex justify-between text-xs text-slate-600 mb-1">
+                    <span>硫酸量 (H⁺粒子数)</span>
+                    <span id="display-acid" class="font-bold text-blue-600">20</span>
+                </div>
+                <input type="range" id="slider-acid" min="4" max="40" value="20" step="2">
+            </div>
+
+            <div>
+                <div class="flex justify-between text-xs text-slate-600 mb-1">
+                    <span>含铅物质数量</span>
+                    <span id="display-reactant" class="font-bold text-emerald-600">15</span>
+                </div>
+                <input type="range" id="slider-reactant" min="5" max="40" value="15" step="1">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <div class="text-xs font-bold text-slate-700 mb-1">第一步：加入酸液</div>
+            <button id="btn-add-h2so4" class="btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 py-2 rounded font-bold border border-yellow-200 shadow-sm">
+                加入 硫酸 (H₂SO₄)
+            </button>
+        </div>
+
+        <div class="mb-3">
+            <div class="text-xs font-bold text-slate-700 mb-1">第二步：选择含铅物质</div>
+            
+            <button id="btn-method-metal" class="method-btn w-full">
+                <span class="font-bold block text-slate-700">1. 金属铅 (Pb) 固体</span>
+                <span class="text-xs text-slate-500">Pb + H₂SO₄ → PbSO₄ + H₂</span>
+            </button>
+            
+            <button id="btn-method-carbonate" class="method-btn w-full">
+                <span class="font-bold block text-slate-700">2. 碳酸铅 (PbCO₃) 固体</span>
+                <span class="text-xs text-slate-500">PbCO₃ + H₂SO₄ → PbSO₄ + H₂O + CO₂</span>
+            </button>
+
+            <button id="btn-method-hydroxide" class="method-btn w-full">
+                <span class="font-bold block text-slate-700">3. 氢氧化铅 (Pb(OH)₂) 固体</span>
+                <span class="text-xs text-slate-500">Pb(OH)₂ + H₂SO₄ → PbSO₄ + H₂O</span>
+            </button>
+
+            <button id="btn-method-nitrate" class="method-btn w-full bg-green-50 border-green-200">
+                <span class="font-bold block text-green-800">4. 硝酸铅溶液 (Pb(NO₃)₂)</span>
+                <span class="text-xs text-green-600">Pb²⁺ + SO₄²⁻ → PbSO₄↓ (沉淀法)</span>
+            </button>
+        </div>
+
+        <div class="bg-white p-2 rounded border border-gray-200 mb-3 shadow-sm">
+            <div id="analysis-text" class="text-xs text-gray-600">请选择一种方法开始...</div>
+        </div>
+
+        <button id="btn-reset" class="btn w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 rounded border border-slate-200 mb-2">
+            清空/重置
+        </button>
+
+        <div class="border-t border-slate-200 pt-2">
+            <div class="text-xs font-bold text-slate-400 uppercase mb-1">图例</div>
+            <div class="grid grid-cols-2 gap-1">
+                <div class="legend-item"><span class="dot" style="background: #FF5252;"></span>H⁺ (酸)</div>
+                <div class="legend-item"><span class="dot" style="background: #FFC107;"></span>SO₄²⁻</div>
+                <div class="legend-item"><span class="square" style="background: #FFFFFF; border:1px solid #999;"></span>PbSO₄(产物)</div>
+                <div class="legend-item"><span class="square" style="background: #607D8B;"></span>Pb (金属)</div>
+                <div class="legend-item"><span class="square" style="background: #F5F5DC;"></span>PbCO₃</div>
+                <div class="legend-item"><span class="square" style="background: #E3F2FD;"></span>Pb(OH)₂</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+<script>
+    var canvas = document.getElementById('simCanvas');
+    var ctx = canvas.getContext('2d');
+    var uiAnalysis = document.getElementById('analysis-text');
+    var sliderAcid = document.getElementById('slider-acid');
+    var sliderReactant = document.getElementById('slider-reactant');
+    var displayAcid = document.getElementById('display-acid');
+    var displayReactant = document.getElementById('display-reactant');
+
+    // System State
+    var width, height;
+    var beaker = { x: 0, y: 0, w: 0, h: 0, wall: 5, liquidY: 0 };
+    var entities = [];
+    var effects = [];
+    var hasAcid = false;
+    var currentMethod = null;
+
+    // Radius Constants
+    var R = {
+        H: 6, SO4: 10, PB_ION: 9, NO3: 9, 
+        H2O: 8, GAS: 8,
+        SOLID_PB: 10, SOLID_CO3: 10, SOLID_OH: 10,
+        SOLID_SO4: 10 // The product
+    };
+
+    class Entity {
+        constructor(x, y, type) {
+            this.x = x; this.y = y;
+            this.type = type;
+            this.vx = (Math.random()-0.5)*1; 
+            this.vy = (Math.random()-0.5)*1;
+            this.del = false;
+            this.fixed = false; // For solids sitting at bottom
+            
+            // Properties based on type
+            if (type === 'H') { this.c = '#FF5252'; this.r = R.H; this.lbl = 'H⁺'; }
+            else if (type === 'SO4') { this.c = '#FFC107'; this.r = R.SO4; this.lbl = 'SO₄'; }
+            else if (type === 'PbIon') { this.c = '#9E9E9E'; this.r = R.PB_ION; this.lbl = 'Pb²⁺'; }
+            else if (type === 'NO3') { this.c = '#9C27B0'; this.r = R.NO3; this.lbl = 'NO₃'; this.spec = true; }
+            else if (type === 'H2O') { this.c = '#E1F5FE'; this.r = R.H2O; this.lbl = ''; this.spec = true; }
+            else if (type === 'CO2' || type === 'H2') { 
+                this.c = 'rgba(255,255,255,0.6)'; this.r = R.GAS; 
+                this.lbl = type==='CO2'?'CO₂':'H₂'; 
+                this.vy = -1.5; this.gas = true; 
+            }
+            // Solids (Reactants)
+            else if (type === 'PbSolid') { this.c = '#607D8B'; this.r = R.SOLID_PB; this.solid = true; this.lbl = 'Pb'; this.hits = 0; }
+            else if (type === 'PbCO3') { this.c = '#F5F5DC'; this.r = R.SOLID_CO3; this.solid = true; this.lbl = 'CO₃'; this.hits = 0; } // Beige
+            else if (type === 'PbOH2') { this.c = '#E3F2FD'; this.r = R.SOLID_OH; this.solid = true; this.lbl = 'OH'; this.hits = 0; }
+            // Solids (Product)
+            else if (type === 'PbSO4') { 
+                this.c = '#FFFFFF'; this.r = R.SOLID_SO4; 
+                this.solid = true; this.product = true; 
+                this.lbl = ''; 
+                this.vy = 1; // Sinks
+            }
+
+            if (this.solid) {
+                this.vx = 0; this.vy = 2; // Solids sink initially
+            }
+        }
+
+        update() {
+            if (this.fixed) return;
+
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Gas
+            if (this.gas) {
+                if (this.y < -20) this.del = true;
+                return;
+            }
+
+            const floor = beaker.y + beaker.h - beaker.wall;
+            const lWall = beaker.x + beaker.wall;
+            const rWall = beaker.x + beaker.w - beaker.wall;
+
+            // Solid settling logic
+            if (this.solid) {
+                if (this.y > floor - this.r) {
+                    this.y = floor - this.r;
+                    this.fixed = true;
+                }
+                // Stack on other solids (Simplified)
+                if (this.x < lWall+this.r) this.x = lWall+this.r;
+                if (this.x > rWall-this.r) this.x = rWall-this.r;
+                return;
+            }
+
+            // Solution Ion Logic
+            if (this.x < lWall+this.r) { this.x = lWall+this.r; this.vx *= -1; }
+            if (this.x > rWall-this.r) { this.x = rWall-this.r; this.vx *= -1; }
+            if (this.y > floor - this.r) { this.y = floor - this.r; this.vy *= -1; }
+            
+            // Keep in water
+            if (this.y > beaker.liquidY) {
+                // Drag
+                this.vx *= 0.95; this.vy *= 0.95;
+                // Brownian
+                this.vx += (Math.random()-0.5)*0.5;
+                this.vy += (Math.random()-0.5)*0.5;
+            } else {
+                this.vy += 0.1; // Gravity
+            }
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            
+            ctx.beginPath();
+            if (this.solid) {
+                // Square-ish for solids
+                ctx.rect(-this.r, -this.r, this.r*2, this.r*2);
+            } else {
+                ctx.arc(0, 0, this.r, 0, Math.PI*2);
+            }
+            ctx.fillStyle = this.c;
+            ctx.fill();
+            ctx.strokeStyle = '#90A4AE';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Label
+            if (!this.product && this.type !== 'H2O') {
+                ctx.fillStyle = (this.type === 'PbSolid' || this.type === 'PbIon' || this.type === 'PbCO3') ? '#333' : '#37474F';
+                if (this.type==='H' || this.type==='PbSolid') ctx.fillStyle = 'white';
+                ctx.font = "10px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(this.lbl, 0, 0);
+            }
+            
+            ctx.restore();
+        }
+    }
+
+    class Effect {
+        constructor(x, y, txt) { this.x=x; this.y=y; this.txt=txt; this.life=1.0; }
+        draw() {
+            if (this.life<=0) return;
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = '#455A64'; ctx.font='bold 12px Arial'; ctx.fillText(this.txt, this.x, this.y);
+            ctx.globalAlpha = 1;
+            this.life -= 0.02; this.y -= 0.5;
+        }
+    }
+
+    function resize() {
+        width = window.innerWidth; height = window.innerHeight;
+        canvas.width = width; canvas.height = height;
+        const bw = Math.min(400, width*0.6);
+        const bh = Math.min(500, height*0.6);
+        beaker = {
+            w: bw, h: bh,
+            x: (width-bw)/2, y: height-bh-50,
+            wall: 6,
+            liquidY: height-bh-50 + bh*0.4
+        };
+    }
+    window.addEventListener('resize', resize);
+
+    function addH2SO4() {
+        if (hasAcid) return;
+        hasAcid = true;
+        
+        let countH = parseInt(sliderAcid.value);
+        let countSO4 = Math.floor(countH / 2); // Approximation
+
+        for(let i=0; i<countSO4; i++) {
+            const x = beaker.x + Math.random()*beaker.w;
+            const y = beaker.liquidY + Math.random()*(beaker.h*0.5);
+            entities.push(new Entity(x, y, 'SO4'));
+            entities.push(new Entity(x, y, 'H'));
+            entities.push(new Entity(x, y, 'H'));
+        }
+        uiAnalysis.innerHTML = "烧杯中已有稀硫酸。<br>请选择一种含铅物质加入。";
+    }
+
+    function selectMethod(method) {
+        if (!hasAcid) {
+            alert("请先加入硫酸！");
+            return;
+        }
+        currentMethod = method;
+        
+        // Clear previous solids if any
+        entities = entities.filter(e => !e.solid && !e.gas && e.type !== 'PbIon' && e.type !== 'NO3');
+
+        const bx = beaker.x + beaker.w/2;
+        const by = beaker.y;
+        
+        let count = parseInt(sliderReactant.value);
+
+        if (method === 'metal') {
+            for(let i=0; i<count; i++) entities.push(new Entity(bx+(Math.random()-0.5)*40, by, 'PbSolid'));
+            uiAnalysis.innerHTML = "<span class='text-red-600 font-bold'>固体混合物</span>: 反应生成了白色的 PbSO₄，沉淀中混有未反应的灰色金属铅。";
+        } else if (method === 'carbonate') {
+            for(let i=0; i<count; i++) entities.push(new Entity(bx+(Math.random()-0.5)*40, by, 'PbCO3'));
+            uiAnalysis.innerHTML = "<span class='text-orange-600 font-bold'>固体混合物</span>: 反应生成 PbSO₄，但沉淀中混有未反应的米色碳酸铅。";
+        } else if (method === 'hydroxide') {
+            for(let i=0; i<count; i++) entities.push(new Entity(bx+(Math.random()-0.5)*40, by, 'PbOH2'));
+            uiAnalysis.innerHTML = "<span class='text-orange-600 font-bold'>固体混合物</span>: 反应生成 PbSO₄，但沉淀中混有未反应的氢氧化铅。";
+        } else if (method === 'nitrate') {
+            // Add solution (Pb2+, NO3-)
+            // Note: Nitrate is soluble, so we add 2 NO3 for each Pb
+            for(let i=0; i<count; i++) {
+                entities.push(new Entity(bx+(Math.random()-0.5)*50, by, 'PbIon'));
+                entities.push(new Entity(bx+(Math.random()-0.5)*50, by, 'NO3'));
+                entities.push(new Entity(bx+(Math.random()-0.5)*50, by, 'NO3'));
+            }
+            uiAnalysis.innerHTML = "<span class='text-emerald-600 font-bold'>纯净产物</span>: 溶液反应。产物仅有 PbSO₄ 沉淀 (和可溶的硝酸盐)，易于过滤提纯。";
+        }
+    }
+
+    function simStep() {
+        // Stacking Logic (Naive)
+        let solids = entities.filter(e => e.solid);
+        for (let s1 of solids) {
+            if (s1.fixed) continue;
+            for (let s2 of solids) {
+                if (s1===s2) continue;
+                if (Math.abs(s1.x - s2.x) < s1.r + s2.r && Math.abs(s1.y - s2.y) < s1.r+s2.r) {
+                     if (s2.y > s1.y && (s2.fixed || Math.abs(s2.vy)<0.1)) {
+                         s1.y = s2.y - s1.r*2;
+                         s1.fixed = true;
+                         s1.vx = 0; s1.vy = 0;
+                     }
+                }
+            }
+        }
+
+        // Reaction Logic
+        let hIons = entities.filter(e => e.type === 'H' && !e.del);
+        let so4Ions = entities.filter(e => e.type === 'SO4' && !e.del);
+        let pbSolids = entities.filter(e => (e.type === 'PbSolid' || e.type === 'PbCO3' || e.type === 'PbOH2') && !e.del);
+        let pbIons = entities.filter(e => e.type === 'PbIon' && !e.del);
+
+        // A. Solid Reactant Logic (Surface reaction)
+        for (let s of pbSolids) {
+            for (let h of hIons) {
+                if (h.del) continue;
+                const d = Math.sqrt((s.x-h.x)**2 + (s.y-h.y)**2);
+                if (d < s.r + h.r) {
+                    h.del = true;
+                    s.hits++;
+                    if (s.hits >= 2) {
+                        s.del = true;
+                        if (s.type === 'PbSolid') entities.push(new Entity(s.x, s.y-5, 'H2'));
+                        else if (s.type === 'PbCO3') { entities.push(new Entity(s.x, s.y-5, 'CO2')); entities.push(new Entity(s.x+5, s.y+5, 'H2O')); }
+                        else if (s.type === 'PbOH2') { entities.push(new Entity(s.x+5, s.y+5, 'H2O')); entities.push(new Entity(s.x-5, s.y+5, 'H2O')); }
+                        
+                        // Spawn PbIon that will immediately precipitate
+                        let newIon = new Entity(s.x, s.y, 'PbIon');
+                        newIon.vy = -1; 
+                        entities.push(newIon);
+                    }
+                    break;
+                }
+            }
+        }
+
+        // B. Precipitation Logic
+        pbIons = entities.filter(e => e.type === 'PbIon' && !e.del);
+        for (let pb of pbIons) {
+            if (pb.del) continue;
+            for (let so4 of so4Ions) {
+                if (so4.del) continue;
+                const d = Math.sqrt((pb.x-so4.x)**2 + (pb.y-so4.y)**2);
+                
+                // Attraction
+                if (d < 100) {
+                    let f = 0.5/d;
+                    pb.vx += (so4.x-pb.x)*f; pb.vy += (so4.y-pb.y)*f;
+                    so4.vx -= (so4.x-pb.x)*f; so4.vy -= (so4.y-pb.y)*f;
+                }
+
+                if (d < pb.r + so4.r) {
+                    pb.del = true; so4.del = true;
+                    entities.push(new Entity((pb.x+so4.x)/2, (pb.y+so4.y)/2, 'PbSO4'));
+                    effects.push(new Effect(pb.x, pb.y-10, "↓"));
+                    break;
+                }
+            }
+        }
+
+        entities = entities.filter(e => !e.del);
+    }
+
+    function draw() {
+        ctx.clearRect(0,0,width,height);
+
+        // Beaker
+        ctx.lineWidth = beaker.wall;
+        ctx.strokeStyle = 'rgba(150,150,150,0.5)';
+        ctx.beginPath();
+        ctx.moveTo(beaker.x, beaker.y);
+        ctx.lineTo(beaker.x, beaker.y+beaker.h);
+        ctx.lineTo(beaker.x+beaker.w, beaker.y+beaker.h);
+        ctx.lineTo(beaker.x+beaker.w, beaker.y);
+        ctx.stroke();
+
+        // Liquid
+        if (hasAcid) {
+            ctx.fillStyle = 'rgba(179, 229, 252, 0.3)';
+            ctx.fillRect(beaker.x+beaker.wall, beaker.liquidY, beaker.w-2*beaker.wall, beaker.h - (beaker.liquidY-beaker.y));
+        }
+
+        simStep();
+
+        entities.forEach(e => { e.update(); e.draw(); });
+        effects.forEach((e,i) => { e.draw(); if(e.life<=0) effects.splice(i,1); });
+
+        requestAnimationFrame(draw);
+    }
+
+    // Slider Logic
+    sliderAcid.oninput = function() {
+        displayAcid.innerText = this.value;
+    }
+    sliderReactant.oninput = function() {
+        displayReactant.innerText = this.value;
+    }
+
+    // Bindings
+    document.getElementById('btn-reset').onclick = () => {
+        entities = []; hasAcid = false; currentMethod = null;
+        uiAnalysis.innerHTML = "请选择一种方法开始...";
+    };
+    document.getElementById('btn-add-h2so4').onclick = addH2SO4;
+    document.getElementById('btn-method-metal').onclick = function() { selectMethod('metal'); };
+    document.getElementById('btn-method-carbonate').onclick = function() { selectMethod('carbonate'); };
+    document.getElementById('btn-method-hydroxide').onclick = function() { selectMethod('hydroxide'); };
+    document.getElementById('btn-method-nitrate').onclick = function() { selectMethod('nitrate'); };
+
+    resize();
+    draw();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沉淀反应微观模拟 (BaCl₂ + Na₂SO₄)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #E0F7FA;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 320px;
+            border: 1px solid #e2e8f0;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .btn {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn:active { transform: scale(0.95); }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #334155;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">沉淀反应模拟</h2>
+        <div class="text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded border border-slate-200">
+            <strong>反应方程式：</strong><br>
+            BaCl₂ + Na₂SO₄ → 2NaCl + <span class="font-bold text-slate-800">BaSO₄↓</span><br>
+            <span class="text-slate-400 mt-1 block">离子方程式：<br>Ba²⁺ + SO₄²⁻ → BaSO₄↓ (白色沉淀)</span>
+        </div>
+
+        <div class="space-y-3 mb-4">
+            <button id="btn-add-bacl2" class="btn w-full bg-teal-100 hover:bg-teal-200 text-teal-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-teal-200">
+                <span>加入 BaCl₂ 溶液</span>
+                <span class="text-xs bg-teal-500 text-white px-2 py-1 rounded">Ba²⁺, 2Cl⁻</span>
+            </button>
+            <button id="btn-add-na2so4" class="btn w-full bg-amber-100 hover:bg-amber-200 text-amber-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-amber-200">
+                <span>加入 Na₂SO₄ 溶液</span>
+                <span class="text-xs bg-amber-500 text-white px-2 py-1 rounded">2Na⁺, SO₄²⁻</span>
+            </button>
+        </div>
+        
+        <button id="btn-reset" class="btn w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-3 rounded font-bold border border-slate-200 text-sm mb-4">
+            清空容器
+        </button>
+
+        <div class="border-t border-slate-200 pt-3">
+            <div class="text-xs font-bold text-slate-400 uppercase mb-2">图例 & 统计</div>
+            
+            <div class="legend-item">
+                <span class="dot" style="background: #009688;"></span> Ba²⁺ (钡离子)
+                <span id="count-ba" class="ml-auto font-mono font-bold text-teal-600">0</span>
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #FFC107;"></span> SO₄²⁻ (硫酸根)
+                <span id="count-so4" class="ml-auto font-mono font-bold text-amber-600">0</span>
+            </div>
+            <div class="legend-item mt-2 pt-2 border-t border-dashed border-slate-200">
+                <span class="dot" style="background: #FFFFFF; border: 1px solid #999;"></span> BaSO₄ (沉淀)
+                <span id="count-solid" class="ml-auto font-mono font-bold text-slate-700">0</span>
+            </div>
+            <div class="text-xs text-slate-400 mt-2">
+                旁观离子 (不反应):<br>
+                <span class="inline-block w-2 h-2 rounded-full bg-green-200 mr-1"></span>Cl⁻
+                <span class="inline-block w-2 h-2 rounded-full bg-blue-200 ml-2 mr-1"></span>Na⁺
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Refs
+    const ui = {
+        countBa: document.getElementById('count-ba'),
+        countSO4: document.getElementById('count-so4'),
+        countSolid: document.getElementById('count-solid')
+    };
+
+    // Parameters
+    let width, height;
+    const RAD_BA = 8;
+    const RAD_SO4 = 10;
+    const RAD_NA = 6;
+    const RAD_CL = 7;
+    const RAD_SOLID = 11;
+    
+    let entities = [];
+
+    // --- Entity Class ---
+
+    class Particle {
+        constructor(x, y, type) {
+            this.x = x;
+            this.y = y;
+            this.type = type;
+            this.markedForDeletion = false;
+            
+            // Random velocity for solution ions
+            this.vx = (Math.random() - 0.5) * 2;
+            this.vy = (Math.random() - 0.5) * 2;
+            this.isSolid = false;
+            this.settled = false; // For solids on the bottom
+
+            if (type === 'Ba') {
+                this.radius = RAD_BA;
+                this.color = '#009688'; // Teal
+                this.label = 'Ba²⁺';
+                this.mass = 2;
+            } else if (type === 'SO4') {
+                this.radius = RAD_SO4;
+                this.color = '#FFC107'; // Amber
+                this.label = 'SO₄²⁻';
+                this.mass = 2;
+            } else if (type === 'Na') {
+                this.radius = RAD_NA;
+                this.color = '#90CAF9'; // Light Blue
+                this.label = 'Na⁺';
+                this.mass = 1;
+                this.spectator = true;
+            } else if (type === 'Cl') {
+                this.radius = RAD_CL;
+                this.color = '#A5D6A7'; // Light Green
+                this.label = 'Cl⁻';
+                this.mass = 1;
+                this.spectator = true;
+            } else if (type === 'BaSO4') {
+                this.radius = RAD_SOLID;
+                this.color = '#FFFFFF'; // White
+                this.label = '';
+                this.isSolid = true;
+                this.vx = 0;
+                this.vy = 1.5; // Sinking speed
+                this.mass = 10;
+            }
+        }
+
+        update() {
+            if (this.settled) return;
+
+            // Apply velocity
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Logic separation for Solids vs Ions
+            if (this.isSolid) {
+                // Sinking logic
+                // 1. Hit bottom
+                if (this.y > height - this.radius) {
+                    this.y = height - this.radius;
+                    this.settled = true;
+                }
+                
+                // 2. Stack on other solids (Simplified collision)
+                // We handle this in the main loop to check against other entities
+            } else {
+                // Ions bouncing off walls
+                if (this.x < this.radius || this.x > width - this.radius) this.vx *= -1;
+                if (this.y < this.radius || this.y > height - this.radius) this.vy *= -1;
+                
+                // Keep in bounds
+                this.x = Math.max(this.radius, Math.min(width-this.radius, this.x));
+                this.y = Math.max(this.radius, Math.min(height-this.radius, this.y));
+
+                // Brownian motion / Water resistance
+                this.vx *= 0.99;
+                this.vy *= 0.99;
+                this.vx += (Math.random()-0.5) * 0.2;
+                this.vy += (Math.random()-0.5) * 0.2;
+            }
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+
+            // Border
+            ctx.strokeStyle = this.isSolid ? '#9E9E9E' : 'rgba(0,0,0,0.1)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Label (Spectators are smaller, maybe skip label if crowded, but lets keep for clarity)
+            // For Solid, maybe draw "BaSO4" text if not settled, or just white lump
+            ctx.fillStyle = this.isSolid ? "#555" : "white";
+            
+            // For the solid, draw a combined look or just text
+            if (this.isSolid) {
+                 // Maybe a little visual detail to show it's composite
+                 ctx.fillStyle = "#E0E0E0";
+                 ctx.beginPath(); ctx.arc(this.x-3, this.y-3, 3, 0, Math.PI*2); ctx.fill();
+                 ctx.fillStyle = "#555";
+                 if (!this.settled && this.y < height - 50) {
+                    ctx.font = "9px Arial";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText("BaSO₄", this.x, this.y);
+                 }
+            } else {
+                // Ions
+                ctx.font = this.spectator ? "8px Arial" : "bold 10px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(this.label, this.x, this.y);
+            }
+        }
+    }
+
+    // --- Core Logic ---
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+    window.addEventListener('resize', resize);
+
+    function addBaCl2(amount) {
+        for(let i=0; i<amount; i++) {
+            const x = Math.random() * width;
+            const y = Math.random() * (height/2);
+            // 1 Ba2+
+            entities.push(new Particle(x, y, 'Ba'));
+            // 2 Cl- (Stoichiometry)
+            entities.push(new Particle(x+10, y+5, 'Cl'));
+            entities.push(new Particle(x-10, y+5, 'Cl'));
+        }
+    }
+
+    function addNa2SO4(amount) {
+        for(let i=0; i<amount; i++) {
+            const x = Math.random() * width;
+            const y = Math.random() * (height/2);
+            // 1 SO4 2-
+            entities.push(new Particle(x, y, 'SO4'));
+            // 2 Na+ (Stoichiometry)
+            entities.push(new Particle(x+10, y-5, 'Na'));
+            entities.push(new Particle(x-10, y-5, 'Na'));
+        }
+    }
+
+    function handleInteractions() {
+        let baIons = entities.filter(e => e.type === 'Ba' && !e.markedForDeletion);
+        let so4Ions = entities.filter(e => e.type === 'SO4' && !e.markedForDeletion);
+        let solids = entities.filter(e => e.isSolid);
+
+        // 1. Reaction Logic: Ba + SO4 -> Solid
+        for (let ba of baIons) {
+            if (ba.markedForDeletion) continue;
+
+            for (let so4 of so4Ions) {
+                if (so4.markedForDeletion) continue;
+
+                const dx = ba.x - so4.x;
+                const dy = ba.y - so4.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                // Attraction
+                if (dist < 80) {
+                    const f = 1.0 / dist;
+                    ba.vx -= dx * f * 0.5;
+                    ba.vy -= dy * f * 0.5;
+                    so4.vx += dx * f * 0.5;
+                    so4.vy += dy * f * 0.5;
+                }
+
+                // Collision -> Precipitate
+                if (dist < ba.radius + so4.radius) {
+                    ba.markedForDeletion = true;
+                    so4.markedForDeletion = true;
+
+                    const mx = (ba.x + so4.x) / 2;
+                    const my = (ba.y + so4.y) / 2;
+                    
+                    entities.push(new Particle(mx, my, 'BaSO4'));
+                    break;
+                }
+            }
+        }
+
+        // 2. Solid Stacking Logic
+        // Check falling solids against settled solids
+        for (let s1 of solids) {
+            if (s1.settled) continue; // Already stuck
+
+            for (let s2 of solids) {
+                if (s1 === s2) continue;
+                
+                // Only stack on things below us
+                if (s2.y < s1.y) continue; 
+
+                const dx = s1.x - s2.x;
+                const dy = s1.y - s2.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                if (dist < s1.radius + s2.radius - 2) { // -2 allows slight overlap for stability visuals
+                    // If s2 is settled or s2 is solid and moving slow, stack on it
+                    if (s2.settled || (s2.isSolid && Math.abs(s2.vy) < 0.1)) {
+                        s1.settled = true;
+                        s1.y = s2.y - (s1.radius + s2.radius) * 0.9; // Stack on top
+                        // Random jitter to make pile look natural
+                        s1.x += (Math.random()-0.5); 
+                    }
+                }
+            }
+        }
+
+        entities = entities.filter(e => !e.markedForDeletion);
+    }
+
+    function updateStats() {
+        const counts = { Ba:0, SO4:0, Solid:0 };
+        entities.forEach(e => {
+            if (e.type === 'Ba') counts.Ba++;
+            else if (e.type === 'SO4') counts.SO4++;
+            else if (e.isSolid) counts.Solid++;
+        });
+        
+        ui.countBa.textContent = counts.Ba;
+        ui.countSO4.textContent = counts.SO4;
+        ui.countSolid.textContent = counts.Solid;
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        
+        handleInteractions();
+        
+        // Draw order: Spectators (Back) -> Ions -> Solids (Front)
+        // 1. Spectators
+        entities.forEach(e => { if (e.spectator) { e.update(); e.draw(); } });
+        // 2. Reactants
+        entities.forEach(e => { if (!e.spectator && !e.isSolid) { e.update(); e.draw(); } });
+        // 3. Solids
+        entities.forEach(e => { if (e.isSolid) { e.update(); e.draw(); } });
+
+        updateStats();
+        requestAnimationFrame(animate);
+    }
+
+    // Init
+    resize();
+    // Pre-fill slightly so it's not empty
+    addBaCl2(2);
+    
+    // UI Bindings
+    document.getElementById('btn-add-bacl2').onclick = () => addBaCl2(5);
+    document.getElementById('btn-add-na2so4').onclick = () => addNa2SO4(5);
+    document.getElementById('btn-reset').onclick = () => { entities = []; };
+
+    animate();
+
+</script>
+</body>
+</html>

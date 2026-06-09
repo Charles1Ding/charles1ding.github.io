@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中和反应微观模拟 (HCl + NaOH)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #ECEFF1; /* 实验室台面颜色 */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 320px;
+            border: 1px solid #e2e8f0;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .btn {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn:active { transform: scale(0.95); }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #334155;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">中和反应模拟</h2>
+        <div class="text-xs text-slate-500 mb-4 bg-slate-50 p-2 rounded border border-slate-200">
+            <strong>反应方程式：</strong><br>
+            HCl + NaOH → NaCl + <span class="font-bold text-blue-600">H₂O</span><br>
+            <span class="text-slate-400 mt-1 block">离子方程式：<br>H⁺ + OH⁻ → H₂O (水)</span>
+        </div>
+
+        <div class="space-y-3 mb-4">
+            <button id="btn-add-hcl" class="btn w-full bg-red-100 hover:bg-red-200 text-red-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-red-200">
+                <span>加入 HCl (酸)</span>
+                <span class="text-xs bg-red-500 text-white px-2 py-1 rounded">H⁺, Cl⁻</span>
+            </button>
+            <button id="btn-add-naoh" class="btn w-full bg-blue-100 hover:bg-blue-200 text-blue-800 py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center border border-blue-200">
+                <span>加入 NaOH (碱)</span>
+                <span class="text-xs bg-blue-500 text-white px-2 py-1 rounded">Na⁺, OH⁻</span>
+            </button>
+        </div>
+        
+        <button id="btn-reset" class="btn w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-3 rounded font-bold border border-slate-200 text-sm mb-4">
+            清空烧杯
+        </button>
+
+        <div class="border-t border-slate-200 pt-3">
+            <div class="text-xs font-bold text-slate-400 uppercase mb-2">图例 & 统计</div>
+            
+            <div class="legend-item">
+                <span class="dot" style="background: #FF5252;"></span> H⁺ (氢离子)
+                <span id="count-h" class="ml-auto font-mono font-bold text-red-600">0</span>
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #2196F3;"></span> OH⁻ (氢氧根)
+                <span id="count-oh" class="ml-auto font-mono font-bold text-blue-600">0</span>
+            </div>
+            <div class="legend-item mt-2 pt-2 border-t border-dashed border-slate-200">
+                <span class="dot" style="background: #0288D1;"></span> H₂O (水分子)
+                <span id="count-water" class="ml-auto font-mono font-bold text-cyan-700">0</span>
+            </div>
+            <div class="text-xs text-slate-400 mt-2">
+                旁观离子 (不反应):<br>
+                <span class="inline-block w-2 h-2 rounded-full bg-green-200 mr-1"></span>Cl⁻
+                <span class="inline-block w-2 h-2 rounded-full bg-blue-200 ml-2 mr-1"></span>Na⁺
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Refs
+    const ui = {
+        countH: document.getElementById('count-h'),
+        countOH: document.getElementById('count-oh'),
+        countWater: document.getElementById('count-water')
+    };
+
+    // Parameters
+    let width, height;
+    // 烧杯参数
+    let beaker = { x: 0, y: 0, w: 0, h: 0, wallThick: 5, waterLevel: 0 };
+    
+    // 离子半径
+    const RAD_H = 10;     
+    const RAD_OH = 14;    
+    const RAD_NA = 12;     
+    const RAD_CL = 13;     
+    const RAD_H2O = 16;  // 水分子大小
+    
+    let entities = [];
+
+    // --- Entity Class ---
+
+    class Particle {
+        constructor(x, y, type) {
+            this.x = x;
+            this.y = y;
+            this.type = type;
+            this.markedForDeletion = false;
+            
+            // Random velocity for solution ions
+            this.vx = (Math.random() - 0.5) * 2;
+            this.vy = (Math.random() - 0.5) * 2 + 2; // 初始向下掉落的速度
+            this.isProduct = false; // 水是产物，但不沉淀
+
+            if (type === 'H') {
+                this.radius = RAD_H;
+                this.color = '#FF5252'; 
+                this.label = 'H⁺';
+            } else if (type === 'OH') {
+                this.radius = RAD_OH;
+                this.color = '#2196F3'; 
+                this.label = 'OH⁻';
+            } else if (type === 'Na') {
+                this.radius = RAD_NA;
+                this.color = '#90CAF9'; 
+                this.label = 'Na⁺';
+                this.spectator = true;
+            } else if (type === 'Cl') {
+                this.radius = RAD_CL;
+                this.color = '#A5D6A7'; 
+                this.label = 'Cl⁻';
+                this.spectator = true;
+            } else if (type === 'H2O') {
+                this.radius = RAD_H2O;
+                this.color = '#0288D1'; 
+                this.label = 'H₂O';
+                this.isProduct = true;
+                // 水分子生成后拥有随机速度
+                this.vx = (Math.random()-0.5) * 1;
+                this.vy = (Math.random()-0.5) * 1;
+                this.angle = Math.random() * Math.PI * 2;
+                this.rotSpeed = (Math.random()-0.5) * 0.05;
+            }
+        }
+
+        update() {
+            // Apply velocity
+            this.x += this.vx;
+            this.y += this.vy;
+            
+            if (this.type === 'H2O') {
+                this.angle += this.rotSpeed;
+            }
+
+            // --- 烧杯边界约束 ---
+            const leftWall = beaker.x + beaker.wallThick;
+            const rightWall = beaker.x + beaker.w - beaker.wallThick;
+            const floor = beaker.y + beaker.h - beaker.wallThick;
+
+            // 所有粒子（包括水分子）都在溶液中运动
+            
+            // 左右壁反弹
+            if (this.x < leftWall + this.radius) {
+                this.x = leftWall + this.radius;
+                this.vx *= -1;
+            }
+            if (this.x > rightWall - this.radius) {
+                this.x = rightWall - this.radius;
+                this.vx *= -1;
+            }
+            
+            // 底部反弹
+            if (this.y > floor - this.radius) {
+                this.y = floor - this.radius;
+                this.vy *= -1;
+            }
+
+            // 顶部 (水面) 反弹
+            if (this.y > beaker.waterLevel + this.radius) {
+                if (this.y < beaker.waterLevel + this.radius) {
+                        // 允许稍微跳出一点点
+                }
+            }
+            
+            // 阻力/布朗运动 (仅在水下生效)
+            if (this.y > beaker.waterLevel) {
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+                this.vx += (Math.random()-0.5) * 0.3;
+                this.vy += (Math.random()-0.5) * 0.3;
+            } else {
+                // 空气中自由落体
+                this.vy += 0.1; // 重力
+            }
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+
+            if (this.type === 'H2O') {
+                // 水分子米老鼠形状
+                ctx.rotate(this.angle);
+                // Oxygen
+                ctx.beginPath(); ctx.arc(0, 0, this.radius * 0.6, 0, Math.PI * 2);
+                ctx.fillStyle = this.color; ctx.fill();
+                // Hydrogens
+                const hRad = this.radius * 0.35;
+                const dist = this.radius * 0.55;
+                ctx.fillStyle = '#E1F5FE';
+                ctx.beginPath(); ctx.arc(-dist, -dist*0.5, hRad, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(dist, -dist*0.5, hRad, 0, Math.PI*2); ctx.fill();
+                
+                ctx.rotate(-this.angle); // 文字不旋转
+                ctx.fillStyle = "white";
+                ctx.font = "bold 9px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText("H₂O", 0, 5); // Label slightly offset
+            } else {
+                // 正常离子
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+
+                // Border
+                ctx.strokeStyle = 'rgba(0,0,0,0.1)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = "white";
+                // 氢离子稍微加点高光区分
+                if (this.type === 'H') {
+                    ctx.beginPath(); ctx.arc(-3, -3, 2, 0, Math.PI*2); 
+                    ctx.fillStyle = "rgba(255,255,255,0.4)"; ctx.fill();
+                    ctx.fillStyle = "white";
+                }
+                
+                ctx.font = this.spectator ? "10px Arial" : "bold 12px Arial";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(this.label, 0, 0);
+            }
+            
+            ctx.restore();
+        }
+    }
+
+    // --- Core Logic ---
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+        
+        // 设置烧杯位置和大小
+        const bW = Math.min(400, width * 0.6);
+        const bH = Math.min(500, height * 0.7);
+        beaker = {
+            w: bW,
+            h: bH,
+            x: (width - bW) / 2,
+            y: height - bH - 50, // 底部留空
+            wallThick: 6,
+            waterLevel: height - bH - 50 + (bH * 0.2) // 水面位置
+        };
+    }
+    window.addEventListener('resize', resize);
+
+    function addHCl(amount) {
+        for(let i=0; i<amount; i++) {
+            const x = beaker.x + beaker.wallThick + Math.random() * (beaker.w - 2*beaker.wallThick);
+            const y = beaker.y - 50 - Math.random() * 50; 
+            
+            entities.push(new Particle(x, y, 'H'));
+            entities.push(new Particle(x+15, y-10, 'Cl'));
+        }
+    }
+
+    function addNaOH(amount) {
+        for(let i=0; i<amount; i++) {
+            const x = beaker.x + beaker.wallThick + Math.random() * (beaker.w - 2*beaker.wallThick);
+            const y = beaker.y - 50 - Math.random() * 50;
+            
+            entities.push(new Particle(x, y, 'OH'));
+            entities.push(new Particle(x+15, y-10, 'Na'));
+        }
+    }
+
+    function handleInteractions() {
+        let hIons = entities.filter(e => e.type === 'H' && !e.markedForDeletion);
+        let ohIons = entities.filter(e => e.type === 'OH' && !e.markedForDeletion);
+
+        // Reaction Logic: H + OH -> H2O
+        // 只有在水中才反应
+        for (let h of hIons) {
+            if (h.markedForDeletion || h.y < beaker.waterLevel) continue;
+
+            for (let oh of ohIons) {
+                if (oh.markedForDeletion || oh.y < beaker.waterLevel) continue;
+
+                const dx = h.x - oh.x;
+                const dy = h.y - oh.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+
+                // 缓慢吸引
+                if (dist < 80) {
+                    const f = 1.0 / dist;
+                    // 力度系数保持较小 (0.05)
+                    h.vx -= dx * f * 0.05;
+                    h.vy -= dy * f * 0.05;
+                    oh.vx += dx * f * 0.05;
+                    oh.vy += dy * f * 0.05;
+                }
+
+                if (dist < h.radius + oh.radius) {
+                    h.markedForDeletion = true;
+                    oh.markedForDeletion = true;
+
+                    const mx = (h.x + oh.x) / 2;
+                    const my = (h.y + oh.y) / 2;
+                    
+                    entities.push(new Particle(mx, my, 'H2O'));
+                    break;
+                }
+            }
+        }
+
+        entities = entities.filter(e => !e.markedForDeletion);
+    }
+
+    function updateStats() {
+        const counts = { H:0, OH:0, H2O:0 };
+        entities.forEach(e => {
+            if (e.type === 'H') counts.H++;
+            else if (e.type === 'OH') counts.OH++;
+            else if (e.type === 'H2O') counts.H2O++;
+        });
+        
+        ui.countH.textContent = counts.H;
+        ui.countOH.textContent = counts.OH;
+        ui.countWater.textContent = counts.H2O;
+    }
+
+    function drawBeaker() {
+        ctx.save();
+        // 液体
+        const liquidTop = beaker.waterLevel;
+        const liquidH = beaker.y + beaker.h - beaker.wallThick - liquidTop;
+        
+        ctx.fillStyle = "rgba(178, 235, 242, 0.4)"; // 浅蓝液体
+        ctx.fillRect(beaker.x + beaker.wallThick, liquidTop, beaker.w - 2*beaker.wallThick, liquidH);
+
+        // 玻璃杯体
+        ctx.lineWidth = beaker.wallThick;
+        ctx.strokeStyle = "rgba(189, 189, 189, 0.6)"; // 灰色玻璃
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        ctx.moveTo(beaker.x, beaker.y); // 左上
+        ctx.lineTo(beaker.x, beaker.y + beaker.h); // 左下
+        ctx.lineTo(beaker.x + beaker.w, beaker.y + beaker.h); // 右下
+        ctx.lineTo(beaker.x + beaker.w, beaker.y); // 右上
+        ctx.stroke();
+
+        // 刻度线装饰
+        ctx.strokeStyle = "rgba(189, 189, 189, 0.8)";
+        ctx.lineWidth = 2;
+        for(let i=1; i<4; i++) {
+            const y = beaker.y + beaker.h - (i * beaker.h / 4);
+            ctx.beginPath();
+            ctx.moveTo(beaker.x + 10, y);
+            ctx.lineTo(beaker.x + 30, y);
+            ctx.stroke();
+        }
+        
+        // 底部阴影
+        ctx.fillStyle = "rgba(0,0,0,0.1)";
+        ctx.beginPath();
+        ctx.ellipse(beaker.x + beaker.w/2, beaker.y + beaker.h + 5, beaker.w/2, 10, 0, 0, Math.PI*2);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        
+        drawBeaker();
+        
+        handleInteractions();
+        
+        // Draw order: Spectators -> Ions -> Products
+        entities.forEach(e => { if (e.spectator) { e.update(); e.draw(); } });
+        entities.forEach(e => { if (!e.spectator && !e.isProduct) { e.update(); e.draw(); } });
+        entities.forEach(e => { if (e.isProduct) { e.update(); e.draw(); } });
+
+        updateStats();
+        requestAnimationFrame(animate);
+    }
+
+    // Init
+    resize();
+    addHCl(2);
+    
+    // UI Bindings
+    document.getElementById('btn-add-hcl').onclick = () => addHCl(5);
+    document.getElementById('btn-add-naoh').onclick = () => addNaOH(5);
+    document.getElementById('btn-reset').onclick = () => { entities = []; };
+
+    animate();
+
+</script>
+</body>
+</html>

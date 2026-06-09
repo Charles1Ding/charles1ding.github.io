@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>氢离子“强取豪夺”模拟器 - 性能优化版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+            transition: background-color 1s ease;
+        }
+        canvas {
+            touch-action: none;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #3b82f6, #ef4444);
+            border-radius: 4px;
+            height: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 控制面板 -->
+<div class="fixed top-6 left-6 z-10 max-w-md p-6 rounded-2xl glass-panel shadow-2xl">
+    <h1 class="text-2xl font-bold mb-2 text-red-400">微观视角：H⁺ 的“掠夺”</h1>
+    <p class="text-sm text-slate-300 mb-4">
+        优化版：减少了粒子冗余，提升高浓度下的运行流畅度。
+    </p>
+    
+    <div class="space-y-4">
+        <div class="flex flex-col">
+            <label class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">盐酸浓度 (H⁺ 活性等级)</label>
+            <input type="range" id="acidLevel" min="0" max="100" value="0" class="w-full h-2 rounded-lg appearance-none cursor-pointer accent-white">
+        </div>
+        
+        <div id="statusBox" class="p-4 rounded-xl bg-black/40 border border-red-900/30">
+            <h3 id="stageTitle" class="text-blue-400 font-bold mb-1">中性状态</h3>
+            <p id="stageDesc" class="text-xs text-slate-400 leading-relaxed">
+                蛋白质处于稳定的平衡态。
+            </p>
+        </div>
+
+        <button id="resetBtn" class="px-4 py-2 bg-red-900/20 hover:bg-red-900/40 border border-red-500/30 rounded-lg text-sm transition-all w-full text-red-300">
+            重置模拟环境
+        </button>
+    </div>
+</div>
+
+<!-- 图例说明 -->
+<div class="fixed bottom-6 right-6 z-10 glass-panel p-4 rounded-xl text-[10px] text-slate-400 flex flex-col gap-2">
+    <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full bg-pink-500 animate-pulse"></div>
+        <span>稳定蛋白质</span>
+    </div>
+    <div class="flex items-center gap-2">
+        <div class="w-4 h-4 rounded-full bg-cyan-300 shadow-[0_0_15px_#22d3ee]"></div>
+        <span>活跃 H⁺ 离子 (优化数量)</span>
+    </div>
+    <div class="flex items-center gap-2">
+        <div class="w-3 h-3 rounded-full bg-slate-500 blur-[1px]"></div>
+        <span>溶解产物 (液态)</span>
+    </div>
+</div>
+
+<canvas id="simCanvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    const acidInput = document.getElementById('acidLevel');
+    const stageTitle = document.getElementById('stageTitle');
+    const stageDesc = document.getElementById('stageDesc');
+    const resetBtn = document.getElementById('resetBtn');
+
+    let width, height;
+    let ions = [];
+    let proteins = [];
+    let liquidPool = []; 
+    let acidIntensity = 0;
+
+    class Ion {
+        constructor() {
+            this.reset();
+        }
+        reset() {
+            this.x = Math.random() * width;
+            this.y = Math.random() * height;
+            this.vx = (Math.random() - 0.5) * 10;
+            this.vy = (Math.random() - 0.5) * 10;
+            this.active = false;
+            this.pulse = 0;
+        }
+        update() {
+            if (!this.active) return;
+            let closest = null;
+            let minDist = 180;
+
+            // 性能优化：仅对未液化的节点进行目标搜索
+            for (let chain of proteins) {
+                for (let node of chain) {
+                    if (node.isLiquid) continue;
+                    let dx = node.x - this.x;
+                    let dy = node.y - this.y;
+                    let distSq = dx*dx + dy*dy;
+                    if (distSq < minDist * minDist) {
+                        minDist = Math.sqrt(distSq);
+                        closest = node;
+                    }
+                }
+            }
+
+            if (closest) {
+                this.vx += (closest.x - this.x) * 0.04;
+                this.vy += (closest.y - this.y) * 0.04;
+            }
+
+            this.vx *= 0.96;
+            this.vy *= 0.96;
+            this.x += this.vx + (Math.random()-0.5) * 5;
+            this.y += this.vy + (Math.random()-0.5) * 5;
+
+            if (this.x < 0 || this.x > width) this.vx *= -1;
+            if (this.y < 0 || this.y > height) this.vy *= -1;
+            this.pulse += 0.2;
+        }
+        draw() {
+            if (!this.active) return;
+            const radius = 6 + Math.sin(this.pulse) * 1.5; 
+            
+            // 简化阴影渲染以提升性能
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, radius * 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(34, 211, 238, 0.2)';
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            ctx.font = "bold 11px Arial";
+            ctx.fillStyle = "white";
+            ctx.textAlign = "center";
+            ctx.fillText("H⁺", this.x, this.y - radius - 4);
+        }
+    }
+
+    class AminoAcid {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+            this.originX = x;
+            this.originY = y;
+            this.isLiquid = false;
+            this.vx = 0;
+            this.vy = 0;
+        }
+        update() {
+            if (!this.isLiquid) {
+                if (acidIntensity > 5) {
+                    let shake = (acidIntensity / 100) * 10;
+                    this.x += (Math.random() - 0.5) * shake;
+                    this.y += (Math.random() - 0.5) * shake;
+                }
+                if (acidIntensity > 70) {
+                    if (Math.random() < (acidIntensity - 70) * 0.0015) {
+                        this.isLiquid = true;
+                        this.vx = (Math.random() - 0.5) * 3;
+                        this.vy = Math.random() * 1.5;
+                        liquidPool.push(this);
+                    }
+                }
+                this.x += (this.originX - this.x) * 0.05;
+                this.y += (this.originY - this.y) * 0.05;
+            } else {
+                this.vy += 0.25; 
+                this.vx *= 0.98;
+                this.x += this.vx;
+                this.y += this.vy;
+
+                let floor = height - 15;
+                if (this.y > floor) {
+                    this.y = floor;
+                    this.vy *= -0.2; // 弹跳感
+                    this.vx += (Math.random() - 0.5) * 1.5;
+                }
+            }
+        }
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.isLiquid ? 5 : 7, 0, Math.PI * 2);
+            
+            if (this.isLiquid) {
+                ctx.fillStyle = `rgba(148, 163, 184, 0.6)`;
+            } else {
+                let r = 236 + (acidIntensity * 0.2);
+                let g = 72 + (acidIntensity * 1.5);
+                let b = 153 + (acidIntensity * 1);
+                ctx.fillStyle = `rgb(${r},${g},${b})`;
+                // 仅对非液态节点使用阴影，减少开销
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = `rgba(${r},${g},${b},0.4)`;
+            }
+            
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+    }
+
+    function init() {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+        
+        // 关键性能修改：限制离子最大数量为 60（原来是 120），减半以提升流畅度
+        ions = Array.from({length: 60}, () => new Ion());
+        
+        liquidPool = [];
+        proteins = [];
+        const chains = 5; // 减少一根链条
+        const nodesPerChain = 14; 
+        const spacing = 45;
+
+        for (let i = 0; i < chains; i++) {
+            let chain = [];
+            let startX = width / 2 - (chains * 90) / 2 + i * 110;
+            let startY = height / 2 - (nodesPerChain * spacing) / 2.5;
+            for (let j = 0; j < nodesPerChain; j++) {
+                const curve = Math.sin(j * 0.6 + i) * 60;
+                chain.push(new AminoAcid(startX + curve, startY + j * spacing));
+            }
+            proteins.push(chain);
+        }
+    }
+
+    function updateLogic() {
+        acidIntensity = parseInt(acidInput.value);
+        const bgR = 15 + (acidIntensity * 0.5);
+        const bgG = 23 - (acidIntensity * 0.1);
+        const bgB = 42 - (acidIntensity * 0.2);
+        document.body.style.backgroundColor = `rgb(${bgR}, ${bgG}, ${bgB})`;
+
+        // 按比例激活离子
+        ions.forEach((ion, idx) => {
+            ion.active = idx < (acidIntensity / 100) * ions.length;
+            ion.update();
+        });
+
+        if (acidIntensity === 0) {
+            stageTitle.innerText = "中性稳态";
+            stageDesc.innerText = "蛋白质结构完整。";
+        } else if (acidIntensity < 75) {
+            stageTitle.innerText = "渗透与变性";
+            stageDesc.innerText = "H⁺ 正在干扰分子的电荷平衡。";
+        } else {
+            stageTitle.innerText = "水解液化";
+            stageTitle.className = "text-red-500 font-bold mb-1 animate-pulse";
+            stageDesc.innerText = "肽键彻底断裂！蛋白质转化为液态粒子积聚。";
+        }
+
+        proteins.forEach(chain => chain.forEach(aa => aa.update()));
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        // 绘制链条连线
+        ctx.lineWidth = 4;
+        proteins.forEach(chain => {
+            ctx.beginPath();
+            let activePath = false;
+            for (let i = 0; i < chain.length - 1; i++) {
+                const p1 = chain[i];
+                const p2 = chain[i+1];
+                if (p1.isLiquid || p2.isLiquid) {
+                    if (activePath) { ctx.stroke(); activePath = false; }
+                    continue;
+                }
+                if (!activePath) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); activePath = true; }
+                ctx.lineTo(p2.x, p2.y);
+            }
+            if (activePath) {
+                ctx.strokeStyle = `rgba(236, 72, 153, 0.3)`;
+                ctx.stroke();
+            }
+        });
+
+        // 绘制节点
+        proteins.forEach(chain => chain.forEach(aa => aa.draw()));
+        
+        // 绘制离子
+        ions.forEach(ion => ion.draw());
+
+        updateLogic();
+        requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', init);
+    resetBtn.addEventListener('click', () => {
+        acidInput.value = 0;
+        init();
+    });
+
+    init();
+    draw();
+</script>
+
+</body>
+</html>

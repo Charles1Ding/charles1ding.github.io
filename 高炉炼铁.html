@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高炉炼铁：微观反应动力学模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=JetBrains+Mono:wght@700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .animate-pulse-fast {
+            animation: pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        .reaction-glow {
+            filter: drop-shadow(0 0 8px currentColor);
+        }
+        /* 隐藏滚动条但保留功能 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-zinc-100 text-slate-900 h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-zinc-200 px-8 py-5 flex justify-between items-center shadow-sm z-10">
+        <div class="flex items-center gap-4">
+            <div class="bg-zinc-900 p-2.5 rounded-xl text-white shadow-lg">
+                <i data-lucide="factory" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black tracking-tight">高炉炼铁：微观反应动力学模拟</h1>
+                <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Blast Furnace Micro-Reaction Simulator</p>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-3 bg-zinc-50 p-1.5 rounded-2xl border border-zinc-200">
+            <button id="playPauseBtn" class="flex items-center gap-2 px-5 py-2 rounded-xl font-bold transition-all bg-white text-zinc-900 shadow-sm">
+                <i data-lucide="pause" id="playPauseIcon" class="w-4 h-4"></i>
+                <span id="playPauseText">暂停</span>
+            </button>
+            <button id="resetBtn" class="p-2 text-zinc-400 hover:text-zinc-600 transition-colors">
+                <i data-lucide="rotate-ccw" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col lg:flex-row gap-6 p-6 overflow-hidden">
+        <!-- 模拟显示区 -->
+        <div class="flex-1 bg-white rounded-[2.5rem] shadow-xl border border-zinc-200 relative flex items-center justify-center p-4 overflow-hidden">
+            <!-- 反应区背景高亮 -->
+            <div id="zoneHighlight" class="absolute left-0 w-full transition-all duration-700 ease-in-out opacity-5 bg-current"></div>
+
+            <svg id="furnaceSvg" viewBox="0 0 400 500" class="h-full w-auto drop-shadow-2xl z-10">
+                <defs>
+                    <clipPath id="furnaceClip">
+                        <path d="M140,40 L260,40 L300,120 L320,350 L280,450 L120,450 L80,350 L100,120 Z" />
+                    </clipPath>
+                </defs>
+
+                <!-- 高炉轮廓 -->
+                <path d="M140,40 L260,40 L300,120 L320,350 L280,450 L120,450 L80,350 L100,120 Z" fill="#fafafa" stroke="#18181b" stroke-width="4" />
+
+                <!-- 反应区指示 -->
+                <g id="zoneIndicator">
+                    <line id="indicatorLine" x1="340" x2="340" stroke="#18181b" stroke-width="2" stroke-dasharray="4 2" />
+                    <text x="350" id="indicatorText" class="text-[10px] font-black fill-zinc-900 italic">反应观察区</text>
+                </g>
+
+                <!-- 粒子容器 -->
+                <g id="particleContainer" clip-path="url(#furnaceClip)"></g>
+
+                <!-- 底部静态堆积 -->
+                <path d="M125,420 L275,420 L280,448 L120,448 Z" fill="#71717a" opacity="0.5" />
+                <path d="M122,435 L278,435 L278,448 L122,448 Z" fill="#991b1b" />
+            </svg>
+
+            <!-- 状态看板 -->
+            <div class="absolute top-8 left-8 space-y-4">
+                <div id="formulaCard" class="p-6 rounded-3xl border-2 shadow-sm bg-white/90 backdrop-blur transition-colors duration-500">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-zinc-400" id="sparkleIcon"></i>
+                        <span class="text-[10px] font-black uppercase tracking-widest text-zinc-400">实时分子转换</span>
+                    </div>
+                    <h3 id="currentSubstances" class="text-xl font-black"></h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- 控制与说明区 -->
+        <div class="w-full lg:w-[420px] flex flex-col gap-5">
+            <!-- 阶段选择器 -->
+            <div class="grid grid-cols-4 gap-2" id="stageTabs">
+                <!-- 动态生成按钮 -->
+            </div>
+
+            <!-- 详情卡片 -->
+            <div id="detailCard" class="flex-grow p-8 rounded-[2.5rem] border-2 flex flex-col shadow-xl transition-all duration-500 overflow-hidden">
+                <div class="flex items-start justify-between mb-6">
+                    <div id="infoIconBox" class="p-4 rounded-2xl bg-white shadow-sm">
+                        <i data-lucide="beaker" class="w-7 h-7"></i>
+                    </div>
+                    <div class="flex items-center gap-2 px-4 py-2 bg-white/50 rounded-full border border-white">
+                        <i data-lucide="thermometer" class="w-3.5 h-3.5 text-orange-500"></i>
+                        <span id="tempText" class="text-xs font-bold text-zinc-600">区域温控</span>
+                    </div>
+                </div>
+
+                <h2 id="stageTitle" class="text-2xl font-black mb-2"></h2>
+                
+                <div id="formulaBox" class="bg-zinc-900 text-white p-6 rounded-3xl my-6 font-mono text-center shadow-xl border-b-4 border-zinc-700">
+                    <p id="formulaDisplay" class="text-lg font-bold tracking-wider"></p>
+                </div>
+
+                <div class="flex-grow space-y-6 overflow-y-auto pr-2 no-scrollbar">
+                    <div class="space-y-2">
+                        <h4 class="text-xs font-black text-zinc-400 uppercase tracking-widest">化学过程解析</h4>
+                        <p id="stageDescription" class="text-zinc-600 text-sm leading-relaxed font-medium"></p>
+                    </div>
+
+                    <div class="p-5 bg-white/50 rounded-2xl border border-white/60 space-y-4">
+                        <h4 class="text-xs font-black text-zinc-800 flex items-center gap-2">
+                            <i data-lucide="info" class="w-3.5 h-3.5"></i> 微观观察指南
+                        </h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3">
+                                <div class="w-2 h-2 rounded-full bg-blue-500 animate-ping"></div>
+                                <p class="text-[11px] text-zinc-500 font-bold">慢速移动：模拟真实的分子热运动与碰撞概率。</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <div class="w-2 h-2 rounded-full bg-orange-500"></div>
+                                <p class="text-[11px] text-zinc-500 font-bold">震动反应：代表碰撞后的活化络合物状态。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="nextStageBtn" class="mt-8 w-full bg-zinc-900 text-white py-5 rounded-2xl font-black hover:bg-zinc-800 transition-all flex items-center justify-center gap-3 active:scale-[0.98] shadow-lg">
+                    下一步反应阶段 <i data-lucide="zap" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="px-8 py-4 bg-white border-t border-zinc-200 flex justify-between text-[10px] font-black text-zinc-400">
+        <span class="tracking-[0.2em]">KINETIC REACTION SIMULATOR V3.5 (HTML)</span>
+        <div class="flex gap-6 italic">
+          <span>碰撞检测: 启用</span>
+          <span>反应频率: 高</span>
+          <span>模拟速率: 0.4x</span>
+        </div>
+    </footer>
+
+    <script>
+        // 1. Data Definitions
+        const stages = [
+            {
+                id: 1,
+                title: "阶段 1: 焦炭燃烧 (产生热量)",
+                formula: "C + O₂ → CO₂ + 热量",
+                temp: "1800°C+",
+                yRange: [80, 95],
+                description: "在炉底燃烧带，焦炭遇到鼓入的氧气发生剧烈氧化。这是放热中心，为全炉提供动力。",
+                substances: { reactants: ["C", "O₂"], products: ["CO₂"] },
+                color: "text-red-600",
+                bgColor: "bg-red-50",
+                borderColor: "border-red-400",
+                accent: "#ef4444",
+                particleColors: { r1: '#334155', r2: '#f97316', p: '#64748b' }
+            },
+            {
+                id: 2,
+                title: "阶段 2: 二氧化碳还原 (产还原剂)",
+                formula: "CO₂ + C → 2CO",
+                temp: "1200°C",
+                yRange: [60, 80],
+                description: "上升的CO₂与红热的焦炭层碰撞，失去一个氧原子，转化为具有还原性的一氧化碳气体。",
+                substances: { reactants: ["CO₂", "C"], products: ["CO"] },
+                color: "text-orange-600",
+                bgColor: "bg-orange-50",
+                borderColor: "border-orange-400",
+                accent: "#f97316",
+                particleColors: { r1: '#64748b', r2: '#334155', p: '#475569' }
+            },
+            {
+                id: 3,
+                title: "阶段 3: 铁矿石还原 (炼出生铁)",
+                formula: "Fe₂O₃ + 3CO → 2Fe + 3CO₂",
+                temp: "800°C",
+                yRange: [20, 60],
+                description: "气相还原：CO穿过矿石孔隙夺取氧。固态矿石逐渐转化为液态铁滴向下渗透。",
+                substances: { reactants: ["Fe₂O₃", "CO"], products: ["Fe", "CO₂"] },
+                color: "text-blue-600",
+                bgColor: "bg-blue-50",
+                borderColor: "border-blue-400",
+                accent: "#3b82f6",
+                particleColors: { r1: '#991b1b', r2: '#475569', p: '#dc2626' }
+            },
+            {
+                id: 4,
+                title: "阶段 4: 造渣反应 (清除杂质)",
+                formula: "CaO + SiO₂ → CaSiO₃",
+                temp: "1100°C",
+                yRange: [70, 85],
+                description: "熔剂(CaO)捕捉矿石中的脉石(SiO₂)，生成液态炉渣，防止铁被重新氧化。",
+                substances: { reactants: ["CaO", "SiO₂"], products: ["CaSiO₃"] },
+                color: "text-emerald-600",
+                bgColor: "bg-emerald-50",
+                borderColor: "border-emerald-400",
+                accent: "#10b981",
+                particleColors: { r1: '#94a3b8', r2: '#cbd5e1', p: '#84cc16' }
+            }
+        ];
+
+        // 2. State
+        let activeStageIdx = 0;
+        let isPlaying = true;
+        let particles = [];
+        let lastSpawnTime = 0;
+
+        // 3. UI Elements
+        const particleContainer = document.getElementById('particleContainer');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const playPauseIcon = document.getElementById('playPauseIcon');
+        const playPauseText = document.getElementById('playPauseText');
+        const resetBtn = document.getElementById('resetBtn');
+        const nextStageBtn = document.getElementById('nextStageBtn');
+        const stageTabs = document.getElementById('stageTabs');
+
+        // 4. Core Functions
+        function initTabs() {
+            stageTabs.innerHTML = '';
+            stages.forEach((s, i) => {
+                const btn = document.createElement('button');
+                btn.className = `stage-tab py-5 rounded-2xl font-black transition-all flex flex-col items-center border-2 ${i === activeStageIdx ? 'bg-white shadow-lg -translate-y-1' : 'bg-zinc-200/50 text-zinc-400 border-transparent hover:bg-zinc-200'}`;
+                btn.innerHTML = `<span class="text-[10px] opacity-50 mb-1">阶段</span><span class="text-xl">0${s.id}</span>`;
+                btn.onclick = () => setStage(i);
+                stageTabs.appendChild(btn);
+            });
+        }
+
+        function setStage(idx) {
+            activeStageIdx = idx;
+            particles = []; // Clear current
+            updateUI();
+            initTabs();
+        }
+
+        function updateUI() {
+            const stage = stages[activeStageIdx];
+            
+            // Update Text Content
+            document.getElementById('stageTitle').innerText = stage.title;
+            document.getElementById('stageTitle').className = `text-2xl font-black mb-2 ${stage.color}`;
+            document.getElementById('formulaDisplay').innerText = stage.formula;
+            document.getElementById('stageDescription').innerText = stage.description;
+            document.getElementById('tempText').innerText = `区域温控：${stage.temp}`;
+            document.getElementById('currentSubstances').innerText = `${stage.substances.reactants.join(' + ')} ➜ ${stage.substances.products.join(' + ')}`;
+            document.getElementById('currentSubstances').className = `text-xl font-black ${stage.color}`;
+            
+            // Update Colors/Styles
+            const detailCard = document.getElementById('detailCard');
+            detailCard.className = `flex-grow p-8 rounded-[2.5rem] border-2 flex flex-col shadow-xl transition-all duration-500 ${stage.bgColor} ${stage.borderColor}`;
+            
+            const formulaCard = document.getElementById('formulaCard');
+            formulaCard.className = `p-6 rounded-3xl border-2 shadow-sm bg-white/90 backdrop-blur transition-colors duration-500 ${stage.borderColor}`;
+            
+            const infoIconBox = document.getElementById('infoIconBox');
+            infoIconBox.className = `p-4 rounded-2xl bg-white shadow-sm ${stage.color}`;
+
+            document.getElementById('sparkleIcon').className = `w-4 h-4 ${stage.color}`;
+
+            // Update Highlight Zone
+            const zoneHighlight = document.getElementById('zoneHighlight');
+            zoneHighlight.style.top = `${stage.yRange[0]}%`;
+            zoneHighlight.style.height = `${stage.yRange[1] - stage.yRange[0]}%`;
+            zoneHighlight.style.backgroundColor = stage.accent;
+
+            // Update SVG Indicator
+            document.getElementById('indicatorLine').setAttribute('y1', stage.yRange[0] * 5);
+            document.getElementById('indicatorLine').setAttribute('y2', stage.yRange[1] * 5);
+            document.getElementById('indicatorText').setAttribute('y', (stage.yRange[0] * 5) + 20);
+        }
+
+        function createReactionPair() {
+            const stage = stages[activeStageIdx];
+            const yCenter = (stage.yRange[0] + stage.yRange[1]) / 2;
+            const yOffset = (stage.yRange[1] - stage.yRange[0]) * 0.6;
+            const baseY = yCenter + (Math.random() - 0.5) * yOffset;
+            
+            const xBase = 120 + Math.random() * 100;
+            const gap = 50;
+            const moveSpeed = 0.35 + Math.random() * 0.15; 
+            const pairId = Math.random();
+
+            return [
+                {
+                    id: Math.random(),
+                    type: 'reactant',
+                    label: stage.substances.reactants[0],
+                    color: stage.particleColors.r1,
+                    x: xBase - gap,
+                    y: baseY,
+                    vx: moveSpeed,
+                    vy: (Math.random() - 0.5) * 0.1,
+                    state: 'moving',
+                    pairId: pairId
+                },
+                {
+                    id: Math.random(),
+                    type: 'reactant',
+                    label: stage.substances.reactants[1] || stage.substances.reactants[0],
+                    color: stage.particleColors.r2,
+                    x: xBase + gap,
+                    y: baseY,
+                    vx: -moveSpeed,
+                    vy: (Math.random() - 0.5) * 0.1,
+                    state: 'moving',
+                    pairId: pairId
+                }
+            ];
+        }
+
+        function updateAnimation(time) {
+            if (!isPlaying) {
+                requestRef = requestAnimationFrame(updateAnimation);
+                return;
+            }
+
+            // Spawn
+            if (time - lastSpawnTime > 750) {
+                particles.push(...createReactionPair());
+                lastSpawnTime = time;
+            }
+
+            const handledPairs = new Set();
+            const nextParticles = [];
+
+            for (let i = 0; i < particles.length; i++) {
+                let p = particles[i];
+
+                if (p.state === 'moving') {
+                    p.x += p.vx;
+                    p.y += p.vy;
+
+                    // Collision check
+                    particles.forEach(other => {
+                        if (other.id !== p.id && other.pairId === p.pairId && other.state === 'moving') {
+                            const dist = Math.abs(p.x - other.x);
+                            if (dist < 4) {
+                                p.state = 'reacting';
+                                p.reactionTime = 0;
+                            }
+                        }
+                    });
+                    nextParticles.push(p);
+                } else if (p.state === 'reacting') {
+                    p.reactionTime += 1;
+                    if (p.reactionTime > 50) {
+                        if (!handledPairs.has(p.pairId)) {
+                            const stage = stages[activeStageIdx];
+                            const productsToGen = stage.id === 3 ? [stage.substances.products[0], stage.substances.products[1]] : [stage.substances.products[0]];
+                            
+                            productsToGen.forEach((prodLabel, idx) => {
+                                nextParticles.push({
+                                    id: Math.random(),
+                                    type: 'product',
+                                    label: prodLabel,
+                                    color: idx === 0 ? stage.particleColors.p : '#64748b',
+                                    x: p.x + (idx * 10 - 5),
+                                    y: p.y,
+                                    vx: (Math.random() - 0.5) * 0.4,
+                                    vy: prodLabel === 'Fe' || prodLabel === 'CaSiO₃' ? 0.3 : -0.3, 
+                                    state: 'done',
+                                    life: 150
+                                });
+                            });
+                            handledPairs.add(p.pairId);
+                        }
+                    } else {
+                        // Vibration
+                        p.x += (Math.random() - 0.5) * 0.6;
+                        p.y += (Math.random() - 0.5) * 0.6;
+                        nextParticles.push(p);
+                    }
+                } else if (p.state === 'done') {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.life -= 1;
+                    if (p.life > 0) nextParticles.push(p);
+                }
+            }
+
+            particles = nextParticles;
+            renderParticles();
+            requestAnimationFrame(updateAnimation);
+        }
+
+        function renderParticles() {
+            // Clean container
+            particleContainer.innerHTML = '';
+            
+            particles.forEach(p => {
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.setAttribute("transform", `translate(${p.x}, ${p.y * 5})`);
+                g.setAttribute("class", "transition-opacity duration-300");
+                
+                // Glow for reacting
+                if (p.state === 'reacting') {
+                    const glow = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    glow.setAttribute("r", "18");
+                    glow.setAttribute("fill", p.color);
+                    glow.setAttribute("opacity", "0.4");
+                    
+                    const ani = document.createElementNS("http://www.w3.org/2000/svg", "animate");
+                    ani.setAttribute("attributeName", "r");
+                    ani.setAttribute("values", "12;22;12");
+                    ani.setAttribute("dur", "0.4s");
+                    ani.setAttribute("repeatCount", "indefinite");
+                    glow.appendChild(ani);
+                    g.appendChild(glow);
+                }
+
+                // Particle box
+                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", "-14");
+                rect.setAttribute("y", "-10");
+                rect.setAttribute("width", "28");
+                rect.setAttribute("height", "20");
+                rect.setAttribute("rx", "6");
+                rect.setAttribute("fill", p.state === 'done' ? p.color : "white");
+                rect.setAttribute("stroke", p.color);
+                rect.setAttribute("stroke-width", "2");
+                if (p.state === 'reacting') rect.setAttribute("class", "animate-pulse");
+                g.appendChild(rect);
+
+                // Label
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("dominant-baseline", "middle");
+                text.setAttribute("fill", p.state === 'done' ? "white" : p.color);
+                text.setAttribute("class", "text-[8px] font-black select-none pointer-events-none");
+                text.textContent = p.label;
+                g.appendChild(text);
+
+                particleContainer.appendChild(g);
+            });
+        }
+
+        // 5. Interaction
+        playPauseBtn.onclick = () => {
+            isPlaying = !isPlaying;
+            playPauseIcon.setAttribute('data-lucide', isPlaying ? 'pause' : 'play');
+            playPauseText.innerText = isPlaying ? '暂停' : '播放';
+            lucide.createIcons();
+        };
+
+        resetBtn.onclick = () => {
+            particles = [];
+        };
+
+        nextStageBtn.onclick = () => {
+            setStage((activeStageIdx + 1) % stages.length);
+        };
+
+        // 6. Launch
+        window.onload = () => {
+            initTabs();
+            updateUI();
+            lucide.createIcons();
+            requestAnimationFrame(updateAnimation);
+        };
+    </script>
+</body>
+</html>

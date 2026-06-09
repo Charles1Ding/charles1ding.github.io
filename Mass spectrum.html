@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AQA A-Level 化学：TOF 质谱仪模拟器 (完整版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root { --primary: #0ea5e9; }
+        body { background-color: #f1f5f9; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); border: 1px solid rgba(203, 213, 225, 1); }
+        .flight-tube {
+            background: #cbd5e1;
+            border: 3px solid #0284c7;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(2, 132, 199, 0.1);
+            transition: background 1.5s ease;
+        }
+        .flight-tube.vacuum-active { background: linear-gradient(to bottom, #e0f2fe 0%, #7dd3fc 50%, #e0f2fe 100%); }
+
+        /* 负电极板 */
+        .negative-plate {
+            position: absolute; left: 160px; top: 15%; bottom: 15%; width: 16px;
+            background: linear-gradient(to right, #475569, #1e293b);
+            border-radius: 4px; display: flex; flex-direction: column;
+            align-items: center; justify-content: space-around; color: #fbbf24;
+            font-weight: bold; font-size: 10px; z-index: 25; border: 1px solid #94a3b8;
+        }
+
+        /* 粒子样式 */
+        .particle {
+            width: 22px; height: 22px; border-radius: 50%; position: absolute;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 900; font-size: 10px; z-index: 30; transition: all 0.5s ease;
+        }
+        .atom { background-color: #94a3b8; color: #f1f5f9; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+        .ion { color: white; box-shadow: 0 0 15px rgba(255,255,255,0.8); border: 2px solid rgba(255,255,255,0.5); }
+        
+        .electron {
+            width: 5px; height: 5px; background: #fbbf24; border-radius: 50%;
+            position: absolute; z-index: 40; box-shadow: 0 0 8px #fbbf24;
+        }
+
+        .active-step { border-left: 4px solid #0284c7; background: #f0f9ff; font-weight: bold; color: #0369a1; }
+        .pulse-button { animation: pulse-border 2s infinite; }
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(14, 165, 233, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(14, 165, 233, 0); }
+        }
+
+        /* 硬件样式 */
+        .filament { width: 20px; height: 30px; border: 2px solid #475569; border-radius: 4px; background: #1e293b; position: relative; }
+        .filament::after {
+            content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 8px; height: 15px; background: #f59e0b; filter: blur(2px); border-radius: 50%; animation: flicker 0.2s infinite;
+        }
+        @keyframes flicker { 0%, 100% { opacity: 0.8; } 50% { opacity: 1; } }
+        .collector { width: 24px; height: 10px; background: #475569; border-radius: 2px; }
+
+        .needle-container { display: flex; align-items: center; height: 40px; }
+        .needle-base { width: 20px; height: 20px; background: linear-gradient(to bottom, #64748b, #475569, #64748b); border-radius: 2px 0 0 2px; border: 1px solid #334155; }
+        .needle-shaft { width: 70px; height: 4px; background: linear-gradient(to bottom, #cbd5e1, #94a3b8, #cbd5e1); position: relative; }
+        .needle-tip { width: 12px; height: 4px; background: linear-gradient(to bottom, #cbd5e1, #94a3b8, #cbd5e1); clip-path: polygon(0 0, 100% 100%, 0 100%); }
+
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 15; pointer-events: none; }
+    </style>
+</head>
+<body class="p-2 md:p-4 font-sans text-slate-800">
+    <div class="max-w-[1600px] mx-auto">
+        <div class="flex items-center justify-between mb-2 px-2">
+            <h1 class="text-xl font-black text-slate-900 uppercase">AQA Mass Spec <span class="text-sky-500">Virtual Lab</span></h1>
+            <span id="methodBadge" class="px-2 py-0.5 bg-sky-600 text-white rounded text-[10px] uppercase tracking-widest font-bold">Electron Impact</span>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+            <div class="lg:col-span-2 space-y-3">
+                <div class="glass-panel p-4 rounded-xl shadow-sm">
+                    <span class="text-[10px] font-black text-slate-400 uppercase">Ionisation Method</span>
+                    <div class="flex flex-col gap-1 mt-1">
+                        <button onclick="setMethod('impact')" id="btnImpact" class="p-2 text-left rounded text-xs font-bold border-2 border-sky-500 bg-sky-50 text-sky-700">Electron Impact</button>
+                        <button onclick="setMethod('spray')" id="btnSpray" class="p-2 text-left rounded text-xs font-bold bg-slate-100">Electrospray</button>
+                    </div>
+                    <button id="mainBtn" onclick="handleMainAction()" class="w-full mt-4 py-4 bg-slate-900 text-white font-black rounded-lg text-sm shadow-xl hover:bg-black transition-all">START LAB</button>
+                </div>
+                <div class="glass-panel p-3 rounded-xl space-y-1">
+                    <div id="s1" class="p-2 rounded text-[10px] text-slate-400">1. VACUUM</div>
+                    <div id="s2" class="p-2 rounded text-[10px] text-slate-400">2. IONISATION</div>
+                    <div id="s3" class="p-2 rounded text-[10px] text-slate-400">3. ACCELERATION</div>
+                    <div id="s4" class="p-2 rounded text-[10px] text-slate-400">4. DRIFT & DETECTION</div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-10 space-y-4">
+                <div class="bg-white p-4 md:p-8 rounded-3xl shadow-lg border border-slate-200 overflow-hidden relative">
+                    <div class="flex items-center relative h-[400px]">
+                        <div id="tube" class="flight-tube flex-grow h-80 rounded-xl relative flex items-center shadow-inner overflow-hidden">
+                            <canvas id="airCanvas"></canvas>
+                            <div id="sourceArea" class="absolute left-0 top-0 bottom-0 w-[180px] bg-white/10 z-20 border-r border-dashed border-white/30"></div>
+                            <div class="negative-plate"><span>-</span><span>-</span><span>-</span><span>-</span><span>-</span><span>-</span><span>-</span><span>-</span></div>
+                            <div id="particleStage" class="absolute inset-0 pointer-events-none"></div>
+                            <div class="absolute right-0 top-0 bottom-0 w-28 bg-slate-900 flex flex-col items-center justify-center text-white border-l-8 border-yellow-500">
+                                <span class="text-[10px] font-black uppercase">Detector</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div id="statusBox" class="glass-panel p-5 rounded-2xl shadow-sm border-l-8 border-sky-500 flex items-center min-h-[110px]">
+                        <div id="statusText" class="text-sm text-slate-700 leading-relaxed font-medium"></div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl flex flex-col items-center justify-center">
+                        <div id="formulaDisplay" class="text-sm font-mono font-bold text-sky-800 italic mb-4 h-6"></div>
+                        <div class="flex items-end justify-around w-full max-w-[200px] h-24 border-b-2 border-l-2 border-slate-200 px-2 relative">
+                            <div id="b1" class="w-8 bg-[#1e3a8a] rounded-t-sm h-0 transition-all duration-1000"></div>
+                            <div id="b2" class="w-8 bg-[#06b6d4] rounded-t-sm h-0 transition-all duration-1000"></div>
+                            <div id="b3" class="w-8 bg-[#93c5fd] rounded-t-sm h-0 transition-all duration-1000"></div>
+                            <div class="absolute -bottom-6 w-full flex justify-around text-[10px] font-black text-slate-500"><span>m/z 24</span><span>m/z 25</span><span>m/z 26</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0, method = 'impact', busy = false, molecules = [], isVacuum = false;
+        const canvas = document.getElementById('airCanvas'), ctx = canvas.getContext('2d');
+        const isotopes = [{ m: 24, c: '#1e3a8a' }, { m: 25, c: '#06b6d4' }, { m: 26, c: '#93c5fd' }];
+
+        function resizeCanvas() { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+        function initAir() {
+            molecules = []; isVacuum = false; resizeCanvas();
+            for(let i=0; i<80; i++) molecules.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: (Math.random()-0.5)*2, vy: (Math.random()-0.5)*2, r: 2, opacity: 0.6 });
+        }
+        function animate() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            for(let i=molecules.length-1; i>=0; i--) {
+                let m = molecules[i];
+                if(!isVacuum) { m.x+=m.vx; m.y+=m.vy; if(m.x<0||m.x>canvas.width) m.vx*=-1; if(m.y<0||m.y>canvas.height) m.vy*=-1; }
+                else { m.vx+=0.5; m.x+=m.vx; m.opacity-=0.02; if(m.opacity<=0||m.x>canvas.width) { molecules.splice(i,1); continue; } }
+                ctx.beginPath(); ctx.arc(m.x, m.y, m.r, 0, Math.PI*2); ctx.fillStyle = `rgba(255,255,255,${m.opacity})`; ctx.fill();
+            }
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = () => { initAir(); animate(); renderHardware(); updateUI(); document.getElementById('statusText').innerText = "观察空气分子。我们必须先抽真空以防碰撞。"; };
+        window.onresize = resizeCanvas;
+
+        function setMethod(m) {
+            if(currentStep !== 0) return; method = m;
+            document.getElementById('methodBadge').innerText = m === 'impact' ? 'Electron Impact' : 'Electrospray';
+            document.getElementById('btnImpact').className = m === 'impact' ? 'p-2 text-left rounded text-xs font-bold border-2 border-sky-500 bg-sky-50 text-sky-700' : 'p-2 text-left rounded text-xs font-bold bg-slate-100';
+            document.getElementById('btnSpray').className = m === 'spray' ? 'p-2 text-left rounded text-xs font-bold border-2 border-sky-500 bg-sky-50 text-sky-700' : 'p-2 text-left rounded text-xs font-bold bg-slate-100';
+            renderHardware();
+        }
+
+        function renderHardware() {
+            const area = document.getElementById('sourceArea'); area.innerHTML = '';
+            if(method === 'impact') {
+                area.innerHTML = `<div class="absolute top-4 left-1/2 -translate-x-1/2 flex flex-col items-center"><div class="filament"></div><span class="text-[8px] text-white mt-1 font-bold">FILAMENT</span></div>
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center"><div class="collector"></div><span class="text-[8px] text-white mt-1 font-bold">COLLECTOR</span></div>`;
+            } else {
+                area.innerHTML = `<div class="absolute top-1/2 left-0 -translate-y-1/2 flex items-center"><div class="needle-container"><div class="needle-base"></div><div class="needle-shaft"></div><div class="needle-tip"></div></div><div class="ml-4 flex flex-col"><span class="text-[8px] text-white font-bold">HYPODERMIC NEEDLE</span><span class="text-[7px] text-yellow-400 font-black animate-pulse">HIGH VOLTAGE (+)</span></div></div>`;
+            }
+        }
+
+        function updateUI() {
+            const btn = document.getElementById('mainBtn'), steps = ["START LAB", "PROCEED TO IONISATION", "PROCEED TO ACCELERATION", "PROCEED TO DRIFT", "RESET LAB"];
+            btn.innerHTML = `<span>${steps[currentStep]}</span>`;
+            for(let j=1; j<=4; j++) document.getElementById('s'+j).className = currentStep===j ? 'p-2 rounded text-[10px] active-step' : 'p-2 rounded text-[10px] text-slate-400';
+        }
+
+        async function handleMainAction() {
+            if(busy) return; if(currentStep === 4) { resetAll(); return; }
+            currentStep++; updateUI(); busy = true;
+            if(currentStep === 1) { isVacuum = true; document.getElementById('tube').classList.add('vacuum-active'); document.getElementById('statusText').innerText = "真空已建立。"; await new Promise(r => setTimeout(r, 2000)); }
+            else if(currentStep === 2) await stepIonisation();
+            else if(currentStep === 3) await stepAcceleration();
+            else if(currentStep === 4) await stepDrift();
+            busy = false;
+        }
+
+        async function stepIonisation() {
+            const stage = document.getElementById('particleStage'), formula = document.getElementById('formulaDisplay');
+            stage.innerHTML = '';
+            if(method === 'impact') {
+                formula.innerHTML = "X(g) + e⁻ → X⁺(g) + 2e⁻";
+                for(let i=0; i<6; i++) {
+                    const atom = document.createElement('div'); atom.className = 'particle atom'; atom.style.left = '40px'; atom.style.top = (20+i*12)+'%'; atom.innerText = 'X'; stage.appendChild(atom);
+                    const e = document.createElement('div'); e.className = 'electron'; e.style.left = '100px'; e.style.top = '10%'; stage.appendChild(e);
+                    await new Promise(r => setTimeout(r, 300));
+                    e.style.transition = 'all 0.3s linear'; e.style.top = atom.style.top;
+                    setTimeout(() => {
+                        atom.classList.replace('atom', 'ion'); atom.style.backgroundColor = isotopes[i%3].c; atom.style.left = '100px'; atom.innerHTML = '+'; atom.dataset.mass = isotopes[i%3].m;
+                        e.style.top = '90%'; e.style.opacity = '0';
+                    }, 300);
+                }
+            } else {
+                formula.innerHTML = "X(g) + H⁺ → XH⁺(g)";
+                for(let i=0; i<6; i++) {
+                    const droplet = document.createElement('div'); droplet.className = 'particle'; droplet.style.backgroundColor = '#bae6fd'; droplet.style.left = '102px'; droplet.style.top = '50%'; droplet.style.width = '6px'; droplet.style.height = '6px'; stage.appendChild(droplet);
+                    await new Promise(r => setTimeout(r, 200));
+                    droplet.style.transition = 'all 0.8s ease-out'; droplet.style.left = '130px'; droplet.style.top = (20+i*12)+'%'; droplet.style.width = '24px'; droplet.style.height = '24px'; droplet.innerText = '💧';
+                    setTimeout(() => {
+                        droplet.style.opacity = '0';
+                        const ion = document.createElement('div'); ion.className = 'particle ion'; ion.style.backgroundColor = isotopes[i%3].c; ion.style.left = '130px'; ion.style.top = droplet.style.top; ion.innerHTML = 'XH⁺'; ion.dataset.mass = isotopes[i%3].m+1; stage.appendChild(ion);
+                    }, 800);
+                }
+            }
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
+        async function stepAcceleration() {
+            document.querySelectorAll('.particle.ion').forEach(p => { p.style.transition = 'left 0.8s cubic-bezier(0.5,0,0.7,0)'; p.style.left = '155px'; });
+            await new Promise(r => setTimeout(r, 1000));
+        }
+
+        async function stepDrift() {
+            const particles = Array.from(document.querySelectorAll('.particle.ion')), targetX = canvas.width - 50;
+            particles.forEach((p, idx) => {
+                const duration = Math.sqrt(parseInt(p.dataset.mass)) * 800;
+                setTimeout(() => { p.style.transition = `left ${duration}ms linear, opacity 0.2s`; p.style.left = targetX + 'px'; }, 100);
+                setTimeout(() => {
+                    p.style.opacity = '0';
+                    if(idx === particles.length-1) {
+                        ['b1','b2','b3'].forEach((id,i) => document.getElementById(id).style.height = [79,10,11][i]+'%');
+                        document.getElementById('statusText').innerText = "检测完成。轻离子更早到达。";
+                    }
+                }, duration+200);
+            });
+        }
+
+        function resetAll() { currentStep = 0; document.getElementById('particleStage').innerHTML = ''; document.getElementById('formulaDisplay').innerHTML = ''; document.getElementById('tube').classList.remove('vacuum-active'); ['b1','b2','b3'].forEach(id => document.getElementById(id).style.height = '0'); initAir(); updateUI(); }
+    </script>
+</body>
+</html>

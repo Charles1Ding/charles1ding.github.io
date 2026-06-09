@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电镀金微观模拟器 - 全表面包裹版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        canvas { cursor: crosshair; }
+        /* 自定义滑块样式 */
+        input[type=range] { height: 6px; -webkit-appearance: none; background: #e2e8f0; border-radius: 5px; }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; 
+            height: 18px; 
+            width: 18px; 
+            border-radius: 50%; 
+            background: #f59e0b; 
+            cursor: pointer; 
+            border: 2px solid white; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3); 
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 lg:p-8">
+
+    <div class="flex flex-col gap-6 p-6 bg-white rounded-3xl shadow-2xl w-full max-w-[1000px] border border-slate-100">
+        <!-- 顶部控制栏 -->
+        <div class="flex flex-col md:flex-row items-center justify-between px-4 gap-6">
+            <div class="flex flex-col">
+                <h2 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>
+                    </div>
+                    电镀金 (全表面包裹版)
+                </h2>
+                <p class="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest ml-12 italic">Standard Gold Plating Simulation</p>
+            </div>
+            
+            <!-- 速度调节滑块 -->
+            <div class="flex flex-1 items-center gap-4 bg-slate-50 px-6 py-2 rounded-2xl border border-slate-100">
+                <span class="text-xs font-bold text-slate-500 whitespace-nowrap">电流强度</span>
+                <input type="range" id="speedSlider" min="0.5" max="8" step="0.5" value="3.5" class="w-full">
+                <span id="speedValue" class="text-xs font-mono font-bold text-amber-600 w-8 text-center">3.5</span>
+            </div>
+
+            <div class="flex gap-3">
+                <button id="toggleBtn" class="flex items-center gap-2 px-8 py-3 bg-amber-500 text-white rounded-xl font-bold transition-all transform active:scale-95 shadow-xl shadow-amber-200 hover:bg-amber-600">
+                    <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span id="btnText">开始</span>
+                </button>
+                <button id="resetBtn" class="p-3 rounded-xl border-2 border-slate-100 text-slate-400 hover:bg-slate-50 transition-colors" title="重置实验">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 核心画布区 -->
+        <div class="relative bg-slate-50 rounded-2xl border-2 border-slate-100 overflow-hidden shadow-inner">
+            <canvas id="platingCanvas" width="900" height="500" class="w-full h-auto"></canvas>
+            
+            <!-- 实时统计面板 -->
+            <div class="absolute top-4 right-4 bg-white/90 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm space-y-2 pointer-events-none">
+                <div class="flex items-center justify-between gap-8">
+                    <span class="text-xs font-bold text-amber-600">金离子 Au³⁺:</span>
+                    <span id="auCount" class="text-sm font-mono font-bold text-slate-800">0</span>
+                </div>
+                <div class="flex items-center justify-between gap-8">
+                    <span class="text-xs font-bold text-purple-400">硫酸根 SO₄²⁻:</span>
+                    <span id="so4Count" class="text-sm font-mono font-bold text-slate-400">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部信息区 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 px-2">
+            <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 text-left">
+                <div class="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                    <span class="text-xs font-bold text-amber-600 uppercase tracking-widest italic text-[10px]">阴极 Cathode (-) 还原中心</span>
+                    <p class="text-xl font-mono font-bold text-slate-700 mt-1">Au³⁺ + 3e⁻ → Au↓</p>
+                    <p class="text-[10px] text-slate-500 mt-1 leading-relaxed italic">金离子在负极得到电子，还原为金原子并均匀覆盖电极表面。</p>
+                </div>
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-left">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest italic text-[10px]">阳极 Anode (+) 氧化中心</span>
+                    <p class="text-xl font-mono font-bold text-slate-500 mt-1">H₂O → O₂↑ + 4H⁺ + 4e⁻</p>
+                    <p class="text-[10px] text-slate-500 mt-1 leading-relaxed italic">由于硫酸根离子较为稳定，在阳极表面主要发生水的放电反应产生氧气。</p>
+                </div>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl flex flex-col justify-center shadow-xl">
+                <div class="text-white text-xs leading-relaxed">
+                    <strong class="text-amber-400 block mb-1 text-sm font-bold underline italic">🌟 电镀物理机制</strong> 
+                    1. <b>全表面包裹：</b>金离子还原后在阴极表面形成致密的金黄色镀层。<br>
+                    2. <b>电量平衡：</b>外部电路电子由正极流向负极，维持微观反应持续进行。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('platingCanvas');
+        const ctx = canvas.getContext('2d');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const btnText = document.getElementById('btnText');
+        const playIcon = document.getElementById('playIcon');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValue = document.getElementById('speedValue');
+        const auCounter = document.getElementById('auCount');
+        const so4Counter = document.getElementById('so4Count');
+
+        let isActive = false;
+        let ions = [];
+        let electrons = [];
+        let bubbles = [];
+        let depositedAu = [];
+        let platingSpeed = 3.5;
+
+        // 核心布局坐标
+        const anodeX = 220;   // 阳极 (+) - 左
+        const cathodeX = 680; // 阴极 (-) - 右
+        const startY = 220;
+        const tankWidth = 700;
+        const tankHeight = 250;
+        const wireTopY = 80;
+        const powerCenterX = 450;
+        const electrodeH = 220;
+        const electrodeY = 180;
+
+        function init() {
+            ions = [];
+            // 金离子 Au3+ (30个)
+            for (let i = 0; i < 30; i++) {
+                ions.push({ 
+                    x: 230 + Math.random() * 440, 
+                    y: 240 + Math.random() * 160, 
+                    type: 'au', 
+                    color: '#fbbf24', 
+                    vx: (Math.random()-0.5)*0.5, 
+                    vy: (Math.random()-0.5)*0.5 
+                });
+            }
+            // 硫酸根 SO4 2- (精简至 12 个)
+            for (let i = 0; i < 12; i++) {
+                ions.push({ 
+                    x: 230 + Math.random() * 440, 
+                    y: 240 + Math.random() * 160, 
+                    type: 'so4', 
+                    color: '#c4b5fd', 
+                    vx: (Math.random()-0.5)*0.5, 
+                    vy: (Math.random()-0.5)*0.5 
+                });
+            }
+            // 电子 12 个
+            electrons = [];
+            for (let i = 0; i < 12; i++) {
+                electrons.push({ pos: i / 12, speed: 0.002 });
+            }
+            bubbles = [];
+            depositedAu = [];
+            updateStats();
+        }
+
+        function updateStats() {
+            const aus = ions.filter(i => i.type === 'au').length;
+            const so4s = ions.filter(i => i.type === 'so4').length;
+            auCounter.innerText = aus;
+            so4Counter.innerText = so4s;
+            if (aus === 0 && isActive) stopExperiment();
+        }
+
+        function stopExperiment() {
+            isActive = false;
+            btnText.innerText = "开始";
+            toggleBtn.className = "flex items-center gap-2 px-8 py-3 bg-amber-500 text-white rounded-xl font-bold transition-all transform active:scale-95 shadow-xl shadow-amber-200 hover:bg-amber-600";
+            playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 绘制容器
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(100, startY);
+            ctx.lineTo(100, startY + tankHeight);
+            ctx.lineTo(800, startY + tankHeight);
+            ctx.lineTo(800, startY);
+            ctx.stroke();
+            
+            // 溶液颜色随金离子浓度变淡
+            const auDensity = ions.filter(i => i.type === 'au').length / 30;
+            ctx.fillStyle = `rgba(251, 191, 36, ${0.03 + auDensity * 0.12})`;
+            ctx.fillRect(103, startY + 2, 694, tankHeight - 5);
+
+            // 2. 绘制电极主体 (灰色)
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(anodeX - 15, electrodeY, 30, electrodeH); 
+            ctx.fillRect(cathodeX - 15, electrodeY, 30, electrodeH); 
+
+            // 3. 绘制沉积的金原子 (全表面包裹效果)
+            depositedAu.forEach(au => {
+                ctx.fillStyle = '#f59e0b';
+                ctx.beginPath();
+                ctx.arc(au.x, au.y, 7, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#d97706';
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            });
+
+            // 4. 绘制离子及其定向移动
+            for (let i = ions.length - 1; i >= 0; i--) {
+                const ion = ions[i];
+                if (isActive) {
+                    if (ion.type === 'au') {
+                        ion.x += platingSpeed; // 向右吸引
+                        if (ion.x >= cathodeX - 15) {
+                            // 金离子反应附着：在阴极的全表面区域内随机生成坐标
+                            depositedAu.push({ 
+                                x: (cathodeX - 15) + Math.random() * 30, 
+                                y: electrodeY + Math.random() * electrodeH 
+                            });
+                            ions.splice(i, 1);
+                            updateStats();
+                            continue;
+                        }
+                    } else {
+                        ion.x -= platingSpeed; // 向左吸引
+                        if (ion.x <= anodeX + 15) {
+                            // 阳极产生氧气气泡
+                            if(Math.random() > 0.94) {
+                                bubbles.push({ x: anodeX - 10, y: ion.y, r: 2 + Math.random() * 4, vx: (Math.random() - 0.5) * 0.4 });
+                            }
+                            // 硫酸根作为电解质循环
+                            ion.x = cathodeX - 20;
+                            ion.y = 240 + Math.random() * 160;
+                        }
+                    }
+                } else {
+                    ion.x += ion.vx; ion.y += ion.vy;
+                    if (ion.x < 120 || ion.x > 780) ion.vx *= -1;
+                    if (ion.y < 230 || ion.y > 440) ion.vy *= -1;
+                }
+                
+                ctx.fillStyle = ion.color;
+                ctx.beginPath(); ctx.arc(ion.x, ion.y, 14, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText(ion.type === 'au' ? 'Au³⁺' : 'SO₄²⁻', ion.x, ion.y + 4);
+            }
+
+            // 5. 氧气气泡动画
+            bubbles.forEach((b) => {
+                b.y -= 1.2; b.x += b.vx;
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                ctx.strokeStyle = '#94a3b8';
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            });
+            bubbles = bubbles.filter(b => b.y > 150);
+
+            // 6. 绘制外部电路导线
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+            // 阳极连接正极
+            ctx.beginPath();
+            ctx.moveTo(anodeX, electrodeY); ctx.lineTo(anodeX, wireTopY); ctx.lineTo(powerCenterX - 40, wireTopY); ctx.lineTo(powerCenterX - 40, 120);
+            ctx.stroke();
+            // 阴极连接负极
+            ctx.beginPath();
+            ctx.moveTo(cathodeX, electrodeY); ctx.lineTo(cathodeX, wireTopY); ctx.lineTo(powerCenterX + 40, wireTopY); ctx.lineTo(powerCenterX + 40, 120);
+            ctx.stroke();
+            
+            // 7. 电子流向逻辑
+            if (isActive && ions.some(i=>i.type==='au')) {
+                electrons.forEach(e => {
+                    e.pos += e.speed * (platingSpeed / 2.5);
+                    if (e.pos > 1) e.pos = 0;
+                    let x, y;
+                    if (e.pos < 0.5) { 
+                        let t = e.pos / 0.5;
+                        if (t < 0.4) { x = anodeX; y = electrodeY - (t/0.4)*100; }
+                        else if (t < 0.8) { x = anodeX + ((t-0.4)/0.4)*(powerCenterX-40-anodeX); y = wireTopY; }
+                        else { x = powerCenterX - 40; y = wireTopY + ((t-0.8)/0.2)*40; }
+                    } else {
+                        let t = (e.pos - 0.5) / 0.5;
+                        if (t < 0.2) { x = powerCenterX + 40; y = 120 - (t/0.2)*40; }
+                        else if (t < 0.6) { x = powerCenterX + 40 + ((t-0.2)/0.4)*(cathodeX-(powerCenterX+40)); y = wireTopY; }
+                        else { x = cathodeX; y = wireTopY + ((t-0.6)/0.4)*100; }
+                    }
+                    ctx.fillStyle = '#60a5fa'; 
+                    ctx.beginPath(); ctx.arc(x, y, 9, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 5; ctx.shadowColor = '#3b82f6';
+                    ctx.strokeStyle = '#1d4ed8'; ctx.stroke(); ctx.shadowBlur = 0;
+                    ctx.fillStyle = '#fff'; ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center';
+                    ctx.fillText('e⁻', x, y + 3);
+                });
+            }
+
+            // 8. 绘制电源及极性标注 (顶层)
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(powerCenterX - 60, 40, 120, 80);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 13px sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('电镀直流电源', powerCenterX, 75);
+            
+            ctx.font = '900 24px sans-serif';
+            ctx.fillStyle = '#f87171'; ctx.fillText('+', powerCenterX - 40, 105); 
+            ctx.fillStyle = '#60a5fa'; ctx.fillText('-', powerCenterX + 40, 105); 
+
+            ctx.font = '900 32px sans-serif';
+            ctx.fillStyle = '#ef4444'; ctx.fillText('+', anodeX, 208);   
+            ctx.fillStyle = '#3b82f6'; ctx.fillText('-', cathodeX, 208); 
+            
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText('ANODE 阳极', anodeX, 240);
+            ctx.fillText('CATHODE 阴极', cathodeX, 240);
+
+            requestAnimationFrame(draw);
+        }
+
+        speedSlider.oninput = (e) => {
+            platingSpeed = parseFloat(e.target.value);
+            speedValue.innerText = platingSpeed.toFixed(1);
+        };
+
+        toggleBtn.onclick = () => {
+            if (ions.filter(i => i.type === 'au').length === 0) init();
+            isActive = !isActive;
+            if (isActive) {
+                btnText.innerText = "暂停";
+                toggleBtn.className = "flex items-center gap-2 px-8 py-3 bg-orange-100 text-orange-600 rounded-xl font-bold transition-all transform active:scale-95 border-2 border-orange-200";
+                playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+            } else {
+                stopExperiment();
+            }
+        };
+
+        resetBtn.onclick = () => { stopExperiment(); init(); };
+        window.onload = () => { init(); draw(); };
+    </script>
+</body>
+</html>

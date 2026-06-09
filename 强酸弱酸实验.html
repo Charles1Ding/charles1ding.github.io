@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酸对鲜花的腐蚀性模拟实验</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes fall {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(220px); opacity: 0; }
+        }
+        @keyframes float-up {
+            0% { transform: translateY(0) scale(0.5); opacity: 0; }
+            20% { opacity: 0.4; }
+            100% { transform: translateY(-150px) scale(2.5); opacity: 0; }
+        }
+        .animate-fall { animation: fall 0.6s ease-in forwards; }
+        .animate-float-up { animation: float-up 3.5s ease-out infinite; }
+        .delay-300 { animation-delay: 0.3s; }
+        
+        .flower-transition {
+            transition: all 1.2s ease-out;
+        }
+        .flower-instant {
+            transition: all 0.4s cubic-bezier(0.17, 0.67, 0.83, 0.67);
+        }
+        
+        body {
+            background-color: #0a0a0a;
+            color: #d6d3d1;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        /* 隐藏滚动条但保留功能 */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #444;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- 页眉 -->
+        <header class="mb-10 text-center">
+            <div class="inline-flex items-center justify-center p-2 px-4 bg-emerald-900/20 rounded-full border border-emerald-800/30 mb-4">
+                <span class="text-[10px] text-emerald-400 font-bold tracking-[0.2em] uppercase">生物结构破坏性测试 v3.0 (HTML版)</span>
+            </div>
+            <h1 class="text-4xl font-black mb-3 tracking-tight">
+                酸液对<span class="text-rose-500">整朵鲜花</span>的破坏力实验
+            </h1>
+            <p class="text-stone-500 max-w-2xl mx-auto italic">
+                展示强酸如何通过脱水、氧化等作用瞬间瓦解有机多层结构。
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- 左侧：试剂柜 -->
+            <div class="lg:col-span-3 space-y-4">
+                <h2 class="text-[10px] font-bold uppercase tracking-widest text-stone-500 mb-4 flex items-center gap-2">
+                    <i data-lucide="beaker" class="w-4 h-4"></i> REAGENTS 试剂
+                </h2>
+                <div id="acid-list" class="grid grid-cols-1 gap-2">
+                    <!-- JavaScript 动态渲染 -->
+                </div>
+                <button onclick="resetExperiment()" class="w-full flex items-center justify-center gap-2 py-3 mt-4 text-[11px] font-bold text-stone-500 hover:text-white border border-stone-800 rounded-2xl hover:bg-stone-900 transition-all">
+                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> 重置实验样本
+                </button>
+            </div>
+
+            <!-- 中间：模拟仿真核心 -->
+            <div class="lg:col-span-6">
+                <div class="bg-stone-900 rounded-[3rem] border border-stone-800 overflow-hidden flex flex-col h-full relative shadow-2xl">
+                    <!-- 装饰与滴管 -->
+                    <div class="h-28 flex items-center justify-center relative z-20">
+                        <div id="dropper" class="transition-all duration-300 transform">
+                            <i id="dropper-icon" data-lucide="droplets" class="w-14 h-14 text-stone-800"></i>
+                        </div>
+                        <div id="acid-drop" class="hidden w-0.5 h-24 bg-gradient-to-b from-cyan-400 to-transparent absolute top-16 animate-fall rounded-full"></div>
+                    </div>
+
+                    <!-- 鲜花展示区域 -->
+                    <div class="flex-grow flex items-center justify-center p-8 min-h-[450px] relative">
+                        <div class="relative">
+                            <!-- 烟雾效果 -->
+                            <div id="smoke-container" class="hidden absolute -top-32 left-1/2 -translate-x-1/2 w-full flex flex-col items-center pointer-events-none z-30">
+                                <div class="w-20 h-20 bg-neutral-200/10 rounded-full blur-[40px] animate-float-up"></div>
+                                <div class="w-32 h-32 bg-neutral-100/5 rounded-full blur-[60px] animate-float-up delay-300"></div>
+                            </div>
+
+                            <!-- 整朵花结构 (SVG) -->
+                            <div id="flower-wrapper" class="relative z-10 flower-transition">
+                                <svg viewBox="0 0 100 120" class="w-72 h-72 drop-shadow-2xl">
+                                    <!-- 花茎 -->
+                                    <path id="flower-stem" d="M50 80 Q50 90 50 120" stroke="currentColor" stroke-width="4" fill="none" class="text-emerald-800 transition-colors duration-1000" />
+                                    
+                                    <!-- 花瓣组 (5片) -->
+                                    <g id="petals-container">
+                                        <!-- 由 JS 填充 -->
+                                    </g>
+
+                                    <!-- 花蕊 -->
+                                    <circle id="flower-center" cx="50" cy="50" r="12" class="fill-yellow-400 transition-all duration-1000" />
+                                </svg>
+                            </div>
+                            <div id="flower-shadow" class="w-40 h-4 bg-black/50 rounded-full blur-xl mx-auto mt-4 transition-all duration-700 opacity-60"></div>
+                        </div>
+                    </div>
+
+                    <!-- 控制面板 -->
+                    <div class="p-8 bg-black/60 border-t border-stone-800 backdrop-blur-md">
+                        <div class="flex justify-between items-center mb-6">
+                            <div class="max-w-[75%]">
+                                <div class="text-[9px] text-stone-500 font-bold uppercase tracking-widest mb-1 flex items-center gap-1">
+                                    <i data-lucide="wind" class="w-3 h-3 text-cyan-500"></i> Observation 观测报告
+                                </div>
+                                <div id="observation-text" class="text-[13px] font-medium text-rose-100 h-10 flex items-center italic">
+                                    准备就绪。请选择待测酸液。
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-[9px] text-stone-500 font-bold uppercase">Collapse</div>
+                                <div class="text-4xl font-black leading-none text-cyan-400">
+                                    <span id="progress-value">0</span><span class="text-sm font-normal">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="drip-button" onclick="handleDrip()" disabled class="w-full flex items-center justify-center gap-3 py-5 rounded-3xl font-black transition-all transform active:scale-95 group relative overflow-hidden bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700">
+                            <i data-lucide="droplets" class="w-5 h-5"></i>
+                            <span id="button-label">请先选择酸液</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧边栏：技术参数 -->
+            <div class="lg:col-span-3 space-y-6">
+                <div class="bg-stone-900 p-6 rounded-[2rem] border border-stone-800">
+                    <h3 class="text-[10px] font-bold text-stone-500 mb-4 flex items-center gap-2 uppercase tracking-widest">
+                        <i data-lucide="zap" class="w-3 h-3 text-cyan-400"></i> Chemistry Logic
+                    </h3>
+                    <div id="logic-content" class="text-xs text-stone-700 italic py-12 text-center">
+                        选择酸液查看详细机制
+                    </div>
+                </div>
+
+                <div class="bg-stone-900 p-6 rounded-[2rem] border border-stone-800">
+                    <h3 class="text-[10px] font-bold text-stone-500 mb-4 flex items-center gap-2 uppercase tracking-widest">
+                        <i data-lucide="clock" class="w-3 h-3"></i> History Logs
+                    </h3>
+                    <div id="history-list" class="space-y-3">
+                        <div class="text-[10px] text-stone-700 text-center py-4 uppercase font-bold tracking-widest">无记录</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部声明 -->
+        <footer class="mt-12 p-8 bg-red-950/10 border border-red-900/20 rounded-[3rem] flex items-center gap-8 group">
+            <div class="w-16 h-16 rounded-full bg-red-900/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                <i data-lucide="alert-triangle" class="w-8 h-8 text-red-600"></i>
+            </div>
+            <div class="text-[11px] text-red-200/40 leading-relaxed">
+                <span class="font-black text-red-600 block mb-1 uppercase tracking-[0.2em]">Safety Protocol: Hazardous Substances</span>
+                强酸的腐蚀性在现实中是极端危险的。浓硫酸对整朵花的破坏力不仅在于视觉上的炭化，更在于其通过放热反应瞬间抽干生物质水分。实验室环境下处理这些酸类必须佩戴完整的化学防护服、护目镜及耐酸碱手套。
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const ACIDS = [
+            { id: 'sulfuric', name: '浓硫酸 (H₂SO₄)', type: '强酸', description: '具有极强的脱水性。接触鲜花的瞬间会将植物纤维中的氢氧元素按比例夺取，使整朵花瞬间炭化。', corrosivity: 100, isInstant: true, visualEffect: { corrodedColor: 'text-stone-900', centerColor: '#000000', smoke: true, holes: true, shrink: 0.4, droop: 20, label: '【毁灭性炭化】整朵鲜花瞬间变黑、枯萎并冒出酸雾，结构彻底崩塌。', chemicalNote: '脱水反应：(C₆H₁₀O₅)n → 6nC + 5nH₂O' } },
+            { id: 'nitric', name: '浓硝酸 (HNO₃)', type: '强酸', description: '强氧化性酸。能破坏色素分子的共轭体系，并使蛋白质变性，导致整朵花迅速变色、解体。', corrosivity: 90, isInstant: true, visualEffect: { corrodedColor: 'text-yellow-800', centerColor: '#2b1a0a', smoke: true, holes: true, shrink: 0.7, droop: 15, label: '【强氧化降解】花瓣色素瞬间被氧化，整朵花变为焦黄色，质地变脆。', chemicalNote: '色素氧化与黄蛋白反应' } },
+            { id: 'gastric', name: '胃酸 (HCl/酶)', type: '强酸 (稀)', description: '含稀盐酸，能逐渐破坏植物细胞壁，导致整朵花逐渐失去支撑力。', corrosivity: 65, isInstant: false, visualEffect: { corrodedColor: 'text-rose-200', centerColor: '#fda4af', smoke: false, holes: false, shrink: 0.8, droop: 10, label: '组织溶解：花色变浅，花瓣边缘变软并开始垂败。', chemicalNote: '纤维素水解反应' } },
+            { id: 'lactic', name: '乳酸', type: '弱酸', description: '温和的有机酸，对植物组织的侵蚀非常缓慢。', corrosivity: 25, isInstant: false, visualEffect: { corrodedColor: 'text-rose-600', centerColor: '#eab308', smoke: false, holes: false, shrink: 0.95, droop: 5, label: '轻微垂败：花朵略微失去水分感，颜色变得暗淡。', chemicalNote: '酸致质壁分离' } },
+            { id: 'citric', name: '柠檬酸', type: '弱酸', description: '常见的食品酸，对整朵花几乎没有明显的腐蚀破坏。', corrosivity: 15, isInstant: false, visualEffect: { corrodedColor: 'text-rose-500', centerColor: '#facc15', smoke: false, holes: false, shrink: 1, droop: 0, label: '基本无变化：仅维持了环境的酸碱度变化。', chemicalNote: 'pH环境改变' } },
+            { id: 'carbonic', name: '碳酸 (H₂CO₃)', type: '极弱酸', description: '酸性极弱且不稳定，无法对花朵结构造成破坏。', corrosivity: 5, isInstant: false, visualEffect: { corrodedColor: 'text-rose-500', centerColor: '#facc15', smoke: false, holes: false, shrink: 1, droop: 0, label: '完全无影响：花朵表面仅有二氧化碳气泡。', chemicalNote: 'H₂CO₃ ⇌ H₂O + CO₂' } }
+        ];
+
+        let selectedAcid = null;
+        let progress = 0;
+        let isDripping = false;
+        let history = [];
+
+        // 初始化
+        window.onload = () => {
+            lucide.createIcons();
+            renderAcidList();
+            renderFlowerBase();
+        };
+
+        function renderAcidList() {
+            const list = document.getElementById('acid-list');
+            list.innerHTML = ACIDS.map(acid => `
+                <button onclick="selectAcid('${acid.id}')" id="btn-${acid.id}" class="group relative p-4 rounded-2xl text-left transition-all border bg-stone-900 border-stone-800 hover:border-stone-700">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="acid-name font-bold text-sm text-stone-300">${acid.name}</div>
+                            <div class="text-[9px] opacity-40 uppercase mt-1 tracking-wider">${acid.type}</div>
+                        </div>
+                        ${acid.isInstant ? '<i data-lucide="skull" class="w-3 h-3 text-red-600 animate-pulse"></i>' : ''}
+                    </div>
+                </button>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderFlowerBase() {
+            const container = document.getElementById('petals-container');
+            container.innerHTML = [0, 72, 144, 216, 288].map((angle, i) => `
+                <g transform="rotate(${angle} 50 50)">
+                    <path d="M50 50 C25 35 25 5 50 5 C75 5 75 35 50 50" class="base-petal transition-all duration-700 text-stone-800" fill="currentColor" />
+                    <path id="corroded-petal-${i}" d="M50 50 C25 35 25 5 50 5 C75 5 75 35 50 50" class="corroded-petal transition-all duration-500 opacity-0" fill="currentColor" />
+                    <circle id="hole-${i}" cx="50" cy="25" r="4" fill="#0a0a0a" class="hidden animate-pulse" />
+                </g>
+            `).join('');
+        }
+
+        function selectAcid(id) {
+            if (isDripping) return;
+            selectedAcid = ACIDS.find(a => a.id === id);
+            progress = 0;
+            updateUI();
+            
+            // 更新按钮状态
+            ACIDS.forEach(a => {
+                const btn = document.getElementById(`btn-${a.id}`);
+                btn.className = (a.id === id) 
+                    ? 'group relative p-4 rounded-2xl text-left transition-all border bg-rose-950/40 border-rose-500 shadow-[0_0_20px_rgba(244,63,94,0.3)]' 
+                    : 'group relative p-4 rounded-2xl text-left transition-all border bg-stone-900 border-stone-800 hover:border-stone-700';
+                btn.querySelector('.acid-name').className = (a.id === id) ? 'acid-name font-bold text-sm text-rose-400' : 'acid-name font-bold text-sm text-stone-300';
+            });
+
+            // 更新侧边栏逻辑
+            const logicBox = document.getElementById('logic-content');
+            logicBox.innerHTML = `
+                <div class="space-y-4 text-left">
+                    <div class="text-xl font-bold text-white">${selectedAcid.name}</div>
+                    <p class="text-xs text-stone-400 leading-relaxed">${selectedAcid.description}</p>
+                    <div class="p-4 bg-black/40 rounded-2xl font-mono text-[10px] text-emerald-500 border border-emerald-900/30">
+                        <div class="text-stone-600 mb-2 border-b border-stone-800 pb-1">REACTION PRINCIPLE</div>
+                        ${selectedAcid.visualEffect.chemicalNote}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('observation-text').innerText = `已选择 ${selectedAcid.name}。${selectedAcid.isInstant ? '警告：强酸将产生瞬时破坏！' : ''}请滴加观察。`;
+            
+            // 启用滴加按钮
+            const dripBtn = document.getElementById('drip-button');
+            dripBtn.disabled = false;
+            dripBtn.className = "w-full flex items-center justify-center gap-3 py-5 rounded-3xl font-black transition-all transform active:scale-95 group relative overflow-hidden bg-white text-black hover:bg-cyan-400 shadow-2xl";
+            document.getElementById('button-label').innerText = `向样本滴加 ${selectedAcid.name}`;
+        }
+
+        function handleDrip() {
+            if (!selectedAcid || progress >= 100 || isDripping) return;
+
+            isDripping = true;
+            const dropper = document.getElementById('dropper');
+            const dropperIcon = document.getElementById('dropper-icon');
+            const acidDrop = document.getElementById('acid-drop');
+            const dripBtn = document.getElementById('drip-button');
+
+            dropper.classList.add('translate-y-10', 'scale-90');
+            dropperIcon.classList.replace('text-stone-800', 'text-cyan-400');
+            acidDrop.classList.remove('hidden');
+
+            setTimeout(() => {
+                isDripping = false;
+                dropper.classList.remove('translate-y-10', 'scale-90');
+                acidDrop.classList.add('hidden');
+
+                if (selectedAcid.isInstant) {
+                    progress = 100;
+                } else {
+                    const increment = selectedAcid.corrosivity > 30 ? 25 : 10;
+                    progress = Math.min(100, progress + increment);
+                }
+
+                updateUI();
+                
+                if (progress === 100) {
+                    document.getElementById('observation-text').innerText = `【实验完成】${selectedAcid.visualEffect.label}`;
+                    dripBtn.disabled = true;
+                    dripBtn.className = "w-full flex items-center justify-center gap-3 py-5 rounded-3xl font-black transition-all transform active:scale-95 group relative overflow-hidden bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700";
+                    document.getElementById('button-label').innerText = "实验样本已报废";
+                    
+                    addHistory();
+                } else {
+                    document.getElementById('observation-text').innerText = "酸液正在缓慢浸润整朵鲜花，组织开始弱化...";
+                }
+            }, 600);
+        }
+
+        function updateUI() {
+            const effect = selectedAcid.visualEffect;
+            const wrapper = document.getElementById('flower-wrapper');
+            const stem = document.getElementById('flower-stem');
+            const center = document.getElementById('flower-center');
+            const smoke = document.getElementById('smoke-container');
+            const shadow = document.getElementById('flower-shadow');
+            const progressVal = document.getElementById('progress-value');
+
+            progressVal.innerText = progress;
+
+            // 切换过渡效果
+            wrapper.className = `relative z-10 ${selectedAcid.isInstant ? 'flower-instant' : 'flower-transition'}`;
+
+            // 整体变换
+            const scale = 1 - (progress/100) * (1 - effect.shrink);
+            const rotate = progress * (effect.droop / 100);
+            wrapper.style.transform = `scale(${scale}) rotate(${rotate}deg)`;
+
+            // 花茎弯曲和颜色
+            const stemCurve = 50 + (progress * 0.2);
+            stem.setAttribute('d', `M50 80 Q${50 + (progress * 0.1)} ${90 + (progress * 0.1)} ${stemCurve} 120`);
+            if (progress === 100 && selectedAcid.isInstant) {
+                stem.classList.replace('text-emerald-800', 'text-stone-900');
+            } else {
+                stem.classList.replace('text-stone-900', 'text-emerald-800');
+            }
+
+            // 花瓣更新
+            const basePetals = document.querySelectorAll('.base-petal');
+            const corrodedPetals = document.querySelectorAll('.corroded-petal');
+            
+            basePetals.forEach(p => {
+                p.classList.toggle('text-stone-800', !selectedAcid);
+                p.classList.toggle('text-rose-500', !!selectedAcid);
+            });
+
+            corrodedPetals.forEach((p, i) => {
+                p.className = `corroded-petal transition-all duration-500 ${effect.corrodedColor}`;
+                p.style.opacity = progress / 100;
+                
+                // 穿孔显示
+                const hole = document.getElementById(`hole-${i}`);
+                if (progress === 100 && effect.holes && i % 2 === 0) {
+                    hole.classList.remove('hidden');
+                } else {
+                    hole.classList.add('hidden');
+                }
+            });
+
+            // 花蕊更新
+            center.style.fill = (progress === 100) ? effect.centerColor : (selectedAcid ? '#facc15' : '#444');
+
+            // 烟雾和影子
+            if (progress === 100 && effect.smoke) {
+                smoke.classList.remove('hidden');
+            } else {
+                smoke.classList.add('hidden');
+            }
+            
+            shadow.style.opacity = 0.6 - (progress / 200);
+            shadow.style.transform = `scaleX(${1 - (progress/200)})`;
+        }
+
+        function addHistory() {
+            if (history.find(h => h.id === selectedAcid.id)) return;
+            history.unshift({ ...selectedAcid, time: new Date().toLocaleTimeString() });
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            list.innerHTML = history.slice(0, 5).map(h => `
+                <div class="text-[10px] p-3 bg-black/30 rounded-xl border border-stone-800 flex flex-col gap-1">
+                    <div class="flex justify-between items-center">
+                        <span class="text-stone-200 font-bold">${h.name}</span>
+                        <span class="text-[8px] text-stone-600 font-mono">${h.time}</span>
+                    </div>
+                    <div class="h-1 w-full bg-stone-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-red-600" style="width: ${h.corrosivity}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function resetExperiment() {
+            selectedAcid = null;
+            progress = 0;
+            isDripping = false;
+            
+            document.getElementById('observation-text').innerText = "请重新放置样本。";
+            document.getElementById('progress-value').innerText = "0";
+            document.getElementById('logic-content').innerHTML = '<div class="text-xs text-stone-700 italic py-12 text-center">选择酸液查看详细机制</div>';
+            
+            // 重置按钮
+            const dripBtn = document.getElementById('drip-button');
+            dripBtn.disabled = true;
+            dripBtn.className = "w-full flex items-center justify-center gap-3 py-5 rounded-3xl font-black transition-all transform active:scale-95 group relative overflow-hidden bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700";
+            document.getElementById('button-label').innerText = "请先选择酸液";
+            
+            document.getElementById('dropper-icon').classList.replace('text-cyan-400', 'text-stone-800');
+
+            renderAcidList();
+            updateUI();
+        }
+    </script>
+</body>
+</html>

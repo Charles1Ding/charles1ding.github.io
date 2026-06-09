@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金属与合金延展性模拟 2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .atom {
+            transition: all 0.4s cubic-bezier(0.25, 0.1, 0.25, 1.0);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: #bfdbfe;
+            border-radius: 8px;
+            height: 12px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: #2563eb;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-6 min-h-screen font-sans">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl p-6 md:p-10 border border-gray-200">
+        <!-- 标题部分 -->
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-4xl font-black text-gray-900 mb-2">金属与合金延展性模拟 2.0</h1>
+            <p class="text-gray-500 text-lg italic">对比纯金属的大跨度滑移与合金的结构锁死</p>
+        </header>
+
+        <!-- 控制滑块 -->
+        <div class="mb-12 w-full max-w-lg mx-auto bg-blue-50 p-6 md:p-8 rounded-2xl border-2 border-blue-100 shadow-md">
+            <label class="block text-blue-900 font-black mb-4 text-center text-xl">
+                增大剪切力 (Increase Shear Force): <span id="forceValue" class="text-blue-600">0%</span>
+            </label>
+            <input
+                id="forceSlider"
+                type="range"
+                min="0"
+                max="2.5"
+                step="0.01"
+                value="0"
+                class="w-full h-4 bg-transparent appearance-none cursor-pointer"
+            >
+            <div class="flex justify-between text-sm font-bold text-blue-400 mt-4 px-2">
+                <span>初始状态</span>
+                <span>极致强力</span>
+            </div>
+        </div>
+
+        <!-- 模拟器展示区 -->
+        <div class="flex flex-col lg:flex-row gap-10 justify-center items-start">
+            
+            <!-- 纯金属模型 -->
+            <div class="flex flex-col items-center bg-white p-4 rounded-xl shadow-inner border border-gray-100 w-full lg:w-1/2">
+                <h3 class="text-lg font-bold mb-4 text-gray-700">纯金属结构 (Pure Metal)</h3>
+                <div class="relative overflow-hidden border border-dashed border-gray-200 rounded-lg p-2 bg-gray-50 w-full">
+                    <svg id="pureMetalSvg" width="100%" height="280" viewBox="0 0 520 280" class="overflow-visible">
+                        <!-- 滑移面 -->
+                        <line x1="10" y1="113" x2="500" y2="113" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,5" />
+                        <text x="10" y="105" fill="#f39c12" font-size="12" font-weight="bold">滑移面 (Slip Plane)</text>
+                        <g id="pureAtomsGroup"></g>
+                        <g id="pureForceArrow" style="display:none">
+                            <path id="pureArrowPath" d="" fill="none" stroke="#e67e22" stroke-width="3" />
+                            <text id="pureArrowText" x="0" y="5" fill="#e67e22" font-size="14" font-weight="bold">强力 (Strong Force)</text>
+                        </g>
+                    </svg>
+                </div>
+                <p id="pureLabel" class="mt-4 text-sm text-gray-500 text-center max-w-xs h-12">层级发生剧烈滑移，展示了极佳的延展性。</p>
+            </div>
+
+            <!-- 合金模型 -->
+            <div class="flex flex-col items-center bg-white p-4 rounded-xl shadow-inner border border-gray-100 w-full lg:w-1/2">
+                <h3 class="text-lg font-bold mb-4 text-gray-700">合金结构 (Alloy)</h3>
+                <div class="relative overflow-hidden border border-dashed border-gray-200 rounded-lg p-2 bg-gray-50 w-full">
+                    <svg id="alloySvg" width="100%" height="280" viewBox="0 0 520 280" class="overflow-visible">
+                        <!-- 滑移面 -->
+                        <line x1="10" y1="113" x2="500" y2="113" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,5" />
+                        <text x="10" y="105" fill="#f39c12" font-size="12" font-weight="bold">滑移面 (Slip Plane)</text>
+                        <g id="alloyAtomsGroup"></g>
+                        <g id="alloyForceArrow" style="display:none">
+                            <path id="alloyArrowPath" d="" fill="none" stroke="#e67e22" stroke-width="3" />
+                            <text id="alloyArrowText" x="0" y="5" fill="#e67e22" font-size="14" font-weight="bold">强力 (Strong Force)</text>
+                        </g>
+                    </svg>
+                </div>
+                <p id="alloyLabel" class="mt-4 text-sm text-gray-500 text-center max-w-xs h-12">结构被红色巨型原子锁死，即使受强力也无法产生大范围位移。</p>
+            </div>
+            
+        </div>
+
+        <!-- 原理解释 -->
+        <div class="mt-12 p-6 bg-gray-900 text-white rounded-2xl">
+            <h4 class="text-xl font-bold mb-3 text-blue-400">为什么位移差异这么大？</h4>
+            <p class="leading-relaxed opacity-90">
+                在<b>纯金属</b>中，原子层就像一叠平滑的扑克牌，在侧向力作用下可以无限滑动。而在<b>合金</b>中，由于红色非金属原子的半径极大（超过了单层的高度），它们充当了物理“销钉”的角色。
+                <br><br>
+                这种现象在材料科学中被称为<b>固溶强化</b>。巨大的原子不仅扭曲了周围的晶格，还物理性地阻断了滑移路径，使得金属层无法彼此滑过，从而显著提高了合金的硬度。
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const slider = document.getElementById('forceSlider');
+        const forceValueText = document.getElementById('forceValue');
+        
+        const pureAtomsGroup = document.getElementById('pureAtomsGroup');
+        const alloyAtomsGroup = document.getElementById('alloyAtomsGroup');
+        
+        const ROWS = 5;
+        const COLS = 8;
+        const SPACING = 42;
+        const ATOM_RADIUS = 20;
+        const OFFSET_X = 50;
+        const OFFSET_Y = 50;
+
+        const alloyImpurities = [
+            { r: 1, c: 3, size: 40, color: '#e74c3c' }, 
+            { r: 2, c: 5, size: 40, color: '#e74c3c' }, 
+            { r: 4, c: 2, size: 38, color: '#e74c3c' }
+        ];
+
+        // 初始化原子
+        function initModel(group, type) {
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    let radius = ATOM_RADIUS;
+                    let color = type === 'pure' ? '#3498db' : '#95a5a6';
+                    
+                    if (type === 'alloy') {
+                        const impurity = alloyImpurities.find(imp => imp.r === r && imp.c === c);
+                        if (impurity) {
+                            radius = impurity.size;
+                            color = impurity.color;
+                        }
+                    }
+
+                    const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    circle.setAttribute("cx", OFFSET_X + c * SPACING);
+                    circle.setAttribute("cy", OFFSET_Y + r * SPACING);
+                    circle.setAttribute("r", radius);
+                    circle.setAttribute("fill", color);
+                    circle.setAttribute("stroke", "#444");
+                    circle.setAttribute("stroke-width", "1.5");
+                    circle.setAttribute("class", "atom");
+                    circle.dataset.row = r;
+                    circle.dataset.col = c;
+                    group.appendChild(circle);
+                }
+            }
+        }
+
+        initModel(pureAtomsGroup, 'pure');
+        initModel(alloyAtomsGroup, 'alloy');
+
+        function update(force) {
+            forceValueText.innerText = (force * 100).toFixed(0) + '%';
+            
+            const pureXShift = force * 100;
+            const alloyXShift = Math.min(force * 8, 12);
+
+            // 更新原子位置
+            document.querySelectorAll('#pureAtomsGroup .atom').forEach(atom => {
+                if (parseInt(atom.dataset.row) < 2) {
+                    const baseIdx = parseInt(atom.dataset.col);
+                    atom.setAttribute("cx", OFFSET_X + baseIdx * SPACING + pureXShift);
+                }
+            });
+
+            document.querySelectorAll('#alloyAtomsGroup .atom').forEach(atom => {
+                if (parseInt(atom.dataset.row) < 2) {
+                    const baseIdx = parseInt(atom.dataset.col);
+                    atom.setAttribute("cx", OFFSET_X + baseIdx * SPACING + alloyXShift);
+                }
+            });
+
+            // 更新箭头
+            updateArrow('pure', pureXShift, force);
+            updateArrow('alloy', alloyXShift, force);
+        }
+
+        function updateArrow(type, xShift, force) {
+            const arrowGroup = document.getElementById(type + 'ForceArrow');
+            if (force <= 0) {
+                arrowGroup.style.display = 'none';
+                return;
+            }
+            arrowGroup.style.display = 'block';
+            
+            const arrowPath = document.getElementById(type + 'ArrowPath');
+            const arrowText = document.getElementById(type + 'ArrowText');
+            
+            const headX = 40 + force * 20;
+            const startX = xShift - 20;
+            
+            arrowGroup.setAttribute("transform", `translate(${startX}, 20)`);
+            arrowPath.setAttribute("d", `M0,0 L${headX},0 L${headX-5},-5 M${headX},0 L${headX-5},5`);
+            arrowText.setAttribute("x", headX + 5);
+        }
+
+        slider.addEventListener('input', (e) => {
+            update(parseFloat(e.target.value));
+        });
+
+        // 初始调用一次
+        update(0);
+
+    </script>
+</body>
+</html>

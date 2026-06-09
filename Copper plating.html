@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级电解实验室 - 铜溶解与电镀模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        canvas { cursor: crosshair; }
+        input[type=range] { height: 6px; -webkit-appearance: none; background: #e2e8f0; border-radius: 5px; }
+        input[type=range]::-webkit-slider-thumb { 
+            -webkit-appearance: none; height: 18px; width: 18px; border-radius: 50%; 
+            background: #ea580c; cursor: pointer; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3); 
+        }
+        .select-card { transition: all 0.2s ease; cursor: pointer; border: 2px solid #f1f5f9; }
+        .select-card.active { border-color: #ea580c; background-color: #fff7ed; }
+        .select-card.danger { border-color: #ef4444; color: #ef4444; }
+        .select-card.danger.active { background-color: #fef2f2; border-color: #ef4444; color: #b91c1c; }
+        
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shake { animation: shake 0.5s; animation-iteration-count: infinite; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 lg:p-8">
+
+    <div id="mainContainer" class="flex flex-col gap-6 p-6 bg-white rounded-3xl shadow-2xl w-full max-w-[1100px] border border-slate-100">
+        <!-- 顶部控制栏 -->
+        <div class="flex flex-col gap-6">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex flex-col">
+                    <h2 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                        <div class="p-2 bg-orange-100 rounded-lg">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ea580c" stroke-width="3"><path d="M12 2v20M2 12h20"/></svg>
+                        </div>
+                        高级电解实验室
+                    </h2>
+                    <p class="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-widest ml-12 italic">Experimental Safety & Active Metals</p>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button id="toggleBtn" class="flex items-center gap-2 px-8 py-3 bg-orange-600 text-white rounded-xl font-bold transition-all transform active:scale-95 shadow-xl shadow-orange-200 hover:bg-orange-700">
+                        <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon id="playPolygon" points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <span id="btnText">开始实验</span>
+                    </button>
+                    <button id="resetBtn" class="p-3 rounded-xl border-2 border-slate-100 text-slate-400 hover:bg-slate-50 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 实验参数选择 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- 阴极材料栏 -->
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase mb-2 block text-center">阴极材料 (Cathode -)</span>
+                    <div class="flex gap-1.5 px-1">
+                        <button id="btnCathodeInert" class="select-card flex-1 p-2 rounded-xl text-[10px] font-bold text-slate-600 flex flex-col items-center">Graphite</button>
+                        <button id="btnCathodeCu" class="select-card active flex-1 p-2 rounded-xl text-[10px] font-bold text-slate-600 flex flex-col items-center">铜棒</button>
+                        <button id="btnCathodeLeaf" class="select-card flex-1 p-2 rounded-xl text-[10px] font-bold text-slate-600 flex flex-col items-center">树叶</button>
+                        <button id="btnCathodeNa" class="select-card danger flex-1 p-2 rounded-xl text-[10px] font-bold flex flex-col items-center border-red-100">钠(危险!)</button>
+                    </div>
+                </div>
+
+                <!-- 阳极材料栏 -->
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase mb-2 block text-center">阳极材料 (Anode +)</span>
+                    <div class="flex gap-1.5 px-1">
+                        <button id="btnAnodeInert" class="select-card active flex-1 p-2 rounded-xl text-[10px] font-bold text-slate-600 flex flex-col items-center">Graphite</button>
+                        <button id="btnAnodeCu" class="select-card flex-1 p-2 rounded-xl text-[10px] font-bold text-slate-600 flex flex-col items-center">铜(溶解)</button>
+                        <button id="btnAnodeAg" class="select-card flex-1 p-2 rounded-xl text-[10px] font-bold text-slate-600 flex flex-col items-center">银(溶解)</button>
+                        <button id="btnAnodeNa" class="select-card danger flex-1 p-2 rounded-xl text-[10px] font-bold flex flex-col items-center border-red-100">钠(危险!)</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 电流强度调节 -->
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100 flex items-center gap-4">
+                <span class="text-[10px] font-bold text-slate-400 uppercase whitespace-nowrap">电流强度调节</span>
+                <input type="range" id="speedSlider" min="0.5" max="8" step="0.5" value="3.5" class="flex-1">
+                <span id="speedVal" class="text-xs font-mono font-bold text-orange-600 w-8 text-center">3.5</span>
+            </div>
+        </div>
+
+        <!-- 核心画布区 -->
+        <div class="relative bg-slate-50 rounded-2xl border-2 border-slate-100 overflow-hidden shadow-inner">
+            <canvas id="platingCanvas" width="900" height="500" class="w-full h-auto"></canvas>
+            
+            <div id="explosionOverlay" class="hidden absolute inset-0 bg-red-500/10 pointer-events-none flex items-center justify-center">
+                <div class="text-4xl font-black text-red-600 uppercase tracking-widest drop-shadow-lg text-center px-4">
+                    ⚠️ 危险：金属钠剧烈反应 ⚠️<br>
+                    <span class="text-lg">Danger: Sodium Reacts Violently with Water</span>
+                </div>
+            </div>
+
+            <div class="absolute top-4 right-4 bg-white/90 backdrop-blur p-4 rounded-xl border border-slate-200 shadow-sm space-y-1 pointer-events-none text-right">
+                <div class="flex items-center justify-between gap-8">
+                    <span class="text-xs font-bold text-blue-500">Cu²⁺ 浓度:</span>
+                    <span id="cuCount" class="text-sm font-mono font-bold text-slate-800">0</span>
+                </div>
+                <div class="flex items-center justify-between gap-8">
+                    <span class="text-xs font-bold text-slate-400">其他离子:</span>
+                    <span id="agCount" class="text-sm font-mono font-bold text-slate-800">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部说明区 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 px-2 text-left">
+            <div class="p-4 bg-orange-50 rounded-2xl border border-orange-100">
+                <h4 class="font-bold text-orange-800 text-xs uppercase mb-2">安全说明与化学机理</h4>
+                <div class="space-y-1 text-[10px] text-slate-600 leading-tight">
+                    <p id="descStatus"><b>当前状态：</b>就绪</p>
+                    <p id="descWarning"><b>注意：</b>无论钠作为阴极还是阳极，它都会立即与水中的 H₂O 分子反应。</p>
+                    <p id="descEquation" class="font-mono text-red-600 font-bold hidden mt-1">2Na + 2H₂O → 2NaOH + H₂↑ + 热量 (引起爆炸)</p>
+                </div>
+            </div>
+            <div class="bg-slate-900 p-5 rounded-2xl flex items-center shadow-xl">
+                <div class="flex flex-col gap-1 w-full text-left">
+                    <div class="flex justify-between text-[10px] font-bold">
+                        <span class="text-slate-400">实验室环境安全系数</span>
+                        <span id="safetyIndicator" class="text-green-400">良好 (Safe)</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-800 rounded-full mt-1">
+                        <div id="safetyBar" class="h-full bg-green-500 rounded-full transition-all duration-300" style="width: 100%"></div>
+                    </div>
+                    <p class="text-[9px] text-slate-500 mt-2 italic text-center">Graphite 为惰性电极，不参与金属溶解反应。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('platingCanvas');
+        const ctx = canvas.getContext('2d');
+        const mainContainer = document.getElementById('mainContainer');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValDisplay = document.getElementById('speedVal');
+        const safetyIndicator = document.getElementById('safetyIndicator');
+        const safetyBar = document.getElementById('safetyBar');
+        const explosionOverlay = document.getElementById('explosionOverlay');
+        const descEquation = document.getElementById('descEquation');
+        const cuCountDisplay = document.getElementById('cuCount');
+        const agCountDisplay = document.getElementById('agCount');
+
+        let isActive = false;
+        let isExploded = false;
+        let ions = [];
+        let electrons = [];
+        let particles = []; 
+        let depositedCu = []; 
+        let platingSpeed = 3.5;
+
+        let cathodeMaterial = 'Cu'; 
+        let anodeMaterial = 'Inert'; 
+        let anodeVolume = 1.0; 
+
+        const anodeX = 220, cathodeX = 680, startY = 220;
+        const electrodeH = 220, electrodeY = 180, electrodeW = 30;
+
+        function init() {
+            ions = [];
+            particles = [];
+            depositedCu = [];
+            electrons = [];
+            anodeVolume = 1.0;
+            isExploded = false;
+            isActive = false;
+            mainContainer.classList.remove('shake');
+            explosionOverlay.classList.add('hidden');
+            descEquation.classList.add('hidden');
+            safetyIndicator.innerText = "良好 (Safe)";
+            safetyIndicator.className = "text-green-400";
+            safetyBar.style.width = "100%";
+            safetyBar.className = "h-full bg-green-500 rounded-full";
+            speedValDisplay.innerText = platingSpeed.toFixed(1);
+
+            for (let i = 0; i < 30; i++) ions.push(createIon('cu'));
+            for (let i = 0; i < 12; i++) ions.push(createIon('so4'));
+            for (let i = 0; i < 10; i++) electrons.push({ pos: i / 10, speed: 0.002 });
+            
+            updateButtons();
+        }
+
+        function createIon(type, x, y) {
+            const colors = { cu: '#3b82f6', so4: '#c4b5fd', ag: '#e2e8f0', na: '#f8fafc' };
+            const startX = x || (230 + Math.random() * 440);
+            const startYPos = y || (240 + Math.random() * 160);
+            return {
+                x: startX, y: startYPos, type: type, color: colors[type],
+                vx: (Math.random()-0.5)*0.5, vy: (Math.random()-0.5)*0.5
+            };
+        }
+
+        function triggerExplosion(sourceX) {
+            isExploded = true;
+            isActive = false;
+            mainContainer.classList.add('shake');
+            explosionOverlay.classList.remove('hidden');
+            descEquation.classList.remove('hidden');
+            safetyIndicator.innerText = "事故：发生爆炸 (CRITICAL)";
+            safetyIndicator.className = "text-red-500";
+            safetyBar.style.width = "5%";
+            safetyBar.className = "h-full bg-red-600 rounded-full";
+            
+            for(let i=0; i<70; i++) {
+                particles.push({
+                    x: sourceX,
+                    y: electrodeY + Math.random() * electrodeH,
+                    vx: (Math.random() - 0.5) * 20,
+                    vy: (Math.random() - 1.2) * 15,
+                    life: 1.0,
+                    size: 2 + Math.random() * 10,
+                    color: Math.random() > 0.3 ? '#f97316' : '#ef4444'
+                });
+            }
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 环境背景
+            ctx.strokeStyle = '#64748b'; ctx.lineWidth = 6;
+            ctx.beginPath(); ctx.moveTo(100, startY); ctx.lineTo(100, startY+250); ctx.lineTo(800, startY+250); ctx.lineTo(800, startY); ctx.stroke();
+            ctx.fillStyle = isExploded ? 'rgba(254, 226, 226, 0.8)' : 'rgba(239, 246, 255, 0.6)'; 
+            ctx.fillRect(103, startY+2, 694, 245);
+
+            // 判定电路通断
+            const canConduct = (cathodeMaterial !== 'Leaf') && (anodeVolume > 0.01);
+            const isCircuitWorking = isActive && canConduct && !isExploded;
+
+            // 2. 绘制导线
+            ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(anodeX, electrodeY);
+            ctx.lineTo(anodeX, 80);
+            ctx.lineTo(410, 80);
+            ctx.lineTo(410, 120);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(cathodeX, electrodeY);
+            ctx.lineTo(cathodeX, 80);
+            ctx.lineTo(490, 80);
+            ctx.lineTo(490, 120);
+            ctx.stroke();
+
+            // 3. 绘制阴极
+            if (!isExploded || cathodeMaterial !== 'Na') {
+                if (cathodeMaterial === 'Leaf') {
+                    ctx.fillStyle = '#22c55e';
+                    ctx.beginPath(); ctx.ellipse(cathodeX, electrodeY+electrodeH/2, 20, electrodeH/2, 0, 0, Math.PI*2); ctx.fill();
+                } else {
+                    ctx.fillStyle = cathodeMaterial === 'Cu' ? '#ea580c' : (cathodeMaterial === 'Na' ? '#cbd5e1' : '#334155');
+                    ctx.fillRect(cathodeX - 15, electrodeY, 30, electrodeH);
+                }
+            }
+
+            // 4. 绘制阳极
+            if (anodeVolume > 0.01 && (!isExploded || anodeMaterial !== 'Na')) {
+                ctx.fillStyle = anodeMaterial === 'Cu' ? '#ea580c' : (anodeMaterial === 'Ag' ? '#94a3b8' : (anodeMaterial === 'Na' ? '#cbd5e1' : '#334155'));
+                const currentW = (anodeMaterial === 'Cu' || anodeMaterial === 'Ag') ? electrodeW * anodeVolume : electrodeW;
+                ctx.fillRect(anodeX - currentW/2, electrodeY, currentW, electrodeH);
+            }
+
+            // 5. 沉积层
+            depositedCu.forEach(p => {
+                ctx.fillStyle = '#c2410c'; ctx.beginPath(); ctx.arc(p.x, p.y, 7, 0, Math.PI * 2); ctx.fill();
+            });
+
+            // 6. 爆炸粒子
+            for(let i=particles.length-1; i>=0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.vy += 0.25;
+                p.life -= 0.008;
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI*2); ctx.fill();
+                ctx.globalAlpha = 1.0;
+                if(p.life <= 0) particles.splice(i, 1);
+            }
+
+            // 7. 离子逻辑
+            for (let i = ions.length - 1; i >= 0; i--) {
+                const ion = ions[i];
+                if (isCircuitWorking) {
+                    if (ion.type === 'cu' || ion.type === 'ag') {
+                        ion.x += platingSpeed;
+                        if (ion.x >= cathodeX - 15) {
+                            depositedCu.push({ x: (cathodeX - 15) + Math.random() * 30, y: electrodeY + Math.random() * electrodeH });
+                            ions.splice(i, 1); continue;
+                        }
+                    } else if (ion.type === 'so4') {
+                        ion.x -= platingSpeed;
+                        if (ion.x <= anodeX + 15) { ion.x = cathodeX - 30; }
+                    }
+                } else {
+                    ion.x += ion.vx; ion.y += ion.vy;
+                    if (ion.x < 120 || ion.x > 780) ion.vx *= -1;
+                    if (ion.y < 230 || ion.y > 440) ion.vy *= -1;
+                }
+                ctx.fillStyle = ion.color;
+                ctx.beginPath(); ctx.arc(ion.x, ion.y, 14, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                const labels = { cu: 'Cu²⁺', so4: 'SO₄²⁻', ag: 'Ag⁺', na: 'Na⁺' };
+                ctx.fillStyle = ion.type === 'ag' ? '#475569' : '#fff';
+                ctx.font='bold 9px sans-serif'; ctx.textAlign='center';
+                ctx.fillText(labels[ion.type], ion.x, ion.y + 4);
+            }
+
+            // 8. 阳极溶解逻辑
+            if (isCircuitWorking && (anodeMaterial === 'Cu' || anodeMaterial === 'Ag')) {
+                const decayRate = anodeMaterial === 'Cu' ? 0.0012 : 0.0005;
+                anodeVolume -= decayRate * platingSpeed;
+                if (Math.random() > 0.96) ions.push(createIon(anodeMaterial.toLowerCase(), anodeX + 10));
+                if (anodeVolume <= 0.01) { anodeVolume = 0; isActive = false; }
+            }
+
+            // 9. 电子流
+            if (isCircuitWorking) {
+                electrons.forEach(e => {
+                    e.pos += e.speed * (platingSpeed / 3);
+                    if (e.pos > 1) e.pos = 0;
+                    let x, y;
+                    if (e.pos < 0.5) { let t = e.pos/0.5; x = anodeX + t * (410 - anodeX); y = (t < 0.2) ? 180 - (t/0.2)*100 : 80; }
+                    else { let t = (e.pos-0.5)/0.5; x = 490 + t * (cathodeX - 490); y = (t > 0.8) ? 80 + ((t-0.8)/0.2)*100 : 80; }
+                    ctx.fillStyle = '#60a5fa'; ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI*2); ctx.fill();
+                });
+            }
+
+            // 10. 绘制电源箱
+            ctx.fillStyle = '#1e293b'; ctx.fillRect(390, 40, 120, 80);
+            ctx.fillStyle = '#fff'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center'; ctx.fillText('直流电源', 450, 75);
+            ctx.fillStyle = '#f87171'; ctx.fillText('+', 410, 105); ctx.fillStyle = '#60a5fa'; ctx.fillText('-', 490, 105);
+            
+            // 电极正负符号
+            ctx.fillStyle = '#ef4444'; ctx.font='900 24px sans-serif'; ctx.fillText('+', anodeX, 205);
+            ctx.fillStyle = '#3b82f6'; ctx.fillText('-', cathodeX, 205);
+
+            // 电极下方类型文字
+            ctx.font='bold 11px sans-serif'; ctx.fillStyle='#94a3b8';
+            const aLabel = anodeMaterial === 'Inert' ? 'Graphite' : (anodeMaterial === 'Cu' ? '铜阳极' : (anodeMaterial === 'Ag' ? '银阳极' : '金属钠'));
+            const cLabel = cathodeMaterial === 'Inert' ? 'Graphite' : (cathodeMaterial === 'Cu' ? '铜棒' : (cathodeMaterial === 'Leaf' ? '树叶' : '金属钠'));
+            ctx.fillText(aLabel, anodeX, 420);
+            ctx.fillText(cLabel, cathodeX, 420);
+
+            cuCountDisplay.innerText = ions.filter(i=>i.type==='cu').length;
+            agCountDisplay.innerText = ions.filter(i=>i.type==='ag' || i.type==='na').length;
+
+            requestAnimationFrame(draw);
+        }
+
+        // --- 交互逻辑 ---
+        function updateButtons() {
+            document.querySelectorAll('.select-card').forEach(b => b.classList.remove('active'));
+            document.getElementById('btnCathode' + cathodeMaterial).classList.add('active');
+            document.getElementById('btnAnode' + anodeMaterial).classList.add('active');
+        }
+
+        toggleBtn.onclick = () => { if(!isExploded) { isActive = !isActive; btnText.innerText = isActive ? "暂停实验" : "开始实验"; } };
+        resetBtn.onclick = () => { init(); btnText.innerText = "开始实验"; };
+        
+        document.getElementById('btnCathodeInert').onclick = () => { if(!isExploded) { cathodeMaterial='Inert'; updateButtons(); } };
+        document.getElementById('btnCathodeCu').onclick = () => { if(!isExploded) { cathodeMaterial='Cu'; updateButtons(); } };
+        document.getElementById('btnCathodeLeaf').onclick = () => { if(!isExploded) { cathodeMaterial='Leaf'; updateButtons(); } };
+        document.getElementById('btnCathodeNa').onclick = () => { if(!isExploded) { cathodeMaterial='Na'; updateButtons(); triggerExplosion(cathodeX); } };
+
+        document.getElementById('btnAnodeInert').onclick = () => { if(!isExploded) { anodeMaterial='Inert'; updateButtons(); } };
+        document.getElementById('btnAnodeCu').onclick = () => { if(!isExploded) { anodeMaterial='Cu'; updateButtons(); } };
+        document.getElementById('btnAnodeAg').onclick = () => { if(!isExploded) { anodeMaterial='Ag'; updateButtons(); } };
+        document.getElementById('btnAnodeNa').onclick = () => { if(!isExploded) { anodeMaterial='Na'; updateButtons(); triggerExplosion(anodeX); } };
+
+        speedSlider.oninput = (e) => { 
+            platingSpeed = parseFloat(e.target.value); 
+            speedValDisplay.innerText = platingSpeed.toFixed(1);
+        };
+        
+        window.onload = () => { init(); draw(); };
+    </script>
+</body>
+</html>

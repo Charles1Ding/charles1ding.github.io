@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>合成氨微观动力学模型 - 动态平衡演示</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        canvas { background: #0f172a; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); touch-action: none; width: 100%; max-width: 800px; height: auto; }
+        .control-panel { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .stat-card { padding: 10px; border-radius: 10px; text-align: center; border: 1px solid #e2e8f0; }
+        input[type=range] { cursor: pointer; }
+    </style>
+</head>
+<body class="flex flex-col items-center p-4 md:p-8">
+
+    <div class="max-w-5xl w-full space-y-6">
+        <div class="text-center space-y-2">
+            <h1 class="text-3xl font-bold text-slate-800">合成氨微观动力学模型</h1>
+            <p class="text-slate-500 font-medium text-lg">真·动态平衡版：正逆反应同时发生，速率相等</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            <div class="lg:col-span-3 flex flex-col items-center">
+                <canvas id="chemCanvas"></canvas>
+                
+                <div class="mt-6 w-full max-w-md bg-white p-4 rounded-xl shadow-sm border border-slate-100">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-sm font-bold text-slate-600 italic">🐢 慢速观察</span>
+                        <span class="text-sm font-bold text-slate-600 italic">极速碰撞 🚀</span>
+                    </div>
+                    <input id="speed-slider" type="range" min="0.1" max="2.5" step="0.1" value="1.0" class="w-full h-2 bg-indigo-100 rounded-lg appearance-none">
+                    <div class="text-center mt-2 text-xs font-mono text-indigo-600 font-bold" id="speed-val">当前速度倍率: 1.0x</div>
+                </div>
+            </div>
+            
+            <div class="control-panel space-y-6">
+                <div>
+                    <h3 class="font-bold mb-4 text-indigo-600 flex items-center gap-2">
+                        <span>🧪</span> 反应阶段控制
+                    </h3>
+                    <div class="flex flex-col gap-3">
+                        <button id="btn-stage1" class="w-full py-2.5 px-4 rounded-lg font-medium transition-all border-2 border-transparent">1. 初始混合物</button>
+                        <button id="btn-stage2" class="w-full py-2.5 px-4 rounded-lg font-medium transition-all border-2 border-transparent">2. 开始反应</button>
+                        <button id="btn-stage3" class="w-full py-2.5 px-4 rounded-lg font-medium transition-all border-2 border-transparent">3. 动态平衡 (V正 = V逆)</button>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="font-bold text-slate-700">实时分子统计</h3>
+                    <div class="grid grid-cols-1 gap-2">
+                        <div class="stat-card bg-blue-50 text-blue-700">
+                            <div class="text-[10px] uppercase font-black opacity-60">N₂ (氮气)</div>
+                            <div id="count-n2" class="text-2xl font-mono font-bold">0</div>
+                        </div>
+                        <div class="stat-card bg-slate-100 text-slate-600">
+                            <div class="text-[10px] uppercase font-black opacity-60">H₂ (氢气)</div>
+                            <div id="count-h2" class="text-2xl font-mono font-bold">0</div>
+                        </div>
+                        <div class="stat-card bg-emerald-50 text-emerald-700">
+                            <div class="text-[10px] uppercase font-black opacity-60">NH₃ (氨气)</div>
+                            <div id="count-nh3" class="text-2xl font-mono font-bold">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-indigo-50 rounded-lg border border-indigo-100 text-[11px] text-indigo-800 leading-relaxed">
+                    <strong>微观科学逻辑：</strong><br>
+                    在阶段3，正向和逆向反应概率被设为相等。请注意观察：即便氨气总量保持稳定，仍会不断有分子发生转换，这就是化学中的“平衡不停止”。
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('chemCanvas');
+        const ctx = canvas.getContext('2d');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedValText = document.getElementById('speed-val');
+        
+        const config = {
+            width: 800,
+            height: 550,
+            nColor: '#3b82f6', 
+            hColor: '#e2e8f0', 
+            forwardRate: 0,
+            backwardRate: 0,
+            currentStage: 1,
+            atomRadiusN: 16,
+            atomRadiusH: 10,
+            speedMultiplier: 1.0,
+            reactionCoolDown: 120 // 冷却期，防止分子刚生成又立即反应
+        };
+
+        canvas.width = config.width;
+        canvas.height = config.height;
+
+        class Effect {
+            constructor(x, y, color = '255, 255, 255') {
+                this.x = x; this.y = y;
+                this.life = 1.0;
+                this.radius = 40;
+                this.color = color;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius * (1.5 - this.life), 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(${this.color}, ${this.life})`;
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                this.life -= 0.025;
+            }
+        }
+
+        class Molecule {
+            constructor(type, x, y, vx, vy) {
+                this.type = type; 
+                this.x = x || Math.random() * (canvas.width - 120) + 60;
+                this.y = y || Math.random() * (canvas.height - 120) + 60;
+                
+                const baseVel = 2.5;
+                const ang = Math.random() * Math.PI * 2;
+                this.vx = vx !== undefined ? vx : Math.cos(ang) * baseVel;
+                this.vy = vy !== undefined ? vy : Math.sin(ang) * baseVel;
+                
+                this.angle = Math.random() * Math.PI * 2;
+                this.rotSpeed = (Math.random() - 0.5) * 0.04;
+                this.coolDown = config.reactionCoolDown; 
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle);
+                
+                if (this.coolDown > 0) {
+                    ctx.globalAlpha = 0.4 + (1 - this.coolDown/config.reactionCoolDown) * 0.6;
+                }
+
+                if (this.type === 'N2') this.drawN2();
+                else if (this.type === 'H2') this.drawH2();
+                else if (this.type === 'NH3') this.drawNH3();
+                
+                ctx.restore();
+                ctx.globalAlpha = 1.0;
+            }
+
+            drawN2() {
+                const d = 14;
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 8;
+                ctx.beginPath(); ctx.moveTo(-d, 0); ctx.lineTo(d, 0); ctx.stroke();
+                this.drawAtom(d, 0, config.atomRadiusN, config.nColor, 'N');
+                this.drawAtom(-d, 0, config.atomRadiusN, config.nColor, 'N');
+            }
+
+            drawH2() {
+                const d = 10;
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(-d, 0); ctx.lineTo(d, 0); ctx.stroke();
+                this.drawAtom(d, 0, config.atomRadiusH, config.hColor, 'H');
+                this.drawAtom(-d, 0, config.atomRadiusH, config.hColor, 'H');
+            }
+
+            drawNH3() {
+                this.drawAtom(0, 0, config.atomRadiusN, config.nColor, 'N');
+                const d = 20;
+                for (let i = 0; i < 3; i++) {
+                    const ang = (i * Math.PI * 2 / 3);
+                    const hx = Math.cos(ang) * d;
+                    const hy = Math.sin(ang) * d;
+                    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(hx, hy); ctx.stroke();
+                    this.drawAtom(hx, hy, config.atomRadiusH, config.hColor, 'H');
+                }
+            }
+
+            drawAtom(x, y, r, color, label) {
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.fillStyle = label === 'N' ? 'white' : '#1e293b';
+                ctx.font = `bold ${r}px Arial`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText(label, x, y + 1);
+            }
+
+            update() {
+                this.x += this.vx * config.speedMultiplier;
+                this.y += this.vy * config.speedMultiplier;
+                this.angle += this.rotSpeed * config.speedMultiplier;
+                
+                if (this.coolDown > 0) this.coolDown--;
+
+                const pad = 45;
+                if (this.x < pad || this.x > canvas.width - pad) this.vx *= -1;
+                if (this.y < pad || this.y > canvas.height - pad) this.vy *= -1;
+            }
+        }
+
+        let molecules = [];
+        let effects = [];
+
+        speedSlider.addEventListener('input', (e) => {
+            config.speedMultiplier = parseFloat(e.target.value);
+            speedValText.innerText = `当前速度倍率: ${config.speedMultiplier.toFixed(1)}x`;
+        });
+
+        function initStage1() {
+            config.currentStage = 1;
+            config.forwardRate = 0; config.backwardRate = 0;
+            updateSpeedControl(1.0); 
+            molecules = [];
+            // 初始少而精：4个N2，12个H2
+            for (let i = 0; i < 4; i++) molecules.push(new Molecule('N2'));
+            for (let i = 0; i < 12; i++) molecules.push(new Molecule('H2'));
+            updateUI();
+        }
+
+        function initStage2() {
+            config.currentStage = 2;
+            config.forwardRate = 0.025; config.backwardRate = 0.001;
+            updateSpeedControl(0.6); 
+            updateUI();
+        }
+
+        function initStage3() {
+            config.currentStage = 3;
+            // 真动态平衡：正逆反应概率相等
+            config.forwardRate = 0.06; 
+            config.backwardRate = 0.06; 
+            updateSpeedControl(0.5); 
+            updateUI();
+        }
+
+        function updateSpeedControl(val) {
+            config.speedMultiplier = val;
+            speedSlider.value = val;
+            speedValText.innerText = `当前速度倍率: ${val.toFixed(1)}x`;
+        }
+
+        function updateUI() {
+            [1, 2, 3].forEach(s => {
+                const btn = document.getElementById(`btn-stage${s}`);
+                if (config.currentStage === s) {
+                    btn.className = "w-full py-2.5 px-4 rounded-lg font-bold border-2 border-indigo-600 bg-indigo-600 text-white shadow-md";
+                } else {
+                    btn.className = "w-full py-2.5 px-4 rounded-lg font-medium border-2 border-transparent bg-slate-100 text-slate-600 hover:bg-slate-200";
+                }
+            });
+        }
+
+        function handleReactions() {
+            if (config.currentStage === 1) return;
+
+            for (let i = 0; i < molecules.length; i++) {
+                let m1 = molecules[i];
+                if (m1.coolDown > 0) continue; 
+
+                // 正反应：合成为氨 (白色光效)
+                if (m1.type === 'N2' && Math.random() < config.forwardRate) {
+                    let nearbyH2 = molecules.filter((m) => 
+                        m.type === 'H2' && m.coolDown <= 0 && 
+                        Math.hypot(m1.x - m.x, m1.y - m.y) < 85
+                    );
+                    if (nearbyH2.length >= 3) {
+                        effects.push(new Effect(m1.x, m1.y, '255, 255, 255'));
+                        const h2ToRemove = nearbyH2.slice(0, 3);
+                        molecules = molecules.filter(m => m !== m1 && !h2ToRemove.includes(m));
+                        molecules.push(new Molecule('NH3', m1.x - 25, m1.y, -2, 0.5));
+                        molecules.push(new Molecule('NH3', m1.x + 25, m1.y, 2, -0.5));
+                        return; 
+                    }
+                }
+                
+                // 逆反应：分解为氮和氢 (蓝色光效)
+                if (m1.type === 'NH3' && Math.random() < config.backwardRate) {
+                    let nearbyNH3 = molecules.filter((m) => 
+                        m !== m1 && m.type === 'NH3' && m.coolDown <= 0 &&
+                        Math.hypot(m1.x - m.x, m1.y - m.y) < 70
+                    );
+                    if (nearbyNH3.length >= 1) {
+                        const partner = nearbyNH3[0];
+                        effects.push(new Effect((m1.x + partner.x)/2, (m1.y + partner.y)/2, '147, 197, 253'));
+                        molecules = molecules.filter(m => m !== m1 && m !== partner);
+                        molecules.push(new Molecule('N2', m1.x, m1.y, 0, -2.5));
+                        molecules.push(new Molecule('H2', m1.x - 20, m1.y + 20, -3, 3));
+                        molecules.push(new Molecule('H2', m1.x, m1.y + 20, 0, 3.5));
+                        molecules.push(new Molecule('H2', m1.x + 20, m1.y + 20, 3, 3));
+                        return;
+                    }
+                }
+            }
+        }
+
+        function loop() {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            handleReactions();
+            effects = effects.filter(e => e.life > 0);
+            effects.forEach(e => e.draw());
+            let counts = { N2: 0, H2: 0, NH3: 0 };
+            molecules.forEach(m => {
+                m.update();
+                m.draw();
+                counts[m.type]++;
+            });
+            document.getElementById('count-n2').innerText = counts.N2;
+            document.getElementById('count-h2').innerText = counts.H2;
+            document.getElementById('count-nh3').innerText = counts.NH3;
+            requestAnimationFrame(loop);
+        }
+
+        document.getElementById('btn-stage1').onclick = initStage1;
+        document.getElementById('btn-stage2').onclick = initStage2;
+        document.getElementById('btn-stage3').onclick = initStage3;
+
+        window.onload = () => {
+            initStage1();
+            loop();
+        };
+    </script>
+</body>
+</html>

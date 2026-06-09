@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酸碱中和反应微观模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #E0F7FA; /* 水溶液背景 */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 340px;
+            border: 1px solid #e2e8f0;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .btn {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn:active { transform: scale(0.95); }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: #334155;
+        }
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 4px;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <h2 class="text-xl font-bold text-slate-800 mb-2">酸碱中和反应</h2>
+        <p class="text-xs text-slate-500 mb-4">
+            向酸性溶液中加入碱，观察离子如何结合生成水分子。<br>
+            <strong>注意观察 O²⁻ 的两步反应！</strong>
+        </p>
+
+        <div class="flex gap-2 mb-4">
+            <button id="btn-add-acid" class="btn flex-1 bg-red-100 hover:bg-red-200 text-red-700 py-2 px-3 rounded font-bold border border-red-200 text-sm">
+                + 酸 (H⁺)
+            </button>
+            <button id="btn-reset" class="btn bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 px-3 rounded font-bold border border-slate-200 text-sm">
+                重置
+            </button>
+        </div>
+
+        <div class="space-y-2 mb-4">
+            <button id="btn-add-oh" class="btn w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center">
+                <span>加入 氢氧化物 (OH⁻)</span>
+                <span class="text-xs bg-blue-400 px-2 py-1 rounded">碱</span>
+            </button>
+            <button id="btn-add-o2" class="btn w-full bg-purple-500 hover:bg-purple-600 text-white py-3 px-4 rounded-lg font-bold shadow-md flex justify-between items-center">
+                <span>加入 氧化物 (O²⁻)</span>
+                <span class="text-xs bg-purple-400 px-2 py-1 rounded">碱</span>
+            </button>
+        </div>
+
+        <div class="border-t border-slate-200 pt-3">
+            <div class="text-xs font-bold text-slate-400 uppercase mb-2">图例 & 统计</div>
+            
+            <div class="legend-item">
+                <span class="dot" style="background: #FF5252;"></span> H⁺ (酸)
+                <span id="count-h" class="ml-auto font-mono font-bold text-red-600">0</span>
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #2196F3;"></span> OH⁻ (碱)
+                <span id="count-oh" class="ml-auto font-mono font-bold text-blue-600">0</span>
+            </div>
+            <div class="legend-item">
+                <span class="dot" style="background: #9C27B0;"></span> O²⁻ (碱)
+                <span id="count-o2" class="ml-auto font-mono font-bold text-purple-600">0</span>
+            </div>
+            <div class="legend-item mt-2 pt-2 border-t border-dashed border-slate-200">
+                <span class="dot" style="background: #0288D1; border-color: #0288D1;"></span> H₂O (水)
+                <span id="count-water" class="ml-auto font-mono font-bold text-cyan-700">0</span>
+            </div>
+        </div>
+        
+        <div id="reaction-toast" class="mt-4 p-2 bg-yellow-50 text-yellow-800 text-xs rounded border border-yellow-200 hidden">
+            发生了反应!
+        </div>
+    </div>
+
+    <div id="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+<script>
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    // UI Refs
+    const ui = {
+        countH: document.getElementById('count-h'),
+        countOH: document.getElementById('count-oh'),
+        countO2: document.getElementById('count-o2'),
+        countWater: document.getElementById('count-water'),
+        toast: document.getElementById('reaction-toast')
+    };
+
+    // Parameters
+    let width, height;
+    const RAD_H = 6;
+    const RAD_O = 14; 
+    const RAD_CL = 12; // Spectator
+    const RAD_NA = 10; // Spectator
+    
+    let entities = [];
+    let reactionFlash = 0;
+
+    // --- Entity Classes ---
+
+    class Entity {
+        constructor(x, y, vx, vy) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.markedForDeletion = false;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Bounce off walls
+            if (this.x < 10 || this.x > width - 10) this.vx *= -1;
+            if (this.y < 10 || this.y > height - 10) this.vy *= -1;
+
+            // Keep in bounds
+            this.x = Math.max(10, Math.min(width - 10, this.x));
+            this.y = Math.max(10, Math.min(height - 10, this.y));
+            
+            // Friction (Water resistance)
+            this.vx *= 0.99;
+            this.vy *= 0.99;
+            
+            // Thermal motion
+            this.vx += (Math.random()-0.5) * 0.15;
+            this.vy += (Math.random()-0.5) * 0.15;
+        }
+    }
+
+    class Ion extends Entity {
+        constructor(x, y, type) {
+            // Random start velocity
+            super(x, y, (Math.random()-0.5)*2, (Math.random()-0.5)*2);
+            this.type = type; // H, OH, O2, Cl, Na
+            
+            if (type === 'H') {
+                this.radius = RAD_H;
+                this.color = '#FF5252';
+                this.label = 'H⁺';
+                this.charge = 1;
+            } else if (type === 'OH') {
+                this.radius = RAD_O; // OH size roughly O
+                this.color = '#2196F3';
+                this.label = 'OH⁻';
+                this.charge = -1;
+            } else if (type === 'O2') {
+                this.radius = RAD_O + 2;
+                this.color = '#9C27B0';
+                this.label = 'O²⁻';
+                this.charge = -2;
+            } else if (type === 'Cl') {
+                this.radius = RAD_CL;
+                this.color = '#A5D6A7'; // Pale green
+                this.label = 'Cl⁻';
+                this.charge = -1;
+                this.spectator = true;
+            } else if (type === 'Na') {
+                this.radius = RAD_NA;
+                this.color = '#90CAF9'; // Pale blue
+                this.label = 'M⁺'; // Metal ion
+                this.charge = 1;
+                this.spectator = true;
+            }
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            
+            // Draw H attached to O for OH-
+            if (this.type === 'OH') {
+                // Calculate position for the H atom on the OH
+                // Just put it at a fixed angle for simplicity or rotate it
+                const hx = this.x + (this.radius * 0.7);
+                const hy = this.y - (this.radius * 0.7);
+                ctx.beginPath();
+                ctx.arc(hx, hy, RAD_H, 0, Math.PI * 2);
+                ctx.fillStyle = '#FFEBEE'; // Whiteish H
+                ctx.fill();
+                ctx.strokeStyle = '#ccc';
+                ctx.stroke();
+            }
+
+            // Glow for active ions
+            if (!this.spectator) {
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 8;
+            }
+            
+            ctx.strokeStyle = "rgba(0,0,0,0.1)";
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Label
+            ctx.fillStyle = "white";
+            ctx.font = this.type === 'H' ? "bold 10px Arial" : "bold 12px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(this.label, this.x, this.y + (this.type==='OH'?2:0));
+        }
+    }
+
+    class Water extends Entity {
+        constructor(x, y) {
+            super(x, y, (Math.random()-0.5), (Math.random()-0.5));
+            this.angle = Math.random() * Math.PI * 2;
+            this.rotSpeed = (Math.random()-0.5)*0.05;
+            this.type = 'H2O';
+        }
+
+        update() {
+            super.update();
+            this.angle += this.rotSpeed;
+        }
+
+        draw() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+
+            // Oxygen
+            ctx.beginPath();
+            ctx.arc(0, 0, RAD_O, 0, Math.PI * 2);
+            ctx.fillStyle = '#0288D1';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+            ctx.stroke();
+
+            // Hydrogen 1
+            const dist = RAD_O - 2;
+            ctx.beginPath();
+            ctx.arc(-dist, dist, RAD_H, 0, Math.PI*2);
+            ctx.fillStyle = '#E1F5FE';
+            ctx.fill();
+            
+            // Hydrogen 2
+            ctx.beginPath();
+            ctx.arc(dist, dist, RAD_H, 0, Math.PI*2);
+            ctx.fillStyle = '#E1F5FE';
+            ctx.fill();
+
+            // Label
+            ctx.rotate(-this.angle); // Unrotate for text
+            ctx.fillStyle = "white";
+            ctx.font = "10px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("H₂O", 0, -2);
+            
+            ctx.restore();
+        }
+    }
+
+    class ReactionEffect {
+        constructor(x, y, text) {
+            this.x = x;
+            this.y = y;
+            this.text = text;
+            this.life = 1.0; // Opacity
+            this.dy = -1; // Floating up
+        }
+        update() {
+            this.y += this.dy;
+            this.life -= 0.02;
+        }
+        draw() {
+            if (this.life <= 0) return;
+            ctx.globalAlpha = this.life;
+            ctx.fillStyle = "#FFD700"; // Gold
+            ctx.font = "bold 14px Arial";
+            ctx.fillText(this.text, this.x, this.y);
+            ctx.globalAlpha = 1.0;
+        }
+    }
+    
+    let effects = [];
+
+    // --- Core Logic ---
+
+    function resize() {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    }
+    window.addEventListener('resize', resize);
+
+    function addAcid(amount) {
+        for(let i=0; i<amount; i++) {
+            const x = Math.random() * width;
+            const y = Math.random() * height;
+            entities.push(new Ion(x, y, 'H'));
+            // Add spectator Cl- to keep it realistic (but visually background)
+            if (i % 2 === 0) entities.push(new Ion(x+5, y+5, 'Cl'));
+        }
+    }
+
+    function addBaseOH(amount) {
+        for(let i=0; i<amount; i++) {
+            const x = Math.random() * width;
+            const y = 0; // Drop from top
+            const ion = new Ion(x, y, 'OH');
+            ion.vy = 2 + Math.random(); // Fall down
+            entities.push(ion);
+            // Spectator Na+
+            if (i % 2 === 0) {
+                const na = new Ion(x+10, y-10, 'Na');
+                na.vy = 2;
+                entities.push(na);
+            }
+        }
+    }
+
+    function addBaseO2(amount) {
+        for(let i=0; i<amount; i++) {
+            const x = Math.random() * width;
+            const y = 0; // Drop from top
+            const ion = new Ion(x, y, 'O2');
+            ion.vy = 2 + Math.random();
+            entities.push(ion);
+            // Spectator Ca2+ (simplified as M+)
+            const metal = new Ion(x+10, y-10, 'Na');
+            metal.vy = 2;
+            entities.push(metal);
+        }
+    }
+
+    function handleReactions() {
+        // Find H+ ions
+        let hIons = entities.filter(e => e.type === 'H' && !e.markedForDeletion);
+        // Find Bases
+        let bases = entities.filter(e => (e.type === 'OH' || e.type === 'O2') && !e.markedForDeletion);
+        
+        // Simple O(N*M) collision detection
+        for (let h of hIons) {
+            if (h.markedForDeletion) continue;
+            
+            // Find closest base
+            let closestBase = null;
+            let minDist = 1000;
+            
+            for (let b of bases) {
+                if (b.markedForDeletion) continue;
+                
+                // Electromagnetic attraction simulation (Visual helper)
+                // If they are close, pull them together faster
+                const dx = b.x - h.x;
+                const dy = b.y - h.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                const reactRadius = (b.type === 'O2' ? 30 : 25); // O2- has stronger pull range
+                
+                if (dist < 100) {
+                     // Attraction force
+                     const f = 1.5 / dist;
+                     h.vx += dx * f;
+                     h.vy += dy * f;
+                     b.vx -= dx * f * 0.2; // Base is heavier
+                     b.vy -= dy * f * 0.2;
+                }
+
+                if (dist < reactRadius) {
+                    // Collision!
+                    h.markedForDeletion = true;
+                    b.markedForDeletion = true;
+                    
+                    const mx = (h.x + b.x)/2;
+                    const my = (h.y + b.y)/2;
+                    
+                    if (b.type === 'OH') {
+                        // H+ + OH- -> H2O
+                        entities.push(new Water(mx, my));
+                        effects.push(new ReactionEffect(mx, my, "中和!"));
+                    } else if (b.type === 'O2') {
+                        // H+ + O2- -> OH-
+                        // Create a new OH- at this spot
+                        // Note: It consumes 1 H+ and becomes OH-
+                        // This new OH- can interact in next frame
+                        const newOH = new Ion(mx, my, 'OH');
+                        // Inherit some momentum
+                        newOH.vx = (h.vx + b.vx)/2;
+                        newOH.vy = (h.vy + b.vy)/2;
+                        entities.push(newOH);
+                        effects.push(new ReactionEffect(mx, my, "O²⁻ → OH⁻"));
+                    }
+                    
+                    break; // H is consumed
+                }
+            }
+        }
+        
+        entities = entities.filter(e => !e.markedForDeletion);
+    }
+
+    function updateStats() {
+        const counts = { H:0, OH:0, O2:0, H2O:0 };
+        entities.forEach(e => {
+            if (e.type === 'H') counts.H++;
+            else if (e.type === 'OH') counts.OH++;
+            else if (e.type === 'O2') counts.O2++;
+            else if (e.type === 'H2O') counts.H2O++;
+        });
+        
+        ui.countH.textContent = counts.H;
+        ui.countOH.textContent = counts.OH;
+        ui.countO2.textContent = counts.O2;
+        ui.countWater.textContent = counts.H2O;
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        
+        handleReactions();
+        
+        // Draw spectators first (background)
+        entities.forEach(e => {
+            if (e.spectator) { e.update(); e.draw(); }
+        });
+
+        // Draw active species
+        entities.forEach(e => {
+            if (!e.spectator) { e.update(); e.draw(); }
+        });
+        
+        // Draw effects
+        effects.forEach((e, i) => {
+            e.update();
+            e.draw();
+            if (e.life <= 0) effects.splice(i, 1);
+        });
+
+        updateStats();
+        requestAnimationFrame(animate);
+    }
+
+    // Init
+    resize();
+    addAcid(15); // Initial Acid
+    
+    // Listeners
+    document.getElementById('btn-add-acid').onclick = () => addAcid(10);
+    document.getElementById('btn-add-oh').onclick = () => addBaseOH(5);
+    document.getElementById('btn-add-o2').onclick = () => addBaseO2(3);
+    document.getElementById('btn-reset').onclick = () => {
+        entities = [];
+        addAcid(15);
+    };
+
+    animate();
+
+</script>
+</body>
+</html>

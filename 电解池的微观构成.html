@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>氯化铜电解微观模拟器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        canvas { cursor: crosshair; }
+        .zap-icon { color: #2563eb; fill: #2563eb; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 lg:p-8">
+
+    <div class="flex flex-col gap-6 p-6 bg-white rounded-3xl shadow-2xl w-full max-w-[1000px] border border-slate-100">
+        <!-- 顶部标题与控制栏 -->
+        <div class="flex flex-col md:flex-row items-center justify-between px-4 gap-4">
+            <h2 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                <div class="p-2 bg-blue-100 rounded-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="zap-icon"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                </div>
+                氯化铜电解深度模拟 (HTML版)
+            </h2>
+            <div class="flex gap-3">
+                <button id="toggleBtn" class="flex items-center gap-2 px-10 py-3 bg-blue-600 text-white rounded-xl font-bold transition-all transform active:scale-95 shadow-xl shadow-blue-200 hover:bg-blue-700">
+                    <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    <span id="btnText">开始电解</span>
+                </button>
+                <button id="resetBtn" class="p-3 rounded-xl border-2 border-slate-100 text-slate-400 hover:bg-slate-50 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"></path><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 核心模拟区 -->
+        <div class="relative bg-slate-50 rounded-2xl border-2 border-slate-100 overflow-hidden shadow-inner">
+            <canvas id="electrolysisCanvas" width="900" height="500" class="w-full h-auto"></canvas>
+        </div>
+
+        <!-- 底部信息区 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 px-2">
+            <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="p-5 bg-blue-50/50 rounded-2xl border border-blue-100">
+                    <span class="text-xs font-bold text-blue-500 uppercase tracking-widest">阴极还原 (Cathode -)</span>
+                    <p class="text-2xl font-mono font-bold text-slate-700 mt-1">Cu²⁺ + 2e⁻ → Cu</p>
+                    <p class="text-sm text-slate-500 mt-2">蓝色铜离子获得电子，析出橙红色金属铜附着在电极上。</p>
+                </div>
+                <div class="p-5 bg-green-50/50 rounded-2xl border border-green-100">
+                    <span class="text-xs font-bold text-green-500 uppercase tracking-widest">阳极氧化 (Anode +)</span>
+                    <p class="text-2xl font-mono font-bold text-slate-700 mt-1">2Cl⁻ - 2e⁻ → Cl₂↑</p>
+                    <p class="text-sm text-slate-500 mt-2">绿色氯离子失去电子，产生氯气泡从溶液中逸出。</p>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 p-6 rounded-2xl flex flex-col justify-center space-y-4 shadow-xl">
+                <div class="flex gap-4">
+                    <div class="w-8 h-8 rounded-lg bg-yellow-400/20 flex-shrink-0 flex items-center justify-center text-yellow-400 font-bold border border-yellow-400/30">e</div>
+                    <div class="text-slate-300 text-xs leading-tight">
+                        <strong class="text-white block mb-0.5">外部：电子流</strong> 
+                        由电源驱动，在导线和电极中穿梭（e⁻）。
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex-shrink-0 flex items-center justify-center text-blue-400 font-bold border border-blue-500/30">±</div>
+                    <div class="text-slate-300 text-xs leading-tight">
+                        <strong class="text-white block mb-0.5">内部：离子流</strong> 
+                        在溶液中定向移动，维持电荷的闭合循环。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('electrolysisCanvas');
+        const ctx = canvas.getContext('2d');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const btnText = document.getElementById('btnText');
+        const playIcon = document.getElementById('playIcon');
+
+        let isActive = false;
+        let ions = [];
+        let electrons = [];
+        let bubbles = [];
+        let depositedCu = [];
+
+        // 配置参数
+        const cathodeX = 220;
+        const anodeX = 680;
+        const startY = 220;
+        const tankWidth = 700;
+        const tankHeight = 250;
+        const wireTopY = 80;
+        const powerCenterX = 450;
+
+        function init() {
+            ions = [];
+            // Cu2+
+            for (let i = 0; i < 12; i++) {
+                ions.push({ 
+                    x: 200 + Math.random() * 500, 
+                    y: 240 + Math.random() * 160, 
+                    type: 'cu', 
+                    color: '#3b82f6', 
+                    vx: (Math.random()-0.5)*0.3, 
+                    vy: (Math.random()-0.5)*0.3 
+                });
+            }
+            // Cl-
+            for (let i = 0; i < 20; i++) {
+                ions.push({ 
+                    x: 200 + Math.random() * 500, 
+                    y: 240 + Math.random() * 160, 
+                    type: 'cl', 
+                    color: '#22c55e', 
+                    vx: (Math.random()-0.5)*0.3, 
+                    vy: (Math.random()-0.5)*0.3 
+                });
+            }
+            // 电子
+            electrons = [];
+            for (let i = 0; i < 24; i++) {
+                electrons.push({ pos: i / 24, speed: 0.0012 });
+            }
+            bubbles = [];
+            depositedCu = [];
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 绘制容器
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(100, startY);
+            ctx.lineTo(100, startY + tankHeight);
+            ctx.lineTo(800, startY + tankHeight);
+            ctx.lineTo(800, startY);
+            ctx.stroke();
+            ctx.fillStyle = 'rgba(224, 242, 254, 0.4)';
+            ctx.fillRect(103, startY + 2, 694, tankHeight - 5);
+
+            // 2. 绘制沉积铜
+            depositedCu.forEach(cu => {
+                ctx.fillStyle = '#ea580c';
+                ctx.beginPath();
+                ctx.arc(cu.x, cu.y, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#9a3412';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            });
+
+            // 3. 绘制电极
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(cathodeX - 15, 180, 30, 220);
+            ctx.fillRect(anodeX - 15, 180, 30, 220);
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('-', cathodeX, 205);
+            ctx.fillText('+', anodeX, 205);
+
+            // 4. 绘制导线与电源
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(cathodeX, 180); ctx.lineTo(cathodeX, wireTopY); ctx.lineTo(powerCenterX - 30, wireTopY);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(powerCenterX + 30, wireTopY); ctx.lineTo(anodeX, wireTopY); ctx.lineTo(anodeX, 180);
+            ctx.stroke();
+            // 电源符
+            ctx.beginPath();
+            ctx.moveTo(powerCenterX-25, 60); ctx.lineTo(powerCenterX-25, 100); ctx.lineWidth = 2; ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(powerCenterX-10, 70); ctx.lineTo(powerCenterX-10, 90); ctx.lineWidth = 5; ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(powerCenterX+5, 60); ctx.lineTo(powerCenterX+5, 100); ctx.lineWidth = 2; ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(powerCenterX+20, 70); ctx.lineTo(powerCenterX+20, 90); ctx.lineWidth = 5; ctx.stroke();
+
+            // 5. 更新并绘制电子
+            if (isActive) {
+                electrons.forEach(e => {
+                    e.pos += e.speed;
+                    if (e.pos > 1) e.pos = 0;
+                    let x, y;
+                    if (e.pos < 0.35) { // 阳极上
+                        x = anodeX; y = 180 - (e.pos / 0.35) * 100;
+                    } else if (e.pos < 0.65) { // 水平
+                        x = anodeX - ((e.pos - 0.35) / 0.3) * (anodeX - cathodeX); y = wireTopY;
+                    } else { // 阴极下
+                        x = cathodeX; y = wireTopY + ((e.pos - 0.65) / 0.35) * 100;
+                    }
+                    ctx.fillStyle = '#facc15';
+                    ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.fill();
+                    ctx.shadowBlur = 8; ctx.shadowColor = 'yellow';
+                    ctx.strokeStyle = '#ca8a04'; ctx.stroke();
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = '#1e293b'; ctx.font = 'bold 12px sans-serif';
+                    ctx.fillText('e⁻', x, y + 4);
+                });
+            }
+
+            // 6. 更新并绘制离子
+            ions.forEach(ion => {
+                if (isActive) {
+                    if (ion.type === 'cu') {
+                        ion.x -= 0.22;
+                        ion.y += (Math.random() - 0.5) * 0.15;
+                        if (ion.x <= cathodeX + 15) {
+                            depositedCu.push({ x: cathodeX - 15 + Math.random() * 5, y: ion.y });
+                            ion.x = anodeX + 50;
+                            ion.y = startY + 20 + Math.random() * (tankHeight - 40);
+                            if (depositedCu.length > 300) depositedCu.shift();
+                        }
+                    } else {
+                        ion.x += 0.32;
+                        ion.y += (Math.random() - 0.5) * 0.15;
+                        if (ion.x >= anodeX - 15) {
+                            bubbles.push({ x: anodeX + 10, y: ion.y, r: 3 + Math.random() * 5, vx: (Math.random() - 0.5) * 0.4 });
+                            ion.x = cathodeX - 50;
+                            ion.y = startY + 20 + Math.random() * (tankHeight - 40);
+                        }
+                    }
+                } else {
+                    ion.x += ion.vx; ion.y += ion.vy;
+                    if (ion.x < 110 || ion.x > 790) ion.vx *= -1;
+                    if (ion.y < 230 || ion.y > 440) ion.vy *= -1;
+                }
+                ctx.fillStyle = ion.color;
+                ctx.beginPath(); ctx.arc(ion.x, ion.y, 14, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(ion.type === 'cu' ? 'Cu²⁺' : 'Cl⁻', ion.x, ion.y + 4);
+            });
+
+            // 7. 气泡
+            bubbles.forEach((b, i) => {
+                b.y -= 0.7; b.x += b.vx;
+                ctx.fillStyle = 'rgba(74, 222, 128, 0.4)';
+                ctx.strokeStyle = '#15803d';
+                ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+            });
+            bubbles = bubbles.filter(b => b.y > 180);
+
+            requestAnimationFrame(draw);
+        }
+
+        toggleBtn.onclick = () => {
+            isActive = !isActive;
+            if (isActive) {
+                btnText.innerText = "暂停实验";
+                toggleBtn.classList.replace('bg-blue-600', 'bg-orange-100');
+                toggleBtn.classList.replace('text-white', 'text-orange-600');
+                toggleBtn.classList.add('border-2', 'border-orange-200');
+                playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+            } else {
+                btnText.innerText = "开始电解";
+                toggleBtn.classList.replace('bg-orange-100', 'bg-blue-600');
+                toggleBtn.classList.replace('text-orange-600', 'text-white');
+                toggleBtn.classList.remove('border-2', 'border-orange-200');
+                playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            }
+        };
+
+        resetBtn.onclick = () => {
+            isActive = false;
+            btnText.innerText = "开始电解";
+            toggleBtn.className = "flex items-center gap-2 px-10 py-3 bg-blue-600 text-white rounded-xl font-bold transition-all transform active:scale-95 shadow-xl shadow-blue-200 hover:bg-blue-700";
+            playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+            init();
+        };
+
+        window.onload = () => {
+            init();
+            draw();
+        };
+    </script>
+</body>
+</html>

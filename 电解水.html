@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电解水微观动态模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f8fafc;
+        }
+        canvas {
+            background: linear-gradient(to bottom, #f0f9ff, #bae6fd);
+            border: 2px solid #e2e8f0;
+        }
+        .control-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4 md:p-8">
+
+    <div class="max-w-5xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
+        <!-- Header -->
+        <div class="bg-blue-600 p-6 text-white text-center">
+            <h1 class="text-3xl font-bold">电解水微观模拟器</h1>
+            <p class="opacity-90 mt-2">展现 $H^+$ 与 $OH^-$ 离子的定向移动及两极反应</p>
+        </div>
+
+        <div class="flex flex-col lg:flex-row">
+            <!-- Left: Sidebar Controls -->
+            <div class="lg:w-1/4 p-6 border-r border-gray-100 space-y-6">
+                <section>
+                    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">实验控制</h2>
+                    <button id="toggleBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition shadow-lg active:transform active:scale-95">
+                        暂停模拟
+                    </button>
+                    <div class="mt-6">
+                        <div class="flex justify-between text-sm text-gray-600 mb-2">
+                            <span>电压强度</span>
+                            <span id="voltageVal">6</span>
+                        </div>
+                        <input type="range" id="voltageRange" min="1" max="15" value="6" class="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer">
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">图例说明</h2>
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-red-500 shadow-md flex items-center justify-center text-white text-[10px] font-bold mr-3">H⁺</div>
+                            <span class="text-sm text-gray-700">氢离子 (阳离子)</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-blue-500 shadow-md flex items-center justify-center text-white text-[10px] font-bold mr-3">OH⁻</div>
+                            <span class="text-sm text-gray-700">氢氧根 (阴离子)</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 rounded-full border-2 border-white bg-white/40 mr-4"></div>
+                            <span class="text-sm text-gray-700">产生的气体</span>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Middle: Canvas Display -->
+            <div class="lg:w-2/4 p-6 relative bg-gray-50">
+                <div class="relative rounded-xl overflow-hidden shadow-inner bg-blue-50">
+                    <canvas id="simCanvas" class="w-full aspect-square md:aspect-video"></canvas>
+                    
+                    <!-- Floating Labels -->
+                    <div class="absolute top-4 left-6 pointer-events-none">
+                        <div class="bg-red-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg">阳极 ANODE (+)</div>
+                    </div>
+                    <div class="absolute top-4 right-6 pointer-events-none">
+                        <div class="bg-blue-600 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg">阴极 CATHODE (-)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Chemistry Details -->
+            <div class="lg:w-1/4 p-6 border-l border-gray-100 space-y-6">
+                <div class="p-4 bg-red-50 rounded-2xl border border-red-100">
+                    <h3 class="text-red-700 font-bold text-sm mb-2">阳极 (氧化反应)</h3>
+                    <p class="text-lg font-serif italic text-red-900 leading-tight">4OH⁻ - 4e⁻ → 2H₂O + O₂↑</p>
+                    <p class="text-[11px] text-red-600 mt-2">OH⁻ 移向阳极，失去电子生成氧气。</p>
+                </div>
+
+                <div class="p-4 bg-blue-50 rounded-2xl border border-blue-100">
+                    <h3 class="text-blue-700 font-bold text-sm mb-2">阴极 (还原反应)</h3>
+                    <p class="text-lg font-serif italic text-blue-900 leading-tight">2H⁺ + 2e⁻ → H₂↑</p>
+                    <p class="text-[11px] text-blue-600 mt-2">H⁺ 移向阴极，获得电子生成氢气。</p>
+                </div>
+
+                <div class="pt-4 text-center">
+                    <span class="text-[10px] font-bold text-gray-400 uppercase">总反应式</span>
+                    <p class="text-xs text-gray-600 font-medium mt-1 italic">2H₂O (l) → 2H₂ (g) + O₂ (g)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const voltageRange = document.getElementById('voltageRange');
+        const voltageVal = document.getElementById('voltageVal');
+
+        let width, height;
+        let particles = [];
+        let bubbles = [];
+        let isRunning = true;
+        let voltage = 6;
+
+        // Configuration
+        const PARTICLE_COUNT = 40;
+        const ELECTRODE_GAP = 60; // Margin from edges
+        const ELECTRODE_WIDTH = 35;
+
+        class Particle {
+            constructor(type) {
+                this.type = type; // 'H' or 'OH'
+                this.init();
+            }
+
+            init() {
+                // Initialize in the middle area
+                this.x = width * 0.2 + Math.random() * (width * 0.6);
+                this.y = 50 + Math.random() * (height - 100);
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = 14;
+            }
+
+            update() {
+                const force = voltage * 0.015;
+                
+                // Directional movement based on charge
+                if (this.type === 'H') {
+                    this.vx += force; // Move towards Cathode (Right -)
+                } else {
+                    this.vx -= force; // Move towards Anode (Left +)
+                }
+
+                // Add some Brownian-like randomness
+                this.vx += (Math.random() - 0.5) * 0.1;
+                this.vy += (Math.random() - 0.5) * 0.1;
+
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // Drag
+                this.vx *= 0.96;
+                this.vy *= 0.96;
+
+                // Vertical bounds
+                if (this.y < 40 || this.y > height - 40) this.vy *= -1;
+
+                // Electrode Reactions
+                const anodeBound = ELECTRODE_GAP + ELECTRODE_WIDTH;
+                const cathodeBound = width - ELECTRODE_GAP - ELECTRODE_WIDTH;
+
+                // OH- hitting Anode (Left)
+                if (this.type === 'OH' && this.x < anodeBound + this.size) {
+                    if (Math.random() < 0.1) {
+                        spawnBubble(this.x, this.y, 'O2');
+                        this.init();
+                    } else {
+                        this.x = anodeBound + this.size + 1;
+                        this.vx *= -0.4;
+                    }
+                }
+
+                // H+ hitting Cathode (Right)
+                if (this.type === 'H' && this.x > cathodeBound - this.size) {
+                    if (Math.random() < 0.15) { // Faster H2 production
+                        spawnBubble(this.x, this.y, 'H2');
+                        this.init();
+                    } else {
+                        this.x = cathodeBound - this.size - 1;
+                        this.vx *= -0.4;
+                    }
+                }
+
+                // Global safety
+                if (this.x < 0 || this.x > width) this.init();
+            }
+
+            draw() {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                
+                // Styling
+                ctx.fillStyle = this.type === 'H' ? '#ef4444' : '#3b82f6';
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.type === 'H' ? 'rgba(239, 68, 68, 0.5)' : 'rgba(59, 130, 246, 0.5)';
+                ctx.fill();
+
+                // Text Label
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = 'white';
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.type === 'H' ? 'H⁺' : 'OH⁻', this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        class Bubble {
+            constructor(x, y, gas) {
+                this.x = x;
+                this.y = y;
+                this.gas = gas;
+                this.r = Math.random() * 3 + 2;
+                this.vy = -Math.random() * 2 - 1;
+                this.life = 1.0;
+            }
+
+            update() {
+                this.y += this.vy;
+                this.x += Math.sin(this.y * 0.05) * 0.5;
+                this.life -= 0.005;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${this.life})`;
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.life * 0.3})`;
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        function spawnBubble(x, y, gas) {
+            bubbles.push(new Bubble(x, y, gas));
+        }
+
+        function drawElectrodes() {
+            // Anode (+)
+            const aGrad = ctx.createLinearGradient(ELECTRODE_GAP, 0, ELECTRODE_GAP + ELECTRODE_WIDTH, 0);
+            aGrad.addColorStop(0, '#334155');
+            aGrad.addColorStop(1, '#64748b');
+            ctx.fillStyle = aGrad;
+            ctx.fillRect(ELECTRODE_GAP, 30, ELECTRODE_WIDTH, height - 60);
+
+            // Cathode (-)
+            const cGrad = ctx.createLinearGradient(width - ELECTRODE_GAP - ELECTRODE_WIDTH, 0, width - ELECTRODE_GAP, 0);
+            cGrad.addColorStop(0, '#64748b');
+            cGrad.addColorStop(1, '#334155');
+            ctx.fillStyle = cGrad;
+            ctx.fillRect(width - ELECTRODE_GAP - ELECTRODE_WIDTH, 30, ELECTRODE_WIDTH, height - 60);
+        }
+
+        function resize() {
+            const container = canvas.parentElement;
+            width = container.clientWidth;
+            height = container.clientHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        function init() {
+            resize();
+            particles = [];
+            for (let i = 0; i < PARTICLE_COUNT / 2; i++) {
+                particles.push(new Particle('H'));
+                particles.push(new Particle('OH'));
+            }
+        }
+
+        function animate() {
+            if (isRunning) {
+                ctx.clearRect(0, 0, width, height);
+                
+                drawElectrodes();
+
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+
+                bubbles = bubbles.filter(b => b.y > -10 && b.life > 0);
+                bubbles.forEach(b => {
+                    b.update();
+                    b.draw();
+                });
+            }
+            requestAnimationFrame(animate);
+        }
+
+        // Control Listeners
+        window.addEventListener('resize', init);
+        
+        toggleBtn.addEventListener('click', () => {
+            isRunning = !isRunning;
+            toggleBtn.textContent = isRunning ? '暂停模拟' : '恢复模拟';
+            toggleBtn.className = isRunning 
+                ? "w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 rounded-xl transition shadow-lg"
+                : "w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition shadow-lg";
+        });
+
+        voltageRange.addEventListener('input', (e) => {
+            voltage = parseInt(e.target.value);
+            voltageVal.textContent = voltage;
+        });
+
+        // Initialize
+        init();
+        animate();
+    </script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小男孩胃部 pH 与食欲模拟器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes intense-shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-2px, -1px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .shake-effect {
+            animation: intense-shake 0.15s infinite;
+        }
+        .transition-all {
+            transition: all 0.5s ease-in-out;
+        }
+        .stomach-liquid {
+            transition: y 1s ease-in-out, fill 0.7s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 transition-colors duration-500" id="body-bg">
+
+<div class="flex flex-col items-center justify-center min-h-screen p-4 md:p-6 font-sans">
+    <div class="max-w-6xl w-full bg-white rounded-[3rem] shadow-2xl flex flex-col lg:flex-row overflow-hidden border border-slate-200" id="main-container">
+        
+        <!-- 左侧：可视化区域 -->
+        <div class="relative flex-[1.2] p-8 flex items-center justify-center min-h-[500px] md:min-h-[600px] bg-[#f1f5f9] transition-colors duration-500" id="viz-area">
+            
+            <!-- 顶部警告 -->
+            <div id="corrosion-alert" class="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-full font-bold animate-pulse z-20 shadow-xl border-2 border-white hidden">
+                <i data-lucide="alert-triangle"></i> 胃黏膜严重受损：剧痛中
+            </div>
+
+            <!-- 人物与胃部 SVG -->
+            <svg viewBox="0 0 240 360" class="w-full h-full max-w-[380px]" id="character-svg">
+                <!-- 表情气泡 -->
+                <g transform="translate(120, 30)">
+                    <text id="emoji-text" x="-16" y="0" fontSize="36" class="select-none animate-bounce" style="animation-duration: 4s;">😐</text>
+                </g>
+
+                <!-- 人物绘制 -->
+                <g id="body-group">
+                    <!-- 头发 -->
+                    <path d="M70,75 Q70,35 120,35 Q170,35 170,75 Q175,80 170,90 Q160,65 120,65 Q80,65 70,90 Z" fill="#2d1a0e" />
+                    <!-- 脸部 -->
+                    <path d="M80,75 Q80,125 120,130 Q160,125 160,75 Z" fill="#ffdbac" />
+                    
+                    <!-- 正常眼睛 -->
+                    <g id="eyes-normal" fill="#333">
+                        <circle cx="105" cy="90" r="3.5" />
+                        <circle cx="135" cy="90" r="3.5" />
+                    </g>
+                    <!-- 痛苦眼睛 -->
+                    <g id="eyes-pain" stroke="#333" stroke-width="2.5" fill="none" class="hidden">
+                        <path d="M98,85 L108,92 L98,99" />
+                        <path d="M142,85 L132,92 L142,99" />
+                        <path d="M85,75 Q80,85 85,90" stroke="#7dd3fc" stroke-width="2" />
+                    </g>
+                    
+                    <!-- 嘴巴目标区 -->
+                    <g transform="translate(120, 110)" id="mouth-target">
+                        <ellipse id="mouth-ellipse" rx="8" ry="3" fill="#000" opacity="0.15" />
+                    </g>
+
+                    <!-- 衣服 -->
+                    <path d="M70,130 L170,130 L190,295 Q120,315 50,295 Z" fill="#ffffff" stroke="#cbd5e1" />
+                    <path id="shirt-collar" d="M70,130 Q120,145 170,130 L175,165 L65,165 Z" fill="#475569" class="transition-colors duration-500" />
+                </g>
+
+                <!-- 食道 -->
+                <rect x="116" y="130" width="8" height="50" fill="#fecaca" opacity="0.4" />
+
+                <!-- 胃部建模 -->
+                <g transform="translate(85, 190)">
+                    <path id="stomach-wall" d="M20,10 Q-20,40 20,80 Q60,110 110,70 Q120,30 70,10 Z" fill="#fff1f2" stroke="#f43f5e" stroke-width="3" class="transition-all duration-500" />
+
+                    <clipPath id="stomachClip">
+                        <path d="M20,10 Q-20,40 20,80 Q60,110 110,70 Q120,30 70,10 Z" />
+                    </clipPath>
+
+                    <!-- 胃液 -->
+                    <rect id="stomach-liquid" x="-30" y="70" width="160" height="150" fill="#f59e0b" clip-path="url(#stomachClip)" class="stomach-liquid opacity-90" />
+
+                    <!-- 腐蚀细节组 -->
+                    <g id="corrosion-details" clip-path="url(#stomachClip)" class="hidden opacity-70">
+                        <g stroke="#450a0a" stroke-width="1" opacity="0.4">
+                            <path d="M10,20 Q30,35 15,60" fill="none" />
+                            <path d="M90,30 Q70,50 100,70" fill="none" />
+                            <path d="M40,75 Q60,85 55,100" fill="none" />
+                        </g>
+                        <circle cx="35" cy="50" r="12" fill="#450a0a" opacity="0.8" />
+                        <circle cx="85" cy="65" r="16" fill="#450a0a" opacity="0.8" />
+                        <circle cx="55" cy="85" r="8" fill="#450a0a" opacity="0.8" />
+                        <!-- 冒泡 -->
+                        <circle cx="40" cy="40" r="4" fill="white" opacity="0.6">
+                            <animate attributeName="cy" values="60;20" dur="0.6s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.6;0" dur="0.6s" repeatCount="indefinite" />
+                        </circle>
+                        <circle cx="70" cy="50" r="3" fill="white" opacity="0.6">
+                            <animate attributeName="cy" values="70;30" dur="0.8s" repeatCount="indefinite" />
+                            <animate attributeName="opacity" values="0.6;0" dur="0.8s" repeatCount="indefinite" />
+                        </circle>
+                    </g>
+                </g>
+
+                <!-- 掉落动画组 -->
+                <g id="falling-item" class="hidden">
+                    <!-- 动态插入内容 -->
+                </g>
+            </svg>
+
+            <!-- pH 监测面板 -->
+            <div class="absolute right-6 bottom-6 md:right-10 md:bottom-10 bg-white shadow-2xl rounded-3xl p-6 border border-slate-100 w-44 md:w-52">
+                <div class="text-center">
+                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">pH Monitor</span>
+                    <div id="ph-value" class="text-5xl md:text-6xl font-black my-1 transition-all duration-300 text-slate-800">3.5</div>
+                    <div id="ph-status" class="text-[10px] font-bold text-slate-400">当前胃环境指标</div>
+                </div>
+                <div class="mt-4 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div id="ph-bar" class="h-full transition-all duration-700 bg-blue-500" style="width: 35%;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：控制面板 -->
+        <div class="flex-1 p-8 md:p-10 bg-white flex flex-col">
+            <div class="mb-8 flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl font-black text-slate-800">生理机能实验室</h1>
+                    <p class="text-slate-400 text-xs mt-1">模拟极端环境对人体的伤害</p>
+                </div>
+                <button onclick="resetExperiment()" class="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-colors">
+                    <i data-lucide="rotate-ccw" class="text-slate-400 w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- 食物列表 -->
+            <div class="grid grid-cols-2 gap-4 mb-10">
+                <!-- 可乐 -->
+                <div draggable="true" ondragstart="onDragStart(event, 'cola')" class="group bg-[#f8fafc] p-4 rounded-[2rem] border-2 border-transparent hover:border-red-400 hover:bg-white hover:shadow-xl transition-all cursor-grab active:cursor-grabbing flex flex-col items-center">
+                    <div class="h-16 flex items-center justify-center mb-2" id="icon-cola"></div>
+                    <span class="block font-bold text-sm text-slate-700">冰可乐</span>
+                    <span class="text-[10px] font-black text-red-400 uppercase">pH 2.5</span>
+                </div>
+                <!-- 醋 -->
+                <div draggable="true" ondragstart="onDragStart(event, 'vinegar')" class="group bg-[#f8fafc] p-4 rounded-[2rem] border-2 border-transparent hover:border-red-400 hover:bg-white hover:shadow-xl transition-all cursor-grab active:cursor-grabbing flex flex-col items-center">
+                    <div class="h-16 flex items-center justify-center mb-2" id="icon-vinegar"></div>
+                    <span class="block font-bold text-sm text-slate-700">陈醋</span>
+                    <span class="text-[10px] font-black text-red-400 uppercase">pH 2.4</span>
+                </div>
+                <!-- 水 -->
+                <div draggable="true" ondragstart="onDragStart(event, 'water')" class="group bg-[#f8fafc] p-4 rounded-[2rem] border-2 border-transparent hover:border-blue-400 hover:bg-white hover:shadow-xl transition-all cursor-grab active:cursor-grabbing flex flex-col items-center">
+                    <div class="h-16 flex items-center justify-center mb-2" id="icon-water"></div>
+                    <span class="block font-bold text-sm text-slate-700">纯净水</span>
+                    <span class="text-[10px] font-black text-blue-400 uppercase">pH 7.0</span>
+                </div>
+                <!-- 胃药 -->
+                <div draggable="true" ondragstart="onDragStart(event, 'medicine')" class="group bg-[#f8fafc] p-4 rounded-[2rem] border-2 border-transparent hover:border-emerald-400 hover:bg-white hover:shadow-xl transition-all cursor-grab active:cursor-grabbing flex flex-col items-center">
+                    <div class="h-16 flex items-center justify-center mb-2" id="icon-medicine"></div>
+                    <span class="block font-bold text-sm text-slate-700">达喜胃药</span>
+                    <span class="text-[10px] font-black text-emerald-500 uppercase">pH 9.5</span>
+                </div>
+            </div>
+
+            <!-- 状态卡片 -->
+            <div class="mt-auto space-y-6">
+                <div id="status-card" class="p-6 rounded-[2rem] border transition-all duration-500 bg-slate-50 border-slate-100">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="font-black text-[10px] text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                            <i data-lucide="utensils" class="w-4 h-4" id="status-icon"></i>
+                            APPETITE / 食欲
+                        </span>
+                        <span id="appetite-text" class="text-lg font-black text-slate-700">50%</span>
+                    </div>
+                    <div class="h-3 bg-white/50 rounded-full overflow-hidden border border-slate-100 shadow-inner">
+                        <div id="appetite-bar" class="h-full transition-all duration-1000 bg-indigo-500" style="width: 50%;"></div>
+                    </div>
+                </div>
+
+                <div id="msg-bubble" class="p-5 rounded-[1.5rem] shadow-sm flex gap-4 transition-all duration-500 bg-slate-800 text-white">
+                    <i data-lucide="info" class="text-blue-200 shrink-0"></i>
+                    <p id="message-text" class="text-xs font-medium leading-relaxed italic">把食物拖入嘴部。注意：强酸会造成严重胃部损伤。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 数据定义 ---
+    let state = {
+        ph: 3.5,
+        appetite: 50,
+        stomachFill: 30,
+        isAnimating: false,
+        message: "把食物拖入嘴部。注意：强酸会造成严重胃部损伤。"
+    };
+
+    const substances = {
+        cola: { 
+            name: '冰可乐', realPh: 2.5, phMod: -0.6, appMod: 20, color: '#4d2c19',
+            svg: `<svg width="40" height="60" viewBox="0 0 40 60"><path d="M15,5 L25,5 L26,15 Q26,20 32,25 L32,55 Q32,58 28,58 L12,58 Q8,58 8,55 L8,25 Q14,20 14,15 Z" fill="#2d1a0e" /><rect x="8" y="30" width="24" height="10" fill="#e11d48" /><text x="12" y="38" font-size="6" fill="white" font-weight="bold">COLA</text></svg>`
+        },
+        vinegar: { 
+            name: '陈醋', realPh: 2.4, phMod: -1.0, appMod: 15, color: '#3d1f1f',
+            svg: `<svg width="40" height="60" viewBox="0 0 40 60"><path d="M12,10 L28,10 L35,55 L5,55 Z" fill="#3d1f1f" /><path d="M18,5 L22,5 L22,10 L18,10 Z" fill="#78350f" /><rect x="10" y="25" width="20" height="15" fill="#fef3c7" opacity="0.9" /><text x="14" y="35" font-size="8" fill="#451a03" font-weight="bold">醋</text></svg>`
+        },
+        water: { 
+            name: '纯净水', realPh: 7.0, phMod: 0.5, appMod: -10, color: '#b3e5fc',
+            svg: `<svg width="40" height="60" viewBox="0 0 40 60"><path d="M10,15 L30,15 L28,55 L12,55 Z" fill="#e0f2fe" opacity="0.6" stroke="#bae6fd" /><path d="M10,35 L30,35 L28,55 L12,55 Z" fill="#7dd3fc" /></svg>`
+        },
+        medicine: { 
+            name: '达喜胃药', realPh: 9.5, phMod: 2.5, appMod: -40, color: '#ffffff',
+            svg: `<svg width="40" height="40" viewBox="0 0 40 40" transform="rotate(45)"><rect x="5" y="15" width="15" height="10" rx="5" fill="#3b82f6" /><rect x="20" y="15" width="15" height="10" rx="5" fill="#ffffff" stroke="#e2e8f0" /></svg>`
+        }
+    };
+
+    // --- 初始化 ---
+    window.onload = () => {
+        lucide.createIcons();
+        renderIcons();
+        updateUI();
+
+        // 绑定拖放事件
+        const vizArea = document.getElementById('viz-area');
+        vizArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            document.getElementById('mouth-ellipse').style.opacity = "0.4";
+            document.getElementById('mouth-ellipse').setAttribute('rx', '15');
+            document.getElementById('mouth-ellipse').setAttribute('ry', '10');
+        });
+        vizArea.addEventListener('dragleave', () => {
+            resetMouth();
+        });
+        vizArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            resetMouth();
+            const key = e.dataTransfer.getData("subKey");
+            if (key) handleIngest(key);
+        });
+    };
+
+    function renderIcons() {
+        Object.keys(substances).forEach(key => {
+            document.getElementById(`icon-${key}`).innerHTML = substances[key].svg;
+        });
+    }
+
+    function resetMouth() {
+        document.getElementById('mouth-ellipse').style.opacity = "0.15";
+        document.getElementById('mouth-ellipse').setAttribute('rx', '8');
+        document.getElementById('mouth-ellipse').setAttribute('ry', '3');
+    }
+
+    // --- 逻辑处理 ---
+    function onDragStart(e, key) {
+        e.dataTransfer.setData("subKey", key);
+    }
+
+    function handleIngest(key) {
+        if (state.isAnimating) return;
+        const sub = substances[key];
+        state.isAnimating = true;
+
+        // 播放动画
+        const fallingItem = document.getElementById('falling-item');
+        fallingItem.innerHTML = `<g transform="translate(115, 0)">${sub.svg.replace('width="40" height="60"', 'width="16" height="24"')}<animateTransform attributeName="transform" type="translate" values="100,110; 100,135; 110,225" keyTimes="0; 0.2; 1" dur="1.8s" fill="freeze" /><animate attributeName="opacity" values="1;1;0" dur="1.8s" fill="freeze" /></g>`;
+        fallingItem.classList.remove('hidden');
+
+        setTimeout(() => {
+            state.ph = Math.max(0.2, Math.min(8.5, state.ph + sub.phMod));
+            state.appetite = Math.max(0, Math.min(100, state.appetite + sub.appMod));
+            state.stomachFill = Math.min(95, state.stomachFill + 10);
+            
+            if (state.ph < 1.5) {
+                state.message = "危急！胃酸浓度过载，胃壁正在被剧烈腐蚀！";
+            } else if (key === 'medicine') {
+                state.message = "胃药覆盖了胃黏膜，中和了酸液，痛感正在缓解。";
+            } else if (sub.phMod < 0) {
+                state.message = `酸性的${sub.name}使胃部pH下降，引起了强烈食欲。`;
+            } else {
+                state.message = `摄入了${sub.name}，正在消化中。`;
+            }
+
+            state.isAnimating = false;
+            fallingItem.classList.add('hidden');
+            updateUI();
+        }, 1800);
+    }
+
+    function resetExperiment() {
+        state = {
+            ph: 3.5,
+            appetite: 50,
+            stomachFill: 30,
+            isAnimating: false,
+            message: "实验已重置。"
+        };
+        updateUI();
+    }
+
+    // --- UI 更新 ---
+    function updateUI() {
+        const isCorroded = state.ph < 1.5;
+        
+        // 背景颜色
+        document.getElementById('body-bg').className = `flex flex-col items-center justify-center min-h-screen p-6 font-sans transition-colors duration-500 ${isCorroded ? 'bg-red-100' : 'bg-slate-50'}`;
+        document.getElementById('main-container').className = `max-w-6xl w-full bg-white rounded-[3rem] shadow-2xl flex flex-col lg:flex-row overflow-hidden border transition-all duration-500 ${isCorroded ? 'border-red-500 shadow-red-200' : 'border-slate-200'}`;
+        document.getElementById('viz-area').style.backgroundColor = isCorroded ? '#fef2f2' : '#f1f5f9';
+
+        // 警告显示
+        document.getElementById('corrosion-alert').classList.toggle('hidden', !isCorroded);
+
+        // 表情逻辑
+        let emoji = "😐";
+        if (isCorroded) emoji = "😫";
+        else if (state.ph < 3.0 && state.appetite > 60) emoji = "🤤";
+        else if (state.ph > 5.0) emoji = "🤢";
+        document.getElementById('emoji-text').textContent = emoji;
+
+        // 眼睛切换
+        document.getElementById('eyes-normal').classList.toggle('hidden', isCorroded);
+        document.getElementById('eyes-pain').classList.toggle('hidden', !isCorroded);
+
+        // 抖动效果
+        document.getElementById('character-svg').classList.toggle('shake-effect', isCorroded);
+        document.getElementById('shirt-collar').setAttribute('fill', isCorroded ? "#991b1b" : "#475569");
+
+        // 胃液颜色与高度
+        const liquid = document.getElementById('stomach-liquid');
+        liquid.setAttribute('y', 100 - (state.stomachFill * 0.9));
+        liquid.setAttribute('fill', isCorroded ? '#991b1b' : (state.ph < 3.0 ? '#ef4444' : '#f59e0b'));
+
+        // 腐蚀细节
+        document.getElementById('corrosion-details').classList.toggle('hidden', !isCorroded);
+        document.getElementById('stomach-wall').setAttribute('stroke-width', isCorroded ? "6" : "3");
+        document.getElementById('stomach-wall').setAttribute('stroke', isCorroded ? "#7f1d1d" : "#f43f5e");
+
+        // pH 面板
+        document.getElementById('ph-value').textContent = state.ph.toFixed(1);
+        document.getElementById('ph-value').className = `text-5xl md:text-6xl font-black my-1 transition-all duration-300 ${isCorroded ? 'text-red-700 scale-110' : 'text-slate-800'}`;
+        document.getElementById('ph-status').textContent = isCorroded ? "!!! 酸蚀警告 !!!" : "当前胃环境指标";
+        document.getElementById('ph-status').className = `text-[10px] font-bold ${isCorroded ? 'text-red-600 animate-pulse' : 'text-slate-400'}`;
+        document.getElementById('ph-bar').style.width = `${(state.ph / 10) * 100}%`;
+        document.getElementById('ph-bar').style.backgroundColor = isCorroded ? '#7f1d1d' : (state.ph < 3.0 ? '#ef4444' : '#3b82f6');
+
+        // 食欲卡片
+        document.getElementById('appetite-text').textContent = `${state.appetite}%`;
+        document.getElementById('appetite-text').className = `text-lg font-black ${isCorroded ? 'text-red-600' : 'text-slate-700'}`;
+        document.getElementById('appetite-bar').style.width = `${state.appetite}%`;
+        document.getElementById('appetite-bar').className = `h-full transition-all duration-1000 ${isCorroded ? 'bg-red-600' : 'bg-indigo-500'}`;
+        document.getElementById('status-card').className = `p-6 rounded-[2rem] border transition-all duration-500 ${isCorroded ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-100'}`;
+
+        // 对话气泡
+        document.getElementById('message-text').textContent = state.message;
+        document.getElementById('msg-bubble').className = `p-5 rounded-[1.5rem] shadow-sm flex gap-4 transition-all duration-500 ${isCorroded ? 'bg-red-800' : 'bg-slate-800'} text-white`;
+
+        // 更新 Lucide 图标
+        lucide.createIcons();
+    }
+</script>
+
+</body>
+</html>

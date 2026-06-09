@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物理实验室 - 人体触电与安全防护模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; user-select: none; }
+        .cursor-scissors { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='6' cy='6' r='3'%3E%3C/circle%3E%3Ccircle cx='6' cy='18' r='3'%3E%3C/circle%3E%3Cline x1='20' y1='4' x2='8.12' y2='15.88'%3E%3C/line%3E%3Cline x1='14.47' y1='14.48' x2='20' y2='20'%3E%3C/line%3E%3Cline x1='8.12' y1='8.12' x2='12' y2='12'%3E%3C/line%3E%3C/svg%3E") 12 12, auto; }
+        canvas { cursor: grab; }
+        canvas:active { cursor: grabbing; }
+        .tool-active { border-color: #ef4444; background-color: #fee2e2; color: #b91c1c; }
+        .safety-active { border-color: #0ea5e9; background-color: #e0f2fe; color: #0369a1; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4 lg:p-8">
+
+    <div class="flex flex-col gap-6 p-6 bg-white rounded-3xl shadow-2xl w-full max-w-[1000px] border border-slate-100">
+        <!-- 顶部控制栏 -->
+        <div class="flex flex-col md:flex-row items-center justify-between px-4 gap-4">
+            <h2 class="text-2xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+                <div class="p-2 bg-yellow-100 rounded-lg text-yellow-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+                </div>
+                物理实验室：安全防护模拟
+            </h2>
+            <div class="flex items-center gap-3">
+                <button id="insulationBtn" class="flex items-center gap-2 px-4 py-2 border-2 border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition-all">
+                    <svg id="shoeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20L4 4m16 0L4 20"/></svg>
+                    <span id="insulationText">穿上绝缘鞋</span>
+                </button>
+                <button id="scissorsBtn" class="flex items-center gap-2 px-4 py-2 border-2 border-slate-200 rounded-xl font-bold text-slate-600 hover:bg-slate-50 transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+                    剪刀
+                </button>
+                <button id="repairBtn" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl font-bold hover:bg-green-700 transition-all shadow-md">
+                    修复导线
+                </button>
+                <button id="resetBtn" class="px-3 py-2 text-xs font-bold text-slate-400 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">
+                    重置
+                </button>
+            </div>
+        </div>
+
+        <!-- 核心模拟区 -->
+        <div class="relative bg-white rounded-2xl border-2 border-slate-100 overflow-hidden shadow-inner">
+            <canvas id="circuitCanvas" width="900" height="500" class="w-full h-auto"></canvas>
+            <div id="hintOverlay" class="absolute top-4 left-1/2 -translate-x-1/2 bg-blue-600/90 text-white px-4 py-2 rounded-full text-xs pointer-events-none transition-opacity duration-300">
+                观察对比：穿着绝缘鞋的小人不仅不会触电，还会彻底阻断电流
+            </div>
+        </div>
+
+        <!-- 底部信息区 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 px-2">
+            <div class="md:col-span-2 p-5 bg-sky-50 rounded-2xl border border-sky-100 flex items-center gap-6">
+                <div class="flex-1">
+                    <h4 class="font-bold text-sky-800 mb-1">物理常识：绝缘体与电流阻断</h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        当实验员穿上<span class="font-bold text-sky-700">绝缘鞋</span>后，他变成了电路中的一个“无限大电阻”。由于电路中存在这个绝缘障碍，电子无法形成完整的流动闭环。因此，整个电路的电子都会<span class="font-bold text-sky-700">停止定向移动</span>。
+                    </p>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 p-6 rounded-2xl flex flex-col justify-center space-y-3 shadow-xl text-xs">
+                <div class="flex items-center gap-3 text-slate-300">
+                    <div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    电子速率：<span id="speedIndicator" class="font-bold text-yellow-400">0%</span>
+                </div>
+                <div class="flex items-center gap-3 text-slate-300">
+                    <div id="statusDot" class="w-3 h-3 rounded-full bg-slate-500"></div>
+                    状态：<span id="statusText" class="font-bold text-slate-300">无电流</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('circuitCanvas');
+        const ctx = canvas.getContext('2d');
+        const scissorsBtn = document.getElementById('scissorsBtn');
+        const insulationBtn = document.getElementById('insulationBtn');
+        const insulationText = document.getElementById('insulationText');
+        const repairBtn = document.getElementById('repairBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const statusText = document.getElementById('statusText');
+        const statusDot = document.getElementById('statusDot');
+        const speedIndicator = document.getElementById('speedIndicator');
+
+        // 核心状态
+        let isDragging = null; 
+        let isScissorsActive = false;
+        let isInsulated = false; 
+        let hasBattery = false;
+        let isBulbLit = false;
+        let isPersonShocked = false;
+        let electrons = [];
+        let spawnCounter = 0;
+        let cuts = []; 
+        
+        const padding = 100;
+        const width = canvas.width, height = canvas.height;
+        const bWidth = 60, bHeight = 100;
+
+        const targetX = padding, targetY = height / 2;
+        const bulbX = width - padding, bulbY = height / 2;
+        const bulbPosInCircuit = 0.425;
+
+        let batteryPos = { x: 150, y: 400 };
+        let personPos = { x: 450, y: 400 };
+        let dragOffset = { x: 0, y: 0 };
+
+        const MAX_SPEED = 0.0018;
+        const DECELERATION = 0.00015; // 绝缘阻断时的减速速度
+
+        function init() {
+            electrons = []; cuts = []; hasBattery = false; 
+            isPersonShocked = false; isInsulated = false;
+            batteryPos = { x: 150, y: 400 }; personPos = { x: 450, y: 400 };
+            insulationBtn.classList.remove('safety-active');
+            insulationText.innerText = "穿上绝缘鞋";
+        }
+
+        function drawBattery(x, y) {
+            ctx.fillStyle = '#1e293b';
+            ctx.beginPath();
+            if (ctx.roundRect) ctx.roundRect(x - bWidth/2, y - bHeight/2, bWidth, bHeight, 5);
+            else ctx.rect(x - bWidth/2, y - bHeight/2, bWidth, bHeight);
+            ctx.fill();
+            ctx.fillStyle = '#64748b';
+            ctx.fillRect(x - 10, y - bHeight/2 - 10, 20, 10);
+            ctx.fillRect(x - 15, y + bHeight/2, 30, 5);
+            ctx.fillStyle = '#fff'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'center';
+            ctx.fillText('+', x, y - 20); ctx.fillText('-', x, y + 35);
+        }
+
+        function drawPerson(x, y, shocked, insulated) {
+            ctx.save();
+            if (shocked) ctx.translate((Math.random()-0.5)*10, (Math.random()-0.5)*10);
+
+            // 身体
+            ctx.fillStyle = shocked ? '#f59e0b' : '#3b82f6';
+            ctx.beginPath();
+            ctx.moveTo(x - 20, y + 30); ctx.lineTo(x + 20, y + 30);
+            ctx.lineTo(x + 15, y - 10); ctx.lineTo(x - 15, y - 10);
+            ctx.closePath(); ctx.fill();
+
+            // 头部
+            ctx.fillStyle = '#ffedd5';
+            ctx.beginPath(); ctx.arc(x, y - 25, 18, 0, Math.PI * 2); ctx.fill();
+            
+            // 头发
+            ctx.fillStyle = shocked ? '#ef4444' : '#1e293b';
+            ctx.beginPath();
+            ctx.moveTo(x - 20, y - 30);
+            if (shocked) {
+                ctx.lineTo(x - 25, y - 55); ctx.lineTo(x - 10, y - 45);
+                ctx.lineTo(x, y - 60); ctx.lineTo(x + 10, y - 45);
+                ctx.lineTo(x + 25, y - 55);
+            } else {
+                ctx.lineTo(x - 10, y - 45); ctx.lineTo(x + 10, y - 45);
+            }
+            ctx.lineTo(x + 20, y - 30); ctx.fill();
+
+            // 眼睛
+            ctx.fillStyle = shocked ? '#fff' : '#000';
+            if (shocked) {
+                ctx.font = 'bold 12px Arial';
+                ctx.fillText('X', x - 7, y - 25); ctx.fillText('X', x + 7, y - 25);
+            } else {
+                ctx.beginPath(); ctx.arc(x - 7, y - 25, 2, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(x + 7, y - 25, 2, 0, Math.PI * 2); ctx.fill();
+            }
+
+            // 手部
+            ctx.strokeStyle = '#ffedd5'; ctx.lineWidth = 6; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x - 15, y); ctx.lineTo(x - 35, y - 15);
+            ctx.moveTo(x + 15, y); ctx.lineTo(x + 35, y - 15);
+            ctx.stroke();
+
+            // 绝缘靴
+            if (insulated) {
+                ctx.fillStyle = '#eab308'; 
+                ctx.beginPath();
+                if (ctx.roundRect) {
+                    ctx.roundRect(x - 24, y + 25, 20, 14, 4);
+                    ctx.roundRect(x + 4, y + 25, 20, 14, 4);
+                } else {
+                    ctx.rect(x - 24, y + 25, 20, 14);
+                    ctx.rect(x + 4, y + 25, 20, 14);
+                }
+                ctx.fill();
+                ctx.strokeStyle = '#854d0e'; ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            if (shocked) {
+                ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2;
+                for(let i=0; i<5; i++) {
+                    let ang = Math.random()*Math.PI*2, len = 20 + Math.random()*20;
+                    ctx.beginPath();
+                    ctx.moveTo(x + Math.cos(ang)*20, y + Math.sin(ang)*20);
+                    ctx.lineTo(x + Math.cos(ang)*len, y + Math.sin(ang)*len);
+                    ctx.stroke();
+                }
+            }
+            
+            ctx.restore();
+            ctx.fillStyle = '#475569'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center';
+            let label = shocked ? '!!! 触电中 !!!' : (insulated ? '绝缘防护中' : '动漫实验员');
+            ctx.fillText(label, x, y + 55);
+        }
+
+        function drawBulb(x, y, lit) {
+            ctx.fillStyle = '#94a3b8'; ctx.fillRect(x - 20, y + 20, 40, 20);
+            if (lit) {
+                ctx.shadowBlur = 50; ctx.shadowColor = '#facc15'; ctx.fillStyle = '#fef08a';
+            } else ctx.fillStyle = '#f1f5f9';
+            ctx.beginPath(); ctx.arc(x, y, 35, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = lit ? '#ea580c' : '#94a3b8'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(x - 12, y + 10);
+            ctx.bezierCurveTo(x - 18, y - 15, x + 18, y - 15, x + 12, y + 10);
+            ctx.stroke();
+        }
+
+        function getCircuitPoint(t) {
+            const top = padding, bottom = height - padding, left = padding, right = width - padding;
+            const perimeter = (right - left) * 2 + (bottom - top) * 2;
+            const dist = t * perimeter;
+            if (dist < (right - left)) return { x: left + dist, y: bottom };
+            else if (dist < (right - left) + (bottom - top)) return { x: right, y: bottom - (dist - (right - left)) };
+            else if (dist < (right - left) * 2 + (bottom - top)) return { x: right - (dist - (right - left) - (bottom - top)), y: top };
+            else return { x: left, y: top + (dist - (right - left) * 2 - (bottom - top)) };
+        }
+
+        function drawBatterySocket(x, y) {
+            ctx.strokeStyle = '#cbd5e1'; ctx.setLineDash([8, 8]); ctx.lineWidth = 2;
+            ctx.strokeRect(x - bWidth/2 - 5, y - bHeight/2 - 5, bWidth + 10, bHeight + 10);
+            ctx.setLineDash([]);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 6;
+            ctx.strokeRect(padding, padding, width - padding * 2, height - padding * 2);
+
+            cuts.forEach(t => {
+                const pt = getCircuitPoint(t);
+                ctx.fillStyle = 'white'; ctx.save(); ctx.translate(pt.x, pt.y);
+                let angle = (Math.abs(pt.y-padding)<2 || Math.abs(pt.y-(height-padding))<2) ? 0 : Math.PI/2;
+                ctx.rotate(angle); ctx.fillRect(-15, -10, 30, 20); ctx.restore();
+            });
+
+            // 核心判定逻辑
+            let personT = getWireT(personPos);
+            let personIsBridging = false;
+            let insulationBlocking = false;
+            isPersonShocked = false;
+
+            if (personT !== null) {
+                let overCut = false;
+                cuts.forEach(cutT => {
+                    if (Math.abs(cutT - personT) < 0.05) overCut = true;
+                });
+
+                if (overCut) {
+                    if (!isInsulated) personIsBridging = true;
+                    else insulationBlocking = true; // 穿着绝缘鞋在缺口上，明确为“阻断”
+                }
+
+                // 只有没穿绝缘鞋且电路通（或者人桥接）才会触电
+                if (hasBattery && !isInsulated && (cuts.length === 0 || personIsBridging)) {
+                    isPersonShocked = true;
+                }
+            }
+
+            // 最终电路通断状态：必须有电池，且（没剪断 或者 没穿鞋的小人在缺口上）
+            // 绝缘人站在缺口上 = 断路
+            const isCircuitComplete = hasBattery && (cuts.length === 0 || personIsBridging);
+            let currentDisplaySpeed = 0;
+
+            if (isCircuitComplete) {
+                spawnCounter++;
+                if (spawnCounter > 45) { electrons.push({ pos: 0, speed: MAX_SPEED }); spawnCounter = 0; }
+            }
+
+            electrons.forEach((e, index) => {
+                // 如果被绝缘阻断，电子不仅减速，还要在碰到人时强行静止
+                if (isCircuitComplete) {
+                    e.speed = Math.min(MAX_SPEED, e.speed + DECELERATION);
+                } else {
+                    e.speed = Math.max(0, e.speed - DECELERATION);
+                    
+                    // 核心要求：绝缘阻断时，电子不仅不移动，还要被小人拦住
+                    if (insulationBlocking && Math.abs(e.pos - personT) < 0.02) {
+                        e.speed = 0; // 强行阻断
+                    }
+                }
+
+                e.pos += e.speed;
+                currentDisplaySpeed = Math.max(currentDisplaySpeed, e.speed);
+                let pt = getCircuitPoint(e.pos);
+                let isOrbiting = false, finalX = pt.x, finalY = pt.y;
+
+                if (isPersonShocked && personT !== null) {
+                    const diff = e.pos - personT;
+                    if (diff > -0.04 && diff < 0.04) {
+                        isOrbiting = true;
+                        const orbitProgress = (diff + 0.04) / 0.08; 
+                        const angle = orbitProgress * Math.PI * 2, radius = 45;
+                        finalX = personPos.x + Math.cos(angle - Math.PI/2) * radius;
+                        finalY = personPos.y + Math.sin(angle - Math.PI/2) * radius;
+                    }
+                }
+                
+                if (e.pos >= bulbPosInCircuit && e.speed > MAX_SPEED * 0.2) isBulbLit = true;
+                else if (!isCircuitComplete && e.speed <= 0) isBulbLit = false;
+
+                let color = `rgba(250, 204, 21, ${0.4 + 0.6 * (e.speed/MAX_SPEED)})`;
+                if (isOrbiting) { color = '#ef4444'; ctx.shadowBlur = 15; ctx.shadowColor = 'red'; }
+                
+                ctx.fillStyle = e.speed > 0 ? color : '#94a3b8';
+                ctx.beginPath(); ctx.arc(finalX, finalY, 10, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = e.speed > 0 ? '#1e293b' : '#fff';
+                ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center';
+                ctx.fillText('e⁻', finalX, finalY + 4);
+                
+                if (e.pos >= 0.99 && e.speed > 0) electrons.splice(index, 1);
+            });
+
+            // UI状态文本
+            if (isPersonShocked) {
+                statusText.innerText = "警告：正在发生强烈触电！"; statusText.className = "font-bold text-red-500";
+                statusDot.className = "w-3 h-3 rounded-full bg-red-500 animate-ping";
+            } else if (isCircuitComplete) {
+                statusText.innerText = "回路完整 (电荷正在定向移动)"; statusText.className = "font-bold text-green-500";
+                statusDot.className = "w-3 h-3 rounded-full bg-green-500";
+            } else if (insulationBlocking && personT !== null) {
+                statusText.innerText = "绝缘阻断：电流无法穿透身体"; statusText.className = "font-bold text-sky-600";
+                statusDot.className = "w-3 h-3 rounded-full bg-sky-400";
+                isBulbLit = false;
+            } else {
+                statusText.innerText = hasBattery ? "断路：导线不完整" : "断路：等待电源"; statusText.className = "font-bold text-slate-400";
+                statusDot.className = "w-3 h-3 rounded-full bg-slate-500";
+                isBulbLit = false;
+            }
+            speedIndicator.innerText = Math.round((currentDisplaySpeed / MAX_SPEED) * 100) + "%";
+
+            drawBatterySocket(targetX, targetY);
+            drawBulb(bulbX, bulbY, isBulbLit);
+            drawPerson(personPos.x, personPos.y, isPersonShocked, isInsulated);
+            drawBattery(batteryPos.x, batteryPos.y);
+
+            requestAnimationFrame(draw);
+        }
+
+        // 交互逻辑
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width, scaleY = canvas.height / rect.height;
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        }
+
+        function getWireT(pos) {
+            const tol = 45;
+            const top = padding, bottom = height - padding, left = padding, right = width - padding;
+            const perim = (right - left) * 2 + (bottom - top) * 2;
+            if (Math.abs(pos.y - bottom) < tol && pos.x >= left && pos.x <= right) return (pos.x - left) / perim;
+            if (Math.abs(pos.x - right) < tol && pos.y >= top && pos.y <= bottom) return ((right - left) + (bottom - pos.y)) / perim;
+            if (Math.abs(pos.y - top) < tol && pos.x >= left && pos.x <= right) return ((right - left) + (bottom - top) + (right - pos.x)) / perim;
+            if (Math.abs(pos.x - left) < tol && pos.y >= top && pos.y <= bottom) return ((right - left) * 2 + (bottom - top) + (pos.y - top)) / perim;
+            return null;
+        }
+
+        const handleDown = (e) => {
+            const pos = getMousePos(e);
+            if (isScissorsActive) { const t = getWireT(pos); if (t !== null) { cuts.push(t); return; } }
+            if (pos.x > batteryPos.x - 30 && pos.x < batteryPos.x + 30 && pos.y > batteryPos.y - 50 && pos.y < batteryPos.y + 50) {
+                isDragging = 'battery'; dragOffset = { x: pos.x - batteryPos.x, y: pos.y - batteryPos.y }; hasBattery = false;
+            } else if (pos.x > personPos.x - 30 && pos.x < personPos.x + 30 && pos.y > personPos.y - 60 && pos.y < personPos.y + 40) {
+                isDragging = 'person'; dragOffset = { x: pos.x - personPos.x, y: pos.y - personPos.y };
+            }
+        };
+
+        const handleMove = (e) => {
+            if (!isDragging) return; e.preventDefault(); const pos = getMousePos(e);
+            if (isDragging === 'battery') { batteryPos.x = pos.x - dragOffset.x; batteryPos.y = pos.y - dragOffset.y; }
+            else { personPos.x = pos.x - dragOffset.x; personPos.y = pos.y - dragOffset.y; }
+        };
+
+        const handleUp = () => {
+            if (isDragging === 'battery') {
+                if (Math.sqrt(Math.pow(batteryPos.x - targetX, 2) + Math.pow(batteryPos.y - targetY, 2)) < 50) {
+                    batteryPos.x = targetX; batteryPos.y = targetY; hasBattery = true;
+                }
+            }
+            isDragging = null;
+        };
+
+        insulationBtn.onclick = () => {
+            isInsulated = !isInsulated;
+            insulationBtn.classList.toggle('safety-active');
+            insulationText.innerText = isInsulated ? "脱下绝缘鞋" : "穿上绝缘鞋";
+        };
+
+        scissorsBtn.onclick = () => {
+            isScissorsActive = !isScissorsActive; scissorsBtn.classList.toggle('tool-active');
+            canvas.classList.toggle('cursor-scissors', isScissorsActive);
+        };
+        repairBtn.onclick = () => { cuts = []; };
+        resetBtn.onclick = () => { init(); };
+        canvas.addEventListener('mousedown', handleDown); window.addEventListener('mousemove', handleMove); window.addEventListener('mouseup', handleUp);
+        canvas.addEventListener('touchstart', handleDown); window.addEventListener('touchmove', handleMove, { passive: false }); window.addEventListener('touchend', handleUp);
+        window.onload = () => { init(); draw(); };
+    </script>
+</body>
+</html>
