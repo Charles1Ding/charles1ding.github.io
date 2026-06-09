@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Past Papers · CAIE IGCSE Chemistry 0620</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f2f5f9;
+      color: #1e293b;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #1a3a6b 0%, #1a56a0 60%, #0e8a6d 100%);
+      color: #fff;
+      padding: 36px 24px 28px;
+      text-align: center;
+      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+    }
+    header .badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 20px;
+      padding: 3px 14px;
+      font-size: 0.78rem;
+      letter-spacing: 0.6px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+    }
+    header h1 {
+      font-family: 'Caveat', cursive;
+      font-size: 2.8rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      letter-spacing: 0.5px;
+    }
+    header p {
+      font-size: 0.95rem;
+      opacity: 0.85;
+    }
+
+    /* ── Back link ── */
+    .back-link {
+      max-width: 1040px;
+      margin: 18px auto 0;
+      padding: 0 20px;
+      font-size: 0.85rem;
+    }
+    .back-link a {
+      color: #4a78c8;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.18s;
+    }
+    .back-link a:hover { color: #1a3a6b; }
+
+    /* ── Stats bar ── */
+    .stats-bar {
+      max-width: 1040px;
+      margin: 14px auto 0;
+      padding: 0 20px;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .stats-left {
+      font-size: 0.88rem;
+      color: #64748b;
+    }
+    .search-box input {
+      padding: 8px 14px;
+      border: 1.5px solid #d0d9e4;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      width: 220px;
+      outline: none;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.18s;
+    }
+    .search-box input:focus { border-color: #4a78c8; }
+
+    /* ── Paper key ── */
+    .paper-key {
+      max-width: 1040px;
+      margin: 10px auto 0;
+      padding: 0 20px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 0.78rem;
+      color: #64748b;
+    }
+    .paper-key span {
+      background: #eef3fa;
+      padding: 3px 10px;
+      border-radius: 10px;
+      white-space: nowrap;
+    }
+    .paper-key strong { color: #2d5fa3; }
+
+    /* ── Year sections ── */
+    .container {
+      max-width: 1040px;
+      margin: 0 auto 40px;
+      padding: 0 20px;
+    }
+    .year-section {
+      margin-top: 28px;
+    }
+    .year-heading {
+      font-family: 'Caveat', cursive;
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1e3a6e;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #d0d9e4;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .year-heading .arrow {
+      font-size: 1rem;
+      transition: transform 0.25s;
+      display: inline-flex;
+      color: #4a78c8;
+    }
+    .year-heading.collapsed .arrow { transform: rotate(-90deg); }
+    .year-heading .count {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #64748b;
+      margin-left: auto;
+    }
+
+    .year-content { overflow: hidden; transition: max-height 0.35s ease; }
+    .year-content.hidden { max-height: 0 !important; }
+
+    /* ── Session tabs ── */
+    .sessions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .session-tab {
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1.5px solid #d0d9e4;
+      background: #fff;
+      color: #475569;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.18s;
+    }
+    .session-tab.active {
+      background: #1a56a0;
+      color: #fff;
+      border-color: #1a56a0;
+    }
+    .session-tab:hover:not(.active) {
+      border-color: #4a78c8;
+      color: #2d5fa3;
+    }
+
+    /* ── Type columns ── */
+    .type-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+    @media (max-width: 680px) { .type-grid { grid-template-columns: 1fr; } }
+
+    .type-col {
+      background: #fff;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+    }
+    .type-col-header {
+      padding: 10px 16px;
+      font-weight: 600;
+      font-size: 0.88rem;
+      border-bottom: 1px solid #eef2f8;
+    }
+    .type-col-header.qp { background: #e8f4fd; color: #1d4ed8; }
+    .type-col-header.ms { background: #fef3c7; color: #b45309; }
+
+    .paper-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 14px;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.84rem;
+      transition: background 0.15s;
+    }
+    .paper-row:last-child { border-bottom: none; }
+    .paper-row:hover { background: #f8fafc; }
+    .paper-row .label { color: #334155; }
+    .paper-row .tag {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 8px;
+      background: #f1f5f9;
+      color: #64748b;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .paper-row a {
+      color: #1d4ed8;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.78rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #e8f4fd;
+      transition: background 0.15s;
+    }
+    .paper-row a:hover { background: #bfdbfe; }
+    .paper-row a.ms-link { background: #fef3c7; color: #b45309; }
+    .paper-row a.ms-link:hover { background: #fde68a; }
+
+    .no-files {
+      padding: 20px;
+      text-align: center;
+      color: #94a3b8;
+      font-size: 0.85rem;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 28px;
+      color: #94a3b8;
+      font-size: 0.82rem;
+      border-top: 1px solid #e2e8f0;
+      margin-top: 40px;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="badge">CAIE · Syllabus 0620</div>
+  <h1>IGCSE Chemistry Past Papers</h1>
+  <p>Question papers &amp; mark schemes from 2022 to 2026</p>
+</header>
+
+<div class="back-link">
+  <a href="index.html">← Back to Home</a>
+</div>
+
+<div class="stats-bar">
+  <div class="stats-left" id="statsText">Loading...</div>
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="Search papers... (e.g. 2022 June 42)" oninput="filterPapers()" />
+  </div>
+</div>
+
+<div class="paper-key">
+  <span><strong>21/22/23</strong> Multiple Choice (Core &amp; Extended)</span>
+  <span><strong>41/42/43</strong> Theory (Extended)</span>
+  <span><strong>32</strong> Theory (Core)</span>
+  <span><strong>61/62/63</strong> Alt. to Practical</span>
+</div>
+
+<div class="container" id="container"></div>
+
+<footer>Based on Cambridge materials · For Educational Use Only</footer>
+
+<script>
+const DATA = {
+  "2022": {
+    "June": {
+      "Mark Scheme": [
+        {"file":"0620_Chemistry_June_2022_Mark_Scheme_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_June_2022_Mark_Scheme_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Mark_Scheme_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Mark_Scheme_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Mark_Scheme_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Mark_Scheme_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Mark_Scheme_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2022_Mark_Scheme_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2022_Mark_Scheme_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ],
+      "Question Paper": [
+        {"file":"0620_Chemistry_June_2022_Question_paper_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_June_2022_Question_paper_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Question_paper_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Question_paper_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Question_paper_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Question_paper_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2022_Question_paper_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2022_Question_paper_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2022_Question_paper_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ]
+    },
+    "March": {
+      "Mark Scheme": [
+        {"file":"0620_Chemistry_March_2022_Mark_Scheme_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_March_2022_Mark_Scheme_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_March_2022_Mark_Scheme_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"}
+      ],
+      "Question Paper": [
+        {"file":"0620_Chemistry_March_2022_Question_paper_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_March_2022_Question_paper_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_March_2022_Question_paper_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"}
+      ]
+    },
+    "November": {
+      "Mark Scheme": [
+        {"file":"0620_Chemistry_November_2022_Mark_Scheme_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_November_2022_Mark_Scheme_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Mark_Scheme_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Mark_Scheme_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Mark_Scheme_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Mark_Scheme_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Mark_Scheme_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_November_2022_Mark_Scheme_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_November_2022_Mark_Scheme_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ],
+      "Question Paper": [
+        {"file":"0620_Chemistry_November_2022_Question_paper_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_November_2022_Question_paper_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Question_paper_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Question_paper_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Question_paper_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Question_paper_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2022_Question_paper_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_November_2022_Question_paper_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_November_2022_Question_paper_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ]
+    }
+  },
+  "2023": {
+    "June": {
+      "Mark Scheme": [
+        {"file":"0620_Chemistry_June_2023_Mark_Scheme_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_June_2023_Mark_Scheme_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Mark_Scheme_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Mark_Scheme_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Mark_Scheme_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Mark_Scheme_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Mark_Scheme_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2023_Mark_Scheme_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2023_Mark_Scheme_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ],
+      "Question Paper": [
+        {"file":"0620_Chemistry_June_2023_Question_paper_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_June_2023_Question_paper_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Question_paper_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Question_paper_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Question_paper_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Question_paper_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2023_Question_paper_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2023_Question_paper_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2023_Question_paper_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ]
+    },
+    "March": {
+      "Mark Scheme": [
+        {"file":"0620_Chemistry_March_2023_Mark_Scheme_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_March_2023_Mark_Scheme_32.pdf","paper":"32","label":"Paper 32 - Theory (Core)"},
+        {"file":"0620_Chemistry_March_2023_Mark_Scheme_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_March_2023_Mark_Scheme_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"}
+      ],
+      "Question Paper": [
+        {"file":"0620_Chemistry_March_2023_Question_paper_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_March_2023_Question_paper_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_March_2023_Question_paper_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"}
+      ]
+    },
+    "November": {
+      "Mark Scheme": [
+        {"file":"0620_Chemistry_November_2023_Mark_Scheme_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_November_2023_Mark_Scheme_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Mark_Scheme_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Mark_Scheme_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Mark_Scheme_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Mark_Scheme_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Mark_Scheme_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_November_2023_Mark_Scheme_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_November_2023_Mark_Scheme_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ],
+      "Question Paper": [
+        {"file":"0620_Chemistry_November_2023_Question_paper_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_November_2023_Question_paper_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Question_paper_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Question_paper_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Question_paper_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Question_paper_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_November_2023_Question_paper_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_November_2023_Question_paper_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_November_2023_Question_paper_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ]
+    }
+  },
+  "2024": {
+    "June": {
+      "Mark Scheme": [
+        {"file":"0620_Chemistry_June_2024_Mark_Scheme_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_June_2024_Mark_Scheme_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Mark_Scheme_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Mark_Scheme_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Mark_Scheme_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Mark_Scheme_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Mark_Scheme_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2024_Mark_Scheme_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2024_Mark_Scheme_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ],
+      "Question Paper": [
+        {"file":"0620_Chemistry_June_2024_Question_paper_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_June_2024_Question_paper_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Question_Paper_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Question_paper_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Question_paper_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Question_paper_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2024_Question_paper_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2024_Question_paper_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2024_Question_paper_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ]
+    },
+    "March": {
+      "Mark Scheme": [
+        {"file":"0620_Chemistry_March_2024_Mark_Scheme_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_March_2024_Mark_Scheme_32.pdf","paper":"32","label":"Paper 32 - Theory (Core)"},
+        {"file":"0620_Chemistry_March_2024_Mark_Scheme_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"}
+      ],
+      "Question Paper": []
+    }
+  },
+  "2025": {
+    "June": {
+      "Mark Scheme": [
+        {"file":"0620_Chemistry_June_2025_Mark_Scheme_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_June_2025_Mark_Scheme_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Mark_Scheme_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Mark_Scheme_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Mark_Scheme_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Mark_Scheme_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Mark_Scheme_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2025_Mark_Scheme_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2025_Mark_Scheme_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ],
+      "Question Paper": [
+        {"file":"0620_Chemistry_June_2025_Question_Paper_21.pdf","paper":"21","label":"Paper 21 - Multiple Choice (Core)"},
+        {"file":"0620_Chemistry_June_2025_Question_Paper_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Question_Paper_23.pdf","paper":"23","label":"Paper 23 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Question_Paper_41.pdf","paper":"41","label":"Paper 41 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Question_Paper_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Question_Paper_43.pdf","paper":"43","label":"Paper 43 - Theory (Extended)"},
+        {"file":"0620_Chemistry_June_2025_Question_Paper_61.pdf","paper":"61","label":"Paper 61 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2025_Question_Paper_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"},
+        {"file":"0620_Chemistry_June_2025_Question_Paper_63.pdf","paper":"63","label":"Paper 63 - Alt. to Practical"}
+      ]
+    }
+  },
+  "2026": {
+    "March": {
+      "Mark Scheme": [],
+      "Question Paper": [
+        {"file":"0620_Chemistry_March_2026_Question_Paper_22.pdf","paper":"22","label":"Paper 22 - Multiple Choice (Extended)"},
+        {"file":"0620_Chemistry_March_2026_Question_Paper_42.pdf","paper":"42","label":"Paper 42 - Theory (Extended)"},
+        {"file":"0620_Chemistry_March_2026_Question_Paper_62.pdf","paper":"62","label":"Paper 62 - Alt. to Practical"}
+      ]
+    }
+  }
+};
+
+let totalFiles = 0;
+const years = Object.keys(DATA).sort((a,b) => b - a);
+const sessionOrder = ['March', 'June', 'November'];
+
+function countPapers(data) {
+  let c = 0;
+  for (const s in data) for (const t in data[s]) c += data[s][t].length;
+  return c;
+}
+
+function countAll() {
+  let c = 0;
+  for (const y in DATA) for (const s in DATA[y]) for (const t in DATA[y][s]) c += DATA[y][s][t].length;
+  return c;
+}
+
+totalFiles = countAll();
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('statsText').textContent =
+    `${totalFiles} papers across ${years.length} years`;
+  const container = document.getElementById('container');
+  years.forEach(year => {
+    const yearData = DATA[year];
+    const sessions = Object.keys(yearData).filter(s => countPapers(yearData[s]) > 0);
+    if (!sessions.length) return;
+
+    const yrCount = sessions.reduce((sum, s) => sum + countPapers(yearData[s]), 0);
+
+    const sec = document.createElement('div');
+    sec.className = 'year-section';
+
+    const heading = document.createElement('div');
+    heading.className = 'year-heading';
+    heading.innerHTML = `<span class="arrow">▼</span> ${year} <span class="count">${yrCount} papers</span>`;
+    heading.onclick = () => {
+      heading.classList.toggle('collapsed');
+      content.classList.toggle('hidden');
+    };
+
+    const content = document.createElement('div');
+    content.className = 'year-content';
+
+    // Session tabs
+    const tabsDiv = document.createElement('div');
+    tabsDiv.className = 'sessions';
+    sessions.forEach((sess, i) => {
+      const tab = document.createElement('div');
+      tab.className = 'session-tab' + (i === 0 ? ' active' : '');
+      tab.textContent = sess;
+      tab.onclick = () => {
+        tabsDiv.querySelectorAll('.session-tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        renderSession(year, sess, panelsDiv);
+      };
+      tabsDiv.appendChild(tab);
+    });
+    content.appendChild(tabsDiv);
+
+    const panelsDiv = document.createElement('div');
+    panelsDiv.className = 'session-panel';
+    content.appendChild(panelsDiv);
+
+    sec.appendChild(heading);
+    sec.appendChild(content);
+    container.appendChild(sec);
+
+    // Render first session
+    if (sessions.length) renderSession(year, sessions[0], panelsDiv);
+  });
+});
+
+function renderSession(year, session, container) {
+  const sessionData = DATA[year][session];
+  const qp = sessionData['Question Paper'] || [];
+  const ms = sessionData['Mark Scheme'] || [];
+
+  container.innerHTML = '';
+
+  const grid = document.createElement('div');
+  grid.className = 'type-grid';
+
+  // Question Papers
+  const qpCol = document.createElement('div');
+  qpCol.className = 'type-col';
+  qpCol.innerHTML = '<div class="type-col-header qp">📝 Question Papers</div>';
+  if (qp.length) {
+    qp.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'paper-row';
+      row.setAttribute('data-search', `${year} ${session} ${p.paper} ${p.label} Question Paper`);
+      row.innerHTML = `<span class="label">${p.label}</span>
+        <a href="past-papers/${encodeURIComponent(p.file)}" target="_blank">Open PDF</a>`;
+      qpCol.appendChild(row);
+    });
+  } else {
+    qpCol.innerHTML += '<div class="no-files">No files yet</div>';
+  }
+  grid.appendChild(qpCol);
+
+  // Mark Schemes
+  const msCol = document.createElement('div');
+  msCol.className = 'type-col';
+  msCol.innerHTML = '<div class="type-col-header ms">📋 Mark Schemes</div>';
+  if (ms.length) {
+    ms.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'paper-row';
+      row.setAttribute('data-search', `${year} ${session} ${p.paper} ${p.label} Mark Scheme`);
+      row.innerHTML = `<span class="label">${p.label}</span>
+        <a href="past-papers/${encodeURIComponent(p.file)}" target="_blank" class="ms-link">MS PDF</a>`;
+      msCol.appendChild(row);
+    });
+  } else {
+    msCol.innerHTML += '<div class="no-files">No files yet</div>';
+  }
+  grid.appendChild(msCol);
+
+  container.appendChild(grid);
+}
+
+function filterPapers() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  const rows = document.querySelectorAll('.paper-row');
+  let visible = 0;
+  rows.forEach(row => {
+    const txt = (row.getAttribute('data-search') || '').toLowerCase();
+    if (!q || txt.includes(q)) {
+      row.style.display = '';
+      visible++;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  document.getElementById('statsText').textContent =
+    q ? `Filtered: ${visible} of ${totalFiles} papers` : `${totalFiles} papers across ${years.length} years`;
+}
+</script>
+</body>
+</html>
