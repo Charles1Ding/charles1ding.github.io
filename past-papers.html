@@ -177,70 +177,123 @@
       color: #2d5fa3;
     }
 
-    /* ── Type columns ── */
-    .type-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
+    /* ── Paper type groups ── */
+    .type-group {
+      margin-bottom: 22px;
     }
-    @media (max-width: 680px) { .type-grid { grid-template-columns: 1fr; } }
+    .type-group-header {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #334155;
+      padding: 8px 12px;
+      border-bottom: 2px solid #e2e8f0;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .type-group-header .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.mc { background: #3b82f6; }
+    .dot.th { background: #8b5cf6; }
+    .dot.co { background: #06b6d4; }
+    .dot.pr { background: #f59e0b; }
 
-    .type-col {
+    /* ── Paper number cards ── */
+    .paper-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 680px) { .paper-grid { grid-template-columns: 1fr; } }
+
+    .paper-card {
       background: #fff;
-      border-radius: 12px;
+      border-radius: 10px;
       border: 1px solid #e2e8f0;
       overflow: hidden;
-      box-shadow: 0 1px 8px rgba(0,0,0,0.04);
+      box-shadow: 0 1px 6px rgba(0,0,0,0.03);
+      transition: box-shadow 0.18s;
     }
-    .type-col-header {
-      padding: 10px 16px;
+    .paper-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .paper-card-head {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-bottom: 1px solid #f1f5f9;
       font-weight: 600;
       font-size: 0.88rem;
-      border-bottom: 1px solid #eef2f8;
+      color: #1e293b;
     }
-    .type-col-header.qp { background: #e8f4fd; color: #1d4ed8; }
-    .type-col-header.ms { background: #fef3c7; color: #b45309; }
-
-    .paper-row {
+    .paper-card-head .pn {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #1a56a0;
+      background: #e8f4fd;
+      width: 38px; height: 38px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .paper-card-head .pn.mc-color { color: #2563eb; background: #dbeafe; }
+    .paper-card-head .pn.th-color { color: #7c3aed; background: #ede9fe; }
+    .paper-card-head .pn.co-color { color: #0891b2; background: #cffafe; }
+    .paper-card-head .pn.pr-color { color: #d97706; background: #fef3c7; }
+    .paper-card-body {
+      display: flex;
+      flex-direction: column;
+    }
+    .paper-file-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 8px 14px;
-      border-bottom: 1px solid #f1f5f9;
-      font-size: 0.84rem;
-      transition: background 0.15s;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      border-bottom: 1px solid #f8fafc;
     }
-    .paper-row:last-child { border-bottom: none; }
-    .paper-row:hover { background: #f8fafc; }
-    .paper-row .label { color: #334155; }
-    .paper-row .tag {
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 8px;
-      background: #f1f5f9;
-      color: #64748b;
+    .paper-file-row:last-child { border-bottom: none; }
+    .paper-file-row .ft {
       font-weight: 500;
+      font-size: 0.74rem;
+      padding: 2px 8px;
+      border-radius: 5px;
+      flex-shrink: 0;
+      margin-right: 8px;
+    }
+    .ft.qp-tag { background: #e8f4fd; color: #1d4ed8; }
+    .ft.ms-tag { background: #fef3c7; color: #b45309; }
+    .paper-file-row .fn {
+      color: #475569;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .paper-row .actions { display: flex; gap: 6px; flex-shrink: 0; }
-    .paper-row a {
+    .paper-file-row .actions { display: flex; gap: 4px; flex-shrink: 0; margin-left: 8px; }
+    .paper-file-row a {
       color: #1d4ed8;
       text-decoration: none;
       font-weight: 500;
-      font-size: 0.78rem;
-      padding: 4px 10px;
-      border-radius: 6px;
+      font-size: 0.72rem;
+      padding: 3px 8px;
+      border-radius: 5px;
       transition: background 0.15s;
       white-space: nowrap;
     }
-    .paper-row a.open-link { background: #e8f4fd; color: #1d4ed8; }
-    .paper-row a.open-link:hover { background: #bfdbfe; }
-    .paper-row a.open-link.ms-link { background: #fef3c7; color: #b45309; }
-    .paper-row a.open-link.ms-link:hover { background: #fde68a; }
-    .paper-row a.dl-link { background: #eef2ff; color: #4f46e5; }
-    .paper-row a.dl-link:hover { background: #ddd6fe; }
-    .paper-row a.dl-link.ms-link { background: #fffbeb; color: #b45309; }
-    .paper-row a.dl-link.ms-link:hover { background: #fef3c7; }
+    .paper-file-row a.open-link { background: #e8f4fd; color: #1d4ed8; }
+    .paper-file-row a.open-link:hover { background: #bfdbfe; }
+    .paper-file-row a.open-link.ms-link { background: #fef3c7; color: #b45309; }
+    .paper-file-row a.open-link.ms-link:hover { background: #fde68a; }
+    .paper-file-row a.dl-link { background: #eef2ff; color: #4f46e5; }
+    .paper-file-row a.dl-link:hover { background: #ddd6fe; }
+    .paper-file-row a.dl-link.ms-link { background: #fffbeb; color: #b45309; }
+    .paper-file-row a.dl-link.ms-link:hover { background: #fef3c7; }
 
     .no-files {
       padding: 20px;
@@ -282,10 +335,10 @@
 </div>
 
 <div class="paper-key">
-  <span><strong>21/22/23</strong> Multiple Choice (Core &amp; Extended)</span>
-  <span><strong>41/42/43</strong> Theory (Extended)</span>
-  <span><strong>32</strong> Theory (Core)</span>
-  <span><strong>61/62/63</strong> Alt. to Practical</span>
+  <span style="background:#dbeafe;color:#2563eb;"><strong>21·22·23</strong> Multiple Choice</span>
+  <span style="background:#ede9fe;color:#7c3aed;"><strong>41·42·43</strong> Theory Extended</span>
+  <span style="background:#cffafe;color:#0891b2;"><strong>32</strong> Theory Core</span>
+  <span style="background:#fef3c7;color:#d97706;"><strong>61·62·63</strong> Alt. to Practical</span>
 </div>
 
 <div class="container" id="container"></div>
@@ -568,68 +621,126 @@ function renderSession(year, session, container) {
   const qp = sessionData['Question Paper'] || [];
   const ms = sessionData['Mark Scheme'] || [];
 
+  // Build a map: paperNumber → { qpFile, msFile, label }
+  const paperMap = {};
+  qp.forEach(p => {
+    if (!paperMap[p.paper]) paperMap[p.paper] = { label: p.label };
+    paperMap[p.paper].qpFile = p.file;
+  });
+  ms.forEach(p => {
+    if (!paperMap[p.paper]) paperMap[p.paper] = { label: p.label };
+    paperMap[p.paper].msFile = p.file;
+  });
+
+  const paperNums = Object.keys(paperMap).sort((a,b) => parseInt(a) - parseInt(b));
+
+  // Group paper numbers by type
+  const groups = [
+    { id: 'mc', name: 'Multiple Choice', dot: 'mc', desc: 'Papers 21 · 22 · 23', color: 'mc-color',
+      papers: paperNums.filter(p => ['21','22','23'].includes(p)) },
+    { id: 'th', name: 'Theory — Extended', dot: 'th', desc: 'Papers 41 · 42 · 43', color: 'th-color',
+      papers: paperNums.filter(p => ['41','42','43'].includes(p)) },
+    { id: 'co', name: 'Theory — Core', dot: 'co', desc: 'Paper 32', color: 'co-color',
+      papers: paperNums.filter(p => p === '32') },
+    { id: 'pr', name: 'Alternative to Practical', dot: 'pr', desc: 'Papers 61 · 62 · 63', color: 'pr-color',
+      papers: paperNums.filter(p => ['61','62','63'].includes(p)) },
+  ];
+
   container.innerHTML = '';
 
-  const grid = document.createElement('div');
-  grid.className = 'type-grid';
+  groups.forEach(g => {
+    if (!g.papers.length) return;
 
-  // Question Papers
-  const qpCol = document.createElement('div');
-  qpCol.className = 'type-col';
-  qpCol.innerHTML = '<div class="type-col-header qp">📝 Question Papers</div>';
-  if (qp.length) {
-    qp.forEach(p => {
-      const row = document.createElement('div');
-      row.className = 'paper-row';
-      row.setAttribute('data-search', `${year} ${session} ${p.paper} ${p.label} Question Paper`);
-      row.innerHTML = `<span class="label">${p.label}</span>
-        <span class="actions">
-          <a href="past-papers/${encodeURIComponent(p.file)}" target="_blank" class="open-link">Open</a>
-          <a href="past-papers/${encodeURIComponent(p.file)}" download class="dl-link">Download</a>
-        </span>`;
-      qpCol.appendChild(row);
+    const wrapper = document.createElement('div');
+    wrapper.className = 'type-group';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'type-group-header';
+    hdr.innerHTML = `<span class="dot ${g.dot}"></span>${g.name} <span style="font-weight:400;font-size:0.78rem;color:#94a3b8;">${g.desc}</span>`;
+    wrapper.appendChild(hdr);
+
+    const grid = document.createElement('div');
+    grid.className = 'paper-grid';
+
+    g.papers.forEach(pn => {
+      const info = paperMap[pn];
+      const card = document.createElement('div');
+      card.className = 'paper-card';
+      card.setAttribute('data-search', `${year} ${session} ${pn} ${info.label}`);
+
+      // Card header
+      const ch = document.createElement('div');
+      ch.className = 'paper-card-head';
+      ch.innerHTML = `<span class="pn ${g.color}">${pn}</span><span>${info.label.replace('Paper '+pn+' - ','')}</span>`;
+      card.appendChild(ch);
+
+      // Card body
+      const cb = document.createElement('div');
+      cb.className = 'paper-card-body';
+
+      // QP row
+      const qpRow = document.createElement('div');
+      qpRow.className = 'paper-file-row';
+      if (info.qpFile) {
+        qpRow.innerHTML = `<span class="ft qp-tag">QP</span>
+          <span class="fn">Question Paper</span>
+          <span class="actions">
+            <a href="past-papers/${encodeURIComponent(info.qpFile)}" target="_blank" class="open-link">Open</a>
+            <a href="past-papers/${encodeURIComponent(info.qpFile)}" download class="dl-link">Download</a>
+          </span>`;
+      } else {
+        qpRow.innerHTML = `<span class="ft qp-tag">QP</span>
+          <span class="fn" style="color:#cbd5e1;">Not available</span>`;
+      }
+      cb.appendChild(qpRow);
+
+      // MS row
+      const msRow = document.createElement('div');
+      msRow.className = 'paper-file-row';
+      if (info.msFile) {
+        msRow.innerHTML = `<span class="ft ms-tag">MS</span>
+          <span class="fn">Mark Scheme</span>
+          <span class="actions">
+            <a href="past-papers/${encodeURIComponent(info.msFile)}" target="_blank" class="open-link ms-link">Open</a>
+            <a href="past-papers/${encodeURIComponent(info.msFile)}" download class="dl-link ms-link">Download</a>
+          </span>`;
+      } else {
+        msRow.innerHTML = `<span class="ft ms-tag">MS</span>
+          <span class="fn" style="color:#cbd5e1;">Not available</span>`;
+      }
+      cb.appendChild(msRow);
+
+      card.appendChild(cb);
+      grid.appendChild(card);
     });
-  } else {
-    qpCol.innerHTML += '<div class="no-files">No files yet</div>';
-  }
-  grid.appendChild(qpCol);
 
-  // Mark Schemes
-  const msCol = document.createElement('div');
-  msCol.className = 'type-col';
-  msCol.innerHTML = '<div class="type-col-header ms">📋 Mark Schemes</div>';
-  if (ms.length) {
-    ms.forEach(p => {
-      const row = document.createElement('div');
-      row.className = 'paper-row';
-      row.setAttribute('data-search', `${year} ${session} ${p.paper} ${p.label} Mark Scheme`);
-      row.innerHTML = `<span class="label">${p.label}</span>
-        <span class="actions">
-          <a href="past-papers/${encodeURIComponent(p.file)}" target="_blank" class="open-link ms-link">Open</a>
-          <a href="past-papers/${encodeURIComponent(p.file)}" download class="dl-link ms-link">Download</a>
-        </span>`;
-      msCol.appendChild(row);
-    });
-  } else {
-    msCol.innerHTML += '<div class="no-files">No files yet</div>';
-  }
-  grid.appendChild(msCol);
+    wrapper.appendChild(grid);
+    container.appendChild(wrapper);
+  });
 
-  container.appendChild(grid);
+  if (!paperNums.length) {
+    container.innerHTML = '<div class="no-files">No papers available for this session</div>';
+  }
 }
 
 function filterPapers() {
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
-  const rows = document.querySelectorAll('.paper-row');
+  const cards = document.querySelectorAll('.paper-card');
+  const typeGroups = document.querySelectorAll('.type-group');
   let visible = 0;
-  rows.forEach(row => {
-    const txt = (row.getAttribute('data-search') || '').toLowerCase();
-    if (!q || txt.includes(q)) {
-      row.style.display = '';
-      visible++;
-    } else {
-      row.style.display = 'none';
-    }
+  typeGroups.forEach(g => {
+    let hasVisible = false;
+    g.querySelectorAll('.paper-card').forEach(card => {
+      const txt = (card.getAttribute('data-search') || '').toLowerCase();
+      if (!q || txt.includes(q)) {
+        card.style.display = '';
+        visible++;
+        hasVisible = true;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+    g.style.display = hasVisible ? '' : 'none';
   });
   document.getElementById('statsText').textContent =
     q ? `Filtered: ${visible} of ${totalFiles} papers` : `${totalFiles} papers across ${years.length} years`;
