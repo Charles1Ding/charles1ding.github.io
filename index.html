@@ -131,6 +131,26 @@
       font-weight: 800;
     }
 
+    /* ── Bottom message below resources ── */
+    .bottom-text {
+      width: 100%;
+      max-width: 1100px;
+      margin-top: 48px;
+      font-size: clamp(1.02rem, 2.2vw, 1.24rem);
+      font-weight: 600;
+      font-style: italic;
+      color: #2563c7;
+      line-height: 1.85;
+      text-align: center;
+    }
+    .bottom-text .line {
+      display: block;
+      margin-bottom: 6px;
+    }
+    .bottom-text .highlight {
+      font-weight: 800;
+    }
+
     /* ── Emoji pill row ── */
     .hero-icons {
       display: flex;
@@ -230,6 +250,7 @@
       .resource-grid { grid-template-columns: 1fr; }
       .hero-name { font-size: 2.2rem; }
       .about-text { font-size: 1rem; }
+      .bottom-text { font-size: 0.95rem; }
     }
   </style>
 </head>
@@ -260,13 +281,6 @@
       <span class="paren-line">( Basketball, badminton, swimming — you name it 😂 )</span>
       <span class="line">I also consider myself as an artist</span>
       <span class="paren-line">( I do sing a little and play a few instruments like guitar and trumpet 😎 )</span>
-      <span class="line">The intention to build this website is to offer my students</span>
-      <span class="line">a <span class="highlight">free platform</span> for all the tutorials and resources for learning Chemistry 😚,</span>
-      <span class="line">and also a platform for me to share my preferences</span>
-      <span class="line">for everything and my thoughts.</span>
-      <span class="line" style="margin-top:10px;">Again, thanks for checking out my website,</span>
-      <span class="line">hope u get what u want 😍,</span>
-      <span class="line">and what matters most is — <span class="highlight">Just Chill 😎😎😎</span>!</span>
     </div>
 
     <div class="hero-icons">
@@ -297,6 +311,13 @@
       <span class="res-img-label">Simulation Models</span>
     </a>
 
+  </div>
+
+  <!-- Bottom message -->
+  <div class="bottom-text">
+    <span class="line">The intention to build this website is to offer my students a <span class="highlight">free platform</span> for all the tutorials and resources for learning Chemistry 😚,</span>
+    <span class="line">and also a platform for me to share my preferences for everything and my thoughts.</span>
+    <span class="line">Again, thanks for checking out my website, hope u get what u want 😍, and what matters most is — <span class="highlight">Just Chill 😎😎😎</span>!</span>
   </div>
 
   <!-- Footer -->
