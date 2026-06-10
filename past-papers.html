@@ -62,10 +62,64 @@
     }
     .back-link a:hover { color: #1a3a6b; }
 
+    /* ── Year selector tabs ── */
+    .year-selector {
+      max-width: 1040px;
+      margin: 20px auto 0;
+      padding: 0 20px;
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    .year-tab {
+      padding: 10px 22px;
+      border-radius: 10px 10px 0 0;
+      border: 1.5px solid transparent;
+      background: #fff;
+      color: #475569;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .year-tab:hover { color: #1a56a0; background: #e8f4fd; }
+    .year-tab.active {
+      background: #1a56a0;
+      color: #fff;
+      border-color: #1a56a0;
+    }
+    .year-tab .tab-count {
+      font-size: 0.72rem;
+      font-weight: 400;
+      opacity: 0.75;
+      margin-left: 4px;
+    }
+
+    /* ── Year content panel ── */
+    .year-panel {
+      max-width: 1040px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 0 12px 12px 12px;
+      border: 1px solid #e2e8f0;
+      border-top: 3px solid #1a56a0;
+      min-height: 120px;
+      display: none;
+    }
+    .year-panel.active { display: block; }
+    .year-panel-placeholder {
+      text-align: center;
+      color: #94a3b8;
+      padding: 40px;
+      font-size: 0.9rem;
+    }
+
     /* ── Stats bar ── */
     .stats-bar {
       max-width: 1040px;
-      margin: 14px auto 0;
+      margin: 14px auto 8px;
       padding: 0 20px;
       display: flex;
       gap: 14px;
@@ -89,10 +143,10 @@
     }
     .search-box input:focus { border-color: #4a78c8; }
 
-    /* ── Paper key ── */
+    /* ── Paper type key ── */
     .paper-key {
       max-width: 1040px;
-      margin: 10px auto 0;
+      margin: 6px auto 12px;
       padding: 0 20px;
       display: flex;
       gap: 16px;
@@ -108,46 +162,12 @@
     }
     .paper-key strong { color: #2d5fa3; }
 
-    /* ── Year sections ── */
+    /* ── Container ── */
     .container {
       max-width: 1040px;
       margin: 0 auto 40px;
       padding: 0 20px;
     }
-    .year-section {
-      margin-top: 28px;
-    }
-    .year-heading {
-      font-family: 'Caveat', cursive;
-      font-size: 2rem;
-      font-weight: 700;
-      color: #1e3a6e;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #d0d9e4;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      cursor: pointer;
-      user-select: none;
-    }
-    .year-heading .arrow {
-      font-size: 1rem;
-      transition: transform 0.25s;
-      display: inline-flex;
-      color: #4a78c8;
-    }
-    .year-heading.collapsed .arrow { transform: rotate(-90deg); }
-    .year-heading .count {
-      font-family: 'Inter', sans-serif;
-      font-size: 0.82rem;
-      font-weight: 500;
-      color: #64748b;
-      margin-left: auto;
-    }
-
-    .year-content { overflow: hidden; transition: max-height 0.35s ease; }
-    .year-content.hidden { max-height: 0 !important; }
 
     /* ── Session tabs ── */
     .sessions {
@@ -327,6 +347,8 @@
   <a href="index.html">← Back to Home</a>
 </div>
 
+<div class="year-selector" id="yearSelector"></div>
+
 <div class="stats-bar">
   <div class="stats-left" id="statsText">Loading...</div>
   <div class="search-box">
@@ -341,9 +363,7 @@
   <span style="background:#fef3c7;color:#d97706;"><strong>61·62·63</strong> Alt. to Practical</span>
 </div>
 
-<div class="container" id="container"></div>
-
-<footer>Based on Cambridge materials · For Educational Use Only</footer>
+<div class="year-panel active" id="yearPanel"></div>
 
 <script>
 const DATA = {
@@ -548,75 +568,87 @@ let totalFiles = 0;
 const years = Object.keys(DATA).sort((a,b) => b - a);
 const sessionOrder = ['March', 'June', 'November'];
 
-function countPapers(data) {
+function countPapers(sessionData) {
+  return (sessionData['Question Paper'] || []).length + (sessionData['Mark Scheme'] || []).length;
+}
+
+function countYearPapers(yearData) {
   let c = 0;
-  for (const s in data) for (const t in data[s]) c += data[s][t].length;
+  for (const s in yearData) c += countPapers(yearData[s]);
   return c;
 }
 
-function countAll() {
-  let c = 0;
-  for (const y in DATA) for (const s in DATA[y]) for (const t in DATA[y][s]) c += DATA[y][s][t].length;
-  return c;
-}
+let totalFiles = 0;
+for (const y in DATA) totalFiles += countYearPapers(DATA[y]);
 
-totalFiles = countAll();
+let currentYear = years[0];
+let currentSession = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('statsText').textContent =
     `${totalFiles} papers across ${years.length} years`;
-  const container = document.getElementById('container');
-  years.forEach(year => {
-    const yearData = DATA[year];
-    const sessions = Object.keys(yearData).filter(s => countPapers(yearData[s]) > 0);
-    if (!sessions.length) return;
 
-    const yrCount = sessions.reduce((sum, s) => sum + countPapers(yearData[s]), 0);
-
-    const sec = document.createElement('div');
-    sec.className = 'year-section';
-
-    const heading = document.createElement('div');
-    heading.className = 'year-heading';
-    heading.innerHTML = `<span class="arrow">▼</span> ${year} <span class="count">${yrCount} papers</span>`;
-    heading.onclick = () => {
-      heading.classList.toggle('collapsed');
-      content.classList.toggle('hidden');
+  // Build year tabs
+  const sel = document.getElementById('yearSelector');
+  years.forEach((year, i) => {
+    const yc = countYearPapers(DATA[year]);
+    const tab = document.createElement('div');
+    tab.className = 'year-tab' + (i === 0 ? ' active' : '');
+    tab.innerHTML = `${year}<span class="tab-count">${yc} papers</span>`;
+    tab.onclick = () => {
+      document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentYear = year;
+      currentSession = null;
+      renderYear(year);
     };
-
-    const content = document.createElement('div');
-    content.className = 'year-content';
-
-    // Session tabs
-    const tabsDiv = document.createElement('div');
-    tabsDiv.className = 'sessions';
-    sessions.forEach((sess, i) => {
-      const tab = document.createElement('div');
-      tab.className = 'session-tab' + (i === 0 ? ' active' : '');
-      tab.textContent = sess;
-      tab.onclick = () => {
-        tabsDiv.querySelectorAll('.session-tab').forEach(t => t.classList.remove('active'));
-        tab.classList.add('active');
-        renderSession(year, sess, panelsDiv);
-      };
-      tabsDiv.appendChild(tab);
-    });
-    content.appendChild(tabsDiv);
-
-    const panelsDiv = document.createElement('div');
-    panelsDiv.className = 'session-panel';
-    content.appendChild(panelsDiv);
-
-    sec.appendChild(heading);
-    sec.appendChild(content);
-    container.appendChild(sec);
-
-    // Render first session
-    if (sessions.length) renderSession(year, sessions[0], panelsDiv);
+    sel.appendChild(tab);
   });
+
+  // Render the first (latest) year by default
+  renderYear(years[0]);
 });
 
-function renderSession(year, session, container) {
+function renderYear(year) {
+  const panel = document.getElementById('yearPanel');
+  const yearData = DATA[year];
+  const sessions = Object.keys(yearData).filter(s => countPapers(yearData[s]) > 0);
+
+  if (!sessions.length) {
+    panel.innerHTML = '<div class="year-panel-placeholder">No papers available for ' + year + '</div>';
+    return;
+  }
+
+  panel.innerHTML = '';
+
+  // Session tabs
+  const tabsDiv = document.createElement('div');
+  tabsDiv.className = 'sessions';
+  sessions.forEach((sess, i) => {
+    const tab = document.createElement('div');
+    tab.className = 'session-tab' + ((!currentSession && i === 0) || currentSession === sess ? ' active' : '');
+    tab.textContent = sess + ' ' + year;
+    tab.onclick = () => {
+      tabsDiv.querySelectorAll('.session-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentSession = sess;
+      renderSessionPanel(year, sess, panelsDiv);
+    };
+    tabsDiv.appendChild(tab);
+  });
+  panel.appendChild(tabsDiv);
+
+  const panelsDiv = document.createElement('div');
+  panelsDiv.className = 'session-panel';
+  panel.appendChild(panelsDiv);
+
+  // Render the active session
+  const activeSess = currentSession || sessions[0];
+  currentSession = activeSess;
+  renderSessionPanel(year, activeSess, panelsDiv);
+}
+
+function renderSessionPanel(year, session, container) {
   const sessionData = DATA[year][session];
   const qp = sessionData['Question Paper'] || [];
   const ms = sessionData['Mark Scheme'] || [];
@@ -725,8 +757,9 @@ function renderSession(year, session, container) {
 
 function filterPapers() {
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
-  const cards = document.querySelectorAll('.paper-card');
-  const typeGroups = document.querySelectorAll('.type-group');
+  const panel = document.getElementById('yearPanel');
+  const cards = panel.querySelectorAll('.paper-card');
+  const typeGroups = panel.querySelectorAll('.type-group');
   let visible = 0;
   typeGroups.forEach(g => {
     let hasVisible = false;
@@ -746,5 +779,7 @@ function filterPapers() {
     q ? `Filtered: ${visible} of ${totalFiles} papers` : `${totalFiles} papers across ${years.length} years`;
 }
 </script>
+
+<footer>Based on Cambridge materials · For Educational Use Only</footer>
 </body>
 </html>
