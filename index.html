@@ -172,86 +172,46 @@
       margin: 10px auto 0;
     }
 
-    /* ── Resource cards ── */
+    /* ── Resource images ── */
     .resource-grid {
       margin-top: 32px;
       width: 100%;
-      max-width: 760px;
+      max-width: 900px;
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 24px;
+      gap: 40px;
       justify-items: center;
+      align-items: start;
     }
-    .res-card {
-      background: rgba(255,255,255,0.82);
-      backdrop-filter: blur(16px);
-      border-radius: 22px;
-      border: 2px solid rgba(74,120,200,0.22);
-      padding: 36px 28px 30px;
+    .res-img-card {
+      text-decoration: none;
+      color: inherit;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      text-decoration: none;
-      color: inherit;
-      box-shadow: 0 6px 28px rgba(45,95,163,0.10);
-      transition: transform 0.22s, box-shadow 0.22s, border-color 0.22s;
-      cursor: pointer;
+      gap: 14px;
+      transition: transform 0.28s;
+    }
+    .res-img-card:hover { transform: translateY(-6px) scale(1.02); }
+    .res-img-card img {
       width: 100%;
-      text-align: center;
+      max-width: 360px;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(37,99,199,0.14);
+      transition: box-shadow 0.28s;
+      display: block;
     }
-    .res-card:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 18px 48px rgba(45,95,163,0.18);
-      border-color: #4a78c8;
+    .res-img-card:hover img {
+      box-shadow: 0 14px 44px rgba(37,99,199,0.22);
     }
-    .res-icon {
-      font-size: 3rem;
-      line-height: 1;
-    }
-    .res-label {
-      font-size: 0.73rem;
-      font-weight: 700;
-      letter-spacing: 1.2px;
-      text-transform: uppercase;
-      color: #7aabdf;
-    }
-    .res-title {
+    .res-img-label {
       font-family: 'Nunito', sans-serif;
-      font-size: 1.9rem;
+      font-size: 1.6rem;
       font-weight: 800;
       font-style: italic;
       color: #1e3a6e;
-      line-height: 1.1;
       text-align: center;
-    }
-    .res-desc {
-      font-size: 0.88rem;
-      color: #4a6a9a;
-      line-height: 1.65;
-      text-align: center;
-    }
-    .res-btn {
-      margin-top: 6px;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      background: linear-gradient(135deg, #4a78c8 0%, #2d5fa3 100%);
-      color: #fff;
-      border-radius: 12px;
-      padding: 10px 22px;
-      font-size: 0.92rem;
-      font-weight: 700;
-      text-decoration: none;
-      transition: opacity 0.18s, transform 0.18s;
-      letter-spacing: 0.2px;
-    }
-    .res-btn:hover { opacity: 0.88; transform: scale(1.03); }
-    .res-btn.green {
-      background: linear-gradient(135deg, #0e8a6d 0%, #0a6b55 100%);
-    }
-    .res-btn svg {
-      width: 15px; height: 15px; fill: #fff;
+      letter-spacing: 0.3px;
     }
 
     /* ── Footer ── */
@@ -321,33 +281,15 @@
   <div class="resource-grid">
 
     <!-- Past Paper -->
-    <a class="res-card" href="past-papers.html">
-      <div class="res-icon">📝</div>
-      <div class="res-label">CAIE · IGCSE 0620 · 2022–2026</div>
-      <div class="res-title">Past Papers</div>
-      <p class="res-desc">
-        Question papers &amp; mark schemes for IGCSE Chemistry 0620.<br>
-        Covering March, June &amp; November sessions from 2022 to 2026.
-      </p>
-      <span class="res-btn">
-        <svg viewBox="0 0 20 20"><path d="M10 3a7 7 0 100 14A7 7 0 0010 3zm-1 10V7l5 3-5 3z"/></svg>
-        Open Papers
-      </span>
+    <a class="res-img-card" href="past-papers.html">
+      <img src="img-pastpaper.jpg" alt="Past Papers" />
+      <span class="res-img-label">Past Papers</span>
     </a>
 
     <!-- Simulation Models -->
-    <a class="res-card" href="simulation-models.html">
-      <div class="res-icon">⚗️</div>
-      <div class="res-label">Interactive · 40 Models</div>
-      <div class="res-title">Simulation Models</div>
-      <p class="res-desc">
-        40 interactive chemistry simulations — from electrochemistry<br>
-        to equilibrium, in English &amp; Chinese. Watch reactions come alive!
-      </p>
-      <span class="res-btn green">
-        <svg viewBox="0 0 20 20"><path d="M10 3a7 7 0 100 14A7 7 0 0010 3zm-1 10V7l5 3-5 3z"/></svg>
-        Open Models
-      </span>
+    <a class="res-img-card" href="simulation-models.html">
+      <img src="img-simulation.jpg" alt="Simulation Models" />
+      <span class="res-img-label">Simulation Models</span>
     </a>
 
   </div>
