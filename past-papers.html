@@ -564,7 +564,6 @@ const DATA = {
   }
 };
 
-let totalFiles = 0;
 const years = Object.keys(DATA).sort((a,b) => b - a);
 const sessionOrder = ['March', 'June', 'November'];
 
@@ -578,7 +577,7 @@ function countYearPapers(yearData) {
   return c;
 }
 
-let totalFiles = 0;
+var totalFiles = 0;
 for (const y in DATA) totalFiles += countYearPapers(DATA[y]);
 
 let currentYear = years[0];
@@ -612,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
 function renderYear(year) {
   const panel = document.getElementById('yearPanel');
   const yearData = DATA[year];
-  const sessions = Object.keys(yearData).filter(s => countPapers(yearData[s]) > 0);
+  const sessions = sessionOrder.filter(s => yearData[s] && countPapers(yearData[s]) > 0);
 
   if (!sessions.length) {
     panel.innerHTML = '<div class="year-panel-placeholder">No papers available for ' + year + '</div>';
