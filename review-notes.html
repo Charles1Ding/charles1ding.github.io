@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review Notes · Charles</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      min-height: 100vh;
+      font-family: 'Nunito', sans-serif;
+      background: #f5f0e8;
+    }
+
+    .bg {
+      position: fixed;
+      inset: 0;
+      background: url('bg.png') center center / cover no-repeat;
+      z-index: 0;
+    }
+    .bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.35);
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px 80px;
+    }
+
+    /* ── Nav ── */
+    nav {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 0 0;
+    }
+    .nav-logo {
+      font-family: 'Caveat', cursive;
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #2d5fa3;
+      letter-spacing: 0.5px;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #3a5a8c;
+      text-decoration: none;
+      letter-spacing: 0.3px;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #1a3a6b; }
+    .back-link {
+      font-weight: 800 !important;
+      color: #1e3a6e !important;
+    }
+
+    /* ── Header ── */
+    .header {
+      margin-top: 48px;
+      text-align: center;
+    }
+    .header h1 {
+      font-family: 'Nunito', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      font-style: italic;
+      color: #1e3a6e;
+    }
+    .header-line {
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, #4a78c8, #0e8a6d);
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+    .header p {
+      margin-top: 10px;
+      color: #5a7aaa;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    /* ── Category ── */
+    .category {
+      width: 100%;
+      max-width: 1100px;
+      margin-top: 40px;
+    }
+    .cat-title {
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      font-style: italic;
+      color: #2563c7;
+      margin-bottom: 16px;
+      padding-left: 8px;
+      border-left: 4px solid #2563c7;
+    }
+
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+
+    .file-card {
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(6px);
+      border: 1.5px solid rgba(74,120,200,0.2);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.22s;
+    }
+    .file-card:hover {
+      background: rgba(255,255,255,0.95);
+      border-color: rgba(74,120,200,0.4);
+      box-shadow: 0 4px 20px rgba(37,99,199,0.1);
+      transform: translateY(-2px);
+    }
+
+    .file-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      flex-shrink: 0;
+    }
+    .file-icon.docx { background: #e8f0fe; color: #2563c7; }
+    .file-icon.pdf  { background: #fde8e8; color: #c7253e; }
+
+    .file-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .file-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1e3a6e;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+    .file-meta {
+      font-size: 0.78rem;
+      color: #8aa0c0;
+      margin-top: 2px;
+    }
+
+    .file-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .file-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1.5px solid rgba(74,120,200,0.3);
+      background: rgba(255,255,255,0.6);
+      color: #2563c7;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s;
+      text-decoration: none;
+    }
+    .file-btn:hover {
+      background: #2563c7;
+      color: #fff;
+      border-color: #2563c7;
+    }
+    .file-btn.dl {
+      background: rgba(37,99,199,0.1);
+      border-color: rgba(37,99,199,0.35);
+    }
+
+    /* ── Footer ── */
+    footer {
+      margin-top: 60px;
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: #6a8fc0;
+      text-align: center;
+      letter-spacing: 0.3px;
+    }
+    footer span { color: #c06a7a; }
+
+    @media (max-width: 580px) {
+      .file-grid { grid-template-columns: 1fr; }
+      .header h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="page">
+
+  <nav>
+    <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="back-link">← Home</a></li>
+    </ul>
+  </nav>
+
+  <div class="header">
+    <h1>📝 Review Notes</h1>
+    <div class="header-line"></div>
+    <p>37 份复习资料 — 点击 Open 预览 / Download 下载</p>
+  </div>
+
+  <!-- Category: 期末复习试题&清单 (C1-C15) -->
+  <div class="category">
+    <div class="cat-title">📚 期末复习试题 & 清单 (C1-C15)</div>
+    <div class="file-grid" id="grid-chapters"></div>
+  </div>
+
+  <!-- Category: 章节复习提纲 -->
+  <div class="category">
+    <div class="cat-title">📖 章节复习提纲 & Handout</div>
+    <div class="file-grid" id="grid-handouts"></div>
+  </div>
+
+  <!-- Category: P2 重难点 -->
+  <div class="category">
+    <div class="cat-title">⚡ P2 重难点针对性练习</div>
+    <div class="file-grid" id="grid-p2"></div>
+  </div>
+
+  <!-- Category: Quiz Papers -->
+  <div class="category">
+    <div class="cat-title">📋 Quiz Papers</div>
+    <div class="file-grid" id="grid-quiz"></div>
+  </div>
+
+  <!-- Category: 定义 & 词汇 -->
+  <div class="category">
+    <div class="cat-title">📝 定义 & 词汇</div>
+    <div class="file-grid" id="grid-defs"></div>
+  </div>
+
+  <!-- Category: Others -->
+  <div class="category">
+    <div class="cat-title">📎 其他</div>
+    <div class="file-grid" id="grid-other"></div>
+  </div>
+
+  <footer>Made with <span>♥</span> by Charles · Keep reviewing! 📖</footer>
+
+</div>
+
+<script>
+(function() {
+
+function card(file, encFile) {
+  var ext = file.endsWith('.pdf') ? 'pdf' : 'docx';
+  var icon = ext === 'pdf' ? '📄' : '📘';
+  var displayName = file.replace(/\.docx$/, '').replace(/\.pdf$/, '');
+  return '<div class="file-card">' +
+    '<div class="file-icon ' + ext + '">' + icon + '</div>' +
+    '<div class="file-info">' +
+      '<div class="file-name">' + displayName + '</div>' +
+      '<div class="file-meta">.' + ext + '</div>' +
+    '</div>' +
+    '<div class="file-actions">' +
+      '<a class="file-btn" href="review-notes/' + encFile + '" target="_blank" title="Open">↗</a>' +
+      '<a class="file-btn dl" href="review-notes/' + encFile + '" download title="Download">↓</a>' +
+    '</div>' +
+  '</div>';
+}
+
+var rawFiles = [
+  "C1 期末复习试题.docx",
+  "C2 期末复习试题.docx",
+  "C3期末复习试题.docx",
+  "C4 期末复习试题.docx",
+  "C5 期末复习试题.docx",
+  "C6期末复习试题.docx",
+  "C7 期末复习清单.docx",
+  "C8期末复习试题.docx",
+  "C9期末复习试题.docx",
+  "C10期末复习试题.docx",
+  "C11 期末复习清单.docx",
+  "C11 期末复习清单答案.docx",
+  "C12 期末复习清单.docx",
+  "C13 期末复习清单.docx",
+  "C15期末复习清单 .docx"
+];
+
+var handoutFiles = [
+  "第一章期末复习handout.docx",
+  "第八章复习提纲.docx",
+  "第6章复习提纲.docx",
+  "handout for reviewing.docx",
+  "Chapter 3 answer.docx",
+  "实验装置名称.docx",
+  "期末key point list答案.docx"
+];
+
+var p2Files = [
+  "P2 2026答案.pdf",
+  "P2 电化学 重难点针对性练习题.docx",
+  "P2 金属 重难点针对性练习题.docx",
+  "印度卷P2 .pdf"
+];
+
+var quizFiles = [
+  "quiz paper.docx",
+  "Quiz Paper1 .docx",
+  "Quiz paper2 .docx"
+];
+
+var defFiles = [
+  "IG化学会考定义.docx",
+  "IG单词汇总.docx",
+  "Nomenclature.docx",
+  "定义考核.docx",
+  "定义考核答案.docx",
+  "考察定义题.docx",
+  "颜色表格.docx"
+];
+
+var otherFiles = [
+  "小马的问题与解析.docx"
+];
+
+function render(containerId, files) {
+  var html = '';
+  for (var i = 0; i < files.length; i++) {
+    var enc = encodeURIComponent(files[i]);
+    html += card(files[i], enc);
+  }
+  document.getElementById(containerId).innerHTML = html;
+}
+
+render('grid-chapters', rawFiles);
+render('grid-handouts', handoutFiles);
+render('grid-p2', p2Files);
+render('grid-quiz', quizFiles);
+render('grid-defs', defFiles);
+render('grid-other', otherFiles);
+
+})();
+</script>
+
+</body>
+</html>
