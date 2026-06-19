@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>强酸与弱酸微观电离模拟器</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- KaTeX for beautiful math rendering -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+        }
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        canvas {
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-crisp-edges;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2.5 bg-gradient-to-tr from-indigo-600 to-purple-600 rounded-xl shadow-lg shadow-indigo-500/20">
+                    <i data-lucide="beaker" class="w-6 h-6 text-white animate-pulse"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        酸的微观电离平衡模拟
+                    </h1>
+                    <p class="text-xs text-slate-400 mt-0.5">对比强酸（$\text{HCl}$）与弱酸（$\text{H}_2\text{CO}_3$）在水分子环境下的电离行为</p>
+                </div>
+            </div>
+            
+            <!-- Controls Global -->
+            <div class="flex items-center gap-4 bg-slate-950/60 p-1.5 rounded-lg border border-slate-800">
+                <button id="btn-play" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold transition-all duration-200 shadow-md">
+                    <i data-lucide="play" class="w-3.5 h-3.5" id="play-icon"></i>
+                    <span id="play-text">暂停</span>
+                </button>
+                <button id="btn-reset" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition-all duration-200">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                    重置所有
+                </button>
+                <div class="h-4 w-px bg-slate-800"></div>
+                <label class="flex items-center gap-2 text-xs text-slate-400 cursor-pointer">
+                    <input type="checkbox" id="chk-solvent" class="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0 focus:ring-offset-0" checked>
+                    <span>显示水分子环境</span>
+                </label>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Simulation Panel (The Beakers) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+            <!-- Beaker Side-by-Side Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Beaker 1: Strong Acid (HCl) -->
+                <div class="bg-slate-900 border border-slate-800/80 rounded-2xl overflow-hidden flex flex-col shadow-xl">
+                    <div class="p-4 border-b border-slate-800 bg-gradient-to-r from-emerald-950/20 to-transparent flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/50"></span>
+                            <h2 class="font-bold text-slate-200">强酸：盐酸 ($\text{HCl}$)</h2>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full font-semibold">
+                            完全电离 ($\alpha = 100\%$)
+                        </span>
+                    </div>
+
+                    <!-- Beaker Header Controls -->
+                    <div class="px-4 py-2 bg-slate-950/40 border-b border-slate-800/50 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs text-slate-400">水溶液 pH:</span>
+                            <span id="hcl-ph" class="text-sm font-bold text-emerald-400 code-font">7.00</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="btn-add-hcl" class="flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white transition-all shadow-md">
+                                <i data-lucide="droplet" class="w-3 h-3"></i>
+                                滴加 HCl 分子
+                            </button>
+                            <button id="btn-clear-hcl" class="flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-all">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                清空
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Simulation Area -->
+                    <div class="relative bg-slate-950/80 h-[380px] w-full group">
+                        <canvas id="canvas-hcl" class="absolute inset-0 w-full h-full"></canvas>
+                        
+                        <!-- Mini Water Overlay Alert -->
+                        <div class="absolute bottom-3 right-3 bg-slate-900/90 border border-slate-800 px-2 py-1 rounded-md text-[10px] text-slate-400 pointer-events-none flex items-center gap-1">
+                            <i data-lucide="info" class="w-3 h-3 text-emerald-400"></i>
+                            观察：HCl 在空气中保持结合，入水瞬间离解！
+                        </div>
+                    </div>
+
+                    <!-- Beaker Stats -->
+                    <div class="p-4 bg-slate-900/40 border-t border-slate-800/50 grid grid-cols-3 gap-2 text-center">
+                        <div class="p-2 bg-slate-950/40 rounded-lg">
+                            <div class="text-[10px] text-slate-500">累计滴入分子</div>
+                            <div class="text-lg font-bold text-slate-300 code-font" id="hcl-initial">0</div>
+                        </div>
+                        <div class="p-2 bg-slate-950/40 rounded-lg">
+                            <div class="text-[10px] text-slate-500">水中游离 $\text{H}^+$</div>
+                            <div class="text-lg font-bold text-emerald-400 code-font" id="hcl-hplus">0</div>
+                        </div>
+                        <div class="p-2 bg-slate-950/40 rounded-lg">
+                            <div class="text-[10px] text-slate-500">水中电离度</div>
+                            <div class="text-lg font-bold text-indigo-400 code-font" id="hcl-alpha-display">100.0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Beaker 2: Weak Acid (H2CO3) -->
+                <div class="bg-slate-900 border border-slate-800/80 rounded-2xl overflow-hidden flex flex-col shadow-xl">
+                    <div class="p-4 border-b border-slate-800 bg-gradient-to-r from-amber-950/20 to-transparent flex items-center justify-between">
+                        <div class="flex items-center gap-2.5">
+                            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-md shadow-amber-500/50 animate-pulse"></span>
+                            <h2 class="font-bold text-slate-200">弱酸：碳酸 ($\text{H}_2\text{CO}_3$)</h2>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full font-semibold">
+                            动态平衡/微弱电离
+                        </span>
+                    </div>
+
+                    <!-- Beaker Header Controls -->
+                    <div class="px-4 py-2 bg-slate-950/40 border-b border-slate-800/50 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs text-slate-400">水溶液 pH:</span>
+                            <span id="h2co3-ph" class="text-sm font-bold text-amber-400 code-font">7.00</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="btn-add-h2co3" class="flex items-center gap-1 px-2.5 py-1 rounded bg-amber-600 hover:bg-amber-500 text-xs font-semibold text-white transition-all shadow-md">
+                                <i data-lucide="droplet" class="w-3 h-3"></i>
+                                滴加 H₂CO₃ 分子
+                            </button>
+                            <button id="btn-clear-h2co3" class="flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 transition-all">
+                                <i data-lucide="trash-2" class="w-3 h-3"></i>
+                                清空
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Simulation Area -->
+                    <div class="relative bg-slate-950/80 h-[380px] w-full">
+                        <canvas id="canvas-h2co3" class="absolute inset-0 w-full h-full"></canvas>
+                        
+                        <!-- Interactive Target Tracking Box -->
+                        <div id="target-tracker" class="absolute top-3 left-3 bg-slate-900/95 border border-indigo-500/30 p-2.5 rounded-lg text-xs hidden shadow-xl max-w-[200px] backdrop-blur">
+                            <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-1 mb-1.5">
+                                <span class="font-bold text-indigo-400">探针分子状态</span>
+                                <button id="btn-untrack" class="text-slate-500 hover:text-slate-300">
+                                    <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                            <div class="space-y-1 text-slate-300">
+                                <div>结构: <span id="track-formula" class="font-semibold text-white">$\text{H}_2\text{CO}_3$</span></div>
+                                <div>当前状态: <span id="track-status" class="text-amber-400">结合态</span></div>
+                                <div class="text-[10px] text-slate-500 italic mt-1">观察它在水中不规律的解离和重组...</div>
+                            </div>
+                        </div>
+
+                        <div class="absolute bottom-3 right-3 bg-slate-900/90 border border-slate-800 px-2 py-1 rounded-md text-[10px] text-slate-400 pointer-events-none flex items-center gap-1">
+                            <i data-lucide="hand" class="w-3 h-3 text-amber-400 animate-bounce"></i>
+                            点击某个碳酸分子可进行“微观追踪”
+                        </div>
+                    </div>
+
+                    <!-- Beaker Stats -->
+                    <div class="p-4 bg-slate-900/40 border-t border-slate-800/50 grid grid-cols-3 gap-2 text-center">
+                        <div class="p-2 bg-slate-950/40 rounded-lg">
+                            <div class="text-[10px] text-slate-500">水中结合分子</div>
+                            <div class="text-lg font-bold text-slate-300 code-font" id="h2co3-combined">0</div>
+                        </div>
+                        <div class="p-2 bg-slate-950/40 rounded-lg">
+                            <div class="text-[10px] text-slate-500">水中游离 $\text{H}^+$</div>
+                            <div class="text-lg font-bold text-amber-400 code-font" id="h2co3-hplus">0</div>
+                        </div>
+                        <div class="p-2 bg-slate-950/40 rounded-lg">
+                            <div class="text-[10px] text-slate-500">水中电离度</div>
+                            <div class="text-lg font-bold text-indigo-400 code-font" id="h2co3-alpha">0.0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart / Analytics Section -->
+            <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+                    <div>
+                        <h3 class="font-bold text-slate-200 flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-indigo-400"></i>
+                            电离动态图表（水中游离 $\text{H}^+$ 数量）
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">当您往烧杯中滴加酸液时，在此处观察 $\text{H}^+$ 离子在落入水面后的释放速率和平衡态</p>
+                    </div>
+                    <!-- Legend -->
+                    <div class="flex items-center gap-4 text-xs">
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-0.5 bg-emerald-500 inline-block"></span>
+                            <span class="text-slate-400">盐酸 $\text{HCl}$</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="w-3 h-0.5 bg-amber-500 inline-block"></span>
+                            <span class="text-slate-400">碳酸 $\text{H}_2\text{CO}_3$</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Real-time Plotting Canvas -->
+                <div class="h-44 bg-slate-950/60 rounded-xl relative overflow-hidden border border-slate-800">
+                    <canvas id="canvas-chart" class="absolute inset-0 w-full h-full"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side Panel (Controls, Constants & Physics Info) -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+            
+            <!-- Dashboard Controls -->
+            <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col gap-5">
+                <h3 class="font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-4 h-4 text-indigo-400"></i>
+                    模拟控制参数
+                </h3>
+                
+                <!-- Dropper Size Slider -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400 font-medium">每次滴加酸分子数量</span>
+                        <span class="text-indigo-400 font-bold code-font" id="val-dropper-size">5 个</span>
+                    </div>
+                    <input type="range" id="slide-dropper-size" min="1" max="15" value="5" step="1" 
+                           class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    <p class="text-[10px] text-slate-500">控制每次点击“滴加”按钮时，注入烧杯顶部的酸分子数量。</p>
+                </div>
+
+                <!-- Ka Slider for Weak Acid -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400 font-medium">弱酸电离常数 $K_a$ 强度比</span>
+                        <span class="text-amber-400 font-bold code-font" id="val-ka">极弱 (低度)</span>
+                    </div>
+                    <input type="range" id="slide-ka" min="1" max="5" value="1" step="1" 
+                           class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500">
+                    <div class="flex justify-between text-[10px] text-slate-600">
+                        <span>极弱 (碳酸级别)</span>
+                        <span>中强 (醋酸/亚硫酸)</span>
+                    </div>
+                </div>
+
+                <!-- Temperature Slider -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-xs">
+                        <span class="text-slate-400 font-medium">溶液环境温度 (粒子动能)</span>
+                        <span class="text-red-400 font-bold code-font" id="val-temp">25 °C</span>
+                    </div>
+                    <input type="range" id="slide-temp" min="10" max="80" value="25" step="5" 
+                           class="w-full h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-red-500">
+                    <p class="text-[10px] text-slate-500">温度增加导致热运动加剧，碰撞概率变大，加速可逆解离与结合反应的转换速率。</p>
+                </div>
+            </div>
+
+            <!-- Legend & Chem Details Card -->
+            <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                <h3 class="font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center gap-2">
+                    <i data-lucide="microscope" class="w-4 h-4 text-indigo-400"></i>
+                    微观图例说明
+                </h3>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="flex items-center gap-2 p-2 bg-slate-950/40 rounded-lg border border-slate-800">
+                        <span class="w-3.5 h-3.5 rounded-full bg-red-500 border border-red-400 flex items-center justify-center text-[8px] font-bold text-white">H</span>
+                        <div>
+                            <span class="block font-semibold">$\text{H}^+$ 离子</span>
+                            <span class="text-[10px] text-slate-500">氢离子(水合)</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 bg-slate-950/40 rounded-lg border border-slate-800">
+                        <span class="w-4 h-4 rounded-full bg-emerald-600 border border-emerald-500 flex items-center justify-center text-[8px] font-bold text-white">Cl</span>
+                        <div>
+                            <span class="block font-semibold">$\text{Cl}^-$ 离子</span>
+                            <span class="text-[10px] text-slate-500">氯离子(完全游离)</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 bg-slate-950/40 rounded-lg border border-slate-800">
+                        <span class="w-5 h-5 rounded-full bg-amber-600 border border-amber-500 flex items-center justify-center text-[7px] font-bold text-white">Carb</span>
+                        <div>
+                            <span class="block font-semibold">$\text{HCO}_3^-$ 等</span>
+                            <span class="text-[10px] text-slate-500">碳酸氢根/碳酸根</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 bg-slate-950/40 rounded-lg border border-slate-800 col-span-2">
+                        <div class="relative w-8 h-5 flex items-center justify-center">
+                            <span class="absolute w-5 h-5 rounded-full bg-amber-600 border border-amber-500 opacity-80"></span>
+                            <span class="absolute top-0 left-0 w-2.5 h-2.5 rounded-full bg-red-500 border border-red-400"></span>
+                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-red-500 border border-red-400"></span>
+                        </div>
+                        <div class="ml-1">
+                            <span class="block font-semibold">$\text{H}_2\text{CO}_3$ (结合态分子)</span>
+                            <span class="text-[10px] text-slate-500">氢离子牢固贴合在碳酸根核上</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 p-2 bg-slate-950/40 rounded-lg border border-slate-800 col-span-2">
+                        <div class="relative w-8 h-4 flex items-center justify-center">
+                            <span class="w-4 h-4 rounded-full bg-emerald-600 border border-emerald-500"></span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-red-500 border border-red-400 -ml-1"></span>
+                        </div>
+                        <div class="ml-1">
+                            <span class="block font-semibold">$\text{HCl}$ 完整分子</span>
+                            <span class="text-[10px] text-slate-500">在空中或非水介质中紧密结合</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Theory Card -->
+            <div class="bg-slate-900 border border-slate-800/80 rounded-2xl p-5 shadow-xl">
+                <h3 class="font-bold text-slate-200 border-b border-slate-800 pb-3 flex items-center gap-2 mb-3">
+                    <i data-lucide="book-open" class="w-4 h-4 text-indigo-400"></i>
+                    化学原理解析
+                </h3>
+                <div class="space-y-3 text-xs text-slate-300 leading-relaxed">
+                    <p>
+                        <strong>1. 溶剂化作用与解离条件</strong><br>
+                        酸分子解离必须依靠极性溶剂（如水分子）。在空气中，分子内部共价键没有外在强电场极化，因此呈<strong>电中性的分子形态</strong>存在。进入水中后，水分子与氢离子配位成水合氢离子并提供大量的溶剂化能，从而促进断裂。
+                    </p>
+                    <p>
+                        <strong>2. 强酸的瞬时离解 ($\text{HCl}$)</strong><br>
+                        盐酸分子进入水体跨越界面的刹那间，即完成 $100\%$ 的解离。由于其高度不稳定性，绝无可能在水体中以整分子重新结合。
+                    </p>
+                    <p class="bg-slate-950/60 p-2 rounded border border-slate-800 text-center code-font text-emerald-400">
+                        $$\text{HCl} \xrightarrow{\text{H}_2\text{O}} \text{H}^+ + \text{Cl}^-$$
+                    </p>
+                    <p>
+                        <strong>3. 弱酸的可逆低度电离 ($\text{H}_2\text{CO}_3$)</strong><br>
+                        碳酸即使进入水体，极性键断开依旧极其困难。大部分分子保留着完整的化学骨架，少部分解离出的 $\text{H}^+$ 一旦在运动中重新撞击分子核，会极易被牢牢束缚复合，形成永不停歇的微观可逆平衡状态。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-900 bg-slate-950 py-4 text-center text-xs text-slate-600">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>微观动态离子流模拟系统 &bull; 双流高频弹性球体物理引擎</p>
+        </div>
+    </footer>
+
+    <!-- Simulation Implementation script -->
+    <script>
+        // Check local storage or variables
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'acid-sim-id';
+
+        // Particle System Definitions
+        const canvasHCl = document.getElementById('canvas-hcl');
+        const canvasH2CO3 = document.getElementById('canvas-h2co3');
+        const canvasChart = document.getElementById('canvas-chart');
+
+        const ctxHCl = canvasHCl.getContext('2d');
+        const ctxH2CO3 = canvasH2CO3.getContext('2d');
+        const ctxChart = canvasChart.getContext('2d');
+
+        // Physics Configurations
+        let simRunning = true;
+        let showSolvent = true;
+        let dropperSize = 5; // Number of molecules added per click
+        let kaValue = 1; // 1 to 5, increases dissociation chance
+        let temperature = 25; // Speed multiplier and recombination factor multiplier
+
+        // Cumulative totals of molecules dropped into the beaker
+        let hclAddedCount = 0;
+        let h2co3AddedCount = 0;
+
+        // Particles Storage (starts empty/pure water!)
+        let particlesHCl = [];
+        let particlesH2CO3 = [];
+        let trackedParticle = null;
+
+        // Splashes animations list
+        let splashesHCl = [];
+        let splashesH2CO3 = [];
+
+        // Chart history storage
+        let hclHistory = [];
+        let h2co3History = [];
+        const maxHistoryPoints = 120;
+
+        // Colors
+        const colors = {
+            hPlus: '#f87171',      // Red for H+
+            hPlusStroke: '#ef4444',
+            clMinus: '#10b981',    // Green for Cl-
+            clMinusStroke: '#059669',
+            carbonate: '#d97706',  // Amber for Carbonate core
+            carbonateStroke: '#b45309',
+            solvent: 'rgba(56, 189, 248, 0.04)', // Light water blue
+            waterBlue: 'rgba(14, 165, 233, 0.15)', // Liquid half container bg
+            waterSurface: '#38bdf8'
+        };
+
+        // Splash Wave ripple class
+        class WaterSplash {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 2;
+                this.maxRadius = 24;
+                this.opacity = 1.0;
+                this.active = true;
+            }
+            update() {
+                this.radius += 1.2;
+                this.opacity = 1 - (this.radius / this.maxRadius);
+                if (this.radius >= this.maxRadius) {
+                    this.active = false;
+                }
+            }
+            draw(ctx, ratio) {
+                ctx.save();
+                ctx.strokeStyle = `rgba(56, 189, 248, ${this.opacity})`;
+                ctx.lineWidth = 1.5 * ratio;
+                ctx.beginPath();
+                // Draw ripple ellipse
+                ctx.ellipse(this.x * ratio, this.y * ratio, this.radius * ratio, (this.radius * 0.3) * ratio, 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        // Resize Canvas dynamically
+        function resizeCanvases() {
+            [canvasHCl, canvasH2CO3].forEach(canvas => {
+                const rect = canvas.parentElement.getBoundingClientRect();
+                canvas.width = rect.width * window.devicePixelRatio;
+                canvas.height = rect.height * window.devicePixelRatio;
+                canvas.style.width = '100%';
+                canvas.style.height = '100%';
+            });
+
+            // Chart Canvas
+            const chartRect = canvasChart.parentElement.getBoundingClientRect();
+            canvasChart.width = chartRect.width * window.devicePixelRatio;
+            canvasChart.height = chartRect.height * window.devicePixelRatio;
+            canvasChart.style.width = '100%';
+            canvasChart.style.height = '100%';
+        }
+
+        window.addEventListener('resize', () => {
+            resizeCanvases();
+        });
+
+        // Simple Vector 2D helper
+        class Vector2D {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+            add(v) { this.x += v.x; this.y += v.y; return this; }
+            sub(v) { this.x -= v.x; this.y -= v.y; return this; }
+            mult(n) { this.x *= n; this.y *= n; return this; }
+            div(n) { this.x /= n; this.y /= n; return this; }
+            mag() { return Math.sqrt(this.x * this.x + this.y * this.y); }
+            normalize() { const m = this.mag(); if (m !== 0) this.div(m); return this; }
+            dist(v) { return Math.sqrt((this.x - v.x)**2 + (this.y - v.y)**2); }
+            copy() { return new Vector2D(this.x, this.y); }
+        }
+
+        // --- PARTICLE CLASS ---
+        class AcidParticle {
+            constructor(x, y, type, canvasWidth, canvasHeight) {
+                this.pos = new Vector2D(x, y);
+                this.vel = new Vector2D((Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2).normalize();
+                this.type = type; // 'H+', 'Cl-', 'Carbonate', 'HCl_molecule'
+                this.canvasW = canvasWidth;
+                this.canvasH = canvasHeight;
+                
+                // Water surface boundary (middle of canvas)
+                this.waterLineY = canvasHeight / 2;
+
+                // Base speed is affected by temperature
+                this.updateSpeed();
+
+                // For weak acid core state:
+                // 2: H2CO3 (fully bound, 2 H+ attached)
+                // 1: HCO3- (partially bound, 1 H+ attached)
+                // 0: CO3(2-) (fully dissociated, 0 H+ attached)
+                this.hAttached = 2; 
+
+                // Setup Radius
+                this.setRadius();
+            }
+
+            setRadius() {
+                if (this.type === 'H+') {
+                    this.radius = 7;
+                } else if (this.type === 'Cl-') {
+                    this.radius = 12;
+                } else if (this.type === 'Carbonate') {
+                    this.radius = 16;
+                } else if (this.type === 'HCl_molecule') {
+                    this.radius = 15;
+                }
+            }
+
+            updateSpeed() {
+                const inWater = this.pos.y >= this.waterLineY;
+                if (!inWater) {
+                    // Air state - fall steadily due to gravity
+                    this.vel.x = (Math.random() - 0.5) * 0.4;
+                    this.vel.y = 2.0; // falling down
+                } else {
+                    // Water state - dynamic Brownian/thermal motion
+                    const speedScale = 0.5 + (temperature / 50); 
+                    this.vel.normalize().mult(speedScale * (0.8 + Math.random() * 0.4));
+                }
+            }
+
+            update() {
+                const inWaterBefore = this.pos.y >= this.waterLineY;
+                this.pos.add(this.vel);
+
+                const inWaterAfter = this.pos.y >= this.waterLineY;
+
+                // Define padding boundaries inside beaker
+                const pad = this.radius;
+
+                // Horizontal walls
+                if (this.pos.x < pad + 10) { this.pos.x = pad + 10; this.vel.x *= -1; }
+                if (this.pos.x > this.canvasW - pad - 10) { this.pos.x = this.canvasW - pad - 10; this.vel.x *= -1; }
+
+                // Vertical constraints based on state (Air vs Water)
+                if (!inWaterAfter) {
+                    // Air zone boundary check (cannot go below beaker bottom, which doesn't apply anyway since water is in between)
+                    if (this.pos.y < pad) { this.pos.y = pad; this.vel.y *= -1; }
+                } else {
+                    // Water zone boundary check
+                    // Bottom of Beaker
+                    if (this.pos.y > this.canvasH - pad - 10) { 
+                        this.pos.y = this.canvasH - pad - 10; 
+                        this.vel.y *= -1; 
+                    }
+                    // Surface Tension Constraint: Water particles cannot escape ABOVE the water line
+                    if (inWaterBefore && this.pos.y < this.waterLineY + pad) {
+                        this.pos.y = this.waterLineY + pad;
+                        this.vel.y *= -1;
+                    }
+                }
+            }
+
+            draw(ctx, pixelRatio, isTracked = false) {
+                const r = this.radius * pixelRatio;
+                const x = this.pos.x * pixelRatio;
+                const y = this.pos.y * pixelRatio;
+
+                ctx.save();
+
+                // Highlight if tracked
+                if (isTracked) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, r + 10 * pixelRatio, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(99, 102, 241, 0.6)';
+                    ctx.lineWidth = 2 * pixelRatio;
+                    ctx.setLineDash([4 * pixelRatio, 4 * pixelRatio]);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                if (this.type === 'H+') {
+                    // Draw H+
+                    const grad = ctx.createRadialGradient(x - r/3, y - r/3, 0, x, y, r);
+                    grad.addColorStop(0, '#fca5a5');
+                    grad.addColorStop(1, colors.hPlusStroke);
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+                    ctx.lineWidth = 1 * pixelRatio;
+                    ctx.stroke();
+
+                    // Text "+"
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `bold ${8 * pixelRatio}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('+', x, y);
+
+                } else if (this.type === 'Cl-') {
+                    // Draw Cl-
+                    const grad = ctx.createRadialGradient(x - r/3, y - r/3, 0, x, y, r);
+                    grad.addColorStop(0, '#34d399');
+                    grad.addColorStop(1, colors.clMinusStroke);
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#047857';
+                    ctx.lineWidth = 1.5 * pixelRatio;
+                    ctx.stroke();
+
+                    // Text "Cl-"
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `bold ${9 * pixelRatio}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('Cl⁻', x, y);
+
+                } else if (this.type === 'HCl_molecule') {
+                    // Draw combined molecular HCl in air
+                    // Cl Sphere
+                    const clRad = 11 * pixelRatio;
+                    const gradCl = ctx.createRadialGradient(x - 2 - clRad/3, y - clRad/3, 0, x - 2, y, clRad);
+                    gradCl.addColorStop(0, '#a7f3d0');
+                    gradCl.addColorStop(1, '#059669');
+                    ctx.fillStyle = gradCl;
+                    ctx.beginPath();
+                    ctx.arc(x - 4, y, clRad, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // H sphere overlapping
+                    const hRad = 6 * pixelRatio;
+                    const hOffset = clRad * 0.7;
+                    const hX = x - 4 + hOffset;
+                    const hY = y - 3;
+                    const gradH = ctx.createRadialGradient(hX - hRad/3, hY - hRad/3, 0, hX, hY, hRad);
+                    gradH.addColorStop(0, '#fecaca');
+                    gradH.addColorStop(1, '#dc2626');
+                    ctx.fillStyle = gradH;
+                    ctx.beginPath();
+                    ctx.arc(hX, hY, hRad, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Bond linkage line visual representation
+                    ctx.strokeStyle = '#e2e8f0';
+                    ctx.lineWidth = 1 * pixelRatio;
+                    ctx.stroke();
+
+                    // Labels
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `bold ${8 * pixelRatio}px sans-serif`;
+                    ctx.fillText('HCl', x - 4, y + 2);
+
+                } else if (this.type === 'Carbonate') {
+                    // Draw Carbonate cluster core
+                    const grad = ctx.createRadialGradient(x - r/3, y - r/3, 0, x, y, r);
+                    grad.addColorStop(0, '#f59e0b');
+                    grad.addColorStop(1, colors.carbonateStroke);
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.strokeStyle = '#92400e';
+                    ctx.lineWidth = 2 * pixelRatio;
+                    ctx.stroke();
+
+                    // Draw attached Hydrogen spheres visually attached to it!
+                    const offset = r * 0.85;
+                    ctx.fillStyle = colors.hPlus;
+                    ctx.strokeStyle = '#ffffff';
+                    ctx.lineWidth = 0.5 * pixelRatio;
+
+                    if (this.hAttached >= 1) {
+                        const angle1 = 0.6; 
+                        const hx = x + Math.cos(angle1) * offset;
+                        const hy = y + Math.sin(angle1) * offset;
+                        ctx.beginPath();
+                        ctx.arc(hx, hy, 5 * pixelRatio, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                    if (this.hAttached === 2) {
+                        const angle2 = 2.5; 
+                        const hx = x + Math.cos(angle2) * offset;
+                        const hy = y + Math.sin(angle2) * offset;
+                        ctx.beginPath();
+                        ctx.arc(hx, hy, 5 * pixelRatio, 0, Math.PI * 2);
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+
+                    // Text inside Carbonate
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = `bold ${7 * pixelRatio}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    let text = "CO₃²⁻";
+                    if (this.hAttached === 2) text = "H₂CO₃";
+                    else if (this.hAttached === 1) text = "HCO₃⁻";
+                    
+                    ctx.fillText(text, x, y);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // Background Liquid half rendering and Solvent effect
+        function drawSolventAndLiquid(ctx, w, h, pixelRatio) {
+            const waterLineY = h / 2;
+
+            // Draw Liquid phase background (under waterLineY)
+            ctx.save();
+            ctx.fillStyle = colors.waterBlue;
+            ctx.fillRect(10 * pixelRatio, waterLineY, w - 20 * pixelRatio, (h / 2) - 10 * pixelRatio);
+
+            // Draw floating H2O water molecules ONLY under waterLineY
+            if (showSolvent) {
+                ctx.strokeStyle = 'rgba(14, 165, 233, 0.08)';
+                ctx.lineWidth = 1 * pixelRatio;
+                const grid = 50 * pixelRatio;
+                for (let x = grid/2; x < w - 10 * pixelRatio; x += grid) {
+                    for (let y = waterLineY + grid/2; y < h - 10 * pixelRatio; y += grid) {
+                        ctx.beginPath();
+                        ctx.moveTo(x - 6, y + 4);
+                        ctx.lineTo(x, y - 2);
+                        ctx.lineTo(x + 6, y + 4);
+                        ctx.stroke();
+                        
+                        ctx.beginPath();
+                        ctx.arc(x, y - 2, 2 * pixelRatio, 0, Math.PI * 2); // Oxygen head
+                        ctx.fillStyle = 'rgba(14, 165, 233, 0.15)';
+                        ctx.fill();
+                    }
+                }
+            }
+
+            // Draw wavy Water Surface line
+            ctx.strokeStyle = colors.waterSurface;
+            ctx.lineWidth = 2.5 * pixelRatio;
+            ctx.beginPath();
+            ctx.moveTo(10 * ratioCorrected(), waterLineY);
+            // Simple static/subtle waves
+            const waveFreq = 0.04;
+            const waveAmp = 2 * pixelRatio;
+            const steps = 60;
+            const segW = (w - 20 * pixelRatio) / steps;
+            for (let i = 0; i <= steps; i++) {
+                const waveX = (10 * pixelRatio) + i * segW;
+                // Add tiny dynamic shift over time if desired (using current date ticks)
+                const phase = Date.now() * 0.003;
+                const waveY = waterLineY + Math.sin(i * waveFreq + phase) * waveAmp;
+                ctx.lineTo(waveX, waveY);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function ratioCorrected() {
+            return window.devicePixelRatio;
+        }
+
+        // --- INCREMENTAL ADDING ---
+        function addHClMolecules(count) {
+            hclAddedCount += count;
+            const w = canvasHCl.width / window.devicePixelRatio;
+            const h = canvasHCl.height / window.devicePixelRatio;
+
+            // Spawn particles at the top of the beaker (in air zone)
+            for (let i = 0; i < count; i++) {
+                const rx = (w / 2) + (Math.random() - 0.5) * 80;
+                const ry = 15 + Math.random() * 25;
+                const p = new AcidParticle(rx, ry, 'HCl_molecule', w, h);
+                particlesHCl.push(p);
+            }
+        }
+
+        // Spawn carbonate molecules at the top of the beaker (in air zone)
+        function addH2CO3Molecules(count) {
+            h2co3AddedCount += count;
+            const w = canvasH2CO3.width / window.devicePixelRatio;
+            const h = canvasH2CO3.height / window.devicePixelRatio;
+
+            for (let i = 0; i < count; i++) {
+                const rx = (w / 2) + (Math.random() - 0.5) * 80;
+                const ry = 15 + Math.random() * 25;
+                const carb = new AcidParticle(rx, ry, 'Carbonate', w, h);
+                carb.hAttached = 2; // Starts completely bound
+                particlesH2CO3.push(carb);
+            }
+        }
+
+        // Clear beakers
+        function clearHCl() {
+            particlesHCl = [];
+            hclAddedCount = 0;
+            splashesHCl = [];
+        }
+
+        function clearH2CO3() {
+            particlesH2CO3 = [];
+            h2co3AddedCount = 0;
+            splashesH2CO3 = [];
+            trackedParticle = null;
+            document.getElementById('target-tracker').classList.add('hidden');
+        }
+
+        // --- ENGINES ---
+
+        // HCl Process: Air falling + Splash + Immediate Dissociation upon hitting waterLineY
+        function processHClParticles() {
+            const w = canvasHCl.width / window.devicePixelRatio;
+            const h = canvasHCl.height / window.devicePixelRatio;
+            const waterLineY = h / 2;
+
+            let nextParticles = [];
+
+            particlesHCl.forEach(p => {
+                const isAir = p.pos.y < waterLineY;
+                
+                if (simRunning) p.update();
+
+                if (isAir && p.pos.y >= waterLineY) {
+                    // CROSSED water surface! Trigger splash & instant complete dissociation
+                    splashesHCl.push(new WaterSplash(p.pos.x, waterLineY));
+
+                    // Dissociate into separate H+ and Cl-
+                    const hPart = new AcidParticle(p.pos.x - 4, waterLineY + 10, 'H+', w, h);
+                    const clPart = new AcidParticle(p.pos.x + 4, waterLineY + 10, 'Cl-', w, h);
+
+                    // Add slight lateral splash explosion velocities
+                    hPart.vel = new Vector2D(-1 - Math.random(), 1 + Math.random()).normalize();
+                    clPart.vel = new Vector2D(1 + Math.random(), 1 + Math.random()).normalize();
+
+                    nextParticles.push(hPart);
+                    nextParticles.push(clPart);
+                } else {
+                    nextParticles.push(p);
+                }
+            });
+
+            particlesHCl = nextParticles;
+        }
+
+        // H2CO3 Process: Air falling + Splash + Dynamic Equilibrium ONLY inside water
+        function processH2CO3Particles() {
+            const w = canvasH2CO3.width / window.devicePixelRatio;
+            const h = canvasH2CO3.height / window.devicePixelRatio;
+            const waterLineY = h / 2;
+
+            let nextParticles = [];
+
+            // 1. Detect entering water & adjust movement state
+            particlesH2CO3.forEach(p => {
+                const wasAir = p.pos.y < waterLineY;
+                
+                if (simRunning) {
+                    p.update();
+                    // Update physics speed state once transition occurs
+                    const isNowWater = p.pos.y >= waterLineY;
+                    if (wasAir && isNowWater) {
+                        splashesH2CO3.push(new WaterSplash(p.pos.x, waterLineY));
+                        p.updateSpeed(); // shifts from falling to Brownian thermal motion
+                    }
+                }
+                nextParticles.push(p);
+            });
+
+            particlesH2CO3 = nextParticles;
+
+            if (!simRunning) return;
+
+            // 2. Perform Equilibrium on those already in the water
+            // Equilibrium Constants (K_a) Scale
+            const dissociationProb1 = 0.001 * kaValue * (1 + temperature/100); 
+            const dissociationProb2 = 0.0001 * kaValue * (1 + temperature/100); 
+            const recombinationDist = 28; 
+            const recombinationProb = 0.15 * (1 + temperature / 100);
+
+            let freeHPlusList = particlesH2CO3.filter(p => p.type === 'H+' && p.pos.y >= waterLineY);
+            let carbonateList = particlesH2CO3.filter(p => p.type === 'Carbonate' && p.pos.y >= waterLineY);
+
+            // Dissociation Phase (only in water)
+            carbonateList.forEach(carb => {
+                if (carb.hAttached === 2) {
+                    if (Math.random() < dissociationProb1) {
+                        carb.hAttached = 1;
+                        const releaseAngle = Math.random() * Math.PI * 2;
+                        const hX = carb.pos.x + Math.cos(releaseAngle) * 22;
+                        // Keep new H+ locked within water boundaries
+                        const hY = Math.max(waterLineY + 10, carb.pos.y + Math.sin(releaseAngle) * 22);
+                        const newH = new AcidParticle(hX, hY, 'H+', w, h);
+                        newH.vel = new Vector2D(Math.cos(releaseAngle), Math.sin(releaseAngle)).mult(1.2);
+                        particlesH2CO3.push(newH);
+                    }
+                } else if (carb.hAttached === 1) {
+                    if (Math.random() < dissociationProb2) {
+                        carb.hAttached = 0;
+                        const releaseAngle = Math.random() * Math.PI * 2;
+                        const hX = carb.pos.x + Math.cos(releaseAngle) * 22;
+                        const hY = Math.max(waterLineY + 10, carb.pos.y + Math.sin(releaseAngle) * 22);
+                        const newH = new AcidParticle(hX, hY, 'H+', w, h);
+                        newH.vel = new Vector2D(Math.cos(releaseAngle), Math.sin(releaseAngle)).mult(1.2);
+                        particlesH2CO3.push(newH);
+                    }
+                }
+            });
+
+            // Recombination Phase (only in water)
+            freeHPlusList = particlesH2CO3.filter(p => p.type === 'H+' && p.pos.y >= waterLineY);
+            let hToRemove = new Set();
+
+            freeHPlusList.forEach(h => {
+                let sortedCarbs = carbonateList
+                    .filter(c => c.hAttached < 2)
+                    .map(c => ({ carb: c, dist: h.pos.dist(c.pos) }))
+                    .sort((a, b) => a.dist - b.dist);
+
+                if (sortedCarbs.length > 0) {
+                    const closest = sortedCarbs[0];
+                    if (closest.dist < recombinationDist) {
+                        if (Math.random() < recombinationProb) {
+                            closest.carb.hAttached += 1;
+                            hToRemove.add(h);
+                        }
+                    }
+                }
+            });
+
+            if (hToRemove.size > 0) {
+                particlesH2CO3 = particlesH2CO3.filter(p => !hToRemove.has(p));
+            }
+        }
+
+        // Particle Collisions (applied globally)
+        function handleParticleCollisions(particles) {
+            for (let i = 0; i < particles.length; i++) {
+                for (let j = i + 1; j < particles.length; j++) {
+                    let p1 = particles[i];
+                    let p2 = particles[j];
+
+                    let dist = p1.pos.dist(p2.pos);
+                    let minDist = p1.radius + p2.radius;
+
+                    if (dist < minDist) {
+                        let normal = p2.pos.copy().sub(p1.pos).normalize();
+                        
+                        let overlap = minDist - dist;
+                        p1.pos.sub(normal.copy().mult(overlap / 2));
+                        p2.pos.add(normal.copy().mult(overlap / 2));
+
+                        let relVel = p2.vel.copy().sub(p1.vel);
+                        let velAlongNormal = relVel.x * normal.x + relVel.y * normal.y;
+
+                        if (velAlongNormal < 0) {
+                            let m1 = p1.radius * p1.radius;
+                            let m2 = p2.radius * p2.radius;
+
+                            let impulseMag = -(1 + 0.8) * velAlongNormal / (1/m1 + 1/m2);
+                            let impulse = normal.mult(impulseMag);
+
+                            p1.vel.sub(impulse.copy().div(m1));
+                            p2.vel.add(impulse.copy().div(m2));
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- DRAW BOTH CANVASES ---
+        function drawHClBeaker() {
+            const w = canvasHCl.width;
+            const h = canvasHCl.height;
+            const ratio = window.devicePixelRatio;
+
+            ctxHCl.clearRect(0, 0, w, h);
+            drawSolventAndLiquid(ctxHCl, w, h, ratio);
+
+            // Draw Beaker Wall outlines
+            ctxHCl.strokeStyle = '#475569';
+            ctxHCl.lineWidth = 4 * ratio;
+            ctxHCl.beginPath();
+            ctxHCl.moveTo(10 * ratio, 10 * ratio);
+            ctxHCl.lineTo(10 * ratio, h - 10 * ratio);
+            ctxHCl.lineTo(w - 10 * ratio, h - 10 * ratio);
+            ctxHCl.lineTo(w - 10 * ratio, 10 * ratio);
+            ctxHCl.stroke();
+
+            // Process Air/Water physics
+            processHClParticles();
+
+            // Draw Ripples
+            splashesHCl.forEach(splash => {
+                if (simRunning) splash.update();
+                splash.draw(ctxHCl, ratio);
+            });
+            splashesHCl = splashesHCl.filter(s => s.active);
+
+            // Draw particles
+            particlesHCl.forEach(p => {
+                p.draw(ctxHCl, ratio);
+            });
+            handleParticleCollisions(particlesHCl);
+        }
+
+        function drawH2CO3Beaker() {
+            const w = canvasH2CO3.width;
+            const h = canvasH2CO3.height;
+            const ratio = window.devicePixelRatio;
+
+            ctxH2CO3.clearRect(0, 0, w, h);
+            drawSolventAndLiquid(ctxH2CO3, w, h, ratio);
+
+            // Draw Beaker Wall outlines
+            ctxH2CO3.strokeStyle = '#475569';
+            ctxH2CO3.lineWidth = 4 * ratio;
+            ctxH2CO3.beginPath();
+            ctxH2CO3.moveTo(10 * ratio, 10 * ratio);
+            ctxH2CO3.lineTo(10 * ratio, h - 10 * ratio);
+            ctxH2CO3.lineTo(w - 10 * ratio, h - 10 * ratio);
+            ctxH2CO3.lineTo(w - 10 * ratio, 10 * ratio);
+            ctxH2CO3.stroke();
+
+            // Process Air/Water physics + Equilibrium
+            processH2CO3Particles();
+
+            // Draw Ripples
+            splashesH2CO3.forEach(splash => {
+                if (simRunning) splash.update();
+                splash.draw(ctxH2CO3, ratio);
+            });
+            splashesH2CO3 = splashesH2CO3.filter(s => s.active);
+
+            // Draw particles
+            particlesH2CO3.forEach(p => {
+                const isThisTracked = (p === trackedParticle);
+                p.draw(ctxH2CO3, ratio, isThisTracked);
+            });
+            handleParticleCollisions(particlesH2CO3);
+
+            // Update tracker panel info
+            if (trackedParticle) {
+                const trLabel = document.getElementById('track-formula');
+                const trStatus = document.getElementById('track-status');
+
+                if (trackedParticle.hAttached === 2) {
+                    trLabel.innerHTML = 'H₂CO₃';
+                    trStatus.innerHTML = '<span class="text-amber-500 font-bold">完整结合态</span>';
+                } else if (trackedParticle.hAttached === 1) {
+                    trLabel.innerHTML = 'HCO₃⁻';
+                    trStatus.innerHTML = '<span class="text-indigo-400 font-bold">一级电离态</span>';
+                } else {
+                    trLabel.innerHTML = 'CO₃²⁻';
+                    trStatus.innerHTML = '<span class="text-rose-500 font-bold">二级电离态 (游离)</span>';
+                }
+            }
+        }
+
+        // --- REALTIME ANALYTICAL CHART ---
+        function updateChartHistory() {
+            if (!simRunning) return;
+
+            // Strictly count H+ ions currently in the liquid phase
+            const hclHCount = particlesHCl.filter(p => p.type === 'H+').length;
+            const h2co3HCount = particlesH2CO3.filter(p => p.type === 'H+').length;
+
+            hclHistory.push(hclHCount);
+            h2co3History.push(h2co3HCount);
+
+            if (hclHistory.length > maxHistoryPoints) hclHistory.shift();
+            if (h2co3History.length > maxHistoryPoints) h2co3History.shift();
+        }
+
+        function drawChart() {
+            const w = canvasChart.width;
+            const h = canvasChart.height;
+            const ratio = window.devicePixelRatio;
+
+            ctxChart.clearRect(0, 0, w, h);
+
+            // Draw grid lines
+            ctxChart.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+            ctxChart.lineWidth = 1 * ratio;
+            for (let i = 1; i <= 3; i++) {
+                const yLine = (h / 4) * i;
+                ctxChart.beginPath();
+                ctxChart.moveTo(0, yLine);
+                ctxChart.lineTo(w, yLine);
+                ctxChart.stroke();
+            }
+
+            if (hclHistory.length === 0) return;
+
+            // Maximum scaling limit for y-axis
+            const maxVal = Math.max(40, hclAddedCount * 1.2, h2co3AddedCount * 1.2);
+
+            // Draw HCl History line (Emerald)
+            ctxChart.strokeStyle = '#10b981';
+            ctxChart.lineWidth = 2.5 * ratio;
+            ctxChart.beginPath();
+            for (let i = 0; i < hclHistory.length; i++) {
+                const x = (w / (maxHistoryPoints - 1)) * i;
+                const y = h - (hclHistory[i] / maxVal) * (h - 20 * ratio) - 10 * ratio;
+                if (i === 0) ctxChart.moveTo(x, y);
+                else ctxChart.lineTo(x, y);
+            }
+            ctxChart.stroke();
+
+            // Draw H2CO3 History line (Amber)
+            ctxChart.strokeStyle = '#f59e0b';
+            ctxChart.lineWidth = 2.5 * ratio;
+            ctxChart.beginPath();
+            for (let i = 0; i < h2co3History.length; i++) {
+                const x = (w / (maxHistoryPoints - 1)) * i;
+                const y = h - (h2co3History[i] / maxVal) * (h - 20 * ratio) - 10 * ratio;
+                if (i === 0) ctxChart.moveTo(x, y);
+                else ctxChart.lineTo(x, y);
+            }
+            ctxChart.stroke();
+        }
+
+        // --- CALCULATE pH VALUE FOR LIQUID ---
+        function calculatepH(freeHPlusCount, totalMoleculesAdded) {
+            if (freeHPlusCount === 0 || totalMoleculesAdded === 0) {
+                return 7.00; // Pure Water
+            }
+            // Logarithmic mapping scale representing acidity inside the beaker's liquid phase
+            const volumeFactor = 0.04; 
+            const simulatedMolarity = freeHPlusCount * volumeFactor;
+            const ph = -Math.log10(simulatedMolarity);
+            // pH ranges between 1.00 and 7.00
+            return Math.max(1.00, Math.min(7.00, ph + 3.0)).toFixed(2);
+        }
+
+        // --- STATS UPDATE PANEL ---
+        function updateStatsUI() {
+            // 修正变量声明，使用合法的变量名称 halfHeight
+            const halfHeight = (canvasHCl.height / window.devicePixelRatio) / 2;
+
+            // Update HCl panel values
+            const hclHCount = particlesHCl.filter(p => p.type === 'H+').length;
+            document.getElementById('hcl-initial').innerText = hclAddedCount;
+            document.getElementById('hcl-hplus').innerText = hclHCount;
+            
+            const hclPhVal = calculatepH(hclHCount, hclAddedCount);
+            document.getElementById('hcl-ph').innerText = hclPhVal;
+            
+            // Calculate HCl ionization degree (Only molecules that have actually hit the water)
+            document.getElementById('hcl-alpha-display').innerText = hclAddedCount > 0 ? '100.0%' : '0.0%';
+
+            // Update H2CO3 panel values
+            const h2co3HCount = particlesH2CO3.filter(p => p.type === 'H+').length;
+            const h2co3CombinedCount = particlesH2CO3.filter(p => p.type === 'Carbonate' && p.hAttached === 2 && p.pos.y >= halfHeight).length;
+            
+            // Formula for alpha = (free H+) / (2 * total added in water)
+            // Active weak molecules in the liquid zone:
+            const totalH2CO3InWater = particlesH2CO3.filter(p => p.type === 'Carbonate' && p.pos.y >= halfHeight).length;
+            
+            const alphaVal = totalH2CO3InWater > 0 ? ((h2co3HCount / (totalH2CO3InWater * 2)) * 100).toFixed(1) : '0.0';
+            const h2co3PhVal = calculatepH(h2co3HCount, totalH2CO3InWater);
+
+            document.getElementById('h2co3-combined').innerText = h2co3CombinedCount;
+            document.getElementById('h2co3-hplus').innerText = h2co3HCount;
+            document.getElementById('h2co3-alpha').innerText = `${alphaVal}%`;
+            document.getElementById('h2co3-ph').innerText = h2co3PhVal;
+        }
+
+        // --- GLOBAL SIMULATION MAIN TICK ---
+        let lastTime = 0;
+        let accumStats = 0;
+
+        // Draw and update simulation frames
+        function mainLoop(timestamp) {
+            drawHClBeaker();
+            drawH2CO3Beaker();
+
+            // Periodic data collection for analytics chart & UI stats
+            accumStats += (timestamp - lastTime);
+            if (accumStats > 200) { // update 5 times per sec
+                updateChartHistory();
+                updateStatsUI();
+                accumStats = 0;
+            }
+
+            drawChart();
+
+            lastTime = timestamp;
+            requestAnimationFrame(mainLoop);
+        }
+
+        // --- INTERACTIVE FEATURES & EVENT LISTENERS ---
+
+        // Play/Pause
+        document.getElementById('btn-play').addEventListener('click', () => {
+            simRunning = !simRunning;
+            const icon = document.getElementById('play-icon');
+            const txt = document.getElementById('play-text');
+            if (simRunning) {
+                icon.setAttribute('data-lucide', 'pause');
+                txt.innerText = '暂停';
+            } else {
+                icon.setAttribute('data-lucide', 'play');
+                txt.innerText = '开始';
+            }
+            lucide.createIcons(); // reload icons
+        });
+
+        // Reset All
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            clearHCl();
+            clearH2CO3();
+            hclHistory = [];
+            h2co3History = [];
+        });
+
+        // Show Solvent Checkbox
+        document.getElementById('chk-solvent').addEventListener('change', (e) => {
+            showSolvent = e.target.checked;
+        });
+
+        // Add HCl Dropper Event
+        document.getElementById('btn-add-hcl').addEventListener('click', () => {
+            addHClMolecules(dropperSize);
+        });
+
+        // Clear HCl Beaker
+        document.getElementById('btn-clear-hcl').addEventListener('click', () => {
+            clearHCl();
+        });
+
+        // Add H2CO3 Dropper Event
+        document.getElementById('btn-add-h2co3').addEventListener('click', () => {
+            addH2CO3Molecules(dropperSize);
+        });
+
+        // Clear H2CO3 Beaker
+        document.getElementById('btn-clear-h2co3').addEventListener('click', () => {
+            clearH2CO3();
+        });
+
+        // Slider: Dropper Size
+        const slideDropper = document.getElementById('slide-dropper-size');
+        slideDropper.addEventListener('input', (e) => {
+            dropperSize = parseInt(e.target.value);
+            document.getElementById('val-dropper-size').innerText = `${dropperSize} 个`;
+        });
+
+        // Slider: Ka Strength ratio
+        const slideKa = document.getElementById('slide-ka');
+        slideKa.addEventListener('input', (e) => {
+            kaValue = parseInt(e.target.value);
+            const label = document.getElementById('val-ka');
+            if (kaValue === 1) label.innerText = '极弱 (碳酸级)';
+            else if (kaValue === 2) label.innerText = '较弱 (亚硫酸级)';
+            else if (kaValue === 3) label.innerText = '中等 (醋酸级)';
+            else if (kaValue === 4) label.innerText = '中偏强 (磷酸一级)';
+            else if (kaValue === 5) label.innerText = '强亚弱 (亚硝酸级)';
+        });
+
+        // Slider: Temperature
+        const slideTemp = document.getElementById('slide-temp');
+        slideTemp.addEventListener('input', (e) => {
+            temperature = parseInt(e.target.value);
+            document.getElementById('val-temp').innerText = `${temperature} °C`;
+            particlesHCl.forEach(p => p.updateSpeed());
+            particlesH2CO3.forEach(p => p.updateSpeed());
+        });
+
+        // Canvas Interaction: Tap tracker for H2CO3 Beaker
+        canvasH2CO3.addEventListener('mousedown', (e) => {
+            const rect = canvasH2CO3.getBoundingClientRect();
+            const tapX = e.clientX - rect.left;
+            const tapY = e.clientY - rect.top;
+
+            // Find clicked Carbonate particle
+            let clicked = null;
+            let minDist = 25; 
+            particlesH2CO3.forEach(p => {
+                if (p.type === 'Carbonate') {
+                    const d = p.pos.dist(new Vector2D(tapX, tapY));
+                    if (d < minDist) {
+                        minDist = d;
+                        clicked = p;
+                    }
+                }
+            });
+
+            if (clicked) {
+                trackedParticle = clicked;
+                document.getElementById('target-tracker').classList.remove('hidden');
+            }
+        });
+
+        // Close Tracker
+        document.getElementById('btn-untrack').addEventListener('click', () => {
+            trackedParticle = null;
+            document.getElementById('target-tracker').classList.add('hidden');
+        });
+
+        // Canvas Interaction: Tap to shockwave/add perturbation particle in HCl
+        canvasHCl.addEventListener('mousedown', (e) => {
+            if (particlesHCl.length === 0) return;
+            const rect = canvasHCl.getBoundingClientRect();
+            const tapX = e.clientX - rect.left;
+            const tapY = e.clientY - rect.top;
+
+            const w = canvasHCl.width / window.devicePixelRatio;
+            const h = canvasHCl.height / window.devicePixelRatio;
+
+            // Only perturb if tap is below water line
+            if (tapY < h / 2) return;
+
+            for (let i = 0; i < 4; i++) {
+                const angle = (Math.PI / 2) * i;
+                const shock = new AcidParticle(tapX, tapY, 'H+', w, h);
+                shock.vel = new Vector2D(Math.cos(angle), Math.sin(angle)).mult(4);
+                particlesHCl.push(shock);
+            }
+            // Clean up temporary ions
+            setTimeout(() => {
+                particlesHCl = particlesHCl.slice(0, hclAddedCount * 2);
+            }, 3000);
+        });
+
+        // --- SYSTEM INITIALIZATION ON LOAD ---
+        window.onload = function() {
+            // 安全进行 KaTeX 数学公式渲染
+            if (typeof renderMathInElement === 'function') {
+                renderMathInElement(document.body, {
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ]
+                });
+            }
+
+            lucide.createIcons();
+            resizeCanvases();
+            
+            // Set initial state for start button
+            const icon = document.getElementById('play-icon');
+            icon.setAttribute('data-lucide', 'pause');
+            document.getElementById('play-text').innerText = '暂停';
+            lucide.createIcons();
+
+            // Clear to Pure Water
+            clearHCl();
+            clearH2CO3();
+
+            // Fire main loop
+            requestAnimationFrame(mainLoop);
+        };
+    </script>
+</body>
+</html>

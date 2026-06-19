@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metabolic Reactions: Exothermic & Endothermic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #f0fdf4; /* Light green tint for health theme */
+            touch-action: pan-y; /* Prevent scrolling when dragging on canvas */
+        }
+        #energyCanvas {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen p-4 md:p-8 font-sans text-slate-800">
+
+    <div class="max-w-5xl w-full flex flex-col items-center">
+        <div class="text-center mb-6">
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight mb-2">Metabolism Physics</h1>
+            <p class="text-slate-500">Explore how your body uses energy through Endothermic (Eating) and Exothermic (Exercise) reactions.</p>
+        </div>
+
+        <!-- Main Interactive Canvas -->
+        <canvas id="energyCanvas" width="960" height="480"></canvas>
+        
+        <!-- Status Text -->
+        <div class="status-text text-lg font-medium text-slate-700 bg-white px-6 py-3 rounded-full shadow-sm mt-6 mb-6 border border-slate-200" id="statusMsg">
+            Ready. Click buttons or Drag the Beef to start:
+        </div>
+        
+        <!-- Controls -->
+        <div class="controls flex flex-wrap gap-4 justify-center">
+            <button id="btn-exercise" class="flex items-center gap-2 px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-lg shadow-md transition-transform active:scale-95">
+                🏃‍♂️ Start Exercise (Fat Loss)
+            </button>
+            <button id="btn-reset" class="flex items-center gap-2 px-6 py-3 bg-slate-500 hover:bg-slate-600 text-white font-bold rounded-lg shadow-md transition-transform active:scale-95">
+                🔄 Reset Body
+            </button>
+        </div>
+    </div>
+
+<script>
+    const canvas = document.getElementById('energyCanvas');
+    const ctx = canvas.getContext('2d');
+    const statusMsg = document.getElementById('statusMsg');
+
+    let state = 'idle'; // 'idle', 'exercising', 'eating'
+    let lastAction = 'none';
+    let progress = 0;
+    let animationId;
+
+    let currentFat = 1.0;
+    let targetFat = 1.0;
+    let startFat = 1.0;
+
+    let currentMuscle = 0.0;
+    let targetMuscle = 0.0;
+    let startMuscle = 0.0;
+
+    let currentScale = 1.0;
+    let targetScale = 1.0;
+    let startScale = 1.0;
+
+    // Draggable Beef Interaction State
+    const initBeefX = 120;
+    const initBeefY = 380;
+    let beef = {
+        x: initBeefX,
+        y: initBeefY,
+        isDragging: false,
+        visible: true
+    };
+
+    // Layout parameters
+    const boyX = 240;
+    const boyY = 264;
+    
+    // Chart Layout
+    const chartX = 550;
+    const chartY = 380;
+    const chartWidth = 350;
+    const chartHeight = 250;
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        drawChartAxes();
+
+        // Target highlight when dragging beef
+        if (beef.isDragging) {
+            const currentFinalScale = 1.5 * currentScale;
+            const mouthX = boyX;
+            const mouthY = boyY - 110 * currentFinalScale;
+            
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(mouthX, mouthY, 45, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#10b981';
+            ctx.setLineDash([5, 5]);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        if (state === 'idle') {
+            drawAnimeBoy(0, 'idle');
+        } else if (state === 'exercising') {
+            drawAnimeBoy(progress, 'exercise');
+            drawExothermicChart(progress);
+        } else if (state === 'eating') {
+            drawAnimeBoy(progress, 'eat');
+            drawEndothermicChart(progress);
+        }
+
+        drawDraggableBeef();
+    }
+
+    function drawGrid() {
+        ctx.strokeStyle = '#f1f5f9';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width; i += 40) {
+            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+        }
+        for (let i = 0; i < canvas.height; i += 40) {
+            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+        }
+    }
+
+    function drawChartAxes() {
+        ctx.save();
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 2;
+        ctx.font = '14px sans-serif';
+        ctx.fillStyle = '#475569';
+
+        // Y Axis (Energy)
+        ctx.beginPath();
+        ctx.moveTo(chartX, chartY + 20);
+        ctx.lineTo(chartX, chartY - chartHeight);
+        ctx.stroke();
+        // Y Arrow
+        ctx.beginPath(); ctx.moveTo(chartX - 5, chartY - chartHeight + 10); ctx.lineTo(chartX, chartY - chartHeight); ctx.lineTo(chartX + 5, chartY - chartHeight + 10); ctx.fill();
+        ctx.fillText("Energy (Enthalpy)", chartX - 20, chartY - chartHeight - 10);
+
+        // X Axis (Reaction Progress)
+        ctx.beginPath();
+        ctx.moveTo(chartX - 20, chartY);
+        ctx.lineTo(chartX + chartWidth, chartY);
+        ctx.stroke();
+        // X Arrow
+        ctx.beginPath(); ctx.moveTo(chartX + chartWidth - 10, chartY - 5); ctx.lineTo(chartX + chartWidth, chartY); ctx.lineTo(chartX + chartWidth - 10, chartY + 5); ctx.fill();
+        ctx.fillText("Reaction Progress", chartX + chartWidth - 110, chartY + 25);
+        
+        ctx.restore();
+    }
+
+    function drawExothermicChart(prog) {
+        ctx.save();
+        const startY = chartY - 180; // High energy reactants (Fat)
+        const peakY = chartY - 220;  // Activation energy
+        const endY = chartY - 60;    // Low energy products (CO2, H2O)
+        
+        ctx.strokeStyle = '#ef4444'; // Red for exothermic
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        
+        // Draw the curve up to the current progress
+        for(let i = 0; i <= prog; i += 0.01) {
+            const x = chartX + (i * (chartWidth - 50));
+            // Bezier-like curve math for activation peak
+            let y;
+            if (i < 0.3) {
+                y = startY; // Flat start
+            } else if (i < 0.5) {
+                const t = (i - 0.3) / 0.2;
+                y = startY - Math.sin(t * Math.PI / 2) * (startY - peakY); // Go up to peak
+            } else if (i < 0.8) {
+                const t = (i - 0.5) / 0.3;
+                y = peakY + (1 - Math.cos(t * Math.PI)) / 2 * (endY - peakY); // Drop down
+            } else {
+                y = endY; // Flat end
+            }
+            
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Labels
+        ctx.fillStyle = '#334155';
+        ctx.font = 'bold 12px sans-serif';
+        if (prog > 0.1) ctx.fillText("Reactants (Fat + O₂)", chartX + 10, startY - 10);
+        if (prog > 0.9) {
+            ctx.fillText("Products", chartX + 220, endY - 10);
+            
+            // Energy Released Arrow
+            ctx.strokeStyle = '#ef4444';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.moveTo(chartX + 260, startY); ctx.lineTo(chartX + 260, endY); ctx.stroke();
+            
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath(); ctx.moveTo(chartX + 255, endY - 10); ctx.lineTo(chartX + 260, endY); ctx.lineTo(chartX + 265, endY - 10); ctx.fill();
+            
+            ctx.font = 'bold 16px sans-serif'; ctx.fillText('Exothermic', chartX + 160, startY + (endY-startY)/2);
+            ctx.font = '14px sans-serif'; ctx.fillText('(Heat Released)', chartX + 155, startY + (endY-startY)/2 + 18);
+        }
+        ctx.restore();
+    }
+
+    function drawEndothermicChart(prog) {
+        ctx.save();
+        const startY = chartY - 60;  // Low energy reactants (Amino Acids)
+        const peakY = chartY - 220;  // Activation energy
+        const endY = chartY - 180;   // High energy products (Muscle)
+        
+        ctx.strokeStyle = '#10b981'; // Green for endothermic
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        
+        // Draw the curve up to the current progress
+        for(let i = 0; i <= prog; i += 0.01) {
+            const x = chartX + (i * (chartWidth - 50));
+            let y;
+            if (i < 0.3) {
+                y = startY; 
+            } else if (i < 0.7) {
+                const t = (i - 0.3) / 0.4;
+                y = startY - Math.sin(t * Math.PI) * (startY - peakY) - t*(startY - endY); 
+            } else {
+                y = endY; 
+            }
+            
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Labels
+        ctx.fillStyle = '#334155';
+        ctx.font = 'bold 12px sans-serif';
+        if (prog > 0.1) ctx.fillText("Reactants (Amino Acids)", chartX + 10, startY + 20);
+        if (prog > 0.9) {
+            ctx.fillText("Products (Muscle)", chartX + 220, endY - 10);
+            
+            // Energy Absorbed Arrow
+            ctx.strokeStyle = '#10b981';
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath(); ctx.moveTo(chartX + 260, startY); ctx.lineTo(chartX + 260, endY); ctx.stroke();
+            
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath(); ctx.moveTo(chartX + 255, endY + 10); ctx.lineTo(chartX + 260, endY); ctx.lineTo(chartX + 265, endY + 10); ctx.fill();
+            
+            ctx.font = 'bold 16px sans-serif'; ctx.fillText('Endothermic', chartX + 160, endY + (startY-endY)/2);
+            ctx.font = '14px sans-serif'; ctx.fillText('(Heat Absorbed)', chartX + 155, endY + (startY-endY)/2 + 18);
+        }
+        ctx.restore();
+    }
+
+    function drawAnimeBoy(prog, action) {
+        ctx.save();
+        const finalScale = 1.5 * currentScale;
+        ctx.translate(boyX, boyY);
+        ctx.scale(finalScale, finalScale);
+
+        // Body properties
+        const isExercising = action === 'exercise';
+        const bounce = isExercising ? Math.abs(Math.sin(prog * Math.PI * 8)) * 10 : 0;
+        
+        ctx.translate(0, -bounce); // Apply jumping motion for exercise
+
+        // Draw Fat Belly (Exothermic material)
+        if (currentFat > 0) {
+            ctx.fillStyle = '#fde047'; // Yellow fat
+            ctx.beginPath();
+            ctx.ellipse(0, -35, 25 + (currentFat * 35), 30 + (currentFat * 25), 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#ca8a04';
+            ctx.stroke();
+            
+            // "Fat" label
+            ctx.fillStyle = '#854d0e';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            if (currentFat > 0.3) ctx.fillText('Stored Fat', 0, -30);
+        } else {
+            // Skinny body if no fat
+            ctx.fillStyle = '#fed7aa';
+            ctx.fillRect(-15, -60, 30, 50);
+        }
+
+        // Draw Muscles (Endothermic product)
+        if (currentMuscle > 0) {
+            ctx.fillStyle = '#fca5a5'; // Reddish muscle
+            const mSize = currentMuscle * 15;
+            // Left Bicep
+            ctx.beginPath(); ctx.ellipse(-25 - mSize/2, -60, 10 + mSize, 15 + mSize, Math.PI/4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            // Right Bicep
+            ctx.beginPath(); ctx.ellipse(25 + mSize/2, -60, 10 + mSize, 15 + mSize, -Math.PI/4, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        }
+
+        // Legs
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        if (isExercising) {
+            // Running/jumping legs
+            ctx.beginPath(); ctx.moveTo(-10, -5); ctx.lineTo(-15 - Math.sin(prog * Math.PI * 8)*10, 30); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(10, -5); ctx.lineTo(15 + Math.sin(prog * Math.PI * 8)*10, 30); ctx.stroke();
+        } else {
+            // Standing legs
+            ctx.beginPath(); ctx.moveTo(-10, -5); ctx.lineTo(-10, 30); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(10, -5); ctx.lineTo(10, 30); ctx.stroke();
+        }
+
+        // Arms
+        if (action === 'eat' && prog > 0.1 && prog < 0.8) {
+            // Arm bringing food to mouth
+            ctx.beginPath(); ctx.moveTo(20, -60); ctx.lineTo(40, -80); ctx.lineTo(10, -100); ctx.stroke();
+            // Tiny beef piece in hand
+            ctx.fillStyle = '#78350f'; ctx.fillRect(5, -105, 10, 10);
+        } else if (isExercising) {
+            // Pumping arms
+            ctx.beginPath(); ctx.moveTo(-20, -60); ctx.lineTo(-30 - Math.cos(prog * Math.PI * 8)*15, -40); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(20, -60); ctx.lineTo(30 + Math.cos(prog * Math.PI * 8)*15, -40); ctx.stroke();
+        } else {
+            // Relaxed arms
+            ctx.beginPath(); ctx.moveTo(-20, -60); ctx.lineTo(-25, -20); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(20, -60); ctx.lineTo(25, -20); ctx.stroke();
+        }
+
+        // Head
+        ctx.fillStyle = '#fed7aa';
+        ctx.beginPath();
+        ctx.arc(0, -95, 25, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Face details
+        ctx.fillStyle = '#000';
+        // Eyes
+        if (isExercising) {
+            // Struggling/Determined eyes
+            ctx.beginPath(); ctx.moveTo(-12, -100); ctx.lineTo(-5, -95); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(12, -100); ctx.lineTo(5, -95); ctx.stroke();
+        } else {
+            // Normal eyes
+            ctx.beginPath(); ctx.arc(-10, -100, 3, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(10, -100, 3, 0, Math.PI*2); ctx.fill();
+        }
+
+        // Mouth
+        if ((action === 'eat' && prog > 0.2 && prog < 0.7) || beef.isDragging) {
+            // Open mouth
+            ctx.beginPath(); ctx.arc(0, -88, 8, 0, Math.PI * 2); ctx.fill();
+        } else if (isExercising) {
+            // Panting
+            ctx.beginPath(); ctx.ellipse(0, -88, 6, 4, 0, 0, Math.PI*2); ctx.fill();
+        } else {
+            // Smile
+            ctx.beginPath(); ctx.arc(0, -90, 8, 0.1, Math.PI - 0.1); ctx.stroke();
+        }
+        
+        ctx.restore();
+    }
+
+    function drawDraggableBeef() {
+        if (!beef.visible) return;
+        
+        // Draw Plate
+        ctx.save();
+        ctx.fillStyle = '#cbd5e1'; 
+        ctx.beginPath(); ctx.ellipse(initBeefX, initBeefY + 12, 45, 15, 0, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#64748b'; 
+        ctx.font = 'bold 12px sans-serif'; ctx.textAlign='center'; ctx.fillText('Drag to Mouth', initBeefX, initBeefY + 40);
+        ctx.restore();
+
+        // Draw Beef
+        ctx.save();
+        ctx.translate(beef.x, beef.y);
+        if (beef.isDragging) {
+            ctx.scale(1.2, 1.2); // 拖拽时稍微放大
+            ctx.shadowColor = 'rgba(0,0,0,0.4)';
+            ctx.shadowBlur = 12;
+            ctx.shadowOffsetY = 6;
+        }
+        ctx.fillStyle = '#78350f';
+        ctx.fillRect(-22, -15, 44, 30);
+        
+        // Grill marks
+        ctx.strokeStyle = '#451a03'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(-10, -15); ctx.lineTo(-15, 15); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(5, -15); ctx.lineTo(0, 15); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(20, -15); ctx.lineTo(15, 15); ctx.stroke();
+
+        ctx.fillStyle = 'white'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign='center'; ctx.fillText('Beef', 0, 4);
+        ctx.restore();
+    }
+
+    function animate() {
+        if (progress < 1) {
+            progress += 0.008; // Adjust overall animation speed here
+            if (progress > 1) progress = 1;
+
+            // Interpolate body stats
+            currentFat = startFat + (targetFat - startFat) * progress;
+            currentMuscle = startMuscle + (targetMuscle - startMuscle) * progress;
+            currentScale = startScale + (targetScale - startScale) * progress;
+
+            draw();
+            animationId = requestAnimationFrame(animate);
+        } else {
+            // Animation finished
+            state = 'idle';
+            cancelAnimationFrame(animationId);
+
+            if(targetFat < startFat) {
+                statusMsg.innerHTML = "Exercise Finished! <span class='text-rose-600 font-bold'>Exothermic Reaction:</span> Stored fat oxidized to release energy (Heat/Movement).";
+            } else if (targetMuscle > startMuscle) {
+                statusMsg.innerHTML = "Eating Finished! <span class='text-emerald-600 font-bold'>Endothermic Reaction:</span> Energy absorbed to synthesize complex muscle proteins.";
+            }
+            beef.visible = true; // 动作完成后重新显示可拖拽的牛肉
+            draw();
+        }
+    }
+
+    function startAnimation(newState) {
+        if (animationId) cancelAnimationFrame(animationId);
+        state = newState;
+        lastAction = newState; // 记录最后操作的动作类型
+        progress = 0;
+        
+        startFat = currentFat;
+        startMuscle = currentMuscle;
+        startScale = currentScale;
+        
+        if (newState === 'eating') {
+            beef.visible = false; // 开始吃的时候隐藏外部牛肉
+            targetMuscle = Math.min(1.0, currentMuscle + 0.34);
+            statusMsg.innerHTML = "Eating... Protein synthesis requires energy input.";
+        }
+
+        if (newState === 'exercising') {
+            if (currentFat <= 0) {
+                statusMsg.innerHTML = "Not enough fat to burn! Eat something first.";
+                state = 'idle';
+                draw();
+                return;
+            }
+            targetFat = Math.max(0, currentFat - 0.34); 
+            statusMsg.innerHTML = "Exercising... Breaking down fat releases energy.";
+        }
+        
+        animate();
+    }
+
+    // --- Button Controls ---
+    document.getElementById('btn-exercise').addEventListener('click', () => {
+        if (state !== 'idle') return;
+        startAnimation('exercising');
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+        if (animationId) cancelAnimationFrame(animationId);
+        state = 'idle';
+        lastAction = 'none'; // 重置最后动作
+        progress = 0;
+        currentFat = targetFat = startFat = 1.0;
+        currentMuscle = targetMuscle = startMuscle = 0.0;
+        currentScale = targetScale = startScale = 1.0;
+        
+        beef.visible = true;
+        beef.x = initBeefX;
+        beef.y = initBeefY;
+        beef.isDragging = false;
+        
+        statusMsg.innerText = "Body attributes reset. Ready for action:";
+        draw();
+    });
+
+    // --- Interaction Events for Drag & Drop ---
+    function getMousePos(evt) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        let clientX = evt.clientX;
+        let clientY = evt.clientY;
+
+        if (evt.touches && evt.touches.length > 0) {
+            clientX = evt.touches[0].clientX;
+            clientY = evt.touches[0].clientY;
+        } else if (evt.changedTouches && evt.changedTouches.length > 0) {
+            clientX = evt.changedTouches[0].clientX;
+            clientY = evt.changedTouches[0].clientY;
+        }
+
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
+    }
+
+    function handleDragStart(e) {
+        if (!beef.visible || state !== 'idle') return;
+        const pos = getMousePos(e);
+        if (Math.hypot(pos.x - beef.x, pos.y - beef.y) < 35) {
+            beef.isDragging = true;
+            canvas.style.cursor = 'grabbing';
+            draw();
+        }
+    }
+
+    function handleDragMove(e) {
+        const pos = getMousePos(e);
+        if (beef.isDragging) {
+            beef.x = pos.x;
+            beef.y = pos.y;
+            draw();
+        } else if (beef.visible && state === 'idle') {
+            // Hover effect
+            if (Math.hypot(pos.x - beef.x, pos.y - beef.y) < 35) {
+                canvas.style.cursor = 'grab';
+            } else {
+                canvas.style.cursor = 'default';
+            }
+        }
+    }
+
+    function handleDragEnd(e) {
+        if (!beef.isDragging) return;
+        beef.isDragging = false;
+        canvas.style.cursor = 'default';
+
+        const pos = getMousePos(e);
+        const currentFinalScale = 1.5 * currentScale;
+        const mouthX = boyX;
+        const mouthY = boyY - 110 * currentFinalScale;
+        
+        // 判定松开位置是否在嘴巴附近 (60px 半径内)
+        if (Math.hypot(pos.x - mouthX, pos.y - mouthY) < 60) {
+            startAnimation('eating');
+        }
+        
+        // 无论是否成功投喂，牛肉坐标都先重置回原位
+        beef.x = initBeefX;
+        beef.y = initBeefY;
+        draw();
+    }
+
+    // Bind mouse events
+    canvas.addEventListener('mousedown', handleDragStart);
+    canvas.addEventListener('mousemove', handleDragMove);
+    canvas.addEventListener('mouseup', handleDragEnd);
+    canvas.addEventListener('mouseleave', handleDragEnd);
+
+    // Bind touch events
+    canvas.addEventListener('touchstart', (e) => { 
+        if(e.target === canvas) e.preventDefault(); 
+        handleDragStart(e); 
+    }, {passive: false});
+    canvas.addEventListener('touchmove', (e) => { 
+        if(e.target === canvas) e.preventDefault(); 
+        handleDragMove(e); 
+    }, {passive: false});
+    canvas.addEventListener('touchend', (e) => { 
+        if(e.target === canvas) e.preventDefault(); 
+        handleDragEnd(e); 
+    }, {passive: false});
+
+    window.onload = () => {
+        draw();
+    };
+
+</script>
+</body>
+</html>

@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>乙醇氧化至乙酸全过程模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', system-ui, sans-serif; }
+        #canvas-container { 
+            background: white; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 20px;
+            box-shadow: 0 15px 35px -5px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 600px;
+        }
+        .atom {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 10;
+            user-select: none;
+            /* 慢速位移动画 */
+            transition: all 1.5s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+            cursor: default;
+            font-size: 18px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .atom-C { background: #334155; color: white; border: 3px solid #0f172a; }
+        .atom-H { background: #ffffff; color: #334155; border: 3px solid #cbd5e1; font-size: 15px; }
+        .atom-O { background: #ef4444; color: white; border: 3px solid #991b1b; }
+        
+        .bond {
+            position: absolute;
+            background: #94a3b8;
+            z-index: 5;
+            transform-origin: left center;
+            /* 慢速化学键过渡 */
+            transition: all 1.2s ease;
+            pointer-events: none;
+        }
+        /* 加粗双键显示 */
+        .bond-double::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: #ef4444; 
+            left: 0;
+            top: -8px; 
+            animation: doubleBondAnim 1s forwards;
+        }
+        @keyframes doubleBondAnim {
+            from { opacity: 0; transform: scaleX(0); }
+            to { opacity: 1; transform: scaleX(1); }
+        }
+
+        .interactive-atom {
+            cursor: pointer;
+            animation: pulse-glow 1.5s infinite;
+        }
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); transform: scale(1); }
+            70% { box-shadow: 0 0 0 15px rgba(59, 130, 246, 0); transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); transform: scale(1); }
+        }
+
+        .status-badge {
+            padding: 6px 16px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+        .equation {
+            font-family: 'Courier New', Courier, monospace;
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="max-w-6xl mx-auto">
+    <header class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight">乙醇氧化模拟 (慢速大原子版)</h1>
+            <p class="text-slate-500 mt-1">清晰演示从乙醇到乙酸的原子位移细节</p>
+        </div>
+        <div id="reaction-status" class="status-badge bg-blue-100 text-blue-700">等待注入</div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">实验台控制</h2>
+                <button id="startBtn" class="w-full py-4 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-all shadow-lg active:scale-95">
+                    注入乙醇分子
+                </button>
+                
+                <div id="nextStepContainer" class="hidden mt-4 pt-4 border-t border-slate-100">
+                    <button id="autoOxidize" class="w-full py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors hidden shadow-md">
+                        通入氧气 O₂
+                    </button>
+                </div>
+
+                <button id="resetBtn" class="w-full mt-6 py-2 text-slate-400 text-sm font-semibold hover:text-slate-600 transition-colors">
+                    重置实验
+                </button>
+            </div>
+
+            <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100">
+                <h3 class="text-indigo-800 font-bold text-sm mb-2 flex items-center">原理提示</h3>
+                <p id="hintText" class="text-xs text-indigo-700 leading-relaxed">
+                    慢速模式已开启。请观察氧分子如何捕获氢原子形成水，以及氧原子如何插入形成羧基。
+                </p>
+                <div id="chemEquation" class="equation hidden text-indigo-900 mt-3"></div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-3">
+            <div id="canvas-container">
+                <!-- Atoms & Bonds container -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('canvas-container');
+    const startBtn = document.getElementById('startBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusBadge = document.getElementById('reaction-status');
+    const hintText = document.getElementById('hintText');
+    const autoOxidize = document.getElementById('autoOxidize');
+    const chemEquation = document.getElementById('chemEquation');
+
+    let atoms = [];
+    let bonds = [];
+    let reactionStep = 0; 
+
+    const DIST = 95; // 原子间距
+    const OFFSET = 24; // 原子半径偏移量 (48/2)
+
+    function init() {
+        container.innerHTML = '';
+        atoms = [];
+        bonds = [];
+        reactionStep = 0;
+        startBtn.classList.remove('hidden');
+        autoOxidize.classList.add('hidden');
+        chemEquation.classList.add('hidden');
+        statusBadge.innerText = "就绪";
+        statusBadge.className = "status-badge bg-blue-100 text-blue-700";
+        hintText.innerText = "点击“注入”开始。动画已调慢，方便观察成键细节。";
+    }
+
+    function createAtom(type, x, y, id) {
+        const div = document.createElement('div');
+        div.className = `atom atom-${type}`;
+        div.innerText = type;
+        div.style.left = `${x - OFFSET}px`;
+        div.style.top = `${y - OFFSET}px`;
+        div.id = id;
+        container.appendChild(div);
+        const obj = { id, type, x, y, el: div };
+        atoms.push(obj);
+        return obj;
+    }
+
+    function createBond(idA, idB) {
+        const div = document.createElement('div');
+        div.className = 'bond';
+        div.id = `bond-${idA}-${idB}`;
+        container.appendChild(div);
+        const obj = { idA, idB, el: div };
+        bonds.push(obj);
+        updateBond(obj);
+        return obj;
+    }
+
+    function updateBond(bond) {
+        const a = atoms.find(at => at.id === bond.idA);
+        const b = atoms.find(at => at.id === bond.idB);
+        if (!a || !b) return;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        bond.el.style.width = `${dist}px`;
+        bond.el.style.height = `4px`; // 加粗化学键
+        bond.el.style.left = `${a.x}px`;
+        bond.el.style.top = `${a.y - 2}px`;
+        bond.el.style.transform = `rotate(${angle}deg)`;
+    }
+
+    function spawnEthanol() {
+        init();
+        const midX = container.offsetWidth / 3.5;
+        const midY = container.offsetHeight / 2;
+
+        createAtom('C', midX, midY, 'C1');
+        createAtom('C', midX + DIST, midY, 'C2');
+        createBond('C1', 'C2');
+
+        createAtom('H', midX, midY - DIST, 'H1'); createBond('C1', 'H1');
+        createAtom('H', midX, midY + DIST, 'H2'); createBond('C1', 'H2');
+        createAtom('H', midX - DIST, midY, 'H3'); createBond('C1', 'H3');
+
+        createAtom('H', midX + DIST, midY - DIST, 'H4'); createBond('C2', 'H4');
+        createAtom('H', midX + DIST, midY + DIST, 'H5'); createBond('C2', 'H5');
+        createAtom('O', midX + DIST + DIST, midY, 'O1'); createBond('C2', 'O1');
+        createAtom('H', midX + DIST + DIST, midY - DIST, 'H6'); createBond('O1', 'H6');
+
+        startBtn.classList.add('hidden');
+        statusBadge.innerText = "当前：乙醇";
+        hintText.innerHTML = "<b>步骤 1：</b> 点击脉冲的 <span class='text-blue-600 font-bold'>H 原子</span>。氧气将夺取它们形成水。";
+        chemEquation.innerText = "CH3CH2OH";
+        chemEquation.classList.remove('hidden');
+
+        // 氧气分子准备
+        const oxX = midX + DIST;
+        const oxY = midY - 160;
+        createAtom('O', oxX - 30, oxY, 'O_ext1');
+        createAtom('O', oxX + 30, oxY, 'O_ext2');
+        createBond('O_ext1', 'O_ext2');
+
+        document.getElementById('H6').classList.add('interactive-atom');
+        document.getElementById('H4').classList.add('interactive-atom');
+        document.getElementById('H6').onclick = oxidationToEthanal;
+        document.getElementById('H4').onclick = oxidationToEthanal;
+    }
+
+    async function oxidationToEthanal() {
+        if (reactionStep !== 0) return;
+        reactionStep = 1;
+        
+        statusBadge.innerText = "催化脱氢中（形成水）...";
+        
+        const h4 = atoms.find(a => a.id === 'H4');
+        const h6 = atoms.find(a => a.id === 'H6');
+        const o_ext2 = atoms.find(a => a.id === 'O_ext2');
+        const o_ext1 = atoms.find(a => a.id === 'O_ext1');
+        const b_ext_o = bonds.find(b => b.idA === 'O_ext1' && b.idB === 'O_ext2');
+
+        const b_c2h4 = bonds.find(b => b.idB === 'H4');
+        const b_o1h6 = bonds.find(b => b.idB === 'H6');
+        
+        // 慢速断裂旧键
+        b_c2h4.el.style.opacity = '0';
+        b_o1h6.el.style.opacity = '0';
+        b_ext_o.el.style.opacity = '0'; 
+        
+        await new Promise(r => setTimeout(r, 1000));
+        
+        // 原子慢速向氧原子靠拢
+        h4.x = o_ext2.x - 20; h4.y = o_ext2.y + 35;
+        h6.x = o_ext2.x + 20; h6.y = o_ext2.y + 35;
+        h4.el.style.left = `${h4.x-OFFSET}px`; h4.el.style.top = `${h4.y-OFFSET}px`;
+        h6.el.style.left = `${h6.x-OFFSET}px`; h6.el.style.top = `${h6.y-OFFSET}px`;
+        
+        // 另一个氧原子移开，准备下一步插入
+        o_ext1.x += 160; o_ext1.y += 20;
+        o_ext1.el.style.left = `${o_ext1.x-OFFSET}px`; o_ext1.el.style.top = `${o_ext1.y-OFFSET}px`;
+
+        await new Promise(r => setTimeout(r, 1500));
+        createBond('O_ext2', 'H4');
+        createBond('O_ext2', 'H6');
+        
+        // 乙醛双键形成
+        const o1 = atoms.find(a => a.id === 'O1');
+        o1.y -= 40;
+        o1.el.style.top = `${o1.y - OFFSET}px`;
+        const c2o1Bond = bonds.find(b => b.idA === 'C2' && b.idB === 'O1');
+        c2o1Bond.el.classList.add('bond-double');
+        updateBond(c2o1Bond);
+
+        hintText.innerHTML = "<b>生成乙醛与水</b>。$C=O$ 双键已形成。点击红色按钮进行二次氧化。";
+        statusBadge.innerText = "阶段产物：乙醛 + 水";
+        chemEquation.innerText = "CH3CHO + H2O";
+        
+        autoOxidize.classList.remove('hidden');
+        autoOxidize.onclick = oxidationToAcid;
+        document.getElementById('nextStepContainer').classList.remove('hidden');
+    }
+
+    async function oxidationToAcid() {
+        if (reactionStep !== 1) return;
+        reactionStep = 2;
+        autoOxidize.classList.add('hidden');
+        statusBadge.innerText = "氧原子插入 C-H 键中...";
+
+        const o_ext1 = atoms.find(a => a.id === 'O_ext1');
+        const c2 = atoms.find(a => a.id === 'C2');
+        const h5 = atoms.find(a => a.id === 'H5');
+        const b_c2h5 = bonds.find(b => b.idB === 'H5');
+        
+        // 断开 C-H
+        b_c2h5.el.style.opacity = '0';
+        await new Promise(r => setTimeout(r, 1000));
+        
+        // 氧原子插入碳氢之间
+        o_ext1.x = c2.x; o_ext1.y = c2.y + DIST;
+        o_ext1.el.style.left = `${o_ext1.x - OFFSET}px`;
+        o_ext1.el.style.top = `${o_ext1.y - OFFSET}px`;
+        
+        h5.x = o_ext1.x + DIST; h5.y = o_ext1.y;
+        h5.el.style.left = `${h5.x - OFFSET}px`;
+        h5.el.style.top = `${h5.y - OFFSET}px`;
+
+        await new Promise(r => setTimeout(r, 1500));
+        createBond('C2', 'O_ext1');
+        createBond('O_ext1', 'H5');
+
+        hintText.innerHTML = "<b>最终产物：乙酸</b>。羧基 (-COOH) 结构已完整。";
+        statusBadge.innerText = "实验完成：乙酸 (冰醋酸)";
+        statusBadge.className = "status-badge bg-green-600 text-white shadow-md";
+        chemEquation.innerText = "CH3COOH";
+    }
+
+    startBtn.onclick = spawnEthanol;
+    resetBtn.onclick = init;
+    window.onload = init;
+</script>
+</body>
+</html>

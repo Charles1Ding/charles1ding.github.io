@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>葡萄糖发酵动力学模型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .beaker-container {
+            position: relative;
+            width: 380px; 
+            height: 520px;
+            border: 8px solid #cbd5e1;
+            border-top: none;
+            border-bottom-left-radius: 30px;
+            border-bottom-right-radius: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(to top, #fbbf24, #fef3c7);
+            transition: height 0.5s ease;
+        }
+        .bubble {
+            position: absolute;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: rise linear infinite;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-480px); opacity: 0; }
+        }
+        .yeast-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #92400e;
+            border-radius: 50%;
+            opacity: 0.8;
+        }
+        .beaker-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 10%;
+            width: 15%;
+            height: 100%;
+            background: rgba(255,255,255,0.15);
+            pointer-events: none;
+        }
+        /* Extreme temperature effects */
+        .heat-glow {
+            box-shadow: 0 0 40px rgba(239, 68, 68, 0.5) inset;
+        }
+        .cold-frost {
+            box-shadow: 0 0 40px rgba(59, 130, 246, 0.3) inset;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="max-w-7xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[95vh]">
+        <!-- Header -->
+        <div class="bg-indigo-950 p-6 text-white text-center shadow-lg">
+            <h1 class="text-3xl font-black tracking-tight">葡萄糖发酵实时模拟器</h1>
+            <p class="mt-1 text-indigo-200 text-sm font-medium">$C_6H_{12}O_6 \xrightarrow{酵母 / 20-40^\circ C} 2C_2H_5OH + 2CO_2$</p>
+        </div>
+
+        <div class="flex-1 grid grid-cols-1 lg:grid-cols-5 overflow-hidden">
+            
+            <!-- Controls (Left Sidebar) -->
+            <div class="lg:col-span-1 bg-slate-50 p-6 border-r border-slate-200 space-y-8 overflow-y-auto">
+                <section>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest">环境温度控制</h3>
+                        <span id="tempStatusIcon" class="text-lg">🌡️</span>
+                    </div>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-end">
+                            <label class="block text-sm font-bold text-slate-700">当前温度</label>
+                            <span id="tempVal" class="text-2xl font-mono font-black text-indigo-600">30.0</span><span class="text-xs font-bold text-indigo-600 ml-1">°C</span>
+                        </div>
+                        <input type="range" id="tempRange" min="0" max="100" step="1" value="30" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+                        <div class="flex justify-between text-[10px] font-bold text-slate-400 px-1 uppercase tracking-tighter">
+                            <span>0°C 冰点</span>
+                            <span class="text-green-500">20-40 活性</span>
+                            <span>100°C 沸腾</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="space-y-4 border-t pt-6">
+                    <button id="addYeastBtn" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-4 px-4 rounded-xl transition-all shadow-lg active:scale-95 flex flex-col items-center justify-center gap-1 group disabled:bg-slate-300 disabled:shadow-none">
+                        <span class="text-lg font-bold">加入酵母</span>
+                        <span class="text-[10px] opacity-70 font-normal tracking-wide">ADD YEAST</span>
+                    </button>
+                    <p id="yeastWarning" class="text-[10px] text-red-500 font-bold text-center hidden">⚠️ 温度过高，酵母已失去生物活性！</p>
+                </section>
+
+                <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-slate-500 font-medium">生存状态</span>
+                        <span id="yeastLifeStatus" class="font-bold text-blue-600 text-right">无菌种</span>
+                    </div>
+                    <div class="flex justify-between items-center text-xs border-t pt-2">
+                        <span class="text-slate-500 font-medium">反应强度</span>
+                        <div class="flex items-center gap-1">
+                            <div id="rateLed" class="w-2 h-2 rounded-full bg-slate-300"></div>
+                            <span id="reactRateDesc" class="font-bold text-slate-400 uppercase">OFF</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="resetBtn" class="w-full py-2 text-slate-400 hover:text-red-500 font-bold transition-colors text-[10px] uppercase tracking-widest">
+                    重置实验环境
+                </button>
+            </div>
+
+            <!-- Main Reactor Area -->
+            <div class="lg:col-span-3 p-4 flex flex-col items-center justify-center bg-slate-50/20 border-r border-slate-200">
+                <div class="relative flex flex-col items-center scale-90 md:scale-100">
+                    <div class="beaker-container" id="beaker">
+                        <div id="liquidLevel" class="liquid" style="height: 85%;"></div>
+                        <div id="bubbleContainer"></div>
+                        <div id="yeastContainer"></div>
+                    </div>
+                    <div class="mt-6 px-6 py-2 bg-slate-800 rounded-full text-white text-xs font-bold shadow-2xl flex items-center gap-3">
+                        <span id="monitorStatusDot" class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+                        实时动态反应监测器 (1L 体系)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Cards (Right) -->
+            <div class="lg:col-span-1 p-6 flex flex-col gap-6 justify-center bg-slate-50/40">
+                <!-- ABV Section -->
+                <div class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-green-500 flex flex-col items-center">
+                    <span class="text-slate-400 text-[10px] font-black uppercase tracking-widest mb-1">酒精浓度</span>
+                    <div class="flex items-baseline">
+                        <div class="text-4xl font-mono font-black text-slate-800" id="abvDisplay">0.0</div>
+                        <span class="text-lg font-black text-green-600 ml-1">% vol</span>
+                    </div>
+                    <div id="abvStatus" class="mt-2 text-[10px] font-bold text-slate-400 bg-slate-50 px-3 py-1 rounded-full text-center italic">
+                        等待发酵开始
+                    </div>
+                </div>
+
+                <!-- Progress Section -->
+                <div class="bg-white p-5 rounded-2xl shadow-md border-l-4 border-indigo-500">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-slate-400 text-[10px] font-black uppercase tracking-widest">糖分剩余</span>
+                        <span id="glcPct" class="text-indigo-600 font-black text-sm">100%</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div id="glcBar" class="bg-indigo-500 h-full rounded-full transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                    <div class="mt-4 flex flex-col gap-1 text-slate-400 text-[9px] font-bold uppercase tracking-tight">
+                        <div class="flex items-center gap-1">
+                            <div class="w-1.5 h-1.5 bg-slate-400 rounded-full"></div> CO₂ 生成排放中
+                        </div>
+                        <span id="co2Status" class="ml-2.5">状态: 等待</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const INITIAL_GLUCOSE = 100.0;
+        const SOLUTION_VOLUME_ML = 1000; 
+        const ETHANOL_DENSITY = 0.789; 
+
+        let state = {
+            glucose: INITIAL_GLUCOSE,
+            ethanolMass: 0,
+            yeast: 0,
+            temp: 30,
+            isRunning: true,
+            yeastDead: false 
+        };
+
+        const M_GLC = 180.16;
+        const M_ETH = 46.07;
+
+        function calculateRate() {
+            if (state.glucose <= 0 || state.yeast <= 0 || state.yeastDead) return 0;
+            
+            // Death logic: Protein denaturation at high temp
+            if (state.temp >= 45) {
+                state.yeastDead = true;
+                return 0;
+            }
+            
+            let tempFactor = 0;
+            if (state.temp < 10) {
+                tempFactor = 0.01; // Latent activity at near-freezing
+            } else {
+                // Bell curve centered at 30C
+                tempFactor = Math.max(0, 1 - Math.pow((state.temp - 30) / 15, 2));
+                // Base minimal activity between 10C and 45C
+                tempFactor = Math.max(tempFactor, 0.05);
+            }
+
+            const baseK = 0.035; // Reaction speed constant
+            return baseK * state.yeast * tempFactor;
+        }
+
+        function update() {
+            if (!state.isRunning) return;
+            const rate = calculateRate();
+            if (rate > 0) {
+                const consumed = Math.min(state.glucose, rate / 60); 
+                state.glucose -= consumed;
+                const mol = consumed / M_GLC;
+                state.ethanolMass += mol * 2 * M_ETH;
+                
+                // Bubbling visual frequency
+                if (Math.random() < (rate * 0.2)) {
+                    createBubble();
+                }
+            }
+            updateUI(rate);
+            requestAnimationFrame(update);
+        }
+
+        function updateUI(rate) {
+            const ethanolVol = state.ethanolMass / ETHANOL_DENSITY;
+            const abv = (ethanolVol / SOLUTION_VOLUME_ML) * 100;
+            document.getElementById('abvDisplay').textContent = abv.toFixed(1);
+            
+            const glcPct = (state.glucose / INITIAL_GLUCOSE) * 100;
+            document.getElementById('glcPct').textContent = Math.ceil(glcPct) + '%';
+            document.getElementById('glcBar').style.width = glcPct + '%';
+            
+            const lifeStatus = document.getElementById('yeastLifeStatus');
+            const addBtn = document.getElementById('addYeastBtn');
+            const warning = document.getElementById('yeastWarning');
+
+            if (state.yeastDead) {
+                lifeStatus.textContent = "灭活死亡";
+                lifeStatus.className = "font-bold text-red-600";
+                addBtn.disabled = true;
+                warning.classList.remove('hidden');
+            } else if (state.yeast > 0) {
+                if (state.temp < 15) {
+                    lifeStatus.textContent = "低温休眠";
+                    lifeStatus.className = "font-bold text-blue-400";
+                } else if (state.temp > 40) {
+                    lifeStatus.textContent = "热应激";
+                    lifeStatus.className = "font-bold text-orange-500 animate-pulse";
+                } else {
+                    lifeStatus.textContent = "最佳活性 x" + state.yeast.toFixed(0);
+                    lifeStatus.className = "font-bold text-green-600";
+                }
+            }
+
+            const led = document.getElementById('rateLed');
+            const rateDesc = document.getElementById('reactRateDesc');
+            if (rate > 0.001) {
+                led.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+                rateDesc.textContent = rate > 0.6 ? "FAST" : "ACTIVE";
+                rateDesc.className = "font-bold text-green-600";
+                document.getElementById('abvStatus').textContent = "正在转化酒精...";
+                document.getElementById('co2Status').textContent = "状态: 气体生成中";
+            } else {
+                led.className = "w-2 h-2 rounded-full bg-slate-300";
+                rateDesc.textContent = state.glucose <= 0.1 ? "DONE" : "IDLE";
+                rateDesc.className = "font-bold text-slate-400 text-right";
+                if (state.glucose <= 0.1) {
+                    document.getElementById('abvStatus').textContent = "反应已耗尽";
+                    document.getElementById('co2Status').textContent = "状态: 已完全发酵";
+                }
+            }
+            
+            // Container dynamic effects
+            const beaker = document.getElementById('beaker');
+            if (state.temp > 55) beaker.className = "beaker-container heat-glow";
+            else if (state.temp < 10) beaker.className = "beaker-container cold-frost";
+            else beaker.className = "beaker-container";
+
+            document.getElementById('liquidLevel').style.height = (65 + glcPct * 0.2) + '%';
+        }
+
+        document.getElementById('tempRange').addEventListener('input', (e) => {
+            state.temp = parseFloat(e.target.value);
+            document.getElementById('tempVal').textContent = state.temp;
+            
+            const icon = document.getElementById('tempStatusIcon');
+            if (state.temp < 15) icon.textContent = "❄️";
+            else if (state.temp > 45) icon.textContent = "🔥";
+            else icon.textContent = "🌡️";
+        });
+
+        document.getElementById('addYeastBtn').addEventListener('click', () => {
+            if (state.yeastDead) return;
+            state.yeast += 1.0;
+            for(let i=0; i<15; i++) {
+                const p = document.createElement('div');
+                p.className = 'yeast-particle';
+                p.style.left = Math.random() * 90 + 5 + '%';
+                p.style.top = (30 + Math.random() * 60) + '%';
+                document.getElementById('yeastContainer').appendChild(p);
+            }
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            state = { glucose: INITIAL_GLUCOSE, ethanolMass: 0, yeast: 0, temp: 30, isRunning: true, yeastDead: false };
+            document.getElementById('yeastContainer').innerHTML = '';
+            document.getElementById('bubbleContainer').innerHTML = '';
+            document.getElementById('tempRange').value = 30;
+            document.getElementById('tempVal').textContent = "30.0";
+            document.getElementById('yeastLifeStatus').textContent = "无菌种";
+            document.getElementById('abvStatus').textContent = "等待发酵开始";
+            document.getElementById('yeastWarning').classList.add('hidden');
+            document.getElementById('addYeastBtn').disabled = false;
+        });
+
+        function createBubble() {
+            const container = document.getElementById('bubbleContainer');
+            const b = document.createElement('div');
+            const size = Math.random() * 14 + 5;
+            b.className = 'bubble';
+            b.style.width = size + 'px';
+            b.style.height = size + 'px';
+            b.style.left = Math.random() * 100 + '%';
+            b.style.animationDuration = (Math.random() * 2 + 1) + 's';
+            container.appendChild(b);
+            setTimeout(() => b.remove(), 3000);
+        }
+
+        update();
+    </script>
+</body>
+</html>

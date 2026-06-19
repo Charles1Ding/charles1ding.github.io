@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>甲烷与氯气取代反应原子级模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&display=swap');
+
+        :root {
+            --atom-c: #1f2937;
+            --atom-h: #eff6ff;
+            --atom-cl: #10b981;
+            --bond: #cbd5e1;
+        }
+
+        body {
+            background-color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+
+        .formula-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .atom {
+            transition: all 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+        }
+
+        .bond {
+            transition: opacity 0.8s, transform 0.8s;
+            transform-origin: center;
+        }
+
+        .uv-beam {
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.7s ease;
+        }
+
+        .uv-beam.active {
+            opacity: 0.3;
+        }
+
+        @keyframes beam-pulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 0.5; }
+        }
+
+        .animate-beam {
+            animation: beam-pulse 3s infinite ease-in-out;
+        }
+
+        .product-card {
+            animation: slideIn 0.5s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* 开关样式 */
+        .switch-base {
+            width: 70px;
+            height: 36px;
+            background: #e2e8f0;
+            border-radius: 18px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+            border: 1px solid #cbd5e1;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .switch-base.active {
+            background: #facc15;
+            border-color: #eab308;
+        }
+
+        .switch-toggle {
+            width: 28px;
+            height: 28px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 3px;
+            left: 4px;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .switch-base.active .switch-toggle {
+            transform: translateX(34px);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-2 md:p-6">
+
+<div class="max-w-7xl mx-auto bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-slate-200 flex flex-col h-[92vh]">
+    
+    <!-- 顶部标题 -->
+    <header class="bg-slate-900 p-5 text-white flex justify-between items-center px-10 border-b-4 border-indigo-600">
+        <div>
+            <h1 class="text-xl font-black tracking-tight flex items-center gap-3">
+                <span class="bg-yellow-400 text-black px-2 py-0.5 rounded italic">CH₄ + Cl₂</span>
+                取代反应交互式模拟
+            </h1>
+            <p class="text-[9px] text-slate-400 mt-0.5 uppercase font-bold tracking-[0.3em]">Atomic Substitution Visualizer</p>
+        </div>
+        <button onclick="resetApp()" class="p-2.5 bg-white/10 hover:bg-white/20 rounded-xl transition-all flex items-center gap-2 font-bold text-xs uppercase tracking-widest text-white">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+            重置
+        </button>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- 左侧控制面板 -->
+        <aside class="w-64 border-r border-slate-100 p-6 flex flex-col gap-6 bg-slate-50/50">
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">反应操作</p>
+                <button id="reactionBtn" onclick="triggerReaction()" class="w-full py-4 rounded-[1.5rem] font-black text-xs flex flex-col items-center justify-center gap-2 transition-all shadow-lg active:scale-95 bg-slate-100 text-slate-300 cursor-not-allowed">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                    <span>执行单步取代</span>
+                </button>
+                <p id="hintText" class="text-[9px] text-center text-slate-400 font-bold">请先开启 UV 光源</p>
+            </div>
+            
+            <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm text-center">
+                <p class="text-[10px] font-black text-slate-400 uppercase mb-2 tracking-widest">有机分子状态</p>
+                <div id="statusFormula" class="text-xl font-black text-indigo-600 formula-font">CH₄</div>
+                <p id="statusName" class="text-[9px] font-bold text-slate-400 mt-1 uppercase">甲烷 (Methane)</p>
+            </div>
+
+            <div class="mt-auto bg-slate-900 p-5 rounded-3xl text-white">
+                <p class="text-[9px] font-black text-slate-500 uppercase mb-2">知识卡片</p>
+                <p class="text-[10px] leading-relaxed opacity-80">
+                    在光照下，Cl₂ 发生均裂产生氯自由基。自由基攻击 C-H 键，逐步将氢原子替换。这是一个自由基取代反应。
+                </p>
+            </div>
+        </aside>
+
+        <!-- 中间反应室 (扩大视野) -->
+        <main id="chamberContainer" class="flex-1 relative overflow-hidden bg-white transition-colors duration-1000">
+            
+            <!-- 光源控制 -->
+            <div class="absolute top-6 right-8 z-50 flex flex-col items-end gap-2">
+                <div class="switch-base" id="lightSwitch" onclick="toggleLight()">
+                    <div class="switch-toggle">
+                        <div id="switchIndicator" class="w-1 h-2.5 bg-slate-300 rounded-full"></div>
+                    </div>
+                </div>
+                <div class="bg-white/80 backdrop-blur px-2.5 py-1 rounded-full border border-slate-200 shadow-sm">
+                    <span id="lightLabel" class="text-[8px] font-black uppercase tracking-widest text-slate-400">UV 光源: OFF</span>
+                </div>
+            </div>
+
+            <!-- 具象化光源与光束 -->
+            <div id="uvSource" class="absolute top-0 left-1/2 -translate-x-1/2 opacity-0 -translate-y-10 transition-all duration-700 flex flex-col items-center">
+                <div class="w-20 h-8 bg-yellow-100 border-2 border-yellow-400 rounded-full shadow-[0_0_25px_rgba(250,204,21,0.5)] flex items-center justify-center gap-1.5">
+                    <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse"></div>
+                    <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                    <div class="w-1.5 h-1.5 bg-yellow-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                </div>
+                <svg id="beams" class="uv-beam animate-beam" width="800" height="600" style="margin-top: -5px;">
+                    <defs>
+                        <linearGradient id="beamGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+                            <stop offset="0%" stop-color="#facc15" stop-opacity="0.8"/>
+                            <stop offset="100%" stop-color="#facc15" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    <path d="M 400 0 L 180 450 L 320 450 Z" fill="url(#beamGrad)" />
+                    <path d="M 400 0 L 480 450 L 620 450 Z" fill="url(#beamGrad)" />
+                </svg>
+            </div>
+
+            <!-- 核心画布 (微调分子坐标以适应新布局) -->
+            <div id="reactionField" class="absolute inset-0 flex items-center justify-center">
+                <div class="relative w-[600px] h-[400px] border-4 border-slate-100 rounded-[3.5rem] bg-white/40 shadow-inner overflow-visible">
+                    
+                    <!-- 背景引导线 -->
+                    <div id="bondsContainer"></div>
+                    <!-- 原子容器 -->
+                    <div id="atomsContainer"></div>
+
+                    <!-- 状态标签 -->
+                    <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3">
+                        <div id="step1" class="px-3 py-1 rounded-full border border-slate-100 text-[9px] font-black text-slate-300 uppercase tracking-tighter">1. 断键</div>
+                        <div id="step2" class="px-3 py-1 rounded-full border border-slate-100 text-[9px] font-black text-slate-300 uppercase tracking-tighter">2. 换位</div>
+                        <div id="step3" class="px-3 py-1 rounded-full border border-slate-100 text-[9px] font-black text-slate-300 uppercase tracking-tighter">3. 成键</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 右侧产物展示区 (面积放小) -->
+        <aside class="w-60 border-l border-slate-100 p-5 flex flex-col bg-slate-50/30">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-[9px] font-black text-slate-400 uppercase tracking-widest">副产物 HCl 库</h3>
+                <span id="hclCountBadge" class="bg-rose-600 text-white text-[9px] px-2.5 py-0.5 rounded-full font-black shadow-md">0</span>
+            </div>
+            <div id="hclList" class="flex-1 flex flex-col gap-4 overflow-y-auto pr-1 custom-scrollbar">
+                <div id="emptyList" class="flex-1 flex items-center justify-center flex-col text-slate-200 gap-3 opacity-50">
+                   <div class="w-12 h-12 border-4 border-dashed border-slate-200 rounded-full flex items-center justify-center text-lg font-black">?</div>
+                   <p class="text-[8px] font-black uppercase tracking-[0.1em] text-center">暂无产物</p>
+                </div>
+            </div>
+        </aside>
+    </div>
+
+    <!-- 底部标识栏 -->
+    <footer class="bg-slate-900 border-t border-indigo-600 p-3 px-10 flex justify-between items-center text-[8px] font-black uppercase tracking-[0.2em] text-slate-500">
+        <div class="flex gap-10">
+            <span class="flex items-center gap-2 text-slate-400"><div class="w-2 h-2 rounded-full bg-slate-800 border border-slate-700"></div> Carbon (C)</span>
+            <span class="flex items-center gap-2 text-slate-400"><div class="w-2 h-2 rounded-full bg-blue-50 border border-blue-200"></div> Hydrogen (H)</span>
+            <span class="flex items-center gap-2 text-slate-400"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> Chlorine (Cl)</span>
+        </div>
+        <p class="italic text-indigo-500/80 tracking-widest">自由基取代反应交互模型</p>
+    </footer>
+</div>
+
+<script>
+    // 配置常量 (微调坐标：ORG_X 左移，CL2_X 居中感更强)
+    const ORG_X = 200;
+    const ORG_Y = 200;
+    const CL2_X = 460;
+    const CL2_Y = 200;
+    const BOND_LEN = 75;
+
+    const OFFSETS = [
+        { dx: 0, dy: -BOND_LEN }, // 0: Top
+        { dx: 0, dy: BOND_LEN },  // 1: Bottom
+        { dx: -BOND_LEN, dy: 0 }, // 2: Left
+        { dx: BOND_LEN, dy: 0 }   // 3: Right
+    ];
+
+    const STAGES = [
+        { formula: 'CH4', name: '甲烷 (Methane)', subs: ['H', 'H', 'H', 'H'] },
+        { formula: 'CH3Cl', name: '一氯甲烷 (Chloromethane)', subs: ['Cl', 'H', 'H', 'H'] },
+        { formula: 'CH2Cl2', name: '二氯甲烷 (Dichloromethane)', subs: ['Cl', 'Cl', 'H', 'H'] },
+        { formula: 'CHCl3', name: '三氯甲烷 (Chloroform)', subs: ['Cl', 'Cl', 'Cl', 'H'] },
+        { formula: 'CCl4', name: '四氯化碳 (Carbon Tetrachloride)', subs: ['Cl', 'Cl', 'Cl', 'Cl'] }
+    ];
+
+    // 状态
+    let currentStep = 0;
+    let isLightOn = false;
+    let isReacting = false;
+    let hclCount = 0;
+
+    // 初始化界面
+    function init() {
+        renderMolecules();
+        updateUI();
+    }
+
+    function toggleLight() {
+        if (isReacting) return;
+        isLightOn = !isLightOn;
+        const switchBase = document.getElementById('lightSwitch');
+        const uvSource = document.getElementById('uvSource');
+        const beams = document.getElementById('beams');
+        const label = document.getElementById('lightLabel');
+        const indicator = document.getElementById('switchIndicator');
+        const chamber = document.getElementById('chamberContainer');
+
+        if (isLightOn) {
+            switchBase.classList.add('active');
+            uvSource.style.opacity = '1';
+            uvSource.style.transform = 'translate(-50%, 1.2rem)';
+            beams.classList.add('active');
+            label.innerText = 'UV 光源: ON';
+            label.className = 'text-[8px] font-black uppercase tracking-widest text-amber-600';
+            indicator.className = 'w-1 h-2.5 bg-amber-400 rounded-full';
+            chamber.classList.add('bg-amber-50/30');
+        } else {
+            switchBase.classList.remove('active');
+            uvSource.style.opacity = '0';
+            uvSource.style.transform = 'translate(-50%, -2rem)';
+            beams.classList.remove('active');
+            label.innerText = 'UV 光源: OFF';
+            label.className = 'text-[8px] font-black uppercase tracking-widest text-slate-400';
+            indicator.className = 'w-1 h-2.5 bg-slate-300 rounded-full';
+            chamber.classList.remove('bg-amber-50/30');
+        }
+        updateUI();
+    }
+
+    function updateUI() {
+        const btn = document.getElementById('reactionBtn');
+        const hint = document.getElementById('hintText');
+        const formula = document.getElementById('statusFormula');
+        const name = document.getElementById('statusName');
+
+        if (currentStep >= 4) {
+            btn.className = "w-full py-4 rounded-[1.5rem] font-black text-xs flex flex-col items-center justify-center gap-2 bg-slate-100 text-slate-300 cursor-not-allowed";
+            hint.innerText = "全部氢原子已被取代";
+            hint.className = "text-[9px] text-center text-rose-400 font-bold";
+        } else if (!isLightOn) {
+            btn.className = "w-full py-4 rounded-[1.5rem] font-black text-xs flex flex-col items-center justify-center gap-2 bg-slate-100 text-slate-300 cursor-not-allowed";
+            hint.innerText = "请先开启 UV 光源";
+            hint.className = "text-[9px] text-center text-slate-400 font-bold";
+        } else if (isReacting) {
+            btn.className = "w-full py-4 rounded-[1.5rem] font-black text-xs flex flex-col items-center justify-center gap-2 bg-indigo-100 text-indigo-400 cursor-wait";
+            hint.innerText = "反应进行中...";
+        } else {
+            btn.className = "w-full py-4 rounded-[1.5rem] font-black text-xs flex flex-col items-center justify-center gap-2 bg-indigo-600 text-white hover:bg-indigo-700 ring-4 ring-indigo-600/20 active:scale-95 transition-all shadow-lg";
+            hint.innerText = "光源就绪，可以反应";
+            hint.className = "text-[9px] text-center text-emerald-500 font-bold";
+        }
+
+        formula.innerHTML = STAGES[currentStep].formula.replace(/(\d+)/g, '<sub>$1</sub>');
+        name.innerText = STAGES[currentStep].name;
+    }
+
+    function renderMolecules() {
+        const atomsContainer = document.getElementById('atomsContainer');
+        const bondsContainer = document.getElementById('bondsContainer');
+        atomsContainer.innerHTML = '';
+        bondsContainer.innerHTML = '';
+
+        // 中心 C
+        createAtom(ORG_X, ORG_Y, 'C', 'C', atomsContainer);
+
+        // 取代基
+        STAGES[currentStep].subs.forEach((label, i) => {
+            const x = ORG_X + OFFSETS[i].dx;
+            const y = ORG_Y + OFFSETS[i].dy;
+            createBond(ORG_X, ORG_Y, x, y, bondsContainer, `bond-org-${i}`);
+            createAtom(x, y, label, label, atomsContainer, `atom-org-${i}`);
+        });
+
+        // Cl2 分子
+        if (currentStep < 4) {
+            const cl1x = CL2_X - 35, cl2x = CL2_X + 35;
+            createBond(cl1x, CL2_Y, cl2x, CL2_Y, bondsContainer, 'bond-cl2', 'emerald-200');
+            createAtom(cl1x, CL2_Y, 'Cl', 'Cl', atomsContainer, 'atom-cl1');
+            createAtom(cl2x, CL2_Y, 'Cl', 'Cl', atomsContainer, 'atom-cl2');
+            
+            const label = document.createElement('div');
+            label.className = "absolute text-[8px] font-black text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100";
+            label.style.left = `${CL2_X}px`;
+            label.style.top = `${CL2_Y + 35}px`;
+            label.style.transform = 'translateX(-50%)';
+            label.id = "cl2Label";
+            label.innerText = "Cl2 Source";
+            atomsContainer.appendChild(label);
+        }
+    }
+
+    function createAtom(x, y, label, type, container, id) {
+        const div = document.createElement('div');
+        div.id = id || '';
+        const isC = type === 'C';
+        div.className = `atom absolute rounded-full border-2 flex items-center justify-center font-black shadow-md select-none`;
+        div.style.width = isC ? '48px' : '38px';
+        div.style.height = isC ? '48px' : '38px';
+        div.style.left = `${x}px`;
+        div.style.top = `${y}px`;
+        div.style.transform = 'translate(-50%, -50%)';
+        div.style.fontSize = isC ? '14px' : '12px';
+
+        if (type === 'Cl') {
+            div.classList.add('bg-emerald-500', 'border-emerald-700', 'text-white');
+        } else if (isC) {
+            div.classList.add('bg-slate-800', 'border-slate-900', 'text-white');
+        } else {
+            div.classList.add('bg-blue-50', 'border-blue-200', 'text-blue-700');
+        }
+        div.innerText = label;
+        container.appendChild(div);
+    }
+
+    function createBond(x1, y1, x2, y2, container, id, colorClass = "slate-300") {
+        const dx = x2 - x1, dy = y2 - y1;
+        const length = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+        const div = document.createElement('div');
+        div.id = id || '';
+        div.className = `bond absolute bg-${colorClass}`;
+        div.style.width = `${length}px`;
+        div.style.height = '4px';
+        div.style.left = `${x1}px`;
+        div.style.top = `${y1}px`;
+        div.style.transform = `rotate(${angle}deg)`;
+        div.style.transformOrigin = '0 50%';
+        div.style.marginTop = '-2px';
+        div.style.borderRadius = '2px';
+        container.appendChild(div);
+    }
+
+    async function triggerReaction() {
+        if (isReacting || !isLightOn || currentStep >= 4) return;
+        isReacting = true;
+        updateUI();
+
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+
+        const resetSteps = () => {
+            [step1, step2, step3].forEach(s => {
+                s.className = "px-3 py-1 rounded-full border border-slate-100 text-[9px] font-black text-slate-300 uppercase tracking-tighter";
+            });
+        };
+
+        // STEP 1: 断键
+        step1.className = "px-3 py-1 rounded-full border border-indigo-600 bg-indigo-600 text-white text-[9px] font-black uppercase tracking-tighter shadow-md";
+        
+        const targetHIdx = currentStep;
+        const targetBond = document.getElementById(`bond-org-${targetHIdx}`);
+        const targetAtomH = document.getElementById(`atom-org-${targetHIdx}`);
+        const clBond = document.getElementById(`bond-cl2`);
+        const cl1 = document.getElementById(`atom-cl1`);
+        const cl2 = document.getElementById(`atom-cl2`);
+        const clLabel = document.getElementById(`cl2Label`);
+
+        targetBond.style.opacity = '0';
+        clBond.style.opacity = '0';
+        if (clLabel) clLabel.style.opacity = '0';
+
+        await sleep(1000);
+
+        // STEP 2: 原子换位
+        resetSteps();
+        step2.className = "px-3 py-1 rounded-full border border-blue-500 bg-blue-500 text-white text-[9px] font-black uppercase tracking-tighter shadow-md";
+        
+        cl1.style.left = `${ORG_X + OFFSETS[targetHIdx].dx}px`;
+        cl1.style.top = `${ORG_Y + OFFSETS[targetHIdx].dy}px`;
+
+        targetAtomH.style.left = `${CL2_X - 20}px`;
+        targetAtomH.style.top = `${CL2_Y - 50}px`;
+
+        cl2.style.left = `${CL2_X + 20}px`;
+        cl2.style.top = `${CL2_Y - 50}px`;
+
+        await sleep(1500);
+
+        // STEP 3: 成键
+        resetSteps();
+        step3.className = "px-3 py-1 rounded-full border border-emerald-500 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-tighter shadow-md";
+        
+        createBond(ORG_X, ORG_Y, ORG_X + OFFSETS[targetHIdx].dx, ORG_Y + OFFSETS[targetHIdx].dy, document.getElementById('bondsContainer'), 'new-c-cl-bond', 'emerald-400');
+        createBond(CL2_X - 20, CL2_Y - 50, CL2_X + 20, CL2_Y - 50, document.getElementById('atomsContainer'), 'new-hcl-bond', 'rose-400');
+
+        await sleep(1200);
+
+        hclCount++;
+        addHClToShelf();
+        
+        currentStep++;
+        renderMolecules();
+        resetSteps();
+        isReacting = false;
+        updateUI();
+    }
+
+    function addHClToShelf() {
+        const shelf = document.getElementById('hclList');
+        const empty = document.getElementById('emptyList');
+        const badge = document.getElementById('hclCountBadge');
+        
+        if (empty) empty.remove();
+        badge.innerText = hclCount;
+
+        const div = document.createElement('div');
+        div.className = "product-card bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-center gap-2.5 hover:scale-105 transition-transform";
+        div.innerHTML = `
+            <div class="w-7 h-7 bg-blue-50 border border-blue-200 rounded-full flex items-center justify-center text-[8px] font-black text-blue-700 shadow-sm">H</div>
+            <div class="w-3 h-0.5 bg-slate-200 rounded-full"></div>
+            <div class="w-9 h-9 bg-emerald-500 border-2 border-emerald-700 rounded-full flex items-center justify-center text-[9px] font-black text-white shadow-sm">Cl</div>
+            <div class="ml-1.5 text-[7px] font-black text-slate-300">#${hclCount}</div>
+        `;
+        shelf.appendChild(div);
+        shelf.scrollTop = shelf.scrollHeight;
+    }
+
+    function resetApp() {
+        if (isReacting) return;
+        currentStep = 0;
+        hclCount = 0;
+        isLightOn = false;
+        isReacting = false;
+        
+        const shelf = document.getElementById('hclList');
+        shelf.innerHTML = `
+            <div id="emptyList" class="flex-1 flex items-center justify-center flex-col text-slate-200 gap-3 opacity-50">
+               <div class="w-12 h-12 border-4 border-dashed border-slate-200 rounded-full flex items-center justify-center text-xl font-black">?</div>
+               <p class="text-[8px] font-black uppercase tracking-[0.1em] text-center">暂无产物</p>
+            </div>
+        `;
+        document.getElementById('hclCountBadge').innerText = "0";
+
+        const switchBase = document.getElementById('lightSwitch');
+        if (switchBase.classList.contains('active')) {
+            toggleLight();
+        }
+
+        init();
+    }
+
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    window.onload = init;
+</script>
+
+</body>
+</html>

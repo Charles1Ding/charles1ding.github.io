@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Food Calorimeter Experiment</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- React & ReactDOM -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  
+  <!-- Babel (for in-browser JSX compilation) -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    .no-select {
+      user-select: none;
+      -webkit-user-select: none;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+  
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // --- Inline SVG Icons ---
+    const Flame = ({ size = 24, className = "" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+      </svg>
+    );
+
+    const Play = ({ size = 24, className = "" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <polygon points="5 3 19 12 5 21 5 3"/>
+      </svg>
+    );
+
+    const RotateCcw = ({ size = 24, className = "" }) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+    );
+
+    // --- Main App Component ---
+    function App() {
+      const [status, setStatus] = useState('idle'); // idle, igniting, burning, done
+      const [temperature, setTemperature] = useState(20.0);
+      const [showHeatTransfer, setShowHeatTransfer] = useState(false);
+      const [fuelType, setFuelType] = useState('popcorn'); // 'popcorn', 'nuts', 'alcohol'
+
+      const FUEL_DATA = {
+        popcorn: { targetTemp: 35.0, durationMs: 3000, label: "100g Popcorn", icon: "🍿", theme: "orange" },
+        nuts: { targetTemp: 50.0, durationMs: 4500, label: "100g Nuts", icon: "🥜", theme: "amber" },
+        alcohol: { targetTemp: 45.0, durationMs: 4000, label: "92g Alcohol", icon: "🥃", theme: "blue" }
+      };
+      
+      const INITIAL_TEMP = 20.0;
+      const MAX_TEMP_AXIS = 60.0; // 温度计最高刻度
+
+      const timerRef = useRef(null);
+      const timeoutRef = useRef(null);
+
+      const handleStart = () => {
+        if (status !== 'idle') return;
+        setStatus('igniting'); 
+        
+        timeoutRef.current = setTimeout(() => {
+          setStatus('burning'); 
+          
+          const currentFuel = FUEL_DATA[fuelType];
+          const ticks = currentFuel.durationMs / 50; 
+          const step = (currentFuel.targetTemp - INITIAL_TEMP) / ticks;
+
+          timerRef.current = setInterval(() => {
+            setTemperature(prev => {
+              const nextTemp = prev + step;
+              if (nextTemp >= currentFuel.targetTemp) {
+                clearInterval(timerRef.current);
+                setStatus('done');
+                return currentFuel.targetTemp;
+              }
+              return nextTemp;
+            });
+          }, 50);
+        }, 1500);
+      };
+
+      const handleReset = () => {
+        clearInterval(timerRef.current);
+        clearTimeout(timeoutRef.current);
+        setStatus('idle');
+        setTemperature(INITIAL_TEMP);
+      };
+
+      useEffect(() => {
+        return () => {
+          clearInterval(timerRef.current);
+          clearTimeout(timeoutRef.current);
+        };
+      }, []);
+
+      const renderApparatus = () => {
+        // 根据当前温度计算红色液柱高度 (映射 0-60度 到 0-160px)
+        const liquidHeight = (temperature / MAX_TEMP_AXIS) * 160;
+        
+        const currentFuel = FUEL_DATA[fuelType];
+        // 燃烧进度 (0 到 1)
+        const progress = Math.min(1, Math.max(0, (temperature - INITIAL_TEMP) / (currentFuel.targetTemp - INITIAL_TEMP)));
+        
+        // 固态燃料 (爆米花、坚果) 燃烧时萎缩
+        const solidScale = status === 'idle' ? 1 : Math.max(0.15, 1 - progress * 0.85);
+        // 火焰大小逐渐减弱
+        const flameScale = 1 - progress * 0.7;
+        
+        // 酒精灯的液面下降及火焰表现
+        const alcoholLiquidDrop = progress * 20; 
+        const alcoholFlameScale = status === 'done' ? 0 : (1 - progress * 0.2); 
+        const lighterY = fuelType === 'alcohol' ? 330 : 345;
+
+        return (
+          <svg viewBox="0 0 500 500" className="w-full h-auto max-w-4xl mx-auto drop-shadow-xl bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <defs>
+              <linearGradient id="waterGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#e0f2fe" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#bae6fd" stopOpacity="0.8" />
+              </linearGradient>
+              <linearGradient id="flameGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#ea580c" />
+                <stop offset="50%" stopColor="#fb923c" />
+                <stop offset="100%" stopColor="#fef08a" />
+              </linearGradient>
+              <linearGradient id="alcoholFlameGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="40%" stopColor="#60a5fa" />
+                <stop offset="70%" stopColor="#fef08a" />
+                <stop offset="100%" stopColor="#fde047" />
+              </linearGradient>
+              <linearGradient id="warmWaterGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stopColor="#ef4444" stopOpacity="0.8" />
+                <stop offset="60%" stopColor="#f97316" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#fef08a" stopOpacity="0" />
+              </linearGradient>
+              <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feComposite in="SourceGraphic" in2="blur" operator="over" />
+              </filter>
+              <clipPath id="liquidClip">
+                <rect x="130" y={357 + alcoholLiquidDrop} width="100" height="50" style={{ transition: 'y 0.1s linear' }} />
+              </clipPath>
+            </defs>
+
+            {/* 铁架台 */}
+            <rect x="30" y="460" width="220" height="15" rx="4" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="2" />
+            <rect x="70" y="60" width="12" height="400" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="2" />
+            
+            <rect x="80" y="170" width="60" height="8" rx="2" fill="#94a3b8" />
+            <ellipse cx="76" cy="174" rx="14" ry="10" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="2" />
+
+            {fuelType !== 'alcohol' && (
+              <g>
+                <rect x="80" y="360" width="40" height="6" rx="2" fill="#94a3b8" />
+                <ellipse cx="76" cy="363" rx="10" ry="8" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="2" />
+              </g>
+            )}
+
+            {/* 烧杯与水 */}
+            <path d="M 120 130 L 120 280 A 15 15 0 0 0 135 295 L 225 295 A 15 15 0 0 0 240 280 L 240 130" fill="none" stroke="#64748b" strokeWidth="4" />
+            <path d="M 115 130 L 125 130 M 235 130 L 245 130" stroke="#64748b" strokeWidth="4" strokeLinecap="round" />
+            
+            <path d="M 124 170 L 124 280 A 11 11 0 0 0 135 291 L 225 291 A 11 11 0 0 0 236 280 L 236 170 Z" fill="url(#waterGrad)" />
+            
+            {showHeatTransfer && (
+              <path d="M 124 170 L 124 280 A 11 11 0 0 0 135 291 L 225 291 A 11 11 0 0 0 236 280 L 236 170 Z" 
+                    fill="url(#warmWaterGrad)" 
+                    opacity={progress * 0.9} 
+                    style={{ transition: 'opacity 0.2s', mixBlendMode: 'multiply' }} />
+            )}
+
+            {/* Calorimeter Sign (Moved to top) */}
+            <g transform="translate(180, 30)">
+              <rect x="-60" y="-14" width="120" height="28" rx="6" fill="#f8fafc" stroke="#94a3b8" strokeWidth="2" opacity="0.9" />
+              <text x="0" y="5" textAnchor="middle" fontSize="13" fontWeight="bold" fill="#334155" letterSpacing="1">CALORIMETER</text>
+            </g>
+            
+            {/* 经典水银/酒精温度计 */}
+            <g transform="rotate(8, 180, 250)">
+              <rect x="174" y="60" width="12" height="210" rx="6" fill="#f8fafc" stroke="#94a3b8" strokeWidth="2" />
+              <circle cx="180" cy="275" r="10" fill="#ef4444" />
+              <rect x="178" y={270 - liquidHeight} width="4" height={liquidHeight} fill="#ef4444" />
+              {/* 刻度线 0 - 60 */}
+              {[0, 10, 20, 30, 40, 50, 60].map(val => (
+                <g key={val}>
+                  <line x1="174" y1={270 - (val/60)*160} x2="178" y2={270 - (val/60)*160} stroke="#64748b" strokeWidth="1.5" />
+                  {val % 20 === 0 && <text x="156" y={273 - (val/60)*160} fontSize="8" fill="#475569">{val}</text>}
+                </g>
+              ))}
+            </g>
+
+            {/* 燃料区域配置 */}
+            {fuelType !== 'alcohol' ? (
+              <g id="solid-setup">
+                <rect x="100" y="361" width="80" height="4" fill="#64748b" /> 
+                <path d="M 160 363 C 160 375, 200 375, 200 363 Z" fill="#94a3b8" stroke="#475569" strokeWidth="2" /> 
+
+                <g transform={`translate(180, 355) scale(${solidScale})`} style={{ transition: 'transform 0.1s linear' }}>
+                  {fuelType === 'popcorn' ? (
+                    <path d="M -15 -5 C -20 -15, -10 -25, 0 -20 C 10 -25, 20 -15, 15 -5 C 25 5, 15 15, 5 10 C 0 15, -10 15, -10 10 C -20 15, -25 5, -15 -5 Z" 
+                          fill={status === 'done' ? '#d1d5db' : (status === 'burning' ? '#a16207' : '#fde047')} 
+                          stroke={status === 'done' ? '#9ca3af' : '#ca8a04'} strokeWidth="1.5" style={{ transition: 'fill 3s, stroke 3s' }}/>
+                  ) : (
+                    /* Nuts (Almonds/Peanuts Shape) */
+                    <g fill={status === 'done' ? '#6b7280' : (status === 'burning' ? '#451a03' : '#d97706')} stroke={status === 'done' ? '#4b5563' : '#92400e'} strokeWidth="1" style={{ transition: 'fill 3s' }}>
+                      <ellipse cx="-8" cy="-5" rx="8" ry="5" transform="rotate(30 -8 -5)" />
+                      <ellipse cx="8" cy="-8" rx="9" ry="6" transform="rotate(-20 8 -8)" />
+                      <ellipse cx="0" cy="-14" rx="7" ry="5" transform="rotate(10 0 -14)" />
+                    </g>
+                  )}
+                </g>
+                
+                {/* 固态火焰 (带火星) */}
+                {status === 'burning' && (
+                  <g transform={`translate(180, 330) scale(${flameScale})`}>
+                    <path d="M 0 0 Q -15 -15 0 -35 Q 15 -15 0 0" fill="url(#flameGrad)" className="animate-pulse" />
+                    <path d="M 0 -5 Q -8 -15 0 -25 Q 8 -15 0 -5" fill="#fef08a" />
+                    <circle cx="-5" cy="0" r="1.5" fill="#f97316">
+                      <animate attributeName="cy" values="0; -40" dur="0.8s" repeatCount="indefinite" />
+                      <animate attributeName="cx" values="-5; -15" dur="0.8s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="1; 0" dur="0.8s" repeatCount="indefinite" />
+                    </circle>
+                    <circle cx="5" cy="0" r="2" fill="#fef08a">
+                      <animate attributeName="cy" values="0; -50" dur="1s" repeatCount="indefinite" />
+                      <animate attributeName="cx" values="5; 15" dur="1s" repeatCount="indefinite" />
+                      <animate attributeName="opacity" values="1; 0" dur="1s" repeatCount="indefinite" />
+                    </circle>
+                  </g>
+                )}
+              </g>
+            ) : (
+              <g id="alcohol-setup">
+                <path d="M 150 460 L 210 460 L 205 400 L 155 400 Z" fill="#94a3b8" />
+                <g>
+                  <path d="M 162 357 L 198 357 C 220 362, 230 402, 180 402 C 130 402, 140 362, 162 357 Z" fill="#bae6fd" clipPath="url(#liquidClip)" />
+                  <path d="M 166 355 L 194 355 C 220 362, 230 402, 180 402 C 130 402, 140 362, 166 355 Z" fill="none" stroke="#94a3b8" strokeWidth="3" opacity="0.6" />
+                  <path d="M 166 355 L 194 355 C 220 362, 230 402, 180 402 C 130 402, 140 362, 166 355 Z" fill="#e2e8f0" opacity="0.3" />
+                  <rect x="170" y="345" width="20" height="10" rx="2" fill="#cbd5e1" stroke="#64748b" strokeWidth="2" />
+                  <rect x="174" y="339" width="12" height="6" fill="#94a3b8" stroke="#64748b" strokeWidth="2" />
+                  <path d="M 180 339 Q 180 367 165 392" stroke="#a8a29e" strokeWidth="3" fill="none" opacity="0.8" />
+                  <path d="M 180 339 L 180 335" stroke="#57534e" strokeWidth="4" strokeLinecap="round" />
+                </g>
+                {/* 酒精灯蓝色稳定火焰 */}
+                {status === 'burning' && (
+                  <g transform={`translate(180, 335) scale(${alcoholFlameScale})`}>
+                    <path d="M 0 0 C -15 -10, -10 -35, 0 -45 C 10 -35, 15 -10, 0 0 Z" fill="url(#alcoholFlameGrad)" className="animate-pulse" />
+                    <path d="M 0 -5 C -6 -12, -4 -20, 0 -25 C 4 -20, 6 -12, 0 -5 Z" fill="#60a5fa" />
+                  </g>
+                )}
+              </g>
+            )}
+
+            {/* 打火机动画 */}
+            <g className={`transition-all duration-700 ease-out ${status === 'igniting' ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-12 pointer-events-none'}`} transform={`translate(205, ${lighterY})`}>
+              <rect x="15" y="-10" width="35" height="20" rx="3" fill="#ef4444" /> 
+              <rect x="5" y="-4" width="10" height="8" fill="#94a3b8" /> 
+              {status === 'igniting' && (
+                <path d="M 5 0 Q -5 -5 -15 0 Q -5 5 5 0 Z" fill="#38bdf8" className="animate-pulse" />
+              )}
+            </g>
+
+            {/* 热辐射波纹 */}
+            {status === 'burning' && (
+              <g stroke={fuelType === 'alcohol' ? "#3b82f6" : "#f97316"} strokeWidth="2.5" strokeLinecap="round" fill="none" opacity="0.4" className="animate-pulse">
+                <path d="M 155 315 Q 145 295 155 275 T 155 235" />
+                <path d="M 180 300 Q 190 280 180 260 T 180 220" />
+                <path d="M 205 315 Q 195 295 205 275 T 205 235" />
+              </g>
+            )}
+
+            {/* 能量向水传递的红色光束 */}
+            {showHeatTransfer && status === 'burning' && (
+              <g style={{ filter: 'url(#glow)' }}>
+                <g stroke={fuelType === 'alcohol' ? "#60a5fa" : "#fb923c"} fill="none" opacity="0.7">
+                  <path d="M 165 320 Q 150 260 170 200" strokeWidth="2" strokeDasharray="4 8" strokeLinecap="round">
+                    <animate attributeName="stroke-dashoffset" values="24;0" dur="0.8s" repeatCount="indefinite" />
+                  </path>
+                  <path d="M 180 310 Q 195 250 180 180" strokeWidth="3" strokeDasharray="6 12" strokeLinecap="round">
+                    <animate attributeName="stroke-dashoffset" values="36;0" dur="0.6s" repeatCount="indefinite" />
+                  </path>
+                  <path d="M 195 320 Q 180 260 195 210" strokeWidth="2" strokeDasharray="4 8" strokeLinecap="round">
+                    <animate attributeName="stroke-dashoffset" values="24;0" dur="1s" repeatCount="indefinite" />
+                  </path>
+                </g>
+                {[
+                  { id: 1, cx: 165, startY: 320, endY: 200, dur: "1.5s", delay: "0s", r: 2.5 },
+                  { id: 2, cx: 180, startY: 315, endY: 180, dur: "1.2s", delay: "0.4s", r: 3 },
+                  { id: 3, cx: 195, startY: 320, endY: 210, dur: "1.8s", delay: "0.2s", r: 2 },
+                  { id: 4, cx: 172, startY: 310, endY: 190, dur: "1.4s", delay: "0.7s", r: 3.5 },
+                  { id: 5, cx: 188, startY: 325, endY: 185, dur: "1.6s", delay: "0.1s", r: 2 },
+                  ...(fuelType === 'nuts' ? [ // 坚果燃烧放出更多能量粒子
+                    { id: 6, cx: 175, startY: 310, endY: 170, dur: "1.1s", delay: "0.3s", r: 4 },
+                    { id: 7, cx: 185, startY: 315, endY: 190, dur: "1.3s", delay: "0.5s", r: 3 },
+                  ] : [])
+                ].map(p => (
+                  <circle key={p.id} cx={p.cx} r={p.r} fill={fuelType === 'alcohol' ? "#93c5fd" : "#fef08a"}>
+                    <animate attributeName="cy" values={`${p.startY}; ${p.endY}`} dur={p.dur} begin={p.delay} repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0; 0.9; 0.9; 0" keyTimes="0; 0.2; 0.8; 1" dur={p.dur} begin={p.delay} repeatCount="indefinite" />
+                  </circle>
+                ))}
+              </g>
+            )}
+
+            {/* 引线与标签 */}
+            <g className="text-sm font-semibold fill-gray-700">
+              <line x1="185" y1="120" x2="300" y2="100" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4 2" />
+              <text x="310" y="105">Thermometer (ΔT)</text>
+
+              <line x1="230" y1="210" x2="300" y2="210" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4 2" />
+              <text x="310" y="215" fill="#0284c7" fontWeight="bold">Water (200g)</text>
+
+              {fuelType !== 'alcohol' ? (
+                <g>
+                  <line x1="200" y1="345" x2="300" y2="330" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4 2" />
+                  <text x="310" y="335">{FUEL_DATA[fuelType].label}</text>
+                  <line x1="190" y1="370" x2="300" y2="390" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4 2" />
+                  <text x="310" y="395">Combustion Spoon</text>
+                </g>
+              ) : (
+                <g>
+                  <line x1="200" y1="400" x2="300" y2="380" stroke="#94a3b8" strokeWidth="1.5" strokeDasharray="4 2" />
+                  <text x="310" y="385">Spirit Burner ({FUEL_DATA[fuelType].label})</text>
+                </g>
+              )}
+            </g>
+          </svg>
+        );
+      };
+
+      // 计算当前温度的改变 (Delta T)
+      const deltaT = (temperature - INITIAL_TEMP).toFixed(1);
+
+      return (
+        <div className="min-h-screen bg-gray-50 p-4 md:p-6 flex justify-center items-start">
+          <div className="w-full max-w-7xl mx-auto">
+            {/* 调整比例：使得左侧更大(75%)，右侧更小(25%) */}
+            <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+              
+              {/* 左侧：仅实验装置 (增大占比) */}
+              <div className="w-full md:w-2/3 lg:w-3/4 flex justify-center items-center md:sticky md:top-6">
+                {renderApparatus()}
+              </div>
+
+              {/* 右侧：统一的控制面板面板 */}
+              <div className="w-full md:w-1/3 lg:w-1/4 bg-white p-4 lg:p-5 rounded-3xl shadow-lg border border-gray-100 flex flex-col gap-4 lg:gap-5 md:sticky md:top-6">
+                
+                <header>
+                  <h1 className="text-lg lg:text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Flame className="text-orange-500" size={24} />
+                    Food Calorimeter
+                  </h1>
+                  <p className="text-gray-600 mt-2 text-xs leading-relaxed">
+                    Observe the <strong>temperature change (ΔT)</strong> of <strong>200g water</strong> to compare heat energy.
+                  </p>
+                </header>
+
+                <div className="border-t border-gray-100"></div>
+                
+                <div>
+                  <h2 className="text-sm font-bold mb-2 text-gray-800">1. Select Fuel</h2>
+                  <div className="flex flex-col gap-2">
+                    {Object.entries(FUEL_DATA).map(([key, data]) => (
+                      <button 
+                        key={key}
+                        onClick={() => setFuelType(key)}
+                        disabled={status !== 'idle'}
+                        className={`w-full py-2 px-3 text-left text-xs lg:text-sm font-bold rounded-lg transition-all border ${fuelType === key ? `bg-${data.theme}-50 border-${data.theme}-300 text-${data.theme}-700 shadow-sm` : 'bg-white border-gray-200 text-gray-500 hover:bg-gray-50'} ${status !== 'idle' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        {data.icon} {data.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100"></div>
+
+                <div>
+                  <h2 className="text-sm font-bold mb-2 text-gray-800">2. Experiment Control</h2>
+                  <div className="flex flex-col gap-2.5">
+                    <button 
+                      onClick={handleStart}
+                      disabled={status !== 'idle'}
+                      className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all no-select
+                        ${status === 'idle' ? (fuelType === 'alcohol' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-orange-500 hover:bg-orange-600') + ' text-white shadow-md hover:shadow-lg' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
+                    >
+                      <Play size={18} />
+                      Ignite {FUEL_DATA[fuelType].icon}
+                    </button>
+                    <button 
+                      onClick={handleReset}
+                      className="w-full py-2 px-3 rounded-xl flex items-center justify-center gap-2 text-xs font-bold bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all no-select"
+                    >
+                      <RotateCcw size={16} />
+                      Reset Experiment
+                    </button>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 p-2.5 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 cursor-pointer transition-colors no-select">
+                  <input 
+                    type="checkbox" 
+                    className="w-4 h-4 accent-red-500 cursor-pointer"
+                    checked={showHeatTransfer}
+                    onChange={(e) => setShowHeatTransfer(e.target.checked)}
+                  />
+                  <span className="font-bold text-xs text-red-800">Visualize Heat Transfer</span>
+                </label>
+
+                <div className="border-t border-gray-100"></div>
+
+                <div>
+                  <h2 className="text-sm font-bold mb-2 text-gray-800">3. Experimental Data</h2>
+                  <div className="flex flex-col gap-2.5">
+                    <div className="bg-sky-50 p-3 rounded-xl border border-sky-200 relative overflow-hidden">
+                      <div className="text-xs text-sky-700 font-semibold mb-1">Current Water Temp</div>
+                      <div className="text-2xl font-bold text-sky-800 tracking-tight flex items-baseline gap-1">
+                        {temperature.toFixed(1)} <span className="text-lg font-medium">°C</span>
+                      </div>
+                      
+                      <div className="mt-2 pt-2 border-t border-sky-200 text-xs text-sky-800 flex justify-between items-center bg-white p-2 rounded-lg shadow-sm">
+                        <span className="font-bold">ΔT:</span>
+                        <span className={`font-bold text-sm ${deltaT > 0 ? 'text-red-500' : 'text-sky-600'}`}>
+                          +{deltaT} °C
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-orange-50 p-2.5 rounded-xl border border-orange-100 flex flex-col gap-1.5">
+                      <div className="text-xs text-orange-600 font-semibold">Status</div>
+                      <div className="text-xs font-bold text-orange-800">
+                        {status === 'idle' && "Ready (20°C)"}
+                        {status === 'igniting' && "Igniting..."}
+                        {status === 'burning' && "Burning & Heating..."}
+                        {status === 'done' && "Burn Complete"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

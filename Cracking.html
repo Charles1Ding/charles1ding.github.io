@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>癸烷热裂解过程演示 (环境控制版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        #canvas-container { 
+            background: white; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            position: relative;
+            overflow: hidden;
+            cursor: default;
+            width: 100%;
+        }
+        .atom {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 10;
+            user-select: none;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .atom-C { background: #475569; color: white; border: 2px solid #1e293b; }
+        .atom-H { background: white; color: #475569; border: 2px solid #94a3b8; font-size: 10px; }
+        
+        .bond {
+            position: absolute;
+            background: #64748b;
+            z-index: 5;
+            transform-origin: left center;
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            pointer-events: none;
+        }
+        .bond-breaking {
+            background: #ef4444 !important;
+            box-shadow: 0 0 15px #ef4444;
+        }
+        
+        .bond-double::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 2px;
+            background: #3b82f6; 
+            left: 0;
+            top: -6px; 
+            transform-origin: center;
+            animation: singleLineAdd 0.8s forwards ease-out;
+        }
+        
+        @keyframes singleLineAdd {
+            from { opacity: 0; transform: scaleX(0); }
+            to { opacity: 1; transform: scaleX(1); }
+        }
+
+        .draggable-h {
+            cursor: grab;
+            box-shadow: 0 0 15px #fbbf24;
+            border: 2px solid #fbbf24 !important;
+            z-index: 50;
+            transition: transform 0.2s !important;
+        }
+        .draggable-h:active { cursor: grabbing; transform: scale(1.1); }
+        
+        .drop-zone {
+            border: 2px dashed #fbbf24 !important;
+            background: #fef3c7 !important;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .highlight-text { color: #d97706; font-weight: bold; }
+        .fade-out { opacity: 0; pointer-events: none; transition: all 1s ease; }
+        
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+        }
+        .status-ready { background-color: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .status-waiting { background-color: #ef4444; box-shadow: 0 0 8px #ef4444; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="max-w-[1600px] mx-auto">
+    <header class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-800">癸烷热裂解：环境门槛实验</h1>
+        <p class="text-sm text-slate-600">只有满足特定的热力学和催化条件，反应才会发生</p>
+    </header>
+
+    <div class="grid grid-cols-12 gap-6">
+        <!-- 控制面板 -->
+        <div class="col-span-12 lg:col-span-3 space-y-4">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-xs font-bold mb-4 text-slate-500 uppercase tracking-wider">实验环境控制</h2>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-semibold text-slate-700">反应温度</label>
+                        <span id="tempDisplay" class="text-sm font-bold text-blue-600">25℃</span>
+                    </div>
+                    <input type="range" id="tempRange" min="0" max="800" value="25" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                        <span>0℃</span>
+                        <span class="text-red-400 font-bold">540℃ (阈值)</span>
+                        <span>800℃</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between mb-6 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <div class="flex flex-col">
+                        <span class="text-sm font-semibold text-slate-700">Zeolite 催化剂</span>
+                        <span class="text-[10px] text-slate-500">提供反应活性位点</span>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="zeoliteToggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
+                    </label>
+                </div>
+
+                <hr class="mb-4">
+
+                <div id="statusText" class="text-[11px] mb-3 font-medium flex items-center">
+                    <span id="statusLed" class="status-indicator status-waiting"></span>
+                    <span id="statusMsg">等待条件达成...</span>
+                </div>
+                
+                <button id="nextBtn" class="w-full bg-slate-400 text-white py-3 rounded-lg text-sm font-bold transition-all mb-2 cursor-not-allowed shadow-sm" disabled>
+                    开始反应
+                </button>
+                
+                <button id="resetBtn" class="w-full border border-slate-200 hover:bg-slate-50 text-slate-500 py-2 rounded-lg text-xs font-semibold transition-all">
+                    重置实验
+                </button>
+            </div>
+            
+            <div id="infoBox" class="bg-amber-50 p-4 rounded-xl border border-amber-100">
+                <h3 class="text-xs font-bold text-amber-800 mb-2 uppercase tracking-wider">反应机理提示</h3>
+                <p id="description" class="text-xs text-amber-900 leading-relaxed italic">
+                    癸烷的 C-C 键非常稳定。在工业上，通常需要 540℃ 以上的高温提供动能，并辅以沸石（Zeolite）催化剂来降低活化能。
+                </p>
+            </div>
+        </div>
+
+        <!-- 模拟区域 -->
+        <div class="col-span-12 lg:col-span-9">
+            <div id="canvas-container" style="height: 650px;">
+                <!-- 原子和键将由 JS 动态生成 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('canvas-container');
+    const desc = document.getElementById('description');
+    const nextBtn = document.getElementById('nextBtn');
+    const tempRange = document.getElementById('tempRange');
+    const tempDisplay = document.getElementById('tempDisplay');
+    const zeoliteToggle = document.getElementById('zeoliteToggle');
+    const statusLed = document.getElementById('statusLed');
+    const statusMsg = document.getElementById('statusMsg');
+    
+    let stage = 0; 
+    let atoms = [];
+    let bonds = [];
+    let activeH = null;
+    let targetCNode = null;
+
+    const config = {
+        C_SPACING: 85,
+        H_OFFSET: 60,
+        START_X: 100,
+        START_Y: 300,
+        TEMP_THRESHOLD: 540
+    };
+
+    // 环境控制逻辑
+    function updateControls() {
+        const currentTemp = parseInt(tempRange.value);
+        const hasZeolite = zeoliteToggle.checked;
+        tempDisplay.innerText = `${currentTemp}℃`;
+
+        if (stage >= 2) return;
+
+        const tempOk = currentTemp >= config.TEMP_THRESHOLD;
+        
+        if (tempOk && hasZeolite) {
+            nextBtn.disabled = false;
+            nextBtn.classList.remove('bg-slate-400', 'cursor-not-allowed');
+            nextBtn.classList.add('bg-blue-600', 'hover:bg-blue-700', 'shadow-blue-100');
+            statusLed.className = 'status-indicator status-ready';
+            statusMsg.innerText = '条件已达成，可进行裂解';
+            statusMsg.className = 'text-green-600';
+        } else {
+            nextBtn.disabled = true;
+            nextBtn.classList.add('bg-slate-400', 'cursor-not-allowed');
+            nextBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            statusLed.className = 'status-indicator status-waiting';
+            statusMsg.className = 'text-red-500';
+            
+            if (!tempOk && !hasZeolite) statusMsg.innerText = '温度不足且缺少催化剂';
+            else if (!tempOk) statusMsg.innerText = '温度未达 540℃ 门槛';
+            else statusMsg.innerText = '缺少 Zeolite 催化位点';
+        }
+    }
+
+    tempRange.addEventListener('input', updateControls);
+    zeoliteToggle.addEventListener('change', updateControls);
+
+    function clear() {
+        container.innerHTML = '';
+        atoms = [];
+        bonds = [];
+        activeH = null;
+        targetCNode = null;
+    }
+
+    function createAtom(type, x, y, id) {
+        const div = document.createElement('div');
+        div.className = `atom atom-${type}`;
+        div.innerText = type;
+        div.style.left = `${x}px`;
+        div.style.top = `${y}px`;
+        div.id = id;
+        container.appendChild(div);
+        const obj = { id, type, x, y, el: div };
+        atoms.push(obj);
+        return obj;
+    }
+
+    function createBond(idA, idB, isDouble = false) {
+        const div = document.createElement('div');
+        div.className = isDouble ? 'bond bond-double' : 'bond';
+        div.id = `bond-${idA}-${idB}`;
+        div.style.height = '2px';
+        container.appendChild(div);
+        const bondObj = { idA, idB, isDouble, el: div };
+        bonds.push(bondObj);
+        updateBondPosition(bondObj);
+        return bondObj;
+    }
+
+    function updateBondPosition(bond) {
+        const a = atoms.find(at => at.id === bond.idA);
+        const b = atoms.find(at => at.id === bond.idB);
+        if (!a || !b) return;
+
+        const x1 = a.x + 15;
+        const y1 = a.y + 15;
+        const x2 = b.x + 15;
+        const y2 = b.y + 15;
+
+        const length = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+        const angle = Math.atan2(y2-y1, x2-x1) * 180 / Math.PI;
+
+        bond.el.style.width = `${length}px`;
+        bond.el.style.left = `${x1}px`;
+        bond.el.style.top = `${y1 - 1}px`;
+        bond.el.style.transform = `rotate(${angle}deg)`;
+    }
+
+    // 初始化渲染癸烷
+    function renderDecane() {
+        clear();
+        stage = 0;
+        nextBtn.innerText = "开始反应 (第一阶段)";
+        updateControls();
+        desc.innerHTML = "<b>反应底物：癸烷 (Decane)</b>。<br>请调节控制面板，满足工业裂解条件。";
+
+        for(let i=0; i<10; i++) {
+            const cx = config.START_X + i * config.C_SPACING;
+            const cy = config.START_Y;
+            createAtom('C', cx, cy, `C${i}`);
+            if(i > 0) createBond(`C${i-1}`, `C${i}`);
+
+            const hTop = createAtom('H', cx, cy - config.H_OFFSET, `C${i}HT`);
+            const hBot = createAtom('H', cx, cy + config.H_OFFSET, `C${i}HB`);
+            createBond(`C${i}`, hTop.id);
+            createBond(`C${i}`, hBot.id);
+
+            if(i === 0) createBond(`C0`, createAtom('H', cx - config.H_OFFSET, cy, `C0HL`).id);
+            if(i === 9) createBond(`C9`, createAtom('H', cx + config.H_OFFSET, cy, `C9HR`).id);
+        }
+    }
+
+    // 触发裂解
+    async function initiateCracking(breakCIdx) {
+        const breakIdA = `C${breakCIdx}`;
+        const breakIdB = `C${breakCIdx+1}`;
+        const bBond = bonds.find(b => (b.idA === breakIdA && b.idB === breakIdB));
+        
+        bBond.el.classList.add('bond-breaking');
+        desc.innerHTML = `<b>高温热裂解：</b><br>在沸石催化位点处，<span class='highlight-text'>${breakIdA}-${breakIdB}</span> 键发生断裂。`;
+        
+        await new Promise(r => setTimeout(r, 800));
+
+        // 右侧片段平移
+        atoms.forEach(at => {
+            const idxMatch = at.id.match(/\d+/);
+            if(idxMatch && parseInt(idxMatch[0]) > breakCIdx) {
+                at.x += 100;
+                at.el.style.left = `${at.x}px`;
+            }
+        });
+        bonds.forEach(updateBondPosition);
+
+        bonds = bonds.filter(b => b !== bBond);
+        bBond.el.remove();
+
+        // 提取待转移的氢
+        const neighborCIdx = breakCIdx + 2; 
+        const hToTransfer = atoms.find(at => at.id === `C${neighborCIdx}HB`);
+        const oldHBond = bonds.find(b => b.idA === `C${neighborCIdx}` && b.idB === hToTransfer.id);
+        
+        oldHBond.el.style.opacity = '0';
+        bonds = bonds.filter(b => b !== oldHBond);
+        oldHBond.el.remove();
+
+        hToTransfer.el.classList.add('draggable-h');
+        activeH = hToTransfer;
+        
+        targetCNode = atoms.find(at => at.id === breakIdA);
+        targetCNode.el.classList.add('drop-zone');
+
+        desc.innerHTML = `<b>链断裂成功：</b><br>请拖拽氢原子到断裂点 <span class='highlight-text'>${breakIdA}</span> 以稳定自由基。`;
+        
+        enableDragging(hToTransfer);
+    }
+
+    // 拖拽逻辑
+    function enableDragging(hObj) {
+        let isDragging = false;
+        const onMouseDown = () => { isDragging = true; hObj.el.style.transition = 'none'; };
+        const onMouseMove = (e) => {
+            if (!isDragging) return;
+            const rect = container.getBoundingClientRect();
+            hObj.x = e.clientX - rect.left - 15;
+            hObj.y = e.clientY - rect.top - 15;
+            hObj.el.style.left = `${hObj.x}px`;
+            hObj.el.style.top = `${hObj.y}px`;
+        };
+        const onMouseUp = async () => {
+            if (!isDragging) return;
+            isDragging = false;
+            hObj.el.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            const dx = hObj.x - targetCNode.x;
+            const dy = hObj.y - targetCNode.y;
+            if (Math.sqrt(dx*dx + dy*dy) < 80) {
+                hObj.x = targetCNode.x + config.C_SPACING / 2;
+                hObj.y = targetCNode.y;
+                hObj.el.style.left = `${hObj.x}px`;
+                hObj.el.style.top = `${hObj.y}px`;
+                hObj.el.classList.remove('draggable-h');
+                targetCNode.el.classList.remove('drop-zone');
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                await finalizeStep();
+            }
+        };
+        hObj.el.addEventListener('mousedown', onMouseDown);
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    }
+
+    // 完成当前阶段
+    async function finalizeStep() {
+        if (stage === 0) {
+            createBond(targetCNode.id, activeH.id);
+        }
+        
+        desc.innerHTML = `<b>氢转移完成！</b><br>电子云重排，诱导形成稳定的双键。`;
+        await new Promise(r => setTimeout(r, 1000));
+
+        const breakCIdx = stage === 0 ? 4 : 7;
+        const alkeneC1 = `C${breakCIdx + 1}`;
+        const alkeneC2 = `C${breakCIdx + 2}`;
+        const alkeneBond = bonds.find(b => b.idA === alkeneC1 && b.idB === alkeneC2);
+        
+        if (alkeneBond) {
+            alkeneBond.isDouble = true;
+            alkeneBond.el.classList.add('bond-double');
+        }
+
+        await new Promise(r => setTimeout(r, 1000));
+
+        if (stage === 0) {
+            desc.innerHTML = `<b>中间产物：戊烷 + 戊烯</b>。<br>由于温度仍保持在 540℃，戊烯将继续发生二次裂解。`;
+            
+            const leftIds = ['C0','C1','C2','C3','C4','C0HL','C0HT','C0HB','C1HT','C1HB','C2HT','C2HB','C3HT','C3HB','C4HT','C4HB'];
+            atoms.filter(at => leftIds.includes(at.id) || at === activeH).forEach(at => {
+                at.x -= 300; at.y -= 200;
+                at.el.style.left = `${at.x}px`; at.el.style.top = `${at.y}px`;
+                at.el.classList.add('fade-out');
+            });
+
+            const containerWidth = container.offsetWidth;
+            const targetCenterX = containerWidth / 2;
+            const currentC7X = atoms.find(at => at.id === 'C7').x;
+            const offsetX = targetCenterX - currentC7X - 15;
+            const offsetY = config.START_Y - atoms.find(at => at.id === 'C7').y;
+
+            atoms.forEach(at => {
+                const idxMatch = at.id.match(/\d+/);
+                if(idxMatch && parseInt(idxMatch[0]) >= 5 && !at.el.classList.contains('fade-out')) {
+                    at.x += offsetX; at.y += offsetY;
+                    at.el.style.left = `${at.x}px`; at.el.style.top = `${at.y}px`;
+                }
+            });
+
+            stage = 1; 
+            updateControls(); 
+            nextBtn.innerText = "继续反应 (第二阶段)";
+        } else {
+            desc.innerHTML = "<b>热裂解最终产物：</b><br><b>丙烯</b>(Propene) 和 <b>乙烯</b>(Ethene)。实验圆满完成！";
+            
+            // 核心功能：移动所有产物到界面中心
+            const canvasW = container.offsetWidth;
+            const canvasH = container.offsetHeight;
+            const centerX = canvasW / 2;
+            const centerY = canvasH / 2;
+
+            atoms.forEach(at => {
+                const idxMatch = at.id.match(/\d+/);
+                if (!idxMatch) return;
+                const idx = parseInt(idxMatch[0]);
+
+                if (idx >= 8) {
+                    // 乙烯组 (C8-C9) -> 放在右侧
+                    const baseCX = centerX + 120;
+                    const baseCY = centerY;
+                    if (at.id === 'C8') { at.x = baseCX; at.y = baseCY; }
+                    else if (at.id === 'C9') { at.x = baseCX + config.C_SPACING; at.y = baseCY; }
+                    else {
+                        const parentCIdx = at.id.match(/\d+/)[0];
+                        const parentC = atoms.find(a => a.id === `C${parentCIdx}`);
+                        const offset = config.H_OFFSET / 1.5;
+                        if (at.id.endsWith('HT')) { at.x = parentC.x; at.y = parentC.y - offset; }
+                        else if (at.id.endsWith('HB')) { at.x = parentC.x; at.y = parentC.y + offset; }
+                        else if (at.id.endsWith('HR')) { at.x = parentC.x + offset; at.y = parentC.y; }
+                        else if (at.id.endsWith('HL')) { at.x = parentC.x - offset; at.y = parentC.y; }
+                    }
+                } else if (idx >= 5) {
+                    // 丙烯组 (C5-C7) -> 放在左侧
+                    const baseCX = centerX - 250;
+                    const baseCY = centerY;
+                    if (at.id === 'C5') { at.x = baseCX; at.y = baseCY; }
+                    else if (at.id === 'C6') { at.x = baseCX + config.C_SPACING; at.y = baseCY; }
+                    else if (at.id === 'C7') { at.x = baseCX + config.C_SPACING * 2; at.y = baseCY; }
+                    else {
+                        const parentCIdx = at.id.match(/\d+/)[0];
+                        const parentC = atoms.find(a => a.id === `C${parentCIdx}`);
+                        const offset = config.H_OFFSET / 1.5;
+                        if (at.id.endsWith('HT')) { at.x = parentC.x; at.y = parentC.y - offset; }
+                        else if (at.id.endsWith('HB')) { at.x = parentC.x; at.y = parentC.y + offset; }
+                        else if (at.id.endsWith('HR')) { at.x = parentC.x + offset; at.y = parentC.y; }
+                        else if (at.id.endsWith('HL')) { at.x = parentC.x - offset; at.y = parentC.y; }
+                    }
+                    
+                    // 特殊处理转移过来的H原子 (activeH 加成在 C7 上)
+                    if (at === activeH) {
+                        const c7 = atoms.find(a => a.id === 'C7');
+                        at.x = c7.x + config.H_OFFSET / 1.5;
+                        at.y = c7.y;
+                    }
+                }
+
+                at.el.style.left = `${at.x}px`;
+                at.el.style.top = `${at.y}px`;
+            });
+
+            stage = 2; 
+            nextBtn.innerText = "实验完成";
+            nextBtn.disabled = true;
+            nextBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+            nextBtn.classList.add('bg-green-600');
+            statusLed.className = 'status-indicator status-ready';
+            statusMsg.innerText = '反应进程已结束';
+            statusMsg.className = 'text-green-600';
+        }
+        
+        bonds.forEach(updateBondPosition);
+    }
+
+    nextBtn.onclick = async () => {
+        nextBtn.disabled = true;
+        if(stage === 0) await initiateCracking(4);
+        else if(stage === 1) await initiateCracking(7);
+    };
+
+    document.getElementById('resetBtn').onclick = renderDecane;
+    window.onload = renderDecane;
+</script>
+</body>
+</html>

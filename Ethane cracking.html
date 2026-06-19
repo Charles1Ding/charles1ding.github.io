@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>乙烷热裂解路径选择模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f0f4f8; font-family: 'Segoe UI', system-ui, sans-serif; }
+        #canvas-container { 
+            background: white; 
+            border: 2px solid #cbd5e1; 
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+        }
+        .atom {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 10;
+            user-select: none;
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .atom-C { background: #334155; color: white; border: 2px solid #0f172a; }
+        .atom-H { background: #ffffff; color: #334155; border: 2px solid #94a3b8; font-size: 12px; }
+        
+        .bond {
+            position: absolute;
+            background: #94a3b8;
+            z-index: 5;
+            transform-origin: left center;
+            transition: all 0.6s ease;
+            pointer-events: none;
+        }
+        .bond-double::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: #3b82f6; 
+            left: 0;
+            top: -8px; 
+            animation: doubleBondAnim 0.5s forwards;
+        }
+        .bond-breaking {
+            background: #ef4444 !important;
+            box-shadow: 0 0 15px #ef4444;
+            animation: shake 0.2s infinite;
+        }
+
+        @keyframes doubleBondAnim {
+            from { opacity: 0; transform: scaleX(0); }
+            to { opacity: 1; transform: scaleX(1); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(2px, 2px); }
+        }
+
+        .selectable-bond {
+            cursor: pointer;
+            pointer-events: auto;
+            height: 12px !important;
+            background: rgba(148, 163, 184, 0.1);
+            border-radius: 6px;
+        }
+        .selectable-bond:hover {
+            background: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Highlight for H atoms that can be clicked */
+        .interactive-h {
+            cursor: pointer;
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5);
+            animation: pulse-blue 1.5s infinite;
+            border-color: #3b82f6 !important;
+        }
+        @keyframes pulse-blue {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="max-w-5xl mx-auto">
+    <header class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-3xl font-extrabold text-slate-800">乙烷热裂解路径模拟</h1>
+            <p class="text-slate-500 mt-1">自主选择化学键断裂，观察不同的反应结果</p>
+        </div>
+        <div id="reaction-status" class="status-badge bg-blue-100 text-blue-700">等待注入</div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <h2 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">实验控制</h2>
+                
+                <button id="injectBtn" class="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-colors shadow-lg mb-3">
+                    注入乙烷分子
+                </button>
+
+                <div id="choiceControls" class="hidden space-y-3 pt-4 border-t border-slate-100">
+                    <p class="text-xs font-bold text-slate-500 uppercase">请选择断键类型：</p>
+                    <button id="breakCCBtn" class="w-full py-3 bg-red-50 text-red-600 border border-red-200 rounded-xl font-bold hover:bg-red-100 transition-colors">
+                        断裂 C-C 键
+                    </button>
+                    <button id="breakCHBtn" class="w-full py-3 bg-blue-50 text-blue-600 border border-blue-200 rounded-xl font-bold hover:bg-blue-100 transition-colors">
+                        断裂 C-H 键 (脱氢)
+                    </button>
+                </div>
+                
+                <button id="resetBtn" class="w-full mt-6 py-2 text-slate-400 text-sm font-semibold hover:text-slate-600 transition-colors">
+                    重置实验
+                </button>
+            </div>
+
+            <div class="bg-amber-50 p-5 rounded-2xl border border-amber-100">
+                <h3 class="text-amber-800 font-bold text-sm mb-2">原理提示</h3>
+                <p id="hintText" class="text-xs text-amber-700 leading-relaxed italic">
+                    注入乙烷分子后，点击上方按钮或直接点击画布中的化学键来选择反应路径。
+                </p>
+            </div>
+        </div>
+
+        <div class="lg:col-span-3">
+            <div id="canvas-container" style="height: 550px;">
+                <!-- Atoms and Bonds -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('canvas-container');
+    const injectBtn = document.getElementById('injectBtn');
+    const choiceControls = document.getElementById('choiceControls');
+    const breakCCBtn = document.getElementById('breakCCBtn');
+    const breakCHBtn = document.getElementById('breakCHBtn');
+    const hintText = document.getElementById('hintText');
+    const statusBadge = document.getElementById('reaction-status');
+
+    let atoms = [];
+    let bonds = [];
+    let state = 'IDLE'; 
+    let selectedH = []; // Track which H atoms are selected for CH break
+
+    const C_DIST = 100;
+    const H_DIST = 65;
+
+    function init() {
+        container.innerHTML = '';
+        atoms = [];
+        bonds = [];
+        state = 'IDLE';
+        selectedH = [];
+        injectBtn.disabled = false;
+        injectBtn.classList.remove('hidden');
+        choiceControls.classList.add('hidden');
+        statusBadge.innerText = "等待注入";
+        statusBadge.className = "status-badge bg-blue-100 text-blue-700";
+    }
+
+    function createAtom(type, x, y, id, parentC = null) {
+        const div = document.createElement('div');
+        div.className = `atom atom-${type}`;
+        div.innerText = type;
+        div.style.left = `${x - 18}px`;
+        div.style.top = `${y - 18}px`;
+        div.id = id;
+        container.appendChild(div);
+        const obj = { id, type, x, y, el: div, parentC };
+        atoms.push(obj);
+        return obj;
+    }
+
+    function createBond(idA, idB, selectable = false) {
+        const div = document.createElement('div');
+        div.className = selectable ? 'bond selectable-bond' : 'bond';
+        div.id = `bond-${idA}-${idB}`;
+        container.appendChild(div);
+        const obj = { idA, idB, el: div, isDouble: false };
+        bonds.push(obj);
+        updateBond(obj);
+        
+        if (selectable) {
+            div.onclick = (e) => {
+                e.stopPropagation();
+                if (state !== 'READY') return;
+                if (idA.startsWith('C') && idB.startsWith('C')) handleCCBreak();
+                else {
+                    // If it's a CH bond, handle it via atom click logic for better UX
+                    const hAtomId = idA.startsWith('H') ? idA : idB;
+                    onHAtomClick(hAtomId);
+                }
+            };
+        }
+        return obj;
+    }
+
+    function updateBond(bond) {
+        const a = atoms.find(at => at.id === bond.idA);
+        const b = atoms.find(at => at.id === bond.idB);
+        if (!a || !b) return;
+
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+        bond.el.style.width = `${dist}px`;
+        bond.el.style.left = `${a.x}px`;
+        bond.el.style.top = `${a.y - (bond.el.classList.contains('selectable-bond') ? 6 : 1.5)}px`;
+        bond.el.style.transform = `rotate(${angle}deg)`;
+    }
+
+    function spawnEthane() {
+        init();
+        const midX = container.offsetWidth / 2;
+        const midY = container.offsetHeight / 2;
+
+        const c1 = createAtom('C', midX - C_DIST/2, midY, 'C1');
+        const c2 = createAtom('C', midX + C_DIST/2, midY, 'C2');
+        createBond('C1', 'C2', true);
+
+        const hCoords = [
+            {p: 'C1', x: -H_DIST, y: 0, id: 'H1'},
+            {p: 'C1', x: 0, y: -H_DIST, id: 'H2'},
+            {p: 'C1', x: 0, y: H_DIST, id: 'H3'},
+            {p: 'C2', x: H_DIST, y: 0, id: 'H4'},
+            {p: 'C2', x: 0, y: -H_DIST, id: 'H5'},
+            {p: 'C2', x: 0, y: H_DIST, id: 'H6'}
+        ];
+
+        hCoords.forEach(h => {
+            const parent = atoms.find(a => a.id === h.p);
+            const atom = createAtom('H', parent.x + h.x, parent.y + h.y, h.id, h.p);
+            createBond(h.p, h.id, true);
+            
+            // Allow clicking the atom itself
+            atom.el.onclick = () => onHAtomClick(h.id);
+        });
+
+        state = 'READY';
+        injectBtn.classList.add('hidden');
+        choiceControls.classList.remove('hidden');
+        statusBadge.innerText = "待命：请选择断键方式";
+        hintText.innerHTML = "<b>就绪：</b>你可以直接点击画布上的 <span class='text-blue-600 font-bold'>H 原子</span> 来选择断裂哪两个 C-H 键。";
+    }
+
+    function onHAtomClick(hId) {
+        if (state !== 'READY' && state !== 'CH_SELECTING') return;
+        
+        const hAtom = atoms.find(a => a.id === hId);
+        if (!hAtom || hAtom.type !== 'H') return;
+
+        // If this is the first H selected
+        if (selectedH.length === 0) {
+            state = 'CH_SELECTING';
+            selectedH.push(hAtom);
+            hAtom.el.classList.add('interactive-h');
+            statusBadge.innerText = "已选择第一个 H，请选择另一个碳上的 H";
+            hintText.innerHTML = `已选择 <b>${hId}</b> (在 ${hAtom.parentC} 上)。现在请点击 <b>${hAtom.parentC === 'C1' ? 'C2' : 'C1'}</b> 上的任意一个氢原子。`;
+            
+            // Add pulse to other candidates
+            atoms.forEach(a => {
+                if (a.type === 'H' && a.parentC !== hAtom.parentC) {
+                    a.el.classList.add('interactive-h');
+                }
+            });
+        } 
+        // If selecting the second H (must be on different C)
+        else if (selectedH.length === 1) {
+            if (hAtom.parentC === selectedH[0].parentC) {
+                // Ignore if clicked H on the same C
+                return;
+            }
+            selectedH.push(hAtom);
+            executeCHBreak();
+        }
+    }
+
+    async function handleCCBreak() {
+        state = 'REACTING';
+        choiceControls.classList.add('hidden');
+        statusBadge.innerText = "正在断裂 C-C 键...";
+        
+        // Remove interaction styles
+        atoms.forEach(a => a.el.classList.remove('interactive-h'));
+
+        const ccBond = bonds.find(b => b.idA === 'C1' && b.idB === 'C2');
+        ccBond.el.classList.add('bond-breaking');
+        
+        await new Promise(r => setTimeout(r, 1000));
+        
+        ccBond.el.remove();
+        bonds = bonds.filter(b => b !== ccBond);
+
+        atoms.forEach(at => {
+            if (at.id === 'C2' || at.parentC === 'C2') {
+                at.x += 150;
+            } else if (at.id === 'C1' || at.parentC === 'C1') {
+                at.x -= 50;
+            }
+            at.el.style.left = `${at.x - 18}px`;
+        });
+        
+        bonds.forEach(updateBond);
+        
+        hintText.innerHTML = "<b>结果：</b>C-C 键断裂产生了两个<b>甲基自由基 (•CH₃)</b>。";
+        statusBadge.innerText = "产生甲基自由基";
+        state = 'DONE';
+    }
+
+    // This is triggered after manually selecting two H atoms
+    async function executeCHBreak() {
+        state = 'REACTING';
+        choiceControls.classList.add('hidden');
+        statusBadge.innerText = "正在断裂选定的 C-H 键...";
+        
+        const hA = selectedH[0];
+        const hB = selectedH[1];
+
+        // Highlight bonds to be broken
+        const b1 = bonds.find(b => b.idA === hA.id || b.idB === hA.id);
+        const b2 = bonds.find(b => b.idA === hB.id || b.idB === hB.id);
+        b1.el.classList.add('bond-breaking');
+        b2.el.classList.add('bond-breaking');
+
+        // Remove all pulse effects
+        atoms.forEach(a => a.el.classList.remove('interactive-h'));
+
+        await new Promise(r => setTimeout(r, 1000));
+
+        // Break bonds
+        b1.el.remove();
+        b2.el.remove();
+        bonds = bonds.filter(b => b !== b1 && b !== b2);
+
+        // Move H atoms to center top and bind
+        const midX = container.offsetWidth / 2;
+        hA.x = midX - 20; hA.y = 100;
+        hB.x = midX + 20; hB.y = 100;
+        hA.el.style.left = `${hA.x - 18}px`; hA.el.style.top = `${hA.y - 18}px`;
+        hB.el.style.left = `${hB.x - 18}px`; hB.el.style.top = `${hB.y - 18}px`;
+
+        await new Promise(r => setTimeout(r, 600));
+        createBond(hA.id, hB.id);
+
+        // Form CC double bond
+        const ccBond = bonds.find(b => b.idA === 'C1' && b.idB === 'C2');
+        ccBond.el.classList.add('bond-double');
+
+        hintText.innerHTML = `<b>结果：</b>通过断裂 <b>${hA.id}</b> 和 <b>${hB.id}</b>，生成了<b>乙烯 (C₂H₄)</b> 和 <b>氢气 (H₂)</b>。`;
+        statusBadge.innerText = "生成乙烯和氢气";
+        state = 'DONE';
+    }
+
+    // Toggle button also triggers guided selection
+    breakCHBtn.onclick = () => {
+        if (state !== 'READY') return;
+        statusBadge.innerText = "请点击画布中的 H 原子进行脱氢";
+        hintText.innerHTML = "<b>脱氢反应：</b>请先点击 C1 上的任意一个 <span class='text-blue-600 font-bold'>H 原子</span>。";
+        atoms.forEach(a => {
+            if (a.type === 'H' && a.parentC === 'C1') a.el.classList.add('interactive-h');
+        });
+        state = 'CH_SELECTING';
+    };
+
+    injectBtn.onclick = spawnEthane;
+    breakCCBtn.onclick = handleCCBreak;
+    document.getElementById('resetBtn').onclick = init;
+
+    window.onresize = init;
+    window.onload = init;
+</script>
+</body>
+</html>

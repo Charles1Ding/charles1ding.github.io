@@ -216,7 +216,7 @@
   <div class="logo">⚗️</div>
   <h1>AQA Chemistry Interactive Models</h1>
   <p>Interactive simulations for A-Level &amp; GCSE Chemistry teaching</p>
-  <span class="badge">40 Models · A-Level AQA</span>
+  <span class="badge">63 Models · A-Level AQA</span>
 </header>
 
 <div class="controls">
@@ -231,6 +231,8 @@
     <button onclick="setFilter('electrochemistry', this)">Electrochemistry</button>
     <button onclick="setFilter('acids', this)">Acids &amp; Salts</button>
     <button onclick="setFilter('metals', this)">Metals</button>
+    <button onclick="setFilter('thermochemistry', this)">Thermochemistry</button>
+    <button onclick="setFilter('organic', this)">Organic</button>
     <button onclick="setFilter('other', this)">Other</button>
   </div>
 </div>
@@ -604,6 +606,221 @@ const models = [
     topic: "acids",
     topicLabel: "Acids",
     desc: "用酸碱中和原理治疗蜜蜂/黄蜂蜇伤的生活化学情境模型。"
+  },
+
+  // ─── NEW: Thermochemistry ───
+  {
+    file: "delta H c.html",
+    title: "Delta Hc (Enthalpy of Combustion)",
+    icon: "🔥",
+    lang: "en",
+    topic: "thermochemistry",
+    topicLabel: "Thermochemistry",
+    desc: "Interactive model of standard enthalpy change of combustion pathway."
+  },
+  {
+    file: "Endo and exo .html",
+    title: "Endothermic & Exothermic",
+    icon: "🌡️",
+    lang: "en",
+    topic: "thermochemistry",
+    topicLabel: "Thermochemistry",
+    desc: "Compare endothermic and exothermic reactions — energy level diagrams."
+  },
+  {
+    file: "公开课simple calorimeter.html",
+    title: "公开课 — Simple Calorimeter",
+    icon: "🧪",
+    lang: "cn",
+    topic: "thermochemistry",
+    topicLabel: "Thermochemistry",
+    desc: "公开课用简易量热计模型，展示量热实验的基本原理与操作。"
+  },
+  {
+    file: "改进量热计.html",
+    title: "改进量热计",
+    icon: "📐",
+    lang: "cn",
+    topic: "thermochemistry",
+    topicLabel: "Thermochemistry",
+    desc: "改进型量热计模型，减少热损失的设计方案对比演示。"
+  },
+
+  // ─── NEW: Organic Chemistry ───
+  {
+    file: "fractional distillation.html",
+    title: "Fractional Distillation",
+    icon: "🛢️",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Fractional distillation of crude oil — separation by boiling point."
+  },
+  {
+    file: "Ethane cracking.html",
+    title: "Ethane Cracking",
+    icon: "⚗️",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Thermal cracking of ethane to produce ethene and hydrogen."
+  },
+  {
+    file: "Substitution reaction.html",
+    title: "Substitution Reaction",
+    icon: "🔄",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Free radical substitution of alkanes with halogens — mechanism steps."
+  },
+  {
+    file: "Addtion reaction of ethene.html",
+    title: "Addition Reaction of Ethene",
+    icon: "➕",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Electrophilic addition reactions of ethene with Br₂, HBr, H₂O."
+  },
+  {
+    file: "Cracking.html",
+    title: "Cracking (Overview)",
+    icon: "💥",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "General cracking process — long-chain hydrocarbons to shorter alkenes."
+  },
+  {
+    file: "Addtion reaction of ethene (16.4).html",
+    title: "Addition Rxn of Ethene (v2)",
+    icon: "➕",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Alternative addition reaction model — polymerisation context."
+  },
+  {
+    file: "Fermentation.html",
+    title: "Fermentation",
+    icon: "🍺",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Glucose fermentation to ethanol — conditions and enzyme catalysis."
+  },
+  {
+    file: "oxidation of alcohol.html",
+    title: "Oxidation of Alcohol",
+    icon: "🧴",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Oxidation of primary and secondary alcohols to aldehydes/ketones."
+  },
+  {
+    file: "alcohol change .html",
+    title: "Alcohol Reactions",
+    icon: "🍸",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Overview of alcohol transformations — oxidation, dehydration, esterification."
+  },
+  {
+    file: "Polyamide.html",
+    title: "Polyamide (Nylon)",
+    icon: "🧵",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Condensation polymerisation forming polyamides from diamine + diacid."
+  },
+  {
+    file: "Polyester.html",
+    title: "Polyester (Terylene)",
+    icon: "👕",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Condensation polymerisation forming polyesters from diol + dioic acid."
+  },
+  {
+    file: "Protein.html",
+    title: "Protein Structure",
+    icon: "🧬",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Protein structure from amino acids — peptide bond formation."
+  },
+  {
+    file: "esterification.html",
+    title: "Esterification",
+    icon: "🍍",
+    lang: "en",
+    topic: "organic",
+    topicLabel: "Organic Chemistry",
+    desc: "Esterification — alcohol + carboxylic acid ⇌ ester + water."
+  },
+
+  // ─── NEW: Analytical / Chromatography ───
+  {
+    file: "Identify amino acid.html",
+    title: "Identify Amino Acid",
+    icon: "🔬",
+    lang: "en",
+    topic: "other",
+    topicLabel: "Analytical",
+    desc: "Paper chromatography to identify unknown amino acids via Rf values."
+  },
+  {
+    file: "identify substance.html",
+    title: "Identify Substance",
+    icon: "🔍",
+    lang: "en",
+    topic: "other",
+    topicLabel: "Analytical",
+    desc: "Chromatography identification of unknown substances by comparison."
+  },
+  {
+    file: "橙汁分析.html",
+    title: "橙汁分析（色谱法）",
+    icon: "🍊",
+    lang: "cn",
+    topic: "other",
+    topicLabel: "Analytical",
+    desc: "用色谱法分析橙汁中的色素成分，趣味食品化学实验。"
+  },
+
+  // ─── NEW: Acids (additional) ───
+  {
+    file: "酸性腐蚀.html",
+    title: "酸性腐蚀",
+    icon: "⚠️",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids",
+    desc: "酸的腐蚀性综合模型，不同浓度酸对各类物质的腐蚀效果对比。"
+  },
+  {
+    file: "PHvalue.html",
+    title: "pH Value Scale",
+    icon: "📏",
+    lang: "en",
+    topic: "acids",
+    topicLabel: "Acids",
+    desc: "Interactive pH scale with universal indicator colour changes and [H⁺]."
+  },
+  {
+    file: "强酸与弱酸的解离.html",
+    title: "强酸与弱酸的解离",
+    icon: "⚡",
+    lang: "cn",
+    topic: "acids",
+    topicLabel: "Acids",
+    desc: "强酸与弱酸在水溶液中的解离程度对比，动态电离平衡模型。"
   }
 ];
 
@@ -616,6 +833,8 @@ function topicInFilter(topic, filter) {
     electrochemistry: ['electrochemistry'],
     acids: ['acids', 'equilibrium'],
     metals: ['metals'],
+    thermochemistry: ['thermochemistry'],
+    organic: ['organic'],
     other: ['other', 'kinetics', 'analytical', 'equilibrium']
   };
   return (topicMap[filter] || []).includes(topic);
@@ -630,7 +849,7 @@ function renderCards(list) {
     stats.textContent = 'No models found';
     return;
   }
-  stats.textContent = `Showing ${list.length} of 40 models`;
+  stats.textContent = `Showing ${list.length} of 63 models`;
   list.forEach(m => {
     const a = document.createElement('a');
     a.className = 'card';

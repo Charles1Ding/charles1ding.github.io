@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>橙汁成分全组分对比层析模拟 - 统一颜色版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes flowUp {
+            from { height: 0%; }
+            to { height: 100%; }
+        }
+        .solvent-rise {
+            animation: flowUp 15s linear forwards;
+        }
+        .paper-texture {
+            background-color: #ffffff;
+            background-image: 
+                linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px),
+                linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        /* 清晰的轨迹 */
+        .trail {
+            position: absolute;
+            bottom: 32px; 
+            width: 6px;
+            border-radius: 3px;
+            opacity: 0.3;
+            transform: translateX(-50%);
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        /* 斑点基础样式 */
+        .dot-element {
+            position: absolute;
+            bottom: 32px;
+            transform: translate(-50%, 50%);
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+        .component-label {
+            position: absolute;
+            bottom: -22px;
+            white-space: nowrap;
+            font-size: 10px;
+            font-weight: bold;
+            color: #555;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+    <div class="max-w-6xl mx-auto p-4 md:p-10">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800 tracking-tight">橙汁组分多点对比层析实验 (统一颜色)</h1>
+            <p id="instructionText" class="text-gray-500 mt-2 font-medium">颜色已统一，请仅通过“高度”来观察并对比成分</p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-6 items-center justify-center">
+            <!-- 控制面板 -->
+            <div class="w-full lg:w-64 space-y-4">
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                    <button id="startBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-all shadow-lg active:scale-95 mb-4">
+                        开始实验
+                    </button>
+                    <button id="resetBtn" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold py-3 rounded-2xl transition-all">
+                        重置
+                    </button>
+                </div>
+                <div class="bg-slate-100 p-5 rounded-2xl border border-slate-200 text-xs text-slate-700 leading-relaxed">
+                    <b>挑战观察：</b><br>
+                    当所有斑点颜色相同时，你必须更加专注于<b>水平对齐</b>。<br><br>
+                    最右侧的混合样本分裂出了三个点，请仔细比对它们分别对应左侧哪些标准组的高度。
+                </div>
+            </div>
+
+            <!-- 实验装置 -->
+            <div class="flex-1 flex justify-center bg-white p-6 rounded-[2.5rem] shadow-sm border border-gray-100 min-h-[680px]">
+                <div class="relative w-full max-w-xl h-[600px] border-x-[12px] border-b-[12px] border-slate-100 rounded-b-[40px] flex justify-center items-end pb-4 bg-white shadow-inner">
+                    <!-- 溶剂槽 -->
+                    <div class="absolute bottom-0 w-full h-12 bg-blue-400/5 border-t border-blue-50 rounded-b-[28px]"></div>
+                    
+                    <div id="paper" class="relative w-full h-[560px] mx-4 paper-texture border border-gray-200 shadow-sm overflow-hidden rounded-sm">
+                        <!-- 溶剂爬升线 -->
+                        <div id="solventFront" class="absolute bottom-0 left-0 w-full bg-blue-500/5 hidden"></div>
+                        
+                        <div id="dotsContainer" class="relative w-full h-full">
+                            <!-- 基准线 -->
+                            <div class="absolute bottom-8 w-full border-t-2 border-dashed border-gray-300 text-[10px] text-gray-400 text-right pr-4 pt-1">
+                                START LINE
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const solventFront = document.getElementById('solventFront');
+        const dotsContainer = document.getElementById('dotsContainer');
+        const instructionText = document.getElementById('instructionText');
+
+        let animationFrameId = null;
+        let isRunning = false;
+
+        // 统一颜色：深蓝色
+        const UNIFIED_COLOR = '#1E40AF'; 
+
+        const HEIGHTS = {
+            sweet: 80,
+            pure: 200,
+            pigment: 340,
+            alcohol: 480
+        };
+
+        const COMPONENTS = [
+            { id: 'sweet', xPos: 15, targetY: HEIGHTS.sweet, label: '甜味素' },
+            { id: 'pigment', xPos: 32, targetY: HEIGHTS.pigment, label: '橙色色素' },
+            { id: 'alcohol', xPos: 49, targetY: HEIGHTS.alcohol, label: '酒精' },
+            { id: 'pure', xPos: 66, targetY: HEIGHTS.pure, label: '纯橙汁' },
+            { id: 'mixed', xPos: 85, targetY: 0, label: '混合样本', isMixed: true }
+        ];
+
+        function resetExperiment() {
+            isRunning = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            startBtn.disabled = false;
+            startBtn.classList.remove('opacity-50');
+            instructionText.innerText = "点击“开始实验”进行全组分鉴定";
+            instructionText.className = "text-gray-500 mt-2 font-medium";
+            solventFront.style.height = '0%';
+            solventFront.classList.add('hidden');
+            dotsContainer.querySelectorAll('.dot-element, .trail, .initial-spot').forEach(el => el.remove());
+        }
+
+        function createDot(x, color, labelText = "") {
+            const dotEl = document.createElement('div');
+            dotEl.className = 'dot-element rounded-full';
+            dotEl.style.left = `${x}%`;
+            dotEl.style.backgroundColor = color;
+            dotEl.style.width = '12px';
+            dotEl.style.height = '12px';
+            
+            if (labelText) {
+                const nameTag = document.createElement('span');
+                nameTag.className = 'component-label';
+                nameTag.innerText = labelText;
+                dotEl.appendChild(nameTag);
+            }
+
+            dotsContainer.appendChild(dotEl);
+            return { el: dotEl };
+        }
+
+        function startExperiment() {
+            if (isRunning) return;
+            isRunning = true;
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-50');
+            instructionText.innerText = "实验进行中，观察各组分爬升的高度...";
+
+            COMPONENTS.forEach(comp => {
+                const spot = document.createElement('div');
+                spot.className = 'initial-spot absolute rounded-full bg-slate-400';
+                spot.style.bottom = '32px';
+                spot.style.left = `${comp.xPos}%`;
+                spot.style.width = '8px';
+                spot.style.height = '8px';
+                spot.style.transform = 'translate(-50%, 50%)';
+                dotsContainer.appendChild(spot);
+            });
+
+            setTimeout(() => {
+                dotsContainer.querySelectorAll('.initial-spot').forEach(el => el.remove());
+                solventFront.classList.remove('hidden');
+                solventFront.classList.add('solvent-rise');
+
+                const activeElements = [];
+
+                COMPONENTS.forEach(comp => {
+                    if (!comp.isMixed) {
+                        const dot = createDot(comp.xPos, UNIFIED_COLOR, comp.label);
+                        const trail = document.createElement('div');
+                        trail.className = 'trail';
+                        trail.style.backgroundColor = UNIFIED_COLOR;
+                        trail.style.left = `${comp.xPos}%`;
+                        dotsContainer.appendChild(trail);
+
+                        activeElements.push({
+                            type: 'standard',
+                            el: dot.el,
+                            trail: trail,
+                            targetY: comp.targetY
+                        });
+                    } else {
+                        const baseDot = createDot(comp.xPos, UNIFIED_COLOR, comp.label);
+                        
+                        const subHeights = [HEIGHTS.sweet, HEIGHTS.pure, HEIGHTS.pigment];
+
+                        const subs = subHeights.map(h => {
+                            const dot = createDot(comp.xPos, UNIFIED_COLOR, "");
+                            const trail = document.createElement('div');
+                            trail.className = 'trail';
+                            trail.style.backgroundColor = UNIFIED_COLOR;
+                            trail.style.left = `${comp.xPos}%`;
+                            trail.style.opacity = '0';
+                            dotsContainer.appendChild(trail);
+                            return { el: dot.el, trail: trail, targetY: h };
+                        });
+
+                        activeElements.push({
+                            type: 'mixed',
+                            baseEl: baseDot.el,
+                            subs: subs
+                        });
+                    }
+                });
+
+                const startTime = performance.now();
+                const duration = 15000;
+
+                function animate(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+
+                    activeElements.forEach(item => {
+                        if (item.type === 'standard') {
+                            const y = item.targetY * progress;
+                            item.el.style.bottom = `${32 + y}px`;
+                            item.trail.style.height = `${y}px`;
+                        } else {
+                            item.subs.forEach(sub => {
+                                const y = sub.targetY * progress;
+                                sub.el.style.bottom = `${32 + y}px`;
+                                sub.trail.style.height = `${y}px`;
+                                if (progress > 0.1) sub.trail.style.opacity = '0.4';
+                            });
+                            item.baseEl.style.bottom = '32px';
+                        }
+                    });
+
+                    if (progress < 1) {
+                        animationFrameId = requestAnimationFrame(animate);
+                    } else {
+                        instructionText.innerText = "实验完成。请通过水平高度比对确定混合样本的成分。";
+                        instructionText.className = "text-blue-700 mt-2 font-bold";
+                    }
+                }
+
+                animationFrameId = requestAnimationFrame(animate);
+            }, 800);
+        }
+
+        startBtn.addEventListener('click', startExperiment);
+        resetBtn.addEventListener('click', resetExperiment);
+    </script>
+</body>
+</html>

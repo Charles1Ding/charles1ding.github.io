@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酒精氧化与pH变化模拟器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 宏观：酒瓶样式 */
+        .bottle-container {
+            position: relative;
+            width: 220px;
+            height: 400px;
+            margin: 0 auto;
+            margin-top: 40px;
+        }
+        .bottle-neck {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 100px;
+            border: 6px solid #94a3b8;
+            border-bottom: none;
+            border-radius: 10px 10px 0 0;
+            background: rgba(255, 255, 255, 0.2);
+            z-index: 10;
+        }
+        .bottle-body {
+            position: absolute;
+            top: 100px;
+            left: 0;
+            width: 100%;
+            height: 300px;
+            border: 6px solid #94a3b8;
+            border-radius: 60px 60px 30px 30px;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            z-index: 5;
+        }
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 75%;
+            background: linear-gradient(to top, #9f1239, #e11d48); 
+            transition: background 1s linear;
+        }
+        .cork {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 60px;
+            background: #d97706;
+            border-radius: 5px;
+            border: 2px solid #b45309;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 20;
+            cursor: pointer;
+        }
+        .cork.open {
+            transform: translate(-50%, -80px) rotate(15deg) translateX(40px);
+        }
+
+        /* 微观：分子容器 */
+        #microView {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #0f172a;
+            border-radius: 30px;
+            overflow: hidden;
+            display: none;
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.9);
+        }
+
+        /* 结构式卡片样式 */
+        .molecule-card {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 20px;
+            padding: 12px 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transform: translate(-50%, -50%);
+            transition: border-color 0.5s, background-color 0.5s, transform 0.2s;
+            will-change: transform, left, top;
+            user-select: none;
+            z-index: 10;
+        }
+
+        .formula-text {
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 15px;
+            font-weight: 900;
+            line-height: 1.1;
+            white-space: pre;
+            text-align: center;
+        }
+        
+        .ethanol-color { color: #1e293b; border: 4px solid #64748b; }
+        .acid-color { color: #991b1b; border: 4px solid #ef4444; background: #fef2f2; }
+        .oxygen-color { color: #0284c7; border: 4px solid #38bdf8; background: #f0f9ff; border-radius: 50px; padding: 6px 14px; z-index: 25; }
+
+        /* 反应中的吸附特效 */
+        .is-capturing {
+            border-color: #facc15 !important;
+            box-shadow: 0 0 40px #facc15 !important;
+            z-index: 30 !important;
+            transform: translate(-50%, -50%) scale(1.1) !important;
+        }
+
+        @keyframes reaction-flash {
+            0% { filter: brightness(1); }
+            50% { filter: brightness(1.8) saturate(1.5); }
+            100% { filter: brightness(1); }
+        }
+        .reacting-flash {
+            animation: reaction-flash 0.8s ease-in-out infinite;
+        }
+
+        .air-flow {
+            position: absolute;
+            width: 3px;
+            height: 25px;
+            background: rgba(255,255,255,0.4);
+            animation: flowDown 3s linear infinite;
+        }
+        @keyframes flowDown {
+            0% { transform: translateY(-50px); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: translateY(180px); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="max-w-7xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col h-[95vh]">
+        <!-- Header -->
+        <div class="bg-rose-950 p-6 text-white text-center shadow-lg relative">
+            <h1 class="text-3xl font-black tracking-tight">酒精氧化微观模拟</h1>
+            <p class="mt-1 text-rose-200 text-sm font-medium">
+                对比模式：快速 O₂ 分子结合静止的 Ethanol
+            </p>
+        </div>
+
+        <div class="flex-1 grid grid-cols-1 lg:grid-cols-5 overflow-hidden">
+            <!-- Controls (Left) -->
+            <div class="lg:col-span-1 bg-slate-50 p-6 border-r border-slate-200 space-y-8 overflow-y-auto">
+                <section class="space-y-4">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-2">环境控制</h3>
+                    <button id="lidBtn" class="w-full relative bg-slate-800 hover:bg-slate-700 text-white font-black py-5 px-4 rounded-xl transition-all shadow-lg active:scale-95 flex flex-col items-center justify-center gap-1 group">
+                        <span id="lidBtnText" class="text-xl font-bold">打开密封盖</span>
+                        <span class="text-[10px] opacity-70 font-normal">注入快速氧气 (O₂)</span>
+                    </button>
+                    <button id="viewToggleBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 px-4 rounded-xl transition-all shadow-lg active:scale-95 flex flex-col items-center justify-center gap-1">
+                        <span id="viewToggleMainText" class="text-lg font-bold">进入微观视角 🔬</span>
+                        <span id="viewToggleSubText" class="text-[10px] opacity-80 font-normal">观察氧气撞击静止分子</span>
+                    </button>
+                </section>
+                <button id="resetBtn" class="w-full py-2 text-slate-400 hover:text-red-500 font-bold transition-colors text-[10px] uppercase tracking-widest">
+                    重置实验
+                </button>
+            </div>
+
+            <!-- Main Display Area (Center) -->
+            <div class="lg:col-span-3 p-8 flex flex-col items-center justify-center bg-slate-50/20 border-r border-slate-200 relative">
+                <div id="macroView" class="w-full h-full flex flex-col items-center justify-center">
+                    <div class="bottle-container" id="bottle">
+                        <div class="cork" id="corkElement"></div>
+                        <div class="bottle-neck">
+                            <div id="airFlowContainer" class="absolute w-full h-full overflow-hidden hidden"></div>
+                        </div>
+                        <div class="bottle-body">
+                            <div id="liquidElement" class="liquid"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="microView"></div>
+            </div>
+
+            <!-- Status (Right) -->
+            <div class="lg:col-span-1 p-6 flex flex-col gap-6 justify-center bg-slate-50/40">
+                <div class="bg-white p-6 rounded-2xl shadow-lg border-t-4 border-rose-500 flex flex-col items-center">
+                    <span class="text-slate-400 text-[10px] font-black uppercase mb-1">pH 监测</span>
+                    <div class="text-5xl font-mono font-black text-slate-800" id="pHDisplay">3.80</div>
+                    <div class="w-full mt-4 h-2 bg-gradient-to-r from-red-500 via-yellow-400 to-green-500 rounded-full relative">
+                        <div id="pHPointer" class="absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-white border-2 border-slate-800 rounded-full shadow-md" style="left: 80%;"></div>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-md border-l-4 border-blue-500 space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-slate-500 text-[10px] font-black uppercase">乙醇 (Ethanol)</span>
+                            <span id="ethanolPct" class="text-slate-700 font-mono font-black text-xs">100%</span>
+                        </div>
+                        <div class="bg-slate-300 h-1.5 rounded-full w-full overflow-hidden">
+                            <div id="ethanolFill" class="bg-slate-600 h-full w-full transition-all"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-rose-500 text-[10px] font-black uppercase">乙酸 (Acetic Acid)</span>
+                            <span id="acidPct" class="text-rose-600 font-mono font-black text-xs">0%</span>
+                        </div>
+                        <div class="bg-rose-100 h-1.5 rounded-full w-full overflow-hidden">
+                            <div id="acidFill" class="bg-rose-500 h-full w-0 transition-all"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let state = {
+            lidOpen: false,
+            viewMode: 'macro',
+            ethanol: 100.0,
+            acid: 0.0,
+            pH: 3.80,
+            isRunning: true
+        };
+
+        const START_PH = 3.8, END_PH = 2.8;
+        const ui = {
+            lidBtn: document.getElementById('lidBtn'),
+            lidBtnText: document.getElementById('lidBtnText'),
+            cork: document.getElementById('corkElement'),
+            viewToggleBtn: document.getElementById('viewToggleBtn'),
+            viewToggleMainText: document.getElementById('viewToggleMainText'),
+            macroView: document.getElementById('macroView'),
+            microView: document.getElementById('microView'),
+            liquid: document.getElementById('liquidElement'),
+            pHDisplay: document.getElementById('pHDisplay'),
+            pHPointer: document.getElementById('pHPointer'),
+            ethanolFill: document.getElementById('ethanolFill'),
+            ethanolPct: document.getElementById('ethanolPct'),
+            acidFill: document.getElementById('acidFill'),
+            acidPct: document.getElementById('acidPct'),
+            airFlowContainer: document.getElementById('airFlowContainer'),
+            resetBtn: document.getElementById('resetBtn')
+        };
+
+        const formulaEthanol = `  H   H\n  |   |\nH-C - C - O-H\n  |   |\n  H   H`;
+        const formulaAcid = `  H   O\n  |  //\nH-C - C\n  |   \\\n  H    O-H`;
+        const formulaOxygen = `O=O`;
+
+        let particles = [];
+        const NUM_ETHANOL = 5;
+        
+        // --- 速度常量调节 ---
+        const VELOCITY_OXYGEN = 0.35; // 氧气速度
+        const COLLISION_PUSH = 0.05;  // 氧气碰撞强度
+
+        function initMicroscopic() {
+            ui.microView.innerHTML = `<div class="absolute top-4 left-1/2 -translate-x-1/2 text-white/30 font-bold text-[10px] uppercase tracking-[0.2em]">Static Ethanol + Active O₂</div>`;
+            particles = [];
+            // 创建静止的乙醇分子
+            for (let i = 0; i < NUM_ETHANOL; i++) {
+                createParticle('ethanol');
+            }
+        }
+
+        function createParticle(type, startY = null) {
+            const el = document.createElement('div');
+            el.className = `molecule-card ${type}-color`;
+            const textEl = document.createElement('div');
+            textEl.className = 'formula-text';
+            textEl.textContent = type === 'ethanol' ? formulaEthanol : (type === 'acid' ? formulaAcid : formulaOxygen);
+            el.appendChild(textEl);
+            ui.microView.appendChild(el);
+
+            const isO2 = type === 'oxygen';
+            let p = {
+                el: el,
+                type: type,
+                x: isO2 ? (20 + Math.random() * 60) : (15 + Math.random() * 70),
+                y: isO2 ? (startY || -5) : (25 + Math.random() * 50),
+                // 乙醇/乙酸的速度为 0，氧气速度快
+                vx: isO2 ? (Math.random() - 0.5) * VELOCITY_OXYGEN : 0,
+                vy: isO2 ? (VELOCITY_OXYGEN * 0.8 + Math.random() * 0.2) : 0,
+                radius: isO2 ? 10 : 20,
+                isDead: false,
+                isReacting: false
+            };
+            
+            el.style.left = p.x + '%';
+            el.style.top = p.y + '%';
+            
+            particles.push(p);
+            return p;
+        }
+
+        function triggerReaction(ethanol, oxygen) {
+            if (ethanol.isReacting) return;
+            ethanol.isReacting = true;
+            oxygen.isDead = true;
+
+            // 氧气消失动画
+            oxygen.vx = 0; oxygen.vy = 0;
+            oxygen.el.style.transition = "all 0.4s ease-in";
+            oxygen.el.style.opacity = "0";
+            oxygen.el.style.transform = "translate(-50%, -50%) scale(0.1)";
+
+            // 乙醇转化动画
+            ethanol.el.classList.add('is-capturing', 'reacting-flash');
+            
+            setTimeout(() => {
+                ethanol.type = 'acid';
+                ethanol.el.className = `molecule-card acid-color reacting-flash is-capturing`;
+                ethanol.el.querySelector('.formula-text').textContent = formulaAcid;
+                
+                state.acid = Math.min(100, state.acid + (100 / NUM_ETHANOL));
+                state.ethanol = Math.max(0, state.ethanol - (100 / NUM_ETHANOL));
+            }, 600);
+
+            setTimeout(() => {
+                ethanol.el.classList.remove('is-capturing', 'reacting-flash');
+                ethanol.isReacting = false;
+                oxygen.el.remove();
+            }, 1600);
+        }
+
+        function updateMicroscopic() {
+            if (state.viewMode !== 'micro') return;
+
+            // 注入氧气
+            if (state.lidOpen && Math.random() < 0.02 && particles.filter(p => p.type === 'oxygen').length < 2) {
+                createParticle('oxygen');
+            }
+
+            for (let i = 0; i < particles.length; i++) {
+                let p1 = particles[i];
+                if (p1.isDead || p1.isReacting) continue;
+
+                // 核心：仅处理氧气的运动和碰撞
+                if (p1.type === 'oxygen') {
+                    for (let j = 0; j < particles.length; j++) {
+                        if (i === j) continue;
+                        let p2 = particles[j];
+                        if (p2.isDead || p2.isReacting) continue;
+
+                        let dx = p1.x - p2.x;
+                        let dy = p1.y - p2.y;
+                        let dist = Math.sqrt(dx * dx + dy * dy);
+                        let minDist = p1.radius + p2.radius;
+
+                        if (dist < minDist) {
+                            if (p2.type === 'ethanol') {
+                                triggerReaction(p2, p1);
+                                break; 
+                            } else {
+                                let angle = Math.atan2(dy, dx);
+                                p1.vx += Math.cos(angle) * COLLISION_PUSH;
+                                p1.vy += Math.sin(angle) * COLLISION_PUSH;
+                            }
+                        }
+                    }
+
+                    p1.x += p1.vx;
+                    p1.y += p1.vy;
+
+                    // 边界反弹
+                    if (p1.x < 10) { p1.x = 10; p1.vx *= -0.8; }
+                    if (p1.x > 90) { p1.x = 90; p1.vx *= -0.8; }
+                    if (p1.y > 110) { p1.isDead = true; p1.el.remove(); } 
+                    else if (p1.y < -10 && p1.vy < 0) { p1.vy *= -0.8; }
+
+                    p1.el.style.left = p1.x + '%';
+                    p1.el.style.top = p1.y + '%';
+                }
+            }
+            particles = particles.filter(p => !p.isDead);
+        }
+
+        function updateUI() {
+            ui.pHDisplay.textContent = state.pH.toFixed(2);
+            let pHPct = ((7.0 - state.pH) / 5.0) * 100;
+            ui.pHPointer.style.left = Math.min(100, Math.max(0, 100 - pHPct)) + '%';
+            ui.ethanolPct.textContent = Math.round(state.ethanol) + '%';
+            ui.ethanolFill.style.width = state.ethanol + '%';
+            ui.acidPct.textContent = Math.round(state.acid) + '%';
+            ui.acidFill.style.width = state.acid + '%';
+            const ratio = state.acid / 100;
+            ui.liquid.style.background = `linear-gradient(to top, rgb(${159-ratio*40},${18+ratio*40},50), rgb(${199-ratio*40},${38+ratio*40},60))`;
+        }
+
+        function loop() {
+            if (state.isRunning) {
+                if (state.lidOpen && state.ethanol > 0) {
+                    state.ethanol = Math.max(0, state.ethanol - 0.005);
+                    state.acid = Math.min(100, state.acid + 0.005);
+                    state.pH = START_PH - ((state.acid / 100) * (START_PH - END_PH));
+                }
+                updateUI();
+                updateMicroscopic();
+            }
+            requestAnimationFrame(loop);
+        }
+
+        ui.lidBtn.addEventListener('click', () => {
+            state.lidOpen = !state.lidOpen;
+            ui.cork.classList.toggle('open', state.lidOpen);
+            ui.lidBtn.classList.toggle('bg-orange-600', state.lidOpen);
+            ui.lidBtn.classList.toggle('bg-slate-800', !state.lidOpen);
+            ui.lidBtnText.textContent = state.lidOpen ? "盖上密封盖" : "打开密封盖";
+            ui.airFlowContainer.classList.toggle('hidden', !state.lidOpen);
+        });
+
+        ui.viewToggleBtn.addEventListener('click', () => {
+            state.viewMode = state.viewMode === 'macro' ? 'micro' : 'macro';
+            ui.macroView.style.display = state.viewMode === 'macro' ? 'flex' : 'none';
+            ui.microView.style.display = state.viewMode === 'micro' ? 'block' : 'none';
+            ui.viewToggleMainText.textContent = state.viewMode === 'macro' ? "进入微观视角 🔬" : "返回宏观视角 🍷";
+            ui.viewToggleBtn.classList.toggle('bg-blue-600', state.viewMode === 'macro');
+            ui.viewToggleBtn.classList.toggle('bg-emerald-600', state.viewMode === 'micro');
+            if (state.viewMode === 'micro') {
+                initMicroscopic();
+                let acidNum = Math.floor((state.acid / 100) * NUM_ETHANOL);
+                for(let i=0; i<acidNum; i++) if(particles[i]) {
+                    particles[i].type = 'acid';
+                    particles[i].el.className = 'molecule-card acid-color';
+                    particles[i].el.querySelector('.formula-text').textContent = formulaAcid;
+                }
+            }
+        });
+
+        ui.resetBtn.addEventListener('click', () => {
+            state.ethanol = 100; state.acid = 0; state.pH = START_PH;
+            if (state.viewMode === 'micro') initMicroscopic();
+            updateUI();
+        });
+
+        initMicroscopic();
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>

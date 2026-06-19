@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聚酯缩聚反应交互模型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --acid-color: #059669;
+            --alcohol-color: #0891b2;
+            --ester-bond-color: #ec4899;
+            --atom-c: #475569;
+            --atom-o: #ef4444;
+            --atom-h: #cbd5e1;
+        }
+
+        body {
+            background-color: #f8fafc;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        #viewport {
+            width: 100%;
+            height: 450px;
+            background: white;
+            border-radius: 2rem;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05), 0 20px 50px rgba(0,0,0,0.1);
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            align-items: center;
+            padding: 0 150px;
+            position: relative;
+            scroll-behavior: smooth;
+            border: 1px solid #e2e8f0;
+        }
+
+        #container {
+            position: relative;
+            height: 300px;
+            width: 6000px; /* 足够长的反应链空间 */
+        }
+
+        .monomer {
+            position: absolute;
+            height: 200px;
+            transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 原子基础样式 */
+        .atom {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            color: white;
+            position: absolute;
+            z-index: 20;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.4s ease;
+            font-size: 14px;
+        }
+
+        .atom-C { background: var(--atom-c); }
+        .atom-O { background: var(--atom-o); }
+        .atom-H { 
+            width: 28px; height: 28px; 
+            background: var(--atom-h); 
+            color: #475569; 
+            font-size: 11px; 
+        }
+
+        /* 离去基团标记 */
+        .leaving {
+            box-shadow: 0 0 12px #fbbf24;
+            border: 2px solid #f59e0b;
+        }
+
+        /* R基团核心 */
+        .core {
+            width: 100px;
+            height: 54px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            border-radius: 14px;
+            position: absolute;
+            top: 123px;
+            left: 100px;
+            z-index: 10;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            font-size: 13px;
+        }
+        .core-acid { background: linear-gradient(135deg, #059669, #10b981); }
+        .core-alcohol { background: linear-gradient(135deg, #0891b2, #06b6d4); }
+
+        /* 化学键 */
+        .bond {
+            position: absolute;
+            background: #cbd5e1;
+            height: 6px;
+            transform-origin: left center;
+            z-index: 5;
+            border-radius: 3px;
+        }
+        .bond-double {
+            height: 12px;
+            background: transparent !important;
+            border-top: 4px solid #94a3b8;
+            border-bottom: 4px solid #94a3b8;
+        }
+        .bond-ester {
+            background: var(--ester-bond-color) !important;
+            height: 8px !important;
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+            animation: bondPop 0.5s ease-out;
+        }
+
+        @keyframes bondPop {
+            0% { transform: scaleX(0); opacity: 0; }
+            100% { transform: scaleX(1); opacity: 1; }
+        }
+
+        .water-molecule {
+            position: absolute;
+            background: #f0f9ff;
+            border: 2px solid #7dd3fc;
+            color: #0369a1;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 800;
+            font-size: 14px;
+            z-index: 100;
+            animation: floatUp 2s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(-150px); opacity: 0; }
+        }
+
+        .fade { opacity: 0; transform: scale(0.5) translateY(-20px); pointer-events: none; }
+    </style>
+</head>
+<body class="p-6 md:p-12">
+
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div>
+            <h1 class="text-4xl font-black text-slate-800 tracking-tight">聚酯 (Polyester) 形成模型</h1>
+            <p class="text-slate-500 font-medium mt-1 text-lg">
+                二元酸 <span class="text-emerald-600">+</span> 二元醇 
+                <span class="mx-2 text-slate-300">→</span> 
+                聚酯 <span class="text-pink-500">+</span> 水 (缩聚反应)
+            </p>
+        </div>
+        <div id="statusIndicator" class="flex items-center gap-3 px-4 py-2 bg-slate-100 rounded-xl border border-slate-200">
+            <div id="statusDot" class="w-3 h-3 rounded-full bg-slate-400"></div>
+            <span id="statusLabel" class="text-sm font-bold text-slate-500 uppercase tracking-wider">等待启动</span>
+        </div>
+    </div>
+
+    <!-- Main Canvas -->
+    <div id="viewport">
+        <div id="container"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="mt-8 bg-white p-6 rounded-3xl shadow-xl border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="space-y-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">第一步：配置</span>
+            <button id="btnSpawn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-emerald-100 active:scale-95">
+                投放原料单体
+            </button>
+        </div>
+
+        <div class="space-y-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">第二步：反应控制</span>
+            <div class="flex gap-2">
+                <button id="btnReact" disabled class="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:hover:bg-indigo-600 text-white font-bold py-4 rounded-2xl transition-all shadow-lg shadow-indigo-100 active:scale-95">
+                    启动缩聚反应
+                </button>
+                <button id="btnPause" class="hidden w-16 bg-amber-100 hover:bg-amber-200 text-amber-600 rounded-2xl flex items-center justify-center transition-all">
+                    <svg id="iconPause" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"></path></svg>
+                    <svg id="iconPlay" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="space-y-2">
+            <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">系统</span>
+            <button id="btnReset" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-500 font-bold py-4 rounded-2xl transition-all active:scale-95">
+                重置实验
+            </button>
+        </div>
+    </div>
+
+    <div class="mt-6 flex items-center justify-center gap-8 text-xs font-bold text-slate-400 uppercase tracking-widest">
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-emerald-500"></div> 二元酸 (Diacid)</div>
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-cyan-500"></div> 二元醇 (Diol)</div>
+        <div class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-pink-500"></div> 酯键 (Ester Bond)</div>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('container');
+    const viewport = document.getElementById('viewport');
+    const btnSpawn = document.getElementById('btnSpawn');
+    const btnReact = document.getElementById('btnReact');
+    const btnPause = document.getElementById('btnPause');
+    const btnReset = document.getElementById('btnReset');
+    const statusDot = document.getElementById('statusDot');
+    const statusLabel = document.getElementById('statusLabel');
+
+    let monomers = [];
+    let isReacting = false;
+    let isPaused = false;
+    let currentStep = 0;
+
+    const Y_AXIS = 130;
+    const SPACING = 450;
+    const COUNT = 10;
+
+    // --- 核心辅助函数 ---
+    
+    async function checkPause() {
+        while (isPaused) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
+
+    function updateStatus(text, color) {
+        statusLabel.innerText = text;
+        statusDot.className = `w-3 h-3 rounded-full ${color} ${text.includes('中') ? 'animate-pulse' : ''}`;
+    }
+
+    function createAtom(parent, type, x, y, isLeaving = false) {
+        const el = document.createElement('div');
+        el.className = `atom atom-${type} ${isLeaving ? 'leaving' : ''}`;
+        el.style.left = `${x}px`;
+        el.style.top = `${y}px`;
+        el.innerText = type;
+        parent.appendChild(el);
+        return el;
+    }
+
+    function createBond(parent, x1, y1, x2, y2, isDouble = false) {
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const len = Math.sqrt(dx*dx + dy*dy) - (isDouble ? 0 : 4);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        
+        const b = document.createElement('div');
+        b.className = `bond ${isDouble ? 'bond-double' : ''}`;
+        b.style.width = `${len}px`;
+        b.style.left = `${x1 + 20}px`;
+        b.style.top = `${y1 + 20 - (isDouble ? 6 : 3)}px`;
+        b.style.transform = `rotate(${angle}deg)`;
+        parent.appendChild(b);
+        return b;
+    }
+
+    // --- 构建单体 ---
+
+    function buildMonomer(type, startX) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'monomer';
+        wrapper.style.left = `${startX}px`;
+        
+        const mData = {
+            el: wrapper,
+            type: type,
+            curX: startX,
+            leftLeaving: [], rightLeaving: [],
+            leftBonds: [], rightBonds: [],
+            reactiveC: null, reactiveO: null
+        };
+
+        const core = document.createElement('div');
+        core.className = `core ${type === 'acid' ? 'core-acid' : 'core-alcohol'}`;
+        core.innerText = type === 'acid' ? 'R (Diacid)' : "R' (Diol)";
+        wrapper.appendChild(core);
+
+        // 骨架连线
+        createBond(wrapper, 40, Y_AXIS, 100, Y_AXIS);
+        createBond(wrapper, 200, Y_AXIS, 260, Y_AXIS);
+
+        if (type === 'acid') {
+            // 酸结构: HO-C(=O)-R-C(=O)-OH
+            const addCarboxyl = (x, dir, side) => {
+                const c = createAtom(wrapper, 'C', x, Y_AXIS);
+                createAtom(wrapper, 'O', x, Y_AXIS - 50);
+                createBond(wrapper, x, Y_AXIS, x, Y_AXIS - 50, true); // 羰基
+
+                const oh_o = createAtom(wrapper, 'O', x + (dir * 45), Y_AXIS, true);
+                const oh_h = createAtom(wrapper, 'H', x + (dir * 80), Y_AXIS, true);
+                const b1 = createBond(wrapper, x, Y_AXIS, x + (dir * 45), Y_AXIS);
+                const b2 = createBond(wrapper, x + (dir * 45), Y_AXIS, x + (dir * 80), Y_AXIS);
+
+                if (side === 'right') {
+                    mData.rightLeaving.push(oh_o, oh_h);
+                    mData.rightBonds.push(b1, b2);
+                    mData.reactiveC = c;
+                } else {
+                    mData.leftLeaving.push(oh_o, oh_h);
+                    mData.leftBonds.push(b1, b2);
+                }
+            };
+            addCarboxyl(40, -1, 'left');
+            addCarboxyl(260, 1, 'right');
+        } else {
+            // 醇结构: HO-R-OH
+            const addHydroxyl = (x, dir, side) => {
+                const o = createAtom(wrapper, 'O', x, Y_AXIS);
+                const h = createAtom(wrapper, 'H', x + (dir * 45), Y_AXIS, true);
+                const b1 = createBond(wrapper, x, Y_AXIS, x + (dir * 45), Y_AXIS);
+
+                if (side === 'left') {
+                    mData.leftLeaving.push(h);
+                    mData.leftBonds.push(b1);
+                    mData.reactiveO = o;
+                } else {
+                    mData.rightLeaving.push(h);
+                    mData.rightBonds.push(b1);
+                }
+            };
+            addHydroxyl(40, -1, 'left');
+            addHydroxyl(260, 1, 'right');
+        }
+
+        container.appendChild(wrapper);
+        return mData;
+    }
+
+    // --- 动画逻辑 ---
+
+    btnSpawn.onclick = () => {
+        container.innerHTML = '';
+        monomers = [];
+        currentStep = 0;
+        for (let i = 0; i < COUNT; i++) {
+            const m = buildMonomer(i % 2 === 0 ? 'acid' : 'alcohol', 50 + i * SPACING);
+            monomers.push(m);
+        }
+        btnSpawn.disabled = true;
+        btnReact.disabled = false;
+        updateStatus("原料已投放", "bg-emerald-500");
+    };
+
+    btnPause.onclick = () => {
+        isPaused = !isPaused;
+        document.getElementById('iconPause').classList.toggle('hidden', isPaused);
+        document.getElementById('iconPlay').classList.toggle('hidden', !isPaused);
+        if (isPaused) updateStatus("反应暂停", "bg-amber-500");
+        else updateStatus("反应中", "bg-indigo-500");
+    };
+
+    btnReact.onclick = async () => {
+        isReacting = true;
+        btnReact.disabled = true;
+        btnPause.classList.remove('hidden');
+        updateStatus("反应中", "bg-indigo-500");
+
+        for (let i = currentStep; i < monomers.length - 1; i++) {
+            currentStep = i;
+            await checkPause();
+
+            const left = monomers[i];
+            const right = monomers[i+1];
+
+            // 1. 自动滚动视图
+            viewport.scrollTo({ left: left.curX - 100, behavior: 'smooth' });
+            await new Promise(r => setTimeout(r, 600));
+            await checkPause();
+
+            // 2. 靠拢动画
+            const gap = 80;
+            const newRightX = left.curX + 260 + gap - 40;
+            const moveDist = right.curX - newRightX;
+
+            for (let j = i + 1; j < monomers.length; j++) {
+                monomers[j].curX -= moveDist;
+                monomers[j].el.style.left = `${monomers[j].curX}px`;
+            }
+            await new Promise(r => setTimeout(r, 1000));
+            await checkPause();
+
+            // 3. 酯化脱水 (Acid OH + Alcohol H)
+            [...left.rightLeaving, ...right.leftLeaving].forEach(a => a.classList.add('fade'));
+            [...left.rightBonds, ...right.leftBonds].forEach(b => b.style.opacity = '0');
+
+            const h2o = document.createElement('div');
+            h2o.className = 'water-molecule';
+            h2o.innerHTML = 'H<sub>2</sub>O';
+            h2o.style.left = `${left.curX + 280}px`;
+            h2o.style.top = `${Y_AXIS + 20}px`;
+            container.appendChild(h2o);
+
+            await new Promise(r => setTimeout(r, 800));
+            await checkPause();
+
+            // 4. 形成酯键 (C-O)
+            const esterBond = document.createElement('div');
+            esterBond.className = 'bond bond-ester';
+            esterBond.style.width = `${gap}px`;
+            esterBond.style.left = `${left.curX + 260 + 20}px`;
+            esterBond.style.top = `${Y_AXIS + 20 - 4}px`;
+            container.appendChild(esterBond);
+
+            // 触觉反馈（轻微放大）
+            left.reactiveC.style.transform = 'scale(1.3)';
+            right.reactiveO.style.transform = 'scale(1.3)';
+            await new Promise(r => setTimeout(r, 400));
+            left.reactiveC.style.transform = 'scale(1)';
+            right.reactiveO.style.transform = 'scale(1)';
+            
+            await new Promise(r => setTimeout(r, 400));
+        }
+
+        updateStatus("缩聚完成", "bg-blue-500");
+        btnPause.classList.add('hidden');
+        isReacting = false;
+    };
+
+    btnReset.onclick = () => {
+        location.reload(); // 最彻底的重置
+    };
+</script>
+
+</body>
+</html>

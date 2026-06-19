@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>橙汁层析实验模拟器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes flowUp {
+            from { height: 0%; }
+            to { height: 100%; }
+        }
+        /* 溶剂爬升动画 */
+        .solvent-rise {
+            animation: flowUp 15s linear forwards;
+        }
+        /* 层析纸纹理 */
+        .paper-texture {
+            background-color: #fafafa;
+            background-image: 
+                linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 15px 15px;
+        }
+        /* 动态痕迹样式 */
+        .trail {
+            position: absolute;
+            bottom: 32px; 
+            width: 14px;
+            border-radius: 7px;
+            filter: blur(6px);
+            opacity: 0.3;
+            transform: translateX(-50%);
+            pointer-events: none;
+        }
+        /* 组分斑点基础样式 */
+        .dot-element {
+            position: absolute;
+            bottom: 32px;
+            transform: translate(-50%, 50%);
+            z-index: 20;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans">
+
+    <div class="max-w-5xl mx-auto p-6 md:p-12">
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold text-gray-800 tracking-tight">橙汁成分层析模拟实验</h1>
+            <p id="instructionText" class="text-gray-500 mt-2 font-medium">点击“开始实验”观察样本随溶剂缓慢爬升分离</p>
+        </header>
+
+        <div class="flex flex-col lg:flex-row gap-10 items-center lg:items-start justify-center">
+            <!-- 控制面板 -->
+            <div class="w-full lg:w-72 space-y-6">
+                <div class="bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
+                    <div class="mb-8">
+                        <label class="block text-sm font-bold text-gray-400 uppercase tracking-widest mb-4">待测样本</label>
+                        <select id="sampleSelect" class="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-orange-400 outline-none transition-all cursor-pointer text-gray-700 font-medium">
+                            <option value="sampleA">橙汁 A</option>
+                            <option value="sampleB">橙汁 B</option>
+                        </select>
+                    </div>
+
+                    <div class="flex flex-col gap-4">
+                        <button id="startBtn" class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-2xl transition-all shadow-lg active:scale-95">
+                            开始实验
+                        </button>
+                        <button id="resetBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-500 font-bold py-3 rounded-2xl transition-all">
+                            重置实验
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 实验装置区 -->
+            <div class="flex-1 flex justify-center bg-white p-12 rounded-[3rem] shadow-sm border border-gray-100 min-h-[750px] w-full">
+                <div class="relative w-full max-w-sm h-[650px] border-x-[8px] border-b-[8px] border-blue-50/50 rounded-b-[50px] flex justify-center items-end pb-4 bg-white shadow-inner">
+                    <!-- 底部溶剂 -->
+                    <div class="absolute bottom-0 w-full h-16 bg-blue-100/30 border-t border-blue-100 rounded-b-[42px]"></div>
+                    
+                    <!-- 层析纸 -->
+                    <div id="paper" class="relative w-64 h-[600px] paper-texture border border-gray-100 shadow-sm flex flex-col justify-end overflow-hidden rounded-sm">
+                        <!-- 溶剂上升视觉线 -->
+                        <div id="solventFront" class="absolute bottom-0 left-0 w-full bg-blue-400/5 hidden"></div>
+                        
+                        <div id="dotsContainer" class="relative w-full h-full">
+                            <!-- 起始基准线 (START LINE) -->
+                            <div class="absolute bottom-8 w-full border-t-2 border-dashed border-gray-200 text-[10px] text-gray-300 font-medium text-center pt-2">
+                                START LINE
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const sampleSelect = document.getElementById('sampleSelect');
+        const solventFront = document.getElementById('solventFront');
+        const dotsContainer = document.getElementById('dotsContainer');
+        const instructionText = document.getElementById('instructionText');
+
+        let animationFrameId = null;
+        let isRunning = false;
+        const spotX = 50; // 中心点位置
+
+        // 实验配置数据
+        const CONFIG = {
+            sampleA: {
+                dots: [
+                    { color: '#FF9500', targetY: 220, size: 20, label: '成分 1', spread: 10 }
+                ]
+            },
+            sampleB: {
+                dots: [
+                    { color: '#FFD700', targetY: 450, size: 14, label: '成分 1', spread: 12 },
+                    { color: '#FF5E00', targetY: 320, size: 16, label: '成分 2', spread: 10 },
+                    { color: '#FFA600', targetY: 180, size: 18, label: '成分 3', spread: 14 },
+                    { color: '#8B4513', targetY: 70, size: 12, label: '成分 4', spread: 6 }
+                ]
+            }
+        };
+
+        // 重置实验状态
+        function resetExperiment() {
+            isRunning = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            
+            startBtn.disabled = false;
+            startBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            
+            instructionText.innerText = "选择样本并点击“开始实验”观察分离过程";
+            instructionText.className = "text-gray-500 mt-2 font-medium";
+            
+            solventFront.style.height = '0%';
+            solventFront.classList.remove('solvent-rise');
+            solventFront.classList.add('hidden');
+            
+            // 清理生成的 DOM 元素
+            dotsContainer.querySelectorAll('.dot-element, .trail, .initial-spot').forEach(el => el.remove());
+        }
+
+        // 开始实验逻辑
+        function startExperiment() {
+            if (isRunning) return;
+            isRunning = true;
+            startBtn.disabled = true;
+            startBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            instructionText.innerText = "正在浸润样本并开始爬升...";
+
+            const sampleKey = sampleSelect.value;
+            const data = CONFIG[sampleKey];
+
+            // 放置初始点 (精确对齐 START LINE)
+            const initialSpot = document.createElement('div');
+            initialSpot.className = 'initial-spot absolute rounded-full z-40 bg-orange-700/60';
+            initialSpot.style.bottom = '32px'; 
+            initialSpot.style.left = `${spotX}%`;
+            initialSpot.style.width = '12px';
+            initialSpot.style.height = '12px';
+            initialSpot.style.transform = 'translate(-50%, 50%)';
+            initialSpot.style.filter = 'blur(1px)';
+            dotsContainer.appendChild(initialSpot);
+
+            // 模拟样本浸润延迟
+            setTimeout(() => {
+                if (initialSpot) initialSpot.remove();
+                solventFront.classList.remove('hidden');
+                solventFront.classList.add('solvent-rise');
+
+                // 初始化组分斑点和对应的痕迹
+                const activeDots = data.dots.map(dotData => {
+                    const trail = document.createElement('div');
+                    trail.className = 'trail';
+                    trail.style.backgroundColor = dotData.color;
+                    trail.style.left = `${spotX}%`;
+                    dotsContainer.appendChild(trail);
+
+                    const dotEl = document.createElement('div');
+                    dotEl.className = 'dot-element rounded-full';
+                    dotEl.style.left = `${spotX}%`;
+                    dotEl.style.backgroundColor = dotData.color;
+                    dotEl.style.width = `${dotData.size}px`;
+                    dotEl.style.height = `${dotData.size}px`;
+                    dotEl.style.filter = 'blur(2px)';
+                    dotsContainer.appendChild(dotEl);
+
+                    return {
+                        el: dotEl,
+                        trail: trail,
+                        config: dotData,
+                        maxPos: Math.abs(dotData.targetY)
+                    };
+                });
+
+                const startTime = performance.now();
+                const duration = 15000; // 动画持续 15 秒
+
+                // 每一帧的更新逻辑
+                function update(currentTime) {
+                    const elapsed = currentTime - startTime;
+                    const progress = Math.min(elapsed / duration, 1);
+                    // 使用缓动函数，模拟溶剂爬升时由快到慢的物理过程
+                    const easeProgress = 1 - Math.pow(1 - progress, 1.5); 
+
+                    activeDots.forEach(item => {
+                        const movePos = item.maxPos * easeProgress;
+                        
+                        // 更新点的位置
+                        item.el.style.bottom = `${32 + movePos}px`;
+                        
+                        // 动态更新痕迹高度 (实现实时生长效果)
+                        item.trail.style.height = `${movePos}px`;
+
+                        // 随进度增加模糊和扩散范围
+                        const blurVal = 2 + (progress * 6);
+                        const sizeBoost = progress * item.config.spread;
+                        item.el.style.filter = `blur(${blurVal}px)`;
+                        item.el.style.width = `${item.config.size + sizeBoost}px`;
+                        item.el.style.height = `${item.config.size + sizeBoost}px`;
+                    });
+
+                    if (progress < 1) {
+                        animationFrameId = requestAnimationFrame(update);
+                    } else {
+                        instructionText.innerText = "分析完成";
+                        instructionText.className = "text-green-600 mt-2 font-medium";
+                    }
+                }
+
+                animationFrameId = requestAnimationFrame(update);
+            }, 800);
+        }
+
+        // 事件绑定
+        startBtn.addEventListener('click', startExperiment);
+        resetBtn.addEventListener('click', resetExperiment);
+    </script>
+</body>
+</html>

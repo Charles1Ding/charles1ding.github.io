@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNA 纸层析平行对比实验 (L=500mm)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 溶剂上升动画 */
+        @keyframes solventFlow {
+            from { height: 0%; }
+            to { height: 100%; }
+        }
+        .solvent-rise {
+            animation: solventFlow 10s linear forwards;
+        }
+
+        /* 纸张纹理 */
+        .paper-canvas {
+            background-color: #fcfcfc;
+            background-image: 
+                linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 25px 25px;
+            position: relative;
+            border: 1px solid #e2e8f0;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.05);
+        }
+
+        /* 斑点样式 */
+        .chrom-spot {
+            position: absolute;
+            width: 18px;
+            height: 10px;
+            border-radius: 50%;
+            transform: translate(-50%, 50%);
+            filter: blur(1px);
+            opacity: 0;
+            transition: opacity 1.2s ease-in;
+            z-index: 20;
+        }
+
+        /* 测量虚线 */
+        .ruler-line {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            border-top: 1px dashed #f87171;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.8s;
+            z-index: 10;
+        }
+
+        .ruler-label {
+            position: absolute;
+            right: 8px;
+            transform: translateY(-50%);
+            font-size: 10px;
+            font-weight: bold;
+            color: #ef4444;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 0 4px;
+            border-radius: 4px;
+        }
+
+        /* 刻度尺 */
+        .scale-bar {
+            position: absolute;
+            left: 0;
+            top: 40px;
+            bottom: 40px;
+            width: 30px;
+            border-right: 2px solid #94a3b8;
+            display: flex;
+            flex-direction: column;
+            justify-content: justify;
+        }
+
+        .base-line-marker {
+            position: absolute;
+            bottom: 40px;
+            width: 100%;
+            border-top: 2px solid #334155;
+            z-index: 30;
+        }
+
+        .front-line-marker {
+            position: absolute;
+            width: 100%;
+            border-top: 2px solid #3b82f6;
+            opacity: 0;
+            transition: opacity 0.5s;
+            z-index: 30;
+        }
+
+        /* 喷雾动画 */
+        @keyframes sprayAnim {
+            0% { transform: scaleX(0); opacity: 0; }
+            50% { transform: scaleX(1.2); opacity: 0.3; }
+            100% { transform: scaleX(1); opacity: 0; }
+        }
+        .spray-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(transparent, rgba(139, 92, 246, 0.2), transparent);
+            pointer-events: none;
+            z-index: 40;
+            display: none;
+        }
+        .spraying .spray-overlay {
+            display: block;
+            animation: sprayAnim 1s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen py-8">
+
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col md:flex-row border border-slate-200">
+            
+            <!-- 控制台 -->
+            <div class="md:w-80 p-8 bg-slate-50 border-r border-slate-200 flex flex-col justify-between">
+                <div>
+                    <h1 class="text-2xl font-black text-slate-800 tracking-tight mb-2">层析平行对比</h1>
+                    <p class="text-sm text-slate-500 mb-8 leading-relaxed">
+                        溶剂前沿 <span class="font-bold text-blue-600">L = 500 mm</span><br>
+                        通过对比样本 A 和 B 的点位，分析成分差异。
+                    </p>
+
+                    <div class="space-y-4">
+                        <button id="runBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transition active:scale-95">
+                            开始层析进程
+                        </button>
+                        <button id="colorBtn" disabled class="w-full bg-slate-200 text-slate-400 font-bold py-4 rounded-2xl cursor-not-allowed transition">
+                            喷洒显色剂
+                        </button>
+                        <button id="resetBtn" class="w-full bg-white text-slate-600 font-bold py-4 rounded-2xl border border-slate-200 hover:bg-slate-100 transition">
+                            重置实验
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-8 space-y-4">
+                    <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">实验参数</div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs text-slate-600">溶剂前沿 (L)</span>
+                            <span class="text-sm font-mono font-bold text-blue-600">500 mm</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-600">基准线位置</span>
+                            <span class="text-sm font-mono font-bold text-slate-400">0 mm</span>
+                        </div>
+                    </div>
+
+                    <div id="resultsBoard" class="hidden animate-in fade-in duration-700">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-2">对比结论</div>
+                        <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-xl">
+                            <p class="text-xs text-indigo-700 leading-tight">
+                                样本 B 在 <span class="font-bold">365mm</span> 处检测到独有特征点 ($R_f=0.73$)。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 层析空间 -->
+            <div id="chromSpace" class="flex-1 p-10 bg-white relative">
+                <div class="spray-overlay" id="sprayLayer"></div>
+                
+                <div class="h-[600px] w-full max-w-2xl mx-auto relative paper-canvas rounded-lg overflow-hidden">
+                    <!-- 刻度提示 -->
+                    <div class="absolute left-2 h-full py-10 flex flex-col justify-between text-[9px] text-slate-300 font-mono pointer-events-none">
+                        <span>500</span><span>400</span><span>300</span><span>200</span><span>100</span><span>0</span>
+                    </div>
+
+                    <!-- 动态溶剂 -->
+                    <div id="solventFill" class="absolute bottom-0 left-0 w-full bg-blue-400/10 border-t border-blue-300/30 hidden"></div>
+
+                    <!-- L 线 -->
+                    <div id="frontLine" class="front-line-marker">
+                        <span class="absolute left-10 -top-5 text-[10px] font-bold text-blue-500 uppercase tracking-tighter">Front (L = 500)</span>
+                    </div>
+
+                    <!-- 基准线 -->
+                    <div class="base-line-marker">
+                        <div class="absolute left-1/4 -bottom-6 text-[11px] font-black text-slate-400 uppercase">样本 A</div>
+                        <div class="absolute right-1/4 -bottom-6 text-[11px] font-black text-slate-400 uppercase">样本 B</div>
+                    </div>
+
+                    <!-- 斑点容器 -->
+                    <div id="spotsArea" class="absolute inset-0"></div>
+                </div>
+
+                <!-- 图例 -->
+                <div class="mt-12 flex justify-center space-x-8">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-2 rounded-full bg-purple-500"></div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">共有组分</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="w-4 h-2 rounded-full bg-indigo-600"></div>
+                        <span class="text-[10px] font-bold text-slate-400 uppercase">样本 B 特有</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const runBtn = document.getElementById('runBtn');
+        const colorBtn = document.getElementById('colorBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const solventFill = document.getElementById('solventFill');
+        const frontLine = document.getElementById('frontLine');
+        const spotsArea = document.getElementById('spotsArea');
+        const chromSpace = document.getElementById('chromSpace');
+        const resultsBoard = document.getElementById('resultsBoard');
+
+        const L = 500;
+        const BASE_Y = 40; // 离底部的像素
+        let animId = null;
+
+        // 实验数据定义
+        const SAMPLES = [
+            // 样本 A 点位
+            { name: 'A-low', x: '25%', rf: 0.08, d: 40, color: '#a855f7' },
+            { name: 'A-mid', x: '25%', rf: 0.60, d: 300, color: '#a855f7' },
+            // 样本 B 点位
+            { name: 'B-low', x: '75%', rf: 0.08, d: 40, color: '#a855f7' },
+            { name: 'B-mid', x: '75%', rf: 0.60, d: 300, color: '#a855f7' },
+            { name: 'B-high', x: '75%', rf: 0.73, d: 365, color: '#4f46e5' }
+        ];
+
+        function init() {
+            spotsArea.innerHTML = '';
+            solventFill.style.height = '0px';
+            solventFill.classList.add('hidden');
+            frontLine.style.opacity = '0';
+            resultsBoard.classList.add('hidden');
+            chromSpace.classList.remove('spraying');
+        }
+
+        function buildSpots() {
+            return SAMPLES.map(s => {
+                const spot = document.createElement('div');
+                spot.className = 'chrom-spot';
+                spot.style.left = s.x;
+                spot.style.backgroundColor = s.color;
+                
+                const line = document.createElement('div');
+                line.className = 'ruler-line';
+                line.style.left = (s.x === '25%') ? '0' : '50%';
+                line.style.width = '50%';
+                
+                const label = document.createElement('span');
+                label.className = 'ruler-label';
+                label.style.right = (s.x === '25%') ? 'auto' : '10px';
+                label.style.left = (s.x === '25%') ? '10px' : 'auto';
+                
+                line.appendChild(label);
+                spotsArea.appendChild(line);
+                spotsArea.appendChild(spot);
+                
+                return { el: spot, line, label, target: s.d };
+            });
+        }
+
+        function start() {
+            runBtn.disabled = true;
+            runBtn.classList.replace('bg-blue-600', 'bg-slate-200');
+            runBtn.classList.add('text-slate-400');
+
+            solventFill.classList.remove('hidden');
+            solventFill.classList.add('solvent-rise');
+
+            const spotElements = buildSpots();
+            const startTime = performance.now();
+            const duration = 10000; // 10秒模拟
+
+            function animate(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                spotElements.forEach(item => {
+                    const currentY = item.target * progress;
+                    item.el.style.bottom = `${BASE_Y + currentY}px`;
+                    item.line.style.bottom = `${BASE_Y + currentY}px`;
+                    item.label.innerText = `${Math.round(currentY)} mm`;
+                });
+
+                // 同步更新溶剂蓝色背景
+                solventFill.style.height = `${(BASE_Y + L) * progress}px`;
+
+                if (progress < 1) {
+                    animId = requestAnimationFrame(animate);
+                } else {
+                    frontLine.style.bottom = `${BASE_Y + L}px`;
+                    frontLine.style.opacity = '1';
+                    
+                    colorBtn.disabled = false;
+                    colorBtn.classList.replace('bg-slate-200', 'bg-purple-600');
+                    colorBtn.classList.replace('text-slate-400', 'text-white');
+                    colorBtn.classList.add('shadow-lg', 'shadow-purple-200');
+                }
+            }
+            animId = requestAnimationFrame(animate);
+        }
+
+        function spray() {
+            chromSpace.classList.add('spraying');
+            setTimeout(() => {
+                document.querySelectorAll('.chrom-spot, .ruler-line').forEach(el => el.style.opacity = '1');
+                resultsBoard.classList.remove('hidden');
+                colorBtn.disabled = true;
+                colorBtn.classList.replace('bg-purple-600', 'bg-slate-200');
+                colorBtn.classList.add('text-slate-400');
+            }, 800);
+        }
+
+        runBtn.addEventListener('click', start);
+        colorBtn.addEventListener('click', spray);
+        resetBtn.addEventListener('click', () => {
+            cancelAnimationFrame(animId);
+            runBtn.disabled = false;
+            runBtn.className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition active:scale-95";
+            colorBtn.disabled = true;
+            colorBtn.className = "w-full bg-slate-200 text-slate-400 font-bold py-4 rounded-2xl cursor-not-allowed transition";
+            init();
+        });
+
+        init();
+    </script>
+</body>
+</html>

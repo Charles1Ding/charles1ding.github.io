@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>酯化反应全原子动态模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Segoe UI', system-ui, sans-serif; }
+        #canvas-container { 
+            background: white; 
+            border: 2px solid #e2e8f0; 
+            border-radius: 24px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            height: 600px;
+        }
+        .atom {
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 10;
+            transition: all 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            font-size: 14px;
+        }
+        .atom-C { background: #334155; color: white; border: 2px solid #0f172a; }
+        .atom-H { background: #ffffff; color: #334155; border: 1.5px solid #cbd5e1; width: 24px; height: 24px; font-size: 10px; }
+        .atom-O { background: #ef4444; color: white; border: 2px solid #991b1b; }
+        
+        .bond {
+            position: absolute;
+            background: #94a3b8;
+            z-index: 5;
+            transform-origin: left center;
+            transition: all 1.2s ease;
+            pointer-events: none;
+        }
+        .bond-double::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: #ef4444; 
+            left: 0;
+            top: -6px; 
+        }
+
+        .reacting-part {
+            animation: pulse-glow 2s infinite;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.8); transform: scale(1.1); }
+        }
+
+        .formula-box {
+            font-family: 'Courier New', Courier, monospace;
+            background: #1e293b;
+            color: #38bdf8;
+            padding: 10px 20px;
+            border-radius: 12px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+<div class="max-w-6xl mx-auto">
+    <header class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-black text-slate-800 tracking-tight">酯化反应模拟 (全原子版)</h1>
+            <p class="text-slate-500">模拟羧酸与醇在浓硫酸催化下的脱水缩合过程</p>
+        </div>
+        <div id="status" class="px-6 py-2 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm">
+            准备就绪
+        </div>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- 控制面板 -->
+        <div class="space-y-6">
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">1. 选择羧酸</label>
+                    <select id="acidSelect" class="w-full p-2.5 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500 transition-all outline-none">
+                        <option value="ethanoic">乙酸 (Ethanoic Acid)</option>
+                        <option value="propanoic">丙酸 (Propanoic Acid)</option>
+                    </select>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-xs font-bold text-slate-400 uppercase mb-2">2. 选择醇</label>
+                    <select id="alcoholSelect" class="w-full p-2.5 border rounded-xl bg-slate-50 text-sm focus:ring-2 focus:ring-blue-500 transition-all outline-none">
+                        <option value="ethanol">乙醇 (Ethanol)</option>
+                        <option value="propanol">丙醇 (Propanol)</option>
+                    </select>
+                </div>
+
+                <button id="reactionBtn" class="w-full py-4 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-all shadow-lg active:scale-95 flex items-center justify-center gap-2">
+                    <span>开始化学反应</span>
+                </button>
+                
+                <button id="resetBtn" class="w-full mt-3 py-2 text-slate-400 text-xs font-semibold hover:text-slate-600 transition-colors">
+                    重置实验环境
+                </button>
+            </div>
+
+            <div class="bg-amber-50 p-5 rounded-2xl border border-amber-100">
+                <h3 class="text-amber-800 font-bold text-sm mb-2 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"></path></svg>
+                    机理要点
+                </h3>
+                <ul class="text-xs text-amber-700 space-y-2 leading-relaxed">
+                    <li>• <b>羧酸：</b>提供羟基 (-OH) </li>
+                    <li>• <b>醇：</b>提供羟基上的氢 (-H)</li>
+                    <li>• <b>产物：</b>形成酯键 (C-O-C) 并生成水</li>
+                </ul>
+            </div>
+            
+            <div class="text-center">
+                <div id="eqDisplay" class="formula-box text-sm"></div>
+            </div>
+        </div>
+
+        <!-- 画布 -->
+        <div class="lg:col-span-3">
+            <div id="canvas-container">
+                <!-- 原子和键动态生成 -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('canvas-container');
+    const acidSelect = document.getElementById('acidSelect');
+    const alcoholSelect = document.getElementById('alcoholSelect');
+    const reactionBtn = document.getElementById('reactionBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const status = document.getElementById('status');
+    const eqDisplay = document.getElementById('eqDisplay');
+
+    let atoms = [];
+    let bonds = [];
+    let isReacting = false;
+
+    const DIST = 70;
+    const OFFSET_C = 18;
+    const OFFSET_H = 12;
+
+    function clear() {
+        container.innerHTML = '';
+        atoms = [];
+        bonds = [];
+        isReacting = false;
+        reactionBtn.disabled = false;
+        status.innerText = "准备就绪";
+        status.className = "px-6 py-2 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm";
+    }
+
+    function createAtom(type, x, y, id) {
+        const div = document.createElement('div');
+        div.className = `atom atom-${type}`;
+        div.innerText = type;
+        const offset = type === 'H' ? OFFSET_H : OFFSET_C;
+        div.style.left = `${x - offset}px`;
+        div.style.top = `${y - offset}px`;
+        div.id = id;
+        container.appendChild(div);
+        const obj = { id, type, x, y, el: div, offset };
+        atoms.push(obj);
+        return obj;
+    }
+
+    function createBond(idA, idB, isDouble = false) {
+        const div = document.createElement('div');
+        div.className = `bond ${isDouble ? 'bond-double' : ''}`;
+        div.id = `bond-${idA}-${idB}`;
+        container.appendChild(div);
+        const obj = { idA, idB, el: div, isDouble };
+        bonds.push(obj);
+        updateBond(obj);
+        return obj;
+    }
+
+    function updateBond(bond) {
+        const a = atoms.find(at => at.id === bond.idA);
+        const b = atoms.find(at => at.id === bond.idB);
+        if (!a || !b) return;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        bond.el.style.width = `${dist}px`;
+        bond.el.style.height = `2.5px`;
+        bond.el.style.left = `${a.x}px`;
+        bond.el.style.top = `${a.y - 1.25}px`;
+        bond.el.style.transform = `rotate(${angle}deg)`;
+    }
+
+    function setupMolecules() {
+        clear();
+        const acidType = acidSelect.value;
+        const alcType = alcoholSelect.value;
+        
+        // --- 1. 羧酸布局 (左侧) ---
+        const acidX = 180;
+        const acidY = 220;
+        
+        // 羧基碳
+        createAtom('C', acidX + DIST, acidY, 'A_C_CARB');
+        createAtom('O', acidX + DIST, acidY - DIST, 'A_O_DBL');
+        createBond('A_C_CARB', 'A_O_DBL', true);
+        
+        // 待脱羟基 (-OH)
+        createAtom('O', acidX + DIST + DIST, acidY, 'A_O_REAC');
+        createAtom('H', acidX + DIST + DIST + 40, acidY + 30, 'A_H_REAC_OH');
+        createBond('A_C_CARB', 'A_O_REAC');
+        createBond('A_O_REAC', 'A_H_REAC_OH');
+
+        // α-碳链
+        createAtom('C', acidX, acidY, 'A_C1');
+        createBond('A_C1', 'A_C_CARB');
+        createAtom('H', acidX, acidY - DIST, 'A_H1'); createBond('A_C1', 'A_H1');
+        createAtom('H', acidX, acidY + DIST, 'A_H2'); createBond('A_C1', 'A_H2');
+
+        if (acidType === 'propanoic') {
+            createAtom('C', acidX - DIST, acidY, 'A_C0');
+            createBond('A_C0', 'A_C1');
+            createAtom('H', acidX - DIST, acidY - DIST, 'A_H3'); createBond('A_C0', 'A_H3');
+            createAtom('H', acidX - DIST, acidY + DIST, 'A_H4'); createBond('A_C0', 'A_H4');
+            createAtom('H', acidX - DIST - 40, acidY, 'A_H5'); createBond('A_C0', 'A_H5');
+        } else {
+            createAtom('H', acidX - 40, acidY, 'A_H3'); createBond('A_C1', 'A_H3');
+        }
+
+        // --- 2. 醇布局 (右侧) ---
+        const alcX = container.offsetWidth - 200;
+        const alcY = 400;
+
+        // 与OH相连的碳
+        createAtom('C', alcX, alcY, 'L_C1');
+        createAtom('H', alcX, alcY - DIST, 'L_H1'); createBond('L_C1', 'L_H1');
+        createAtom('H', alcX, alcY + DIST, 'L_H2'); createBond('L_C1', 'L_H2');
+
+        // 待脱氢的羟基 (-O-H)
+        createAtom('O', alcX - DIST, alcY, 'L_O_CARB');
+        createAtom('H', alcX - DIST - 40, alcY - 30, 'L_H_REAC');
+        createBond('L_C1', 'L_O_CARB');
+        createBond('L_O_CARB', 'L_H_REAC');
+
+        // 延伸碳链
+        if (alcType === 'propanol') {
+            createAtom('C', alcX + DIST, alcY, 'L_C2');
+            createBond('L_C1', 'L_C2');
+            createAtom('H', alcX + DIST, alcY - DIST, 'L_H3'); createBond('L_C2', 'L_H3');
+            createAtom('H', alcX + DIST, alcY + DIST, 'L_H4'); createBond('L_C2', 'L_H4');
+            
+            createAtom('C', alcX + DIST * 2, alcY, 'L_C3');
+            createBond('L_C2', 'L_C3');
+            createAtom('H', alcX + DIST * 2, alcY - DIST, 'L_H5'); createBond('L_C3', 'L_H5');
+            createAtom('H', alcX + DIST * 2, alcY + DIST, 'L_H6'); createBond('L_C3', 'L_H6');
+            createAtom('H', alcX + DIST * 2 + 40, alcY, 'L_H7'); createBond('L_C3', 'L_H7');
+        } else {
+            createAtom('C', alcX + DIST, alcY, 'L_C2');
+            createBond('L_C1', 'L_C2');
+            createAtom('H', alcX + DIST, alcY - DIST, 'L_H3'); createBond('L_C2', 'L_H3');
+            createAtom('H', alcX + DIST, alcY + DIST, 'L_H4'); createBond('L_C2', 'L_H4');
+            createAtom('H', alcX + DIST + 40, alcY, 'L_H5'); createBond('L_C2', 'L_H5');
+        }
+
+        // 高亮活性部位
+        document.getElementById('A_O_REAC').classList.add('reacting-part');
+        document.getElementById('A_H_REAC_OH').classList.add('reacting-part');
+        document.getElementById('L_H_REAC').classList.add('reacting-part');
+
+        updateFormula();
+    }
+
+    function updateFormula() {
+        const a = acidSelect.value === 'ethanoic' ? 'CH3COOH' : 'CH3CH2COOH';
+        const l = alcoholSelect.value === 'ethanol' ? 'C2H5OH' : 'C3H7OH';
+        eqDisplay.innerHTML = `${a} + ${l}`;
+    }
+
+    async function startReaction() {
+        if (isReacting) return;
+        isReacting = true;
+        reactionBtn.disabled = true;
+        status.innerText = "断键中: 酸脱羟基, 醇脱氢...";
+        status.className = "px-6 py-2 rounded-full bg-amber-100 text-amber-700 font-bold shadow-sm";
+
+        // 1. 断开关键键
+        const b1 = bonds.find(b => b.idA === 'A_C_CARB' && b.idB === 'A_O_REAC');
+        const b2 = bonds.find(b => b.idA === 'L_O_CARB' && b.idB === 'L_H_REAC');
+        
+        b1.el.style.opacity = '0';
+        b2.el.style.opacity = '0';
+
+        await new Promise(r => setTimeout(r, 1200));
+
+        // 2. 形成水分子并移开
+        const o_water = atoms.find(a => a.id === 'A_O_REAC');
+        const h1_water = atoms.find(a => a.id === 'A_H_REAC_OH');
+        const h2_water = atoms.find(a => a.id === 'L_H_REAC');
+
+        const wx = container.offsetWidth / 2;
+        const wy = 80;
+
+        o_water.x = wx; o_water.y = wy;
+        h1_water.x = wx - 25; h1_water.y = wy + 35;
+        h2_water.x = wx + 25; h2_water.y = wy + 35;
+
+        [o_water, h1_water, h2_water].forEach(a => {
+            a.el.style.left = `${a.x - a.offset}px`;
+            a.el.style.top = `${a.y - a.offset}px`;
+        });
+
+        await new Promise(r => setTimeout(r, 800));
+        createBond('A_O_REAC', 'A_H_REAC_OH');
+        createBond('A_O_REAC', 'L_H_REAC');
+
+        // 3. 醇片段向酸靠拢
+        status.innerText = "成键中: 形成酯键 (C-O-C)...";
+        const c_carb = atoms.find(a => a.id === 'A_C_CARB');
+        const o_link = atoms.find(a => a.id === 'L_O_CARB');
+
+        const tx = c_carb.x + DIST;
+        const ty = c_carb.y;
+        const dx = tx - o_link.x;
+        const dy = ty - o_link.y;
+
+        // 移动除了水分子的所有醇原子
+        atoms.filter(a => a.id.startsWith('L_') && a.id !== 'L_H_REAC').forEach(a => {
+            a.x += dx; a.y += dy;
+            a.el.style.left = `${a.x - a.offset}px`;
+            a.el.style.top = `${a.y - a.offset}px`;
+        });
+
+        let timer = setInterval(() => bonds.forEach(updateBond), 50);
+        await new Promise(r => setTimeout(r, 1500));
+        clearInterval(timer);
+
+        // 4. 建立最终酯键
+        createBond('A_C_CARB', 'L_O_CARB');
+        
+        const aName = acidSelect.options[acidSelect.selectedIndex].text.split(' ')[0].replace('酸', '');
+        const lName = alcoholSelect.options[alcoholSelect.selectedIndex].text.split(' ')[0].replace('醇', '酯');
+        
+        status.innerText = `成功生成 ${aName}${lName}！`;
+        status.className = "px-6 py-2 rounded-full bg-green-600 text-white font-bold shadow-lg";
+
+        const esterFormula = (acidSelect.value === 'ethanoic' ? 'CH3COO' : 'CH3CH2COO') + (alcoholSelect.value === 'ethanol' ? 'C2H5' : 'C3H7');
+        eqDisplay.innerHTML = `${esterFormula} + H<sub>2</sub>O`;
+    }
+
+    acidSelect.onchange = setupMolecules;
+    alcoholSelect.onchange = setupMolecules;
+    reactionBtn.onclick = startReaction;
+    resetBtn.onclick = setupMolecules;
+
+    window.onload = setupMolecules;
+</script>
+</body>
+</html>

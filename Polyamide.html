@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高精度C-N成键缩聚模型 - 交互增强版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; overflow-x: hidden; }
+        
+        #canvas-wrapper {
+            width: 100%;
+            height: 400px;
+            overflow-x: auto;
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            display: flex;
+            align-items: center;
+            padding: 0 100px;
+            border: 1px solid #e2e8f0;
+            scroll-behavior: smooth;
+        }
+
+        #canvas-container { 
+            position: relative;
+            height: 300px;
+            width: 5000px; 
+        }
+        
+        .monomer {
+            position: absolute;
+            height: 200px;
+            transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .atom {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 900;
+            color: white;
+            position: absolute;
+            z-index: 20;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: transform 0.4s ease, opacity 0.4s ease;
+        }
+        
+        .atom-C { background: #334155; }
+        .atom-O { background: #ef4444; }
+        .atom-N { background: #6366f1; }
+        .atom-H { width: 28px; height: 28px; background: #cbd5e1; color: #475569; font-size: 12px; }
+
+        .leaving-group {
+            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4), 0 0 20px #fbbf24;
+            border: 2px solid #f59e0b;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .core-box {
+            width: 80px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 800;
+            border-radius: 8px;
+            position: absolute;
+            top: 126px;
+            left: 100px;
+            z-index: 10;
+        }
+        .core-acid { background: #10b981; }
+        .core-amine { background: #3b82f6; }
+
+        .bond {
+            position: absolute;
+            background-color: #94a3b8;
+            height: 6px;
+            transform-origin: left center;
+            z-index: 5;
+            border-radius: 3px;
+            transition: opacity 0.3s ease;
+        }
+        .bond-double {
+            height: 12px;
+            background: none !important;
+            border-top: 4px solid #64748b;
+            border-bottom: 4px solid #64748b;
+        }
+
+        .peptide-bond {
+            background: #f59e0b !important;
+            height: 8px !important;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.5);
+            z-index: 25;
+            animation: bondAppear 0.5s ease-out;
+        }
+
+        @keyframes bondAppear {
+            from { opacity: 0; transform: scaleX(0); }
+            to { opacity: 1; transform: scaleX(1); }
+        }
+
+        .fade-out { opacity: 0; transform: scale(0) translateY(-60px) !important; pointer-events: none; }
+        
+        .water-bubble {
+            position: absolute;
+            background: rgba(186, 230, 253, 0.9);
+            border: 2px solid #38bdf8;
+            color: #0369a1;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 100;
+            animation: bubbleUp 1.5s ease-out forwards;
+        }
+
+        @keyframes bubbleUp {
+            0% { transform: translate(-50%, 0); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translate(-50%, -180px); opacity: 0; }
+        }
+
+        /* 状态指示器样式 */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 99px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="p-10">
+
+<div class="max-w-5xl mx-auto">
+    <div class="mb-8 flex justify-between items-end">
+        <div>
+            <h1 class="text-4xl font-black text-slate-800 tracking-tight">聚酰胺精密合成 <span class="text-indigo-600">C-N 连接</span></h1>
+            <p class="text-slate-500 mt-2 text-lg">实时控制实验：<span class="text-slate-800 font-bold">缩聚反应</span> 的暂停与接续</p>
+        </div>
+        <div id="statusIndicator" class="status-badge bg-slate-100 text-slate-500">
+            等待投放...
+        </div>
+    </div>
+
+    <div id="canvas-wrapper">
+        <div id="canvas-container"></div>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- 核心操作区 -->
+        <div class="md:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex items-center gap-4">
+            <button id="spawnBtn" class="flex-1 bg-slate-900 text-white px-6 py-4 rounded-2xl font-bold shadow-lg hover:bg-slate-800 active:scale-95 transition flex items-center justify-center gap-2">
+                <span>1. 投放单体</span>
+            </button>
+            
+            <div class="flex items-center gap-2 flex-[2]">
+                <button id="reactBtn" class="flex-1 bg-indigo-600 text-white px-6 py-4 rounded-2xl font-bold shadow-lg hover:bg-indigo-500 active:scale-95 transition disabled:opacity-30 flex items-center justify-center gap-2" disabled>
+                    <span id="reactBtnLabel">2. 启动缩聚反应</span>
+                </button>
+                
+                <button id="pauseBtn" class="w-16 h-14 bg-amber-100 text-amber-700 rounded-2xl font-bold hover:bg-amber-200 active:scale-95 transition hidden flex items-center justify-center" title="暂停/继续">
+                    <svg id="pauseIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <svg id="playIcon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- 辅助功能区 -->
+        <div class="bg-slate-50 p-6 rounded-3xl border border-slate-200 flex items-center justify-center">
+            <button id="resetBtn" class="text-slate-400 font-bold hover:text-red-500 flex items-center gap-2 transition">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                重置实验
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const container = document.getElementById('canvas-container');
+    const spawnBtn = document.getElementById('spawnBtn');
+    const reactBtn = document.getElementById('reactBtn');
+    const reactBtnLabel = document.getElementById('reactBtnLabel');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const statusIndicator = document.getElementById('statusIndicator');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const playIcon = document.getElementById('playIcon');
+
+    let monomers = [];
+    let isPaused = false;
+    let isReacting = false;
+    let currentStep = 0;
+    const COUNT = 10; // 增加单体数量以更好地展示暂停功能
+    const START_SPACING = 450;
+    const CENTER_Y = 130; 
+
+    // 工具函数：检查暂停
+    async function checkPause() {
+        while (isPaused) {
+            await new Promise(r => setTimeout(r, 100));
+        }
+    }
+
+    function updateStatus(text, type = 'normal') {
+        statusIndicator.innerText = text;
+        statusIndicator.className = 'status-badge ' + (
+            type === 'active' ? 'bg-indigo-100 text-indigo-700' : 
+            type === 'paused' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500'
+        );
+    }
+
+    // 原子生成
+    function addAtom(parent, type, x, y, isLeaving = false) {
+        const el = document.createElement('div');
+        el.className = `atom atom-${type} ${isLeaving ? 'leaving-group' : ''}`;
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+        el.innerText = type;
+        parent.appendChild(el);
+        return el;
+    }
+
+    // 化学键生成
+    function createBond(parent, x1, y1, x2, y2, isDouble = false) {
+        const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2)) - (isDouble ? 0 : 5);
+        const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+        
+        const b = document.createElement('div');
+        b.className = `bond ${isDouble ? 'bond-double' : ''}`;
+        b.style.width = Math.max(0, length) + 'px';
+        b.style.left = (x1 + 20) + 'px'; 
+        b.style.top = (y1 + 20 - (isDouble ? 6 : 3)) + 'px';
+        b.style.transform = `rotate(${angle}deg)`;
+        parent.appendChild(b);
+        return b;
+    }
+
+    function createMonomer(type, index, startX) {
+        const group = document.createElement('div');
+        group.className = 'monomer';
+        group.style.left = startX + 'px';
+        
+        const data = { 
+            el: group, 
+            type, 
+            leftLeaving: [], rightLeaving: [],
+            leftBonds: [], rightBonds: [],
+            reactiveC: null, reactiveN: null  
+        };
+
+        const core = document.createElement('div');
+        core.className = `core-box ${type === 'acid' ? 'core-acid' : 'core-amine'}`;
+        core.innerText = type === 'acid' ? 'R' : "R'";
+        group.appendChild(core);
+
+        createBond(group, 45, CENTER_Y, 100, CENTER_Y);
+        createBond(group, 180, CENTER_Y, 235, CENTER_Y);
+
+        if (type === 'acid') {
+            const addCarboxyl = (x, dir, side) => {
+                const c = addAtom(group, 'C', x, CENTER_Y);
+                addAtom(group, 'O', x, CENTER_Y - 55);
+                createBond(group, x, CENTER_Y, x, CENTER_Y - 55, true);
+                const oh_o = addAtom(group, 'O', x + (dir * 45), CENTER_Y, true);
+                const oh_h = addAtom(group, 'H', x + (dir * 85), CENTER_Y, true);
+                const b1 = createBond(group, x, CENTER_Y, x + (dir * 45), CENTER_Y);
+                const b2 = createBond(group, x + (dir * 45), CENTER_Y, x + (dir * 85), CENTER_Y);
+                
+                if(side === 'left') { data.leftLeaving.push(oh_o, oh_h); data.leftBonds.push(b1, b2); }
+                else { data.rightLeaving.push(oh_o, oh_h); data.rightBonds.push(b1, b2); data.reactiveC = c; }
+            };
+            addCarboxyl(45, -1, 'left');
+            addCarboxyl(235, 1, 'right');
+        } else {
+            const addAmine = (x, dir, side) => {
+                const n = addAtom(group, 'N', x, CENTER_Y);
+                addAtom(group, 'H', x, CENTER_Y + 50);
+                createBond(group, x, CENTER_Y, x, CENTER_Y + 50);
+                const h_leave = addAtom(group, 'H', x + (dir * 45), CENTER_Y, true);
+                const b1 = createBond(group, x, CENTER_Y, x + (dir * 45), CENTER_Y);
+                
+                if(side === 'left') { data.leftLeaving.push(h_leave); data.leftBonds.push(b1); data.reactiveN = n; }
+                else { data.rightLeaving.push(h_leave); data.rightBonds.push(b1); }
+            };
+            addAmine(45, -1, 'left');
+            addAmine(235, 1, 'right');
+        }
+
+        container.appendChild(group);
+        return data;
+    }
+
+    spawnBtn.onclick = () => {
+        container.innerHTML = '';
+        monomers = [];
+        currentStep = 0;
+        for(let i=0; i<COUNT; i++) {
+            const startX = 50 + i * START_SPACING;
+            const mData = createMonomer(i%2===0 ? 'acid' : 'amine', i, startX);
+            monomers.push({ ...mData, curX: startX });
+        }
+        spawnBtn.disabled = true;
+        reactBtn.disabled = false;
+        updateStatus("单体已投放", "normal");
+    };
+
+    pauseBtn.onclick = () => {
+        isPaused = !isPaused;
+        if (isPaused) {
+            pauseIcon.classList.add('hidden');
+            playIcon.classList.remove('hidden');
+            updateStatus("反应暂停中", "paused");
+        } else {
+            pauseIcon.classList.remove('hidden');
+            playIcon.classList.add('hidden');
+            updateStatus("正在反应...", "active");
+        }
+    };
+
+    reactBtn.onclick = async () => {
+        if (isReacting) return;
+        isReacting = true;
+        reactBtn.disabled = true;
+        pauseBtn.classList.remove('hidden');
+        updateStatus("正在反应...", "active");
+
+        for (let i = currentStep; i < monomers.length - 1; i++) {
+            currentStep = i;
+            
+            // 每次子步骤前检查暂停
+            await checkPause();
+
+            const left = monomers[i];
+            const right = monomers[i + 1];
+
+            // 滚动定位
+            document.getElementById('canvas-wrapper').scrollTo({ left: left.curX - 100, behavior: 'smooth' });
+            await new Promise(r => setTimeout(r, 600));
+            await checkPause();
+
+            // 1. 靠近
+            const gap = 85; 
+            const newRightX = left.curX + 235 - 45 + gap;
+            const shift = right.curX - newRightX;
+
+            for (let j = i + 1; j < monomers.length; j++) {
+                monomers[j].curX -= shift;
+                monomers[j].el.style.left = monomers[j].curX + 'px';
+            }
+            await new Promise(r => setTimeout(r, 1000));
+            await checkPause();
+
+            // 2. 脱除基团消失
+            [...left.rightLeaving, ...right.leftLeaving].forEach(atom => atom?.classList.add('fade-out'));
+            [...left.rightBonds, ...right.leftBonds].forEach(bond => { if(bond) bond.style.opacity = '0'; });
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'water-bubble';
+            bubble.innerHTML = 'H<sub>2</sub>O';
+            bubble.style.left = (left.curX + 235 + gap/2 + 20) + 'px';
+            bubble.style.top = (CENTER_Y + 20) + 'px';
+            container.appendChild(bubble);
+
+            await new Promise(r => setTimeout(r, 800));
+            await checkPause();
+
+            // 3. 肽键生成
+            const peptideBond = document.createElement('div');
+            peptideBond.className = 'bond peptide-bond';
+            peptideBond.style.width = gap + 'px';
+            peptideBond.style.left = (left.curX + 235 + 20) + 'px';
+            peptideBond.style.top = (CENTER_Y + 20 - 4) + 'px';
+            container.appendChild(peptideBond);
+
+            if (left.reactiveC) left.reactiveC.style.transform = 'scale(1.3)';
+            if (right.reactiveN) right.reactiveN.style.transform = 'scale(1.3)';
+
+            await new Promise(r => setTimeout(r, 800));
+            
+            if (left.reactiveC) left.reactiveC.style.transform = 'scale(1)';
+            if (right.reactiveN) right.reactiveN.style.transform = 'scale(1)';
+        }
+
+        isReacting = false;
+        pauseBtn.classList.add('hidden');
+        updateStatus("反应已完成", "normal");
+    };
+
+    resetBtn.onclick = () => {
+        container.innerHTML = '';
+        monomers = [];
+        isPaused = false;
+        isReacting = false;
+        currentStep = 0;
+        spawnBtn.disabled = false;
+        reactBtn.disabled = true;
+        pauseBtn.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
+        playIcon.classList.add('hidden');
+        document.getElementById('canvas-wrapper').scrollTo({ left: 0 });
+        updateStatus("等待投放...", "normal");
+    };
+</script>
+</body>
+</html>

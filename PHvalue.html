@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>胃液 pH 模拟器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a; /* Dark slate background */
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: #f8fafc;
+        }
+
+        .ion {
+            position: absolute;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 800;
+            color: white;
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.3), 0 2px 5px rgba(0,0,0,0.4);
+            animation: float 5s ease-in-out infinite alternate, popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            transform: scale(0);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Particle sizes based on ion type (relative) - Only H+ remains */
+        .ion-h { 
+            width: 24px; 
+            height: 24px; 
+            font-size: 11px; 
+            background: radial-gradient(circle at 30% 30%, #fecdd3, #fb7185); 
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33% { transform: translate(15px, -20px) scale(1.05) rotate(5deg); }
+            66% { transform: translate(-10px, 15px) scale(0.95) rotate(-5deg); }
+            100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+        }
+
+        @keyframes popIn {
+            to { opacity: 0.9; transform: scale(1); }
+        }
+
+        /* Cute blink animation for the stomach face */
+        @keyframes blink {
+            0%, 96%, 98% { transform: scaleY(1); opacity: 1; }
+            97% { transform: scaleY(0.1); opacity: 0.8; }
+        }
+        .eyes {
+            transform-origin: 230px 245px;
+        }
+
+        .stomach-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            aspect-ratio: 4 / 5;
+            margin: 0 auto;
+            filter: drop-shadow(0 20px 30px rgba(0,0,0,0.5));
+        }
+
+        /* The SVG itself */
+        .stomach-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none; /* Let clicks pass through to particles if needed */
+        }
+
+        /* We use a clip-path matching the inner shape of the stomach to contain the liquid */
+        .stomach-inner-clip {
+            position: absolute;
+            inset: 0;
+            /* Approximate stomach inner shape for clipping liquid */
+            clip-path: path('M 150 50 C 150 100, 50 150, 50 250 C 50 350, 150 450, 250 450 C 350 450, 400 350, 400 250 C 400 150, 300 100, 300 50 L 250 50 L 200 50 Z');
+            /* Fallback shape if path doesn't perfectly align with viewbox */
+            border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        /* The actual liquid layer */
+        #liquid-level {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: linear-gradient(to bottom, rgba(239, 68, 68, 0.6), rgba(185, 28, 28, 0.8));
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: bottom;
+            /* Inner shadow for depth */
+            box-shadow: inset 0 20px 20px -20px rgba(255,255,255,0.3);
+        }
+
+        /* Surface wave effect */
+        .liquid-surface {
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 200%;
+            height: 15px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            animation: wave 4s ease-in-out infinite alternate;
+        }
+
+        @keyframes wave {
+            0% { transform: translateX(0) scaleY(1); }
+            100% { transform: translateX(10%) scaleY(1.5); }
+        }
+
+        /* Particle container inside liquid */
+        #particles-container {
+            position: absolute;
+            inset: 0;
+            overflow: visible;
+        }
+
+        .falling-drop {
+            position: absolute;
+            border-radius: 50%;
+            z-index: 25;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3), inset 0 -3px 6px rgba(0,0,0,0.2);
+            animation: dropIn 0.5s ease-in forwards;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+            font-weight: 800;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+            pointer-events: none;
+        }
+
+        @keyframes dropIn {
+            0% { top: -15%; opacity: 0; transform: scale(0.5); }
+            10% { opacity: 1; transform: scale(1); }
+            80% { top: calc(var(--target-y, 50%) - 5%); opacity: 1; transform: scale(0.9); }
+            100% { top: calc(var(--target-y, 50%) + 5%); opacity: 0; transform: scale(0.2); }
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col md:flex-row items-stretch overflow-x-hidden">
+
+    <!-- Left Column: Controls (Smaller) -->
+    <div class="w-full md:w-80 lg:w-96 bg-slate-800 border-r border-slate-700 flex flex-col shadow-2xl z-30 shrink-0">
+        
+        <!-- Header -->
+        <div class="p-6 pb-4 border-b border-slate-700 bg-slate-900/50">
+            <h1 class="text-2xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-orange-400">
+                胃部 pH 模拟器
+            </h1>
+            <p class="text-slate-400 mt-1 text-sm">观察胃酸环境与摄入物质的相互作用。</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="p-6 flex-1 overflow-y-auto">
+            <h2 class="text-sm font-bold text-slate-300 mb-4 uppercase tracking-wider flex items-center gap-2">
+                <svg class="w-4 h-4 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                摄入与分泌控制
+            </h2>
+
+            <div class="flex flex-col gap-3">
+                <button id="add-hcl" class="group flex items-center gap-4 p-3 bg-slate-700/50 hover:bg-slate-700 rounded-xl border border-rose-900/50 hover:border-rose-500 transition-all text-left">
+                    <div class="bg-rose-500/20 text-rose-400 p-2 rounded-lg shadow-inner"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div>
+                    <div>
+                        <div class="font-bold text-slate-200">分泌胃酸 (HCl)</div>
+                        <div class="text-[11px] text-slate-400">+0.005 mol 强酸</div>
+                    </div>
+                </button>
+
+                <button id="add-water" class="group flex items-center gap-4 p-3 bg-slate-700/50 hover:bg-slate-700 rounded-xl border border-blue-900/50 hover:border-blue-500 transition-all text-left">
+                    <div class="bg-blue-500/20 text-blue-400 p-2 rounded-lg shadow-inner"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path></svg></div>
+                    <div>
+                        <div class="font-bold text-slate-200">喝白开水</div>
+                        <div class="text-[11px] text-slate-400">+0.5 L 纯水 (稀释)</div>
+                    </div>
+                </button>
+
+                <button id="add-h2co3" class="group flex items-center gap-4 p-3 bg-slate-700/50 hover:bg-slate-700 rounded-xl border border-amber-900/50 hover:border-amber-500 transition-all text-left">
+                    <div class="bg-amber-500/20 text-amber-400 p-2 rounded-lg shadow-inner"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path></svg></div>
+                    <div>
+                        <div class="font-bold text-slate-200">喝碳酸饮料</div>
+                        <div class="text-[11px] text-slate-400">+0.5L 含有 0.01mol H₂CO₃</div>
+                    </div>
+                </button>
+                
+                <button id="add-base" class="group flex items-center gap-4 p-3 bg-slate-700/50 hover:bg-slate-700 rounded-xl border border-purple-900/50 hover:border-purple-500 transition-all text-left mt-2">
+                    <div class="bg-purple-500/20 text-purple-400 p-2 rounded-lg shadow-inner"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg></div>
+                    <div>
+                        <div class="font-bold text-slate-200">服用抗酸药 (弱碱)</div>
+                        <div class="text-[11px] text-slate-400">中和部分胃酸</div>
+                    </div>
+                </button>
+            </div>
+
+            <div class="mt-8">
+                <div class="flex justify-between items-center mb-3">
+                    <h2 class="text-sm font-bold text-slate-300 uppercase tracking-wider">实时状态</h2>
+                    <button id="btn-reset" class="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-300 transition-colors">重置</button>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="bg-slate-800 p-3 rounded-lg border border-slate-700 flex justify-between items-center shadow-inner">
+                        <div class="text-slate-400 text-xs">胃液容量</div>
+                        <div class="font-mono font-bold text-slate-200"><span id="display-vol">0.5</span> <span class="text-xs text-slate-500">L</span></div>
+                    </div>
+                    
+                    <div class="bg-slate-800 p-3 rounded-lg border border-rose-900/50 flex justify-between items-center shadow-inner relative overflow-hidden">
+                        <div class="absolute left-0 top-0 bottom-0 w-1 bg-rose-500"></div>
+                        <div class="text-slate-400 text-xs pl-2">[H⁺] 浓度</div>
+                        <div class="font-mono font-bold text-rose-400"><span id="display-h">1.0e-2</span> <span class="text-xs text-rose-500/50">mol/L</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Legend -->
+            <div class="mt-8 bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-xs">
+                <div class="text-slate-500 font-bold mb-3 uppercase tracking-wider">微粒图例</div>
+                <div class="grid grid-cols-1 gap-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-5 h-5 rounded-full bg-rose-400 shadow-inner flex items-center justify-center text-[9px] text-white font-bold">H⁺</div> 
+                        <span class="text-slate-300 font-medium text-sm">游离氢离子 (决定溶液酸性)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Visualization (Larger) -->
+    <div class="flex-1 bg-slate-900 relative flex flex-col items-center justify-center p-4 md:p-10 min-h-[500px] overflow-hidden">
+        
+        <!-- Background Grid for aesthetics -->
+        <div class="absolute inset-0 opacity-[0.03] pointer-events-none" 
+             style="background-image: linear-gradient(#f8fafc 1px, transparent 1px), linear-gradient(90deg, #f8fafc 1px, transparent 1px); background-size: 40px 40px;">
+        </div>
+
+        <!-- Major pH Display floating above -->
+        <div class="absolute top-8 left-1/2 -translate-x-1/2 text-center z-40 bg-slate-800/80 backdrop-blur-md px-8 py-4 rounded-3xl border border-slate-700 shadow-2xl">
+            <div class="text-sm text-slate-400 font-bold tracking-widest mb-1">当前 pH 值</div>
+            <div id="display-ph" class="text-7xl font-black text-rose-500 tracking-tighter transition-colors duration-500 drop-shadow-[0_0_15px_rgba(244,63,94,0.3)]">2.00</div>
+            
+            <!-- Contextual Status -->
+            <div id="ph-status" class="mt-2 text-sm font-medium text-rose-400 bg-rose-950/30 px-3 py-1 rounded-full inline-block">
+                强酸性 (正常胃液)
+            </div>
+        </div>
+
+        <!-- The Stomach Model -->
+        <div class="stomach-container mt-20">
+            
+            <!-- SVG Outline of Stomach (Cute Version) -->
+            <svg class="stomach-svg drop-shadow-2xl" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Outer glow (Soft pink) -->
+                <path d="M220 50 C 220 120, 90 140, 70 280 C 50 420, 150 480, 270 470 C 400 460, 440 340, 410 240 C 380 140, 280 120, 280 50 L 220 50 Z" 
+                      stroke="rgba(251, 113, 133, 0.25)" stroke-width="24" stroke-linejoin="round" />
+                <!-- Stomach Wall (Soft cute outline) -->
+                <path d="M220 50 C 220 120, 90 140, 70 280 C 50 420, 150 480, 270 470 C 400 460, 440 340, 410 240 C 380 140, 280 120, 280 50" 
+                      stroke="#fda4af" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="rgba(255, 228, 230, 0.15)"/>
+                
+                <!-- Esophagus & Duodenum markers -->
+                <path d="M220 10 L 220 50 M280 10 L 280 50" stroke="#fda4af" stroke-width="14" stroke-linecap="round"/>
+                <path d="M410 240 C 430 200, 480 200, 490 240" stroke="#fda4af" stroke-width="14" stroke-linecap="round"/>
+                
+                <!-- Cute Highlights -->
+                <path d="M100 280 C 85 360, 130 420, 180 440" stroke="rgba(255,255,255,0.4)" stroke-width="8" stroke-linecap="round" fill="none"/>
+            </svg>
+
+            <!-- Inner clipped area for liquid -->
+            <div class="stomach-inner-clip" style="clip-path: path('M220 50 C 220 120, 90 140, 70 280 C 50 420, 150 480, 270 470 C 400 460, 440 340, 410 240 C 380 140, 280 120, 280 50 Z');">
+                
+                <!-- Liquid Layer -->
+                <!-- Height is controlled via JS by changing top percentage (100% is empty, 0% is full) -->
+                <div id="liquid-level" style="top: 70%; height: auto;">
+                    <div class="liquid-surface"></div>
+                    
+                    <!-- Particles Container (Inside Liquid) -->
+                    <div id="particles-container">
+                        <!-- Particles injected here via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cute Face Overlay (Always on top of liquid) -->
+            <svg class="absolute inset-0 w-full h-full z-30 pointer-events-none" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Rosy Cheeks -->
+                <ellipse cx="140" cy="280" rx="22" ry="14" fill="rgba(251, 113, 133, 0.5)" filter="blur(3px)"/>
+                <ellipse cx="320" cy="270" rx="22" ry="14" fill="rgba(251, 113, 133, 0.5)" filter="blur(3px)"/>
+                
+                <!-- Eyes (with blink animation) -->
+                <g class="eyes" style="animation: blink 5s infinite;">
+                    <!-- Left Eye -->
+                    <circle cx="180" cy="250" r="15" fill="#334155"/>
+                    <circle cx="174" cy="244" r="5" fill="white"/>
+                    <circle cx="184" cy="254" r="2" fill="white"/>
+                    <!-- Right Eye -->
+                    <circle cx="280" cy="245" r="15" fill="#334155"/>
+                    <circle cx="274" cy="239" r="5" fill="white"/>
+                    <circle cx="284" cy="249" r="2" fill="white"/>
+                </g>
+                
+                <!-- Cute 'w' Mouth -->
+                <path d="M 210 295 Q 225 315 240 295 Q 255 315 270 295" stroke="#334155" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+
+            <!-- Volume Alert overlay -->
+            <div id="volume-alert" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-900/90 text-rose-400 px-6 py-3 rounded-2xl border border-rose-500/50 font-bold shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none z-50 whitespace-nowrap">
+                胃部已满！
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Chemistry State for Stomach
+        const state = {
+            vol: 0.5,         // Initial volume 0.5L (fasting stomach volume approx)
+            n_hcl: 0.005,     // Initial HCl moles (yields roughly pH 2.0 at 0.5L)
+            n_h2co3: 0.0,     // Moles of H2CO3
+            n_base: 0.0,      // Moles of strong base added (simplification for antacid)
+            
+            // Calculated concentrations
+            c_hcl: 0.0,       
+            c_hco3: 0.0,      
+            h_conc: 0.0,     
+            oh_conc: 0.0,    
+            ph: 2.00          
+        };
+
+        // Constants
+        const Ka_H2CO3 = 4.3e-7; 
+        const Kw = 1e-14;        
+        const MAX_VOL = 2.0; // Max stomach volume in Liters
+
+        // DOM Elements setup
+        const DOM = {
+            btnHcl: document.getElementById('add-hcl'),
+            btnH2co3: document.getElementById('add-h2co3'),
+            btnWater: document.getElementById('add-water'),
+            btnBase: document.getElementById('add-base'),
+            btnReset: document.getElementById('btn-reset'),
+            
+            dispVol: document.getElementById('display-vol'),
+            dispH: document.getElementById('display-h'),
+            dispPh: document.getElementById('display-ph'),
+            phStatus: document.getElementById('ph-status'),
+            
+            liquidLevel: document.getElementById('liquid-level'),
+            particlesContainer: document.getElementById('particles-container'),
+            volAlert: document.getElementById('volume-alert')
+        };
+
+        function calculateChemistry() {
+            // Net strong acid/base calculation
+            // Base neutralizes HCl directly for simplicity in this model
+            let net_strong_acid = state.n_hcl - state.n_base;
+            let C_strong = net_strong_acid / state.vol; // Can be negative if base is in excess
+            let C_h2co3 = state.n_h2co3 / state.vol;
+            
+            let h_conc = 0;
+
+            if (C_strong >= 0) {
+                // Acidic or neutral strong component
+                if (C_h2co3 > 0) {
+                    // Weak acid + strong acid
+                    // x^2 + (C_strong + Ka)x - Ka * C_h2co3 = 0
+                    let a = 1;
+                    let b = C_strong + Ka_H2CO3;
+                    let c = -Ka_H2CO3 * C_h2co3;
+                    let x = (-b + Math.sqrt(b*b - 4*a*c)) / (2*a); // [HCO3-]
+                    h_conc = C_strong + x;
+                    state.c_hco3 = x;
+                } else {
+                    h_conc = C_strong;
+                    state.c_hco3 = 0;
+                }
+                
+                // Water autoionization correction for very dilute acids
+                if (h_conc < 1e-6) {
+                    let a_w = 1; let b_w = -h_conc; let c_w = -Kw;
+                    h_conc = (-b_w + Math.sqrt(b_w*b_w - 4*a_w*c_w)) / (2*a_w);
+                }
+            } else {
+                // Basic overall (Net base)
+                let oh_conc = -C_strong; // approximate
+                h_conc = Kw / oh_conc;
+                state.c_hco3 = 0; // Simplified: ignore carbonate equilibrium in basic for this model
+            }
+
+            state.h_conc = h_conc;
+            state.oh_conc = Kw / h_conc;
+            state.ph = -Math.log10(h_conc);
+            
+            // For particles
+            state.c_hcl = Math.max(0, C_strong);
+        }
+
+        function formatScientific(num) {
+            if (num === 0) return "0";
+            return num.toExponential(2).replace('e', ' × 10').replace('+', '');
+        }
+
+        function getLiquidColor(ph) {
+            // Cutier pastel-ish liquid colors
+            if (ph < 2.5) return 'rgba(251, 113, 133, 0.85)';  // Rose-400 (Healthy highly acidic)
+            if (ph < 4) return 'rgba(251, 146, 60, 0.75)';     // Orange-400
+            if (ph < 6) return 'rgba(250, 204, 21, 0.65)';     // Yellow-400
+            if (ph < 7.5) return 'rgba(52, 211, 153, 0.6)';    // Emerald-400
+            return 'rgba(96, 165, 250, 0.6)';                  // Blue-400
+        }
+
+        function getPhStatus(ph) {
+            if (ph < 1.5) return { text: "极强酸性", color: "text-rose-500", bg: "bg-rose-950/50", shadow: "rgba(244,63,94,0.5)" };
+            if (ph <= 3.5) return { text: "正常胃酸", color: "text-rose-400", bg: "bg-rose-900/30", shadow: "rgba(244,63,94,0.3)" };
+            if (ph < 5.0) return { text: "弱酸性 (已稀释)", color: "text-orange-400", bg: "bg-orange-900/30", shadow: "rgba(2fb,115,22,0.3)" };
+            if (ph < 6.5) return { text: "微酸性", color: "text-yellow-400", bg: "bg-yellow-900/30", shadow: "rgba(234,179,8,0.3)" };
+            if (ph <= 7.5) return { text: "近中性", color: "text-emerald-400", bg: "bg-emerald-900/30", shadow: "rgba(16,185,129,0.3)" };
+            return { text: "碱性", color: "text-blue-400", bg: "bg-blue-900/30", shadow: "rgba(59,130,246,0.3)" };
+        }
+
+        function updateUI() {
+            DOM.dispVol.innerText = state.vol.toFixed(1);
+            DOM.dispH.innerText = formatScientific(state.h_conc);
+            
+            // pH Display
+            let phString = state.ph.toFixed(2);
+            DOM.dispPh.innerText = phString;
+            
+            const status = getPhStatus(state.ph);
+            DOM.dispPh.className = `text-7xl font-black ${status.color} tracking-tighter transition-colors duration-500`;
+            DOM.dispPh.style.filter = `drop-shadow(0 0 15px ${status.shadow})`;
+            
+            DOM.phStatus.innerText = status.text;
+            DOM.phStatus.className = `mt-2 text-sm font-medium ${status.color} ${status.bg} px-3 py-1 rounded-full inline-block border border-[${status.color}]/20`;
+
+            // Liquid Level (Stomach mapping)
+            // min vol 0.1L -> top ~85%
+            // max vol 2.0L -> top ~10%
+            let fillRatio = state.vol / MAX_VOL;
+            fillRatio = Math.max(0.05, Math.min(1, fillRatio));
+            // Convert ratio to css 'top' percentage for the clip-path bounding box
+            // 1.0 ratio = 10% top (full), 0.0 ratio = 90% top (empty)
+            let topPercent = 90 - (fillRatio * 80);
+            
+            DOM.liquidLevel.style.top = `${topPercent}%`;
+            
+            // Update gradient based on pH
+            let color = getLiquidColor(state.ph);
+            DOM.liquidLevel.style.background = `linear-gradient(to bottom, ${color}, rgba(15, 23, 42, 0.3))`;
+        }
+
+        function updateParticles() {
+            DOM.particlesContainer.innerHTML = ''; 
+            
+            // Only tracking H+ for clarity now
+            let numH = 0;
+
+            if (state.ph < 7) {
+                // Acidic: More H+ mapping
+                let acidIntensity = 7 - state.ph; // 0 to ~6
+                numH = Math.floor(acidIntensity * 10); 
+            }
+
+            // Cap limits for performance and visual clarity
+            numH = Math.min(60, Math.max(0, numH));
+
+            // Generate ONLY Hydrogen ions
+            generateParticles(numH, 'ion-h', 'H⁺');
+        }
+
+        function generateParticles(count, className, label) {
+            for (let i = 0; i < count; i++) {
+                const el = document.createElement('div');
+                el.className = `ion ${className}`;
+                el.innerText = label;
+                
+                // Position logic relative to the liquid bounds inside the clip-path
+                // X needs to be more constrained towards the middle to stay inside the stomach shape curve
+                // Using a bell curve approximation for width spread based on depth
+                const depthY = Math.random(); // 0 (top) to 1 (bottom)
+                const yPos = depthY * 90 + 5; // 5% to 95%
+                
+                // Width varies by depth in stomach (wider in middle, narrower at bottom/top)
+                // Simplified: restrict X heavily
+                const widthFactor = Math.sin(depthY * Math.PI); // 0 at edges, 1 in middle
+                const xSpread = 40 + (widthFactor * 40); // 40% to 80% spread
+                const xPos = 50 + ((Math.random() - 0.5) * xSpread);
+                
+                el.style.left = `${xPos}%`;
+                el.style.top = `${yPos}%`;
+                
+                const floatDelay = Math.random() * -5; 
+                const popDelay = Math.random() * 0.3;
+                el.style.animationDelay = `${floatDelay}s, ${popDelay}s`;
+                
+                DOM.particlesContainer.appendChild(el);
+            }
+        }
+
+        function showVolumeAlert() {
+            DOM.volAlert.style.opacity = '1';
+            setTimeout(() => {
+                DOM.volAlert.style.opacity = '0';
+            }, 2000);
+        }
+
+        function checkVolume(addAmount) {
+            if (state.vol + addAmount > MAX_VOL) {
+                showVolumeAlert();
+                return false;
+            }
+            return true;
+        }
+
+        const INGEST_COLORS = {
+            hcl: { bg: 'radial-gradient(circle at 30% 30%, #fecdd3, #fb7185)', text: 'H⁺', size: '24px' },
+            water: { bg: 'radial-gradient(circle at 30% 30%, #bfdbfe, #3b82f6)', text: '水', size: '22px' },
+            h2co3: { bg: 'radial-gradient(circle at 30% 30%, #fef3c7, #f59e0b)', text: '酸', size: '24px' },
+            base: { bg: 'radial-gradient(circle at 30% 30%, #e9d5ff, #a855f7)', text: '碱', size: '22px' }
+        };
+
+        function animateIngestion(type, callback) {
+            const container = document.querySelector('.stomach-container');
+            const config = INGEST_COLORS[type];
+            // 水滴加得多一点，别的少一点
+            const dropCount = type === 'water' ? 6 : 3; 
+            
+            // 计算当前液面的高度比例，让下落微粒在接触液面时消失
+            let fillRatio = state.vol / MAX_VOL;
+            fillRatio = Math.max(0.05, Math.min(1, fillRatio));
+            let topPercent = 90 - (fillRatio * 80);
+
+            let firstDropHit = false;
+
+            for (let i = 0; i < dropCount; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'falling-drop';
+                drop.style.background = config.bg;
+                drop.style.width = config.size;
+                drop.style.height = config.size;
+                drop.innerText = config.text;
+                
+                // 在食道入口（顶部中间）做轻微的左右随机偏移
+                const offsetX = (Math.random() - 0.5) * 50;
+                drop.style.left = `calc(50% + ${offsetX}px)`;
+                
+                // 设置 CSS 动画的目标 Y 坐标 (液面位置)
+                drop.style.setProperty('--target-y', `${topPercent}%`);
+                
+                // 制造不同微粒下落的先后时间差
+                const delay = i * 0.12;
+                drop.style.animationDelay = `${delay}s`;
+                
+                container.appendChild(drop);
+                
+                // 当第一颗微粒“扑通”掉进液体时（大约在动画的 350ms 处），才更新并重新渲染整个液体系统
+                if (!firstDropHit) {
+                    firstDropHit = true;
+                    setTimeout(() => {
+                        callback();
+                    }, (delay * 1000) + 350); 
+                }
+
+                // 动画播完后将临时微粒元素从 DOM 移除清理掉
+                setTimeout(() => {
+                    drop.remove();
+                }, (delay * 1000) + 600); 
+            }
+        }
+
+        function runSimulation() {
+            calculateChemistry();
+            updateUI();
+            updateParticles();
+        }
+
+        function init() {
+            DOM.btnHcl.addEventListener('click', () => {
+                if(checkVolume(0)) { 
+                    state.n_hcl += 0.005; // 瞬间记录状态，防止玩家光速狂点超出体积限制
+                    animateIngestion('hcl', () => {
+                        runSimulation(); // 等微粒掉进液体时更新 UI
+                    });
+                }
+            });
+            
+            DOM.btnWater.addEventListener('click', () => {
+                if(checkVolume(0.5)) {
+                    state.vol += 0.5;
+                    animateIngestion('water', () => {
+                        runSimulation();
+                    });
+                }
+            });
+
+            DOM.btnH2co3.addEventListener('click', () => {
+                if(checkVolume(0.5)) {
+                    state.vol += 0.5;
+                    state.n_h2co3 += 0.01;
+                    animateIngestion('h2co3', () => {
+                        runSimulation();
+                    });
+                }
+            });
+            
+            DOM.btnBase.addEventListener('click', () => {
+                if(checkVolume(0.05)) { 
+                    state.vol += 0.05;
+                    state.n_base += 0.008; 
+                    animateIngestion('base', () => {
+                        runSimulation();
+                    });
+                }
+            });
+            
+            DOM.btnReset.addEventListener('click', () => {
+                state.vol = 0.5;
+                state.n_hcl = 0.005;
+                state.n_h2co3 = 0.0;
+                state.n_base = 0.0;
+                runSimulation();
+            });
+
+            // Initial render
+            runSimulation();
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

@@ -1,0 +1,966 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量热法 (Calorimetry) 虚拟实验室</title>
+    <!-- 引入 Tailwind CSS 进行现代且美观的样式布局 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 定制 Tailwind 动画：向外散失的热量波纹 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    keyframes: {
+                        'float-out-left': {
+                            '0%': { transform: 'translate(0, 0) scale(0.8)', opacity: '0' },
+                            '20%': { opacity: '0.8' },
+                            '100%': { transform: 'translate(-40px, -60px) scale(1.1)', opacity: '0' }
+                        },
+                        'float-out-right': {
+                            '0%': { transform: 'translate(0, 0) scale(0.8)', opacity: '0' },
+                            '20%': { opacity: '0.8' },
+                            '100%': { transform: 'translate(40px, -60px) scale(1.1)', opacity: '0' }
+                        },
+                        'float-out-up': {
+                            '0%': { transform: 'translate(0, 0) scale(0.8)', opacity: '0' },
+                            '20%': { opacity: '0.8' },
+                            '100%': { transform: 'translate(0, -60px) scale(1.1)', opacity: '0' }
+                        }
+                    },
+                    animation: {
+                        'heat-left': 'float-out-left 2.5s infinite ease-out',
+                        'heat-right': 'float-out-right 2.5s infinite ease-out 0.8s',
+                        'heat-up': 'float-out-up 2.5s infinite ease-out 1.5s',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- 引入 Chart.js 用于绘制温度-时间曲线 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 FontAwesome 图标库增强视觉效果 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #f3f4f6; }
+        .lab-container {
+            background: linear-gradient(180deg, #e5e7eb 0%, #f3f4f6 100%);
+            border-radius: 12px;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .thermometer-liquid {
+            transition: height 0.2s ease, top 0.2s ease;
+        }
+        
+        /* 搅拌棒样式更新为弯折形状 */
+        .glass-rod {
+            width: 10px;
+            height: 380px;
+            background: linear-gradient(90deg, rgba(200,200,200,0.6) 0%, rgba(150,150,150,0.8) 50%, rgba(200,200,200,0.6) 100%);
+            border: 1px solid #999;
+            border-radius: 5px;
+            position: absolute;
+            z-index: 30;
+            transform-origin: top center;
+            cursor: pointer;
+            transition: left 0.5s ease, margin-left 0.5s ease, transform 0.1s ease;
+            box-shadow: inset 1px 0 2px rgba(255,255,255,0.8), inset -1px 0 3px rgba(0,0,0,0.2);
+        }
+        /* 搅拌棒顶部弯折部分 */
+        .glass-rod::before {
+            content: '';
+            position: absolute;
+            top: -38px;
+            left: 10px;
+            width: 10px;
+            height: 50px;
+            background: linear-gradient(90deg, rgba(200,200,200,0.6) 0%, rgba(150,150,150,0.8) 50%, rgba(200,200,200,0.6) 100%);
+            border: 1px solid #999;
+            border-radius: 5px;
+            transform: rotate(30deg);
+        }
+        
+        /* 反应特效动画 */
+        .reaction-effect {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+        .reaction-effect.active {
+            opacity: 1;
+            animation: pulse 0.8s infinite alternate;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.85); opacity: 0.8; filter: drop-shadow(0 0 5px #fb923c); }
+            100% { transform: scale(1.15); opacity: 1; filter: drop-shadow(0 0 15px #ea580c); }
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 text-gray-800 font-sans">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col h-full border border-gray-200">
+        
+        <!-- 头部标题 -->
+        <header class="bg-blue-600 text-white p-4 md:px-6 flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-fire-flame-curved"></i> 火焰量热法虚拟实验室
+                </h1>
+                <p class="text-blue-100 text-sm mt-1">测量液体燃料燃烧的焓变与热量</p>
+            </div>
+            <div class="text-right hidden sm:block">
+                <span id="sim-clock" class="font-mono text-xl bg-blue-800 px-3 py-1 rounded shadow-inner">00:00</span>
+                <div class="text-xs text-blue-200 mt-1">模拟时间 (分钟)</div>
+            </div>
+        </header>
+
+        <div class="flex-1 flex flex-col lg:flex-row">
+            <!-- 左侧：控制面板与虚拟仪器 -->
+            <div class="w-full lg:w-1/2 p-4 md:p-6 bg-gray-50 flex flex-col border-r border-gray-200">
+                
+                <!-- 实验设置 -->
+                <div class="mb-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-3 border-b pb-2">
+                        <h2 class="font-semibold text-lg"><i class="fa-solid fa-sliders text-blue-500"></i> 实验设置</h2>
+                        <span id="system-mass-label" class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded border border-blue-200 transition-colors">固定水量: 100g</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">选择反应类型:</label>
+                        <select id="reaction-type" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition" onchange="changeReaction()">
+                            <option value="combustion">🔥 燃烧反应 (火焰量热计/连续流动法)</option>
+                            <option value="neutralization">🧪 中和反应 (水浴量热计)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">选择燃料/物质:</label>
+                        <select id="substance-type" class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 outline-none transition" onchange="changeSubstance()">
+                            <!-- 下拉选项由JS生成 -->
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                        <div class="bg-gray-100 p-2 rounded flex justify-between"><span>初始水温:</span> <span id="info-initial-temp" class="font-bold text-gray-800">21.5°C</span></div>
+                        <div class="bg-gray-100 p-2 rounded flex justify-between"><span>预估峰值:</span> <span id="info-max-temp" class="font-bold text-gray-800">39.0°C</span></div>
+                    </div>
+                </div>
+
+                <!-- 虚拟仪器展示区 -->
+                <div class="flex-1 lab-container flex justify-center items-end p-4 min-h-[480px] mb-4 relative">
+                    <!-- 温度读数浮层 -->
+                    <div class="absolute top-4 right-4 bg-white/90 backdrop-blur px-4 py-2 rounded-lg shadow-md font-mono text-xl font-bold text-red-600 border border-red-100 z-40">
+                        <i class="fa-solid fa-temperature-half"></i> <span id="live-temp">21.50</span> °C
+                    </div>
+
+                    <!-- 外层大型烧杯 (Glass Beaker) -->
+                    <div id="container-outer" class="w-[360px] h-[360px] border-l-[4px] border-r-[4px] border-b-[6px] border-gray-500 rounded-b-[20px] absolute bottom-2 z-10 flex justify-center overflow-visible bg-white/30">
+                        <!-- 烧杯顶部宽边缘 -->
+                        <div class="absolute -top-[4px] -left-[10px] w-[372px] h-[10px] border-[3px] border-gray-500 rounded-[50%] z-20"></div>
+
+                        <!-- 动态水背景 -->
+                        <div id="water-bg" class="absolute bottom-0 w-full h-[280px] bg-blue-200/50 rounded-b-[15px] border-t-2 border-blue-400/60 z-0 transition-colors duration-300"></div>
+                        
+                        <!-- 水位标签 -->
+                        <div id="water-label" class="absolute right-[-40px] bottom-[150px] text-xs font-bold text-gray-600 text-right w-8 transition-opacity duration-500">
+                            <div class="border-b border-gray-500 mb-1 w-full"></div>
+                            water<br>(100g)
+                        </div>
+
+                        <!-- 环境热量散失动画 (Heat Loss Effect) -->
+                        <div id="heat-loss-effect" class="absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-1000 z-0">
+                            <!-- Left -->
+                            <div class="absolute top-[30%] -left-[60px] text-orange-500/80 animate-heat-left flex flex-col items-center">
+                                <i class="fa-solid fa-arrow-up rotate-[-45deg] mb-1 text-lg"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-tighter">Heat Loss</span>
+                            </div>
+                            <!-- Right -->
+                            <div class="absolute top-[40%] -right-[60px] text-orange-500/80 animate-heat-right flex flex-col items-center">
+                                <i class="fa-solid fa-arrow-up rotate-[45deg] mb-1 text-lg"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-tighter">Heat Loss</span>
+                            </div>
+                            <!-- Top -->
+                            <div class="absolute -top-[30px] left-[30%] text-orange-500/80 animate-heat-up flex flex-col items-center">
+                                <i class="fa-solid fa-arrow-up mb-1 text-lg"></i>
+                                <span class="text-[10px] font-bold uppercase tracking-tighter">Heat Loss</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 中央：火焰量热计装置 (Combustion Chamber Setup) -->
+                    <div id="apparatus-combustion" class="absolute bottom-2 left-1/2 -translate-x-1/2 w-56 h-[340px] z-20 pointer-events-none transition-opacity duration-500">
+                        <!-- 绘制所有管线和容器轮廓 (匹配原图) -->
+                        <svg class="w-full h-full absolute" viewBox="0 0 200 300" preserveAspectRatio="xMidYMax meet">
+                            <!-- 氧气进气管 (红线) -->
+                            <polyline points="0,285 45,285 45,275" fill="none" stroke="#6b7280" stroke-width="4" stroke-linejoin="round"/>
+                            <polyline points="5,285 25,285" fill="none" stroke="#ef4444" stroke-width="2" marker-end="url(#redArrow)"/>
+                            <text x="20" y="275" font-size="12" fill="#4b5563" text-anchor="middle">oxygen</text>
+                            
+                            <!-- 顶部排气管方向 (红线) -->
+                            <polyline points="100,10 100,-5" fill="none" stroke="#ef4444" stroke-width="2" marker-end="url(#redArrow)"/>
+                            <text x="100" y="25" font-size="12" fill="#4b5563" text-anchor="middle">to filter pump</text>
+
+                            <!-- 铜质排气螺旋管 (Copper spiral chimney) -->
+                            <g id="copper-spiral">
+                                <!-- 后半圈 -->
+                                <path d="M 100 135 L 100 85 L 150 75 C 165 72, 165 52, 150 49 L 50 69 C 35 72, 35 52, 50 49 L 150 29 C 165 26, 165 6, 150 3 L 100 13 L 100 -10" fill="none" stroke="#b45309" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+                                <!-- 前半圈 (亮色) -->
+                                <path d="M 100 135 L 100 85 L 150 75 C 165 72, 165 52, 150 49 L 50 69 C 35 72, 35 52, 50 49 L 150 29 C 165 26, 165 6, 150 3 L 100 13 L 100 -10" fill="none" stroke="#f59e0b" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                            </g>
+
+                            <!-- 软木塞 -->
+                            <rect x="82" y="125" width="36" height="14" fill="#a16207" stroke="#713f12" stroke-width="2" rx="2"/>
+
+                            <!-- 铜制燃烧室 (Copper Chimney/Chamber) - 底部开放，半透明处理以显示火焰 -->
+                            <path d="M 50 280 L 50 170 C 50 145, 82 135, 82 110 L 82 100 L 118 100 L 118 110 C 118 135, 150 145, 150 170 L 150 280" fill="rgba(184,115,51,0.25)" stroke="#b87333" stroke-width="3"/>
+
+                            <!-- 酒精灯主体 (Ethanol burner) 居中，改为铜质外观 -->
+                            <path d="M 65 285 C 65 300, 135 300, 135 285 C 135 270, 65 270, 65 285 Z" fill="#d97706" stroke="#92400e" stroke-width="2"/>
+                            <!-- 灯芯管 (Wick tube) 铜质 -->
+                            <path d="M 96 275 L 104 275 L 104 260 L 96 260 Z" fill="#b87333" stroke="#78350f" stroke-width="1"/>
+                            <!-- 灯芯 (Wick) 居中 -->
+                            <path d="M 98 260 L 102 260 L 102 252 L 98 252 Z" fill="#444"/>
+                            
+                            <!-- 标签 -->
+                            <text x="145" y="295" font-size="12" fill="#4b5563">ethanol</text>
+                            <polyline points="140,290 125,290" fill="none" stroke="#4b5563" stroke-width="1"/>
+                            <text x="135" y="260" font-size="10" fill="#b87333" font-weight="bold">copper calorimeter</text>
+
+                            <!-- 箭头定义 -->
+                            <defs>
+                                <marker id="redArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#ef4444"/>
+                                </marker>
+                            </defs>
+                        </svg>
+
+                        <!-- 左侧指示文字 (标签) -->
+                        <div class="absolute top-[80px] -left-[70px] text-xs font-bold text-gray-600 text-right leading-tight">
+                            copper<br>spiral<br>chimney
+                            <div class="absolute top-2 -right-4 w-6 border-b border-gray-600"></div>
+                        </div>
+
+                        <!-- 动态反应效果 (火焰 HTML层) 居中对齐灯芯 -->
+                        <div id="effect-fire" class="text-orange-500 text-[28px] reaction-effect hidden absolute bottom-[50px] left-1/2 -translate-x-1/2 mix-blend-screen z-30">
+                            <i class="fa-solid fa-fire text-yellow-400 drop-shadow-[0_0_10px_rgba(234,88,12,1)]"></i>
+                        </div>
+                    </div>
+
+                    <!-- 中和反应的水浴反应室 (Water-bath Chamber for Neutralization) -->
+                    <div id="apparatus-neutralization" class="hidden absolute bottom-2 left-1/2 -translate-x-1/2 w-56 h-[340px] z-20 pointer-events-none transition-opacity duration-500">
+                        <svg class="w-full h-full absolute" viewBox="0 0 200 300" preserveAspectRatio="xMidYMax meet">
+                            <!-- 进液管 -->
+                            <polyline points="80,-10 80,110" fill="none" stroke="#d8b4fe" stroke-width="4"/> <!-- Acid -->
+                            <polyline points="120,-10 120,110" fill="none" stroke="#93c5fd" stroke-width="4"/> <!-- Base -->
+                            <text x="75" y="25" font-size="12" fill="#4b5563" text-anchor="end">acid</text>
+                            <text x="125" y="25" font-size="12" fill="#4b5563" text-anchor="start">base</text>
+                            <!-- 流动指示箭头 -->
+                            <polyline points="75,5 80,15 85,5" fill="none" stroke="#d8b4fe" stroke-width="2"/>
+                            <polyline points="115,5 120,15 125,5" fill="none" stroke="#93c5fd" stroke-width="2"/>
+
+                            <!-- 软木塞 -->
+                            <rect x="75" y="100" width="50" height="15" fill="#a16207" stroke="#713f12" stroke-width="2" rx="2"/>
+
+                            <!-- 铜制反应室 (Copper Reaction Chamber) -->
+                            <path d="M 50 280 L 50 160 C 50 130, 75 115, 75 100 L 125 100 C 125 115, 150 130, 150 160 L 150 280 Z" fill="rgba(184,115,51,0.25)" stroke="#b87333" stroke-width="3"/>
+                            
+                            <!-- 内部溶液层 (表示酸碱混合) -->
+                            <path d="M 50 280 L 50 220 L 150 220 L 150 280 Z" fill="rgba(192,132,252,0.5)" stroke="none"/>
+
+                            <!-- 标签 -->
+                            <text x="100" y="295" font-size="12" fill="#4b5563" text-anchor="middle">reaction chamber</text>
+                            <text x="100" y="200" font-size="10" fill="#b87333" font-weight="bold" text-anchor="middle">copper calorimeter</text>
+                        </svg>
+
+                        <!-- 动态反应效果 (酸碱混合) 居中 -->
+                        <div id="effect-acid" class="text-purple-600 text-[32px] reaction-effect hidden absolute bottom-[35px] left-1/2 -translate-x-1/2 mix-blend-multiply z-30">
+                            <i class="fa-solid fa-droplet drop-shadow-[0_0_8px_rgba(168,85,247,0.8)]"></i>
+                        </div>
+                    </div>
+
+                    <!-- 温度计 (Thermometer) -> 中间穿过螺旋管 -->
+                    <div class="w-4 h-[340px] bg-white/80 border border-gray-500 rounded-full absolute bottom-[40px] left-1/2 -ml-[28px] z-30 shadow-inner flex justify-center overflow-hidden">
+                        <!-- 水银柱 -->
+                        <div class="w-1.5 bg-red-500 absolute bottom-1 rounded-full thermometer-liquid" id="thermo-liquid" style="height: 20%;"></div>
+                        <!-- 刻度线 -->
+                        <div class="w-full h-full absolute border-l-[6px] border-transparent border-dashed" style="border-image: repeating-linear-gradient(to bottom, black 0, black 1px, transparent 1px, transparent 10px) 1;"></div>
+                    </div>
+
+                    <!-- 搅拌棒 (Stirrer) -> 锚定在中心偏右，限制安全距离防止穿模 -->
+                    <div id="glass-rod" class="glass-rod" style="bottom: 20px; left: 50%; margin-left: 120px;" onmousedown="startStirring(event)" ontouchstart="startStirring(event)">
+                        <!-- 指示文字 -->
+                        <div class="absolute top-2 -right-[50px] text-xs font-bold text-gray-600">
+                            <div class="border-b border-gray-500 w-6 absolute right-[40px] top-[6px]"></div>
+                            stirrer
+                        </div>
+                    </div>
+
+                    <!-- 局部热晕 (Heat Aura) -->
+                    <div id="heat-aura" class="absolute bottom-[80px] left-1/2 w-48 h-48 bg-red-500 rounded-full blur-[40px] pointer-events-none z-10 opacity-0 transform -translate-x-1/2 transition-all duration-300 mix-blend-multiply"></div>
+                </div>
+
+                <!-- 搅拌控制 -->
+                <div class="mb-4 bg-gray-100 p-3 rounded-lg flex justify-between items-center border border-gray-200 shadow-sm">
+                    <span class="font-semibold text-gray-700 text-sm"><i class="fa-solid fa-wand-magic-sparkles text-blue-500"></i> 搅拌棒控制</span>
+                    <label class="inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="toggle-autostir" class="sr-only peer" onchange="toggleAutoStir()">
+                        <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 relative"></div>
+                        <span class="ml-3 text-sm font-medium text-gray-700">自动搅拌</span>
+                    </label>
+                </div>
+
+                <!-- 操作按钮 -->
+                <div class="grid grid-cols-2 gap-3">
+                    <button id="btn-start" onclick="toggleSimulation()" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-lg shadow transition flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-play" id="icon-start"></i> <span id="text-start">开始记录</span>
+                    </button>
+                    <button onclick="resetSimulation()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2.5 px-4 rounded-lg shadow transition flex justify-center items-center gap-2">
+                        <i class="fa-solid fa-rotate-right"></i> 重置实验
+                    </button>
+                    <button id="btn-trigger" onclick="triggerReaction()" disabled class="col-span-2 bg-orange-500 hover:bg-orange-600 text-white font-medium py-3 px-4 rounded-lg shadow transition flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95">
+                        <i class="fa-solid fa-bolt"></i> <span>点燃燃料 / 触发反应</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 右侧：数据图表与计算结果 -->
+            <div class="w-full lg:w-1/2 p-4 md:p-6 bg-white flex flex-col">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+                    <h2 class="font-semibold text-xl text-gray-800"><i class="fa-solid fa-chart-line text-blue-500"></i> 温度 - 时间曲线</h2>
+                    <div class="flex gap-2 flex-wrap">
+                        <label class="inline-flex items-center cursor-pointer bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 shadow-sm hover:bg-blue-100 transition">
+                            <input type="checkbox" id="toggle-line" class="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 cursor-pointer" checked onchange="toggleLineVisibility()">
+                            <span class="ml-2 text-sm font-bold text-blue-800">显示连线</span>
+                        </label>
+                        <label class="inline-flex items-center cursor-pointer bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200 shadow-sm hover:bg-purple-100 transition">
+                            <input type="checkbox" id="toggle-extrapolate" class="w-4 h-4 text-purple-600 bg-white border-gray-300 rounded focus:ring-purple-500 cursor-pointer" onchange="updateExtrapolation()" checked>
+                            <span class="ml-2 text-sm font-bold text-purple-800">外推法辅助分析</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 图表容器 -->
+                <div class="flex-1 relative w-full min-h-[300px] bg-white border border-gray-200 rounded-xl p-2 shadow-inner mb-4">
+                    <canvas id="tempChart"></canvas>
+                </div>
+
+                <!-- 外推法及热量计算结果 (默认显示辅助框) -->
+                <div id="extrapolation-result" class="mt-2 bg-purple-50 p-4 rounded-xl border border-purple-200 shadow-sm">
+                    <h3 class="font-bold text-purple-800 mb-3 flex items-center gap-2"><i class="fa-solid fa-calculator"></i> 外推法与热量计算 (Extrapolation & Heat)</h3>
+                    
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
+                        <div class="bg-white p-2 rounded shadow-sm border border-purple-100 text-center">
+                            <div class="text-gray-500 text-xs">基线温度</div>
+                            <div class="font-mono text-base font-bold text-blue-600" id="res-base-temp">-- °C</div>
+                        </div>
+                        <div class="bg-white p-2 rounded shadow-sm border border-purple-100 text-center">
+                            <div class="text-gray-500 text-xs">最高温度(外推)</div>
+                            <div class="font-mono text-base font-bold text-red-600" id="res-max-temp">-- °C</div>
+                        </div>
+                        <div class="bg-white p-2 rounded shadow-sm border border-purple-100 text-center">
+                            <div class="text-gray-500 text-xs">理论温差 (ΔT)</div>
+                            <div class="font-mono text-base font-bold text-purple-600" id="res-delta-temp">-- °C</div>
+                        </div>
+                        <div class="bg-white p-2 rounded shadow-sm border border-orange-100 text-center border-l-4 border-l-orange-500">
+                            <div class="text-gray-500 text-xs">水吸收热量 (Q)</div>
+                            <div class="font-mono text-base font-bold text-orange-600" id="res-heat">-- J</div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-xs text-gray-500 bg-white p-2 rounded border border-gray-200">
+                        <i class="fa-solid fa-circle-info"></i> <strong>公式：</strong> $Q = m \cdot c \cdot \Delta T$<br>
+                        其中 $m_{water} = 100\text{g}$，比热容 $c = 4.18 \text{ J/(g·°C)}$。计算结果基于外推法修正的 $\Delta T$。
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 核心逻辑脚本 -->
+    <script>
+        // === 反应配置数据 ===
+        const reactionData = {
+            combustion: {
+                name: '燃烧反应 (火焰量热计)',
+                chamberStyle: 'flame', 
+                effectId: 'effect-fire',
+                btnText: '点燃灯芯 (Ignite)',
+                substances: [
+                    { id: 'ethanol', name: '乙醇 (Ethanol) - 典型液体燃料', emoji: '', initialTemp: 21.5, maxTemp: 35.8, riseTime: 2.8, coolRate: 0.35 },
+                    { id: 'methanol', name: '甲醇 (Methanol)', emoji: '', initialTemp: 21.5, maxTemp: 31.2, riseTime: 2.5, coolRate: 0.35 },
+                    { id: 'propanol', name: '丙醇 (Propanol)', emoji: '', initialTemp: 21.5, maxTemp: 41.5, riseTime: 3.0, coolRate: 0.38 }
+                ]
+            },
+            neutralization: {
+                name: '中和反应 (水浴量热计)',
+                chamberStyle: 'water-bath', 
+                effectId: 'effect-acid',
+                btnText: '注入并混合 (Inject & Mix)',
+                substances: [
+                    { id: 'strong', name: '强酸 + 强碱 (HCl + NaOH)', emoji: '', initialTemp: 20.0, maxTemp: 28.5, riseTime: 1.5, coolRate: 0.6 },
+                    { id: 'weak', name: '弱酸 + 强碱 (CH3COOH + NaOH)', emoji: '', initialTemp: 20.0, maxTemp: 25.8, riseTime: 1.5, coolRate: 0.6 }
+                ]
+            }
+        };
+
+        // 固定参数
+        const MASS_WATER = 100; // 克 (g)
+        const SPECIFIC_HEAT = 4.18; // J/(g·°C)
+
+        // === 状态变量 ===
+        let currentMode = 'combustion';
+        let isSimulating = false;
+        let simState = 'idle'; // idle, baseline, reacting, cooling
+        let simTime = 0;       // 模拟时间 (分钟)
+        let trueTemp = 0;      // 理论真实水温
+        let currentTemp = 0;   // 温度计实际读数 (含迟滞)
+        let reactionStartTime = -1; 
+        let coolingStartTime = -1;  
+        
+        let isDraggingRod = false;
+        let lastMouseX = 0;
+        let stirIntensity = 0; // 0-100
+        let isAutoStirring = false;
+        
+        let simInterval = null;
+        let chartInstance = null;
+
+        const TICK_RATE_MS = 100;
+        const TIME_STEP = 0.05; 
+        const MAX_SIM_TIME = 16; 
+
+        // === 搅拌互动逻辑 ===
+        function startStirring(e) {
+            isDraggingRod = true;
+            lastMouseX = e.clientX || (e.touches && e.touches[0].clientX);
+            
+            document.addEventListener('mousemove', stirAction);
+            document.addEventListener('touchmove', stirAction);
+            document.addEventListener('mouseup', stopStirring);
+            document.addEventListener('touchend', stopStirring);
+            e.preventDefault(); 
+        }
+
+        function stirAction(e) {
+            if (!isDraggingRod) return;
+            const currentX = e.clientX || (e.touches && e.touches[0].clientX);
+            if (!currentX) return;
+
+            const deltaX = currentX - lastMouseX;
+            if (Math.abs(deltaX) > 2) {
+                stirIntensity = Math.min(100, stirIntensity + Math.abs(deltaX) * 0.5);
+                
+                const rod = document.getElementById('glass-rod');
+                const angle = Math.max(-8, Math.min(8, deltaX));
+                if(rod) rod.style.transform = `rotate(${angle}deg)`;
+            }
+            lastMouseX = currentX;
+        }
+
+        function stopStirring() {
+            isDraggingRod = false;
+            document.removeEventListener('mousemove', stirAction);
+            document.removeEventListener('touchmove', stirAction);
+            document.removeEventListener('mouseup', stopStirring);
+            document.removeEventListener('touchend', stopStirring);
+            
+            if (!isAutoStirring) {
+                const rod = document.getElementById('glass-rod');
+                if(rod) rod.style.transform = `rotate(0deg)`;
+            }
+        }
+
+        function toggleAutoStir() {
+            isAutoStirring = document.getElementById('toggle-autostir').checked;
+            if (!isAutoStirring && !isDraggingRod) {
+                const rod = document.getElementById('glass-rod');
+                if(rod) rod.style.transform = `rotate(0deg)`;
+            }
+        }
+
+        setInterval(() => {
+            if (isAutoStirring) {
+                stirIntensity = 90; 
+                const angle = Math.sin(Date.now() / 150) * 6; 
+                const rod = document.getElementById('glass-rod');
+                if(rod) rod.style.transform = `rotate(${angle}deg)`;
+            } else {
+                if (stirIntensity > 0) stirIntensity = Math.max(0, stirIntensity - 5);
+            }
+        }, 100);
+
+        function getCurrentConfig() {
+            const reaction = reactionData[currentMode];
+            const substanceSelect = document.getElementById('substance-type');
+            const subId = substanceSelect ? substanceSelect.value : reaction.substances[0].id;
+            const substance = reaction.substances.find(s => s.id === subId) || reaction.substances[0];
+            return { ...reaction, ...substance };
+        }
+
+        window.onload = () => {
+            const checkChartLoaded = setInterval(() => {
+                if (typeof Chart !== 'undefined') {
+                    clearInterval(checkChartLoaded);
+                    initChart();
+                    changeReaction(); 
+                }
+            }, 50);
+        };
+
+        // === UI 交互逻辑 ===
+        function changeReaction() {
+            if (isSimulating) resetSimulation();
+
+            currentMode = document.getElementById('reaction-type').value;
+            const reaction = reactionData[currentMode];
+            
+            const subSelect = document.getElementById('substance-type');
+            subSelect.innerHTML = '';
+            reaction.substances.forEach(sub => {
+                const opt = document.createElement('option');
+                opt.value = sub.id;
+                opt.textContent = sub.name;
+                subSelect.appendChild(opt);
+            });
+
+            document.getElementById('effect-fire').classList.add('hidden');
+            document.getElementById('effect-acid').classList.add('hidden');
+            
+            const glassRod = document.getElementById('glass-rod');
+            const waterBg = document.getElementById('water-bg');
+            const waterLabel = document.getElementById('water-label');
+            const massLabel = document.getElementById('system-mass-label');
+
+            // 切换内部装置显示 (两者共用外部水浴、搅拌棒和温度计)
+            if (reaction.chamberStyle === 'flame') {
+                document.getElementById('apparatus-combustion').classList.remove('hidden');
+                document.getElementById('apparatus-neutralization').classList.add('hidden');
+            } else {
+                document.getElementById('apparatus-combustion').classList.add('hidden');
+                document.getElementById('apparatus-neutralization').classList.remove('hidden');
+            }
+            
+            // 确保外部水浴始终显示
+            if (waterBg) {
+                waterBg.style.opacity = '1';
+                waterBg.style.height = '280px';
+            }
+            if (waterLabel) {
+                waterLabel.style.opacity = '1';
+            }
+            
+            // 确保搅拌棒始终在外部烧杯右侧 (基于中心锚点)
+            if (glassRod) {
+                glassRod.style.left = '50%';
+                glassRod.style.marginLeft = '120px';
+            }
+            
+            // 确保质量标签始终是一致的水质量 (都基于外圈的水浴测温)
+            if (massLabel) {
+                massLabel.innerText = '固定水量: 100g';
+                massLabel.className = 'bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded border border-blue-200 transition-colors';
+            }
+
+            changeSubstance(); 
+        }
+
+        function changeSubstance() {
+            if (isSimulating) resetSimulation();
+            
+            const config = getCurrentConfig();
+            
+            document.getElementById('info-initial-temp').innerText = config.initialTemp.toFixed(1) + '°C';
+            document.getElementById('info-max-temp').innerText = config.maxTemp.toFixed(1) + '°C';
+            document.querySelector('#btn-trigger span').innerText = config.btnText;
+
+            // 如果存在物质显示层，则更新（用于避免空指针错误）
+            const subDisplay = document.getElementById('substance-display');
+            if(subDisplay) {
+                subDisplay.innerText = config.emoji || '';
+                subDisplay.style.opacity = 1;
+            }
+
+            trueTemp = config.initialTemp;
+            currentTemp = config.initialTemp;
+            updateVisuals();
+        }
+
+        function toggleSimulation() {
+            if (!isSimulating) {
+                isSimulating = true;
+                simState = 'baseline';
+                document.getElementById('btn-trigger').disabled = false;
+                
+                document.getElementById('text-start').innerText = '暂停记录';
+                document.getElementById('icon-start').className = 'fa-solid fa-pause';
+                document.getElementById('btn-start').classList.replace('bg-green-600', 'bg-yellow-500');
+                document.getElementById('btn-start').classList.replace('hover:bg-green-700', 'hover:bg-yellow-600');
+                document.getElementById('reaction-type').disabled = true;
+                document.getElementById('substance-type').disabled = true; 
+
+                simInterval = setInterval(simulationLoop, TICK_RATE_MS);
+            } else {
+                isSimulating = false;
+                clearInterval(simInterval);
+                
+                document.getElementById('text-start').innerText = '继续记录';
+                document.getElementById('icon-start').className = 'fa-solid fa-play';
+                document.getElementById('btn-start').classList.replace('bg-yellow-500', 'bg-green-600');
+                document.getElementById('btn-start').classList.replace('hover:bg-yellow-600', 'hover:bg-green-700');
+            }
+        }
+
+        function triggerReaction() {
+            if (simState === 'baseline') {
+                simState = 'reacting';
+                reactionStartTime = simTime;
+                document.getElementById('btn-trigger').disabled = true;
+                
+                const config = getCurrentConfig();
+                const effectEl = document.getElementById(config.effectId);
+                if (effectEl) {
+                    effectEl.classList.remove('hidden');
+                    effectEl.classList.add('active');
+                }
+            }
+        }
+
+        function resetSimulation() {
+            clearInterval(simInterval);
+            isSimulating = false;
+            simState = 'idle';
+            simTime = 0;
+            stirIntensity = 0;
+            reactionStartTime = -1;
+            coolingStartTime = -1;
+            
+            const config = getCurrentConfig();
+            trueTemp = config.initialTemp;
+            currentTemp = config.initialTemp;
+            
+            document.getElementById('sim-clock').innerText = '00:00';
+            document.getElementById('btn-trigger').disabled = true;
+            document.getElementById('reaction-type').disabled = false;
+            document.getElementById('substance-type').disabled = false;
+            
+            document.getElementById('text-start').innerText = '开始记录';
+            document.getElementById('icon-start').className = 'fa-solid fa-play';
+            document.getElementById('btn-start').classList.replace('bg-yellow-500', 'bg-green-600');
+            document.getElementById('btn-start').classList.replace('hover:bg-yellow-600', 'hover:bg-green-700');
+            
+            document.querySelectorAll('.reaction-effect').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('hidden');
+            });
+            
+            const subDisplay = document.getElementById('substance-display');
+            if(subDisplay) {
+                subDisplay.style.opacity = 1;
+            }
+
+            updateVisuals();
+            if (typeof Chart !== 'undefined') initChart();
+            
+            // 重置计算显示
+            document.getElementById('res-base-temp').innerText = '-- °C';
+            document.getElementById('res-max-temp').innerText = '-- °C';
+            document.getElementById('res-delta-temp').innerText = '-- °C';
+            document.getElementById('res-heat').innerText = '-- J';
+        }
+
+        // === 核心物理计算逻辑 ===
+        function simulationLoop() {
+            if (simTime >= MAX_SIM_TIME) {
+                toggleSimulation(); 
+                return;
+            }
+
+            simTime += TIME_STEP;
+            const config = getCurrentConfig();
+
+            // 1. 理论真水温
+            if (simState === 'baseline') {
+                trueTemp = config.initialTemp;
+            } 
+            else if (simState === 'reacting') {
+                const dt = simTime - reactionStartTime;
+                const progress = Math.min(dt / config.riseTime, 1.0); 
+                
+                const sCurve = 0.5 - 0.5 * Math.cos(Math.PI * progress);
+                trueTemp = config.initialTemp + (config.maxTemp - config.initialTemp) * sCurve;
+
+                if (config.chamberStyle === 'cup') {
+                    const subDisplay = document.getElementById('substance-display');
+                    if (subDisplay) subDisplay.style.opacity = Math.max(0, 1 - progress * 1.5);
+                }
+
+                if (progress >= 1.0) {
+                    simState = 'cooling';
+                    if (coolingStartTime === -1) coolingStartTime = simTime; 
+                    const effectEl = document.getElementById(config.effectId);
+                    if (effectEl) {
+                        effectEl.classList.remove('active');
+                        effectEl.classList.add('hidden');
+                    }
+                }
+            } 
+            else if (simState === 'cooling') {
+                trueTemp -= (config.coolRate * TIME_STEP);
+            }
+
+            // 2. 传感器温度模拟 (包含传热迟滞与搅拌)
+            if (simState !== 'cooling') {
+                const mixingRate = 0.05 + (stirIntensity / 100) * 0.4; 
+                currentTemp += (trueTemp - currentTemp) * mixingRate;
+                currentTemp += (Math.random() - 0.5) * 0.05;
+                if (simState === 'baseline' && stirIntensity > 50) currentTemp += 0.015; 
+            } else {
+                currentTemp -= (config.coolRate * TIME_STEP);
+                currentTemp += (Math.random() - 0.5) * 0.03; 
+            }
+
+            updateVisuals();
+            
+            if (chartInstance) {
+                chartInstance.data.labels.push(simTime.toFixed(2));
+                chartInstance.data.datasets[0].data.push({x: simTime, y: currentTemp});
+                chartInstance.update('none'); 
+                
+                if (document.getElementById('toggle-extrapolate').checked) {
+                    updateExtrapolation();
+                }
+            }
+        }
+
+        // --- 外推法及热量计算 ---
+        function calculateRegression(points) {
+            if(points.length < 2) return null;
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+            let n = points.length;
+            for(let p of points) {
+                sumX += p.x; sumY += p.y;
+                sumXY += p.x * p.y; sumX2 += p.x * p.x;
+            }
+            let m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            let b = (sumY - m * sumX) / n;
+            return { m, b };
+        }
+
+        function updateExtrapolation() {
+            if (!chartInstance) return;
+            const isEnabled = document.getElementById('toggle-extrapolate').checked;
+            
+            if (!isEnabled || reactionStartTime === -1) {
+                chartInstance.data.datasets[1].data = [];
+                chartInstance.data.datasets[2].data = [];
+                chartInstance.data.datasets[3].data = [];
+                chartInstance.update('none');
+                return;
+            }
+
+            const dataPoints = chartInstance.data.datasets[0].data;
+            const basePoints = dataPoints.filter(p => p.x <= reactionStartTime);
+            const baseReg = calculateRegression(basePoints);
+            const coolPoints = coolingStartTime !== -1 ? dataPoints.filter(p => p.x >= coolingStartTime) : [];
+            const coolReg = calculateRegression(coolPoints);
+
+            let baseEndTemp = 0;
+            if (baseReg) {
+                baseEndTemp = baseReg.m * reactionStartTime + baseReg.b;
+                chartInstance.data.datasets[1].data = [
+                    { x: 0, y: baseReg.b },
+                    { x: reactionStartTime, y: baseEndTemp }
+                ];
+                document.getElementById('res-base-temp').innerText = baseEndTemp.toFixed(2) + ' °C';
+            }
+
+            if (coolReg) {
+                const maxExtrapTemp = coolReg.m * reactionStartTime + coolReg.b;
+                
+                chartInstance.data.datasets[2].data = [
+                    { x: reactionStartTime, y: maxExtrapTemp },
+                    { x: 15, y: coolReg.m * 15 + coolReg.b } 
+                ];
+                
+                chartInstance.data.datasets[3].data = [
+                    { x: reactionStartTime, y: baseEndTemp },
+                    { x: reactionStartTime, y: maxExtrapTemp }
+                ];
+
+                document.getElementById('res-max-temp').innerText = maxExtrapTemp.toFixed(2) + ' °C';
+                
+                if (baseReg) {
+                    const deltaT = maxExtrapTemp - baseEndTemp;
+                    document.getElementById('res-delta-temp').innerText = deltaT.toFixed(2) + ' °C';
+                    
+                    // === 计算热量 Q = mcΔT ===
+                    const q = MASS_WATER * SPECIFIC_HEAT * deltaT;
+                    document.getElementById('res-heat').innerText = q.toFixed(0) + ' J';
+                }
+            }
+            
+            chartInstance.update('none');
+        }
+
+        function updateVisuals() {
+            document.getElementById('live-temp').innerText = currentTemp.toFixed(2);
+            
+            const mins = Math.floor(simTime);
+            const secs = Math.floor((simTime - mins) * 60);
+            document.getElementById('sim-clock').innerText = 
+                `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+            const minT = 10, maxT = 55;
+            let percent = ((currentTemp - minT) / (maxT - minT)) * 100;
+            percent = Math.max(5, Math.min(percent, 100)); 
+            document.getElementById('thermo-liquid').style.height = `${percent}%`;
+
+            const config = getCurrentConfig();
+            const tempRange = config.maxTemp - config.initialTemp;
+            
+            function getTempColor(t) {
+                const progress = Math.max(0, Math.min(1, (t - config.initialTemp) / tempRange));
+                // 冷: Blue(191, 219, 254), 热: Red/Orange mix(252, 165, 165)
+                const r = Math.round(191 + (252 - 191) * progress);
+                const g = Math.round(219 + (165 - 219) * progress);
+                const b = Math.round(254 + (165 - 254) * progress);
+                return `rgba(${r}, ${g}, ${b}, 0.5)`;
+            }
+
+            const heatTrapped = Math.max(0, trueTemp - currentTemp);
+            let mixingRatio = 1 - (heatTrapped / (tempRange || 1));
+            mixingRatio = Math.max(0, Math.min(1, mixingRatio));
+            
+            // 统一更新水浴背景的颜色
+            const waterBg = document.getElementById('water-bg');
+            if (waterBg) {
+                waterBg.style.backgroundColor = getTempColor(currentTemp);
+            }
+
+            // 更新散失环境的热量特效可见度
+            const heatLossEl = document.getElementById('heat-loss-effect');
+            if (heatLossEl) {
+                // 当温度高于初始温度时，逐渐显现热量散失动画 (温差越大，散失特效越清晰)
+                if (currentTemp > config.initialTemp + 0.5) {
+                    const lossIntensity = Math.min(0.85, (currentTemp - config.initialTemp) / (tempRange * 0.8));
+                    heatLossEl.style.opacity = lossIntensity;
+                } else {
+                    heatLossEl.style.opacity = 0;
+                }
+            }
+
+            const heatAura = document.getElementById('heat-aura');
+            if (heatAura) {
+                if (heatTrapped > 0.1 && simState !== 'baseline') {
+                    const auraOpacity = Math.min(0.7, heatTrapped / 10);
+                    const auraScale = 0.5 + (heatTrapped / 15);
+                    heatAura.style.opacity = auraOpacity;
+                    heatAura.style.transform = `translateX(-50%) scale(${auraScale})`;
+                } else {
+                    heatAura.style.opacity = 0;
+                    heatAura.style.transform = `translateX(-50%) scale(0.5)`;
+                }
+            }
+        }
+
+        // === Chart.js 图表设置 ===
+        function toggleLineVisibility() {
+            if (chartInstance) {
+                const showLine = document.getElementById('toggle-line').checked;
+                chartInstance.data.datasets[0].showLine = showLine;
+                chartInstance.update('none'); 
+            }
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('tempChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: '测量温度 (°C)',
+                            data: [],
+                            borderColor: 'rgba(37, 99, 235, 0.8)', 
+                            backgroundColor: 'rgba(37, 99, 235, 1)',
+                            borderWidth: 2,
+                            pointBackgroundColor: 'black',
+                            pointBorderColor: 'black',
+                            pointRadius: context => (context.raw?.x !== undefined && Math.abs(context.raw.x % 1) < 0.06) ? 4 : 0,
+                            pointStyle: 'crossRot', 
+                            showLine: document.getElementById('toggle-line').checked, 
+                            tension: 0.1 
+                        },
+                        {
+                            label: '基线延长',
+                            data: [],
+                            borderColor: 'rgba(59, 130, 246, 0.6)', 
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            showLine: true,
+                            pointRadius: 0
+                        },
+                        {
+                            label: '散热线反推',
+                            data: [],
+                            borderColor: 'rgba(239, 68, 68, 0.6)', 
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            showLine: true,
+                            pointRadius: 0
+                        },
+                        {
+                            label: '理论温差 (ΔT)',
+                            data: [],
+                            borderColor: 'rgba(168, 85, 247, 0.8)', 
+                            borderWidth: 3,
+                            borderDash: [2, 2],
+                            showLine: true,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    interaction: { mode: 'index', intersect: false },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: '时间 (Time / minutes)', font: {size: 13, weight: 'bold'} },
+                            min: 0, max: 15,
+                            grid: { color: '#e5e7eb' },
+                            ticks: { stepSize: 1 } 
+                        },
+                        y: {
+                            title: { display: true, text: '温度 (Temperature / °C)', font: {size: 13, weight: 'bold'} },
+                            min: 15, max: 50,
+                            grid: { color: '#e5e7eb' },
+                            ticks: { stepSize: 5 } 
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 12, font: {size: 11} } },
+                        tooltip: {
+                            callbacks: {
+                                label: context => `时间: ${context.parsed.x.toFixed(1)} 分, 温度: ${context.parsed.y.toFixed(2)} °C`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

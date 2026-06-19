@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>石油分馏动态模拟 - 交互模型</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --tower-bg: #d1d5db;
+            --crude-oil: #1a1a1a;
+        }
+        body {
+            background-color: #f1f5f9;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        .distillation-tower-container {
+            position: relative;
+            width: 240px;
+            height: 580px;
+        }
+        .distillation-tower-bg {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to right, #64748b, #cbd5e1, #64748b);
+            border-radius: 20px 20px 4px 4px;
+            border: 5px solid #334155;
+            z-index: 1;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+        }
+        canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .tray-line {
+            position: absolute;
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 2;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tray-line.closed {
+            background: #f43f5e;
+            box-shadow: 0 0 15px rgba(244, 63, 94, 0.6);
+            height: 8px;
+        }
+        .fraction-control {
+            position: absolute;
+            left: 265px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 340px;
+        }
+        .fraction-label {
+            white-space: nowrap;
+            opacity: 0.3;
+            transition: all 0.4s ease;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+            background: rgba(255,255,255,0.8);
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        .fraction-label.active {
+            opacity: 1;
+            color: #1e40af;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .valve-btn {
+            padding: 4px 10px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #cbd5e1;
+            background: #fff;
+            color: #475569;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        .valve-btn:hover {
+            background: #f8fafc;
+        }
+        .valve-btn.closed {
+            background: #f43f5e;
+            color: white;
+            border-color: #be123c;
+        }
+        .heat-glow {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 80px;
+            background: radial-gradient(circle at bottom, rgba(249, 115, 22, 0.5), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 3;
+            border-radius: 0 0 4px 4px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+    <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-200">
+        <!-- 头部导航 -->
+        <div class="p-5 bg-slate-900 text-white flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold italic tracking-tight">PETRO-FLOW <span class="text-blue-400">分馏模拟器</span></h1>
+                <p class="text-slate-400 text-xs">动态展示原油组分随温度升高而分离并穿梭托盘的过程</p>
+            </div>
+            <div class="flex gap-4 items-center">
+                <div class="text-right">
+                    <div class="text-[9px] text-slate-500 uppercase font-black">分馏塔温度</div>
+                    <div class="text-2xl font-mono font-bold text-orange-400"><span id="temp-display">0</span>°C</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col lg:flex-row p-6 gap-8">
+            <!-- 左侧控制面板 (小型化) -->
+            <div class="lg:w-1/4 space-y-6">
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-inner">
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-[11px] font-bold text-slate-700 uppercase tracking-widest">加热功率控制器</label>
+                        <button onclick="resetSystem()" class="text-[9px] bg-slate-200 hover:bg-slate-300 px-2 py-1 rounded transition-colors">重置</button>
+                    </div>
+                    <input type="range" id="temp-slider" min="0" max="450" value="0" 
+                           class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-orange-500">
+                    <div class="flex justify-between text-[9px] text-slate-400 mt-2 font-bold">
+                        <span>0°C (冷态)</span>
+                        <span>450°C (高温)</span>
+                    </div>
+                </div>
+
+                <!-- 信息卡片 -->
+                <div id="info-card" class="bg-white p-4 rounded-xl border-l-4 border-blue-500 shadow-md min-h-[140px]">
+                    <h3 id="fraction-name" class="text-md font-black text-slate-800 uppercase tracking-tight">准备就绪</h3>
+                    <p id="fraction-desc" class="text-slate-600 text-xs mt-2 leading-relaxed">
+                        目前温度较低，所有组分呈混合液态。提高温度可以观察不同沸点的物质如何汽化上升。
+                    </p>
+                </div>
+
+                <!-- 图例 -->
+                <div class="bg-slate-900 p-3 rounded-lg">
+                    <p class="text-[9px] font-bold text-slate-500 mb-2 uppercase tracking-tighter">组分/颜色对照</p>
+                    <div class="flex flex-col gap-y-1.5">
+                        <div class="flex items-center gap-2 text-[10px] text-slate-300"><span class="w-2 h-2 rounded-sm bg-[#FF5555]"></span> 炼厂气 (< 20°C)</div>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-300"><span class="w-2 h-2 rounded-sm bg-[#FFD700]"></span> 汽油 (20-70°C)</div>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-300"><span class="w-2 h-2 rounded-sm bg-[#00FF7F]"></span> 石脑油 (70-160°C)</div>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-300"><span class="w-2 h-2 rounded-sm bg-[#00BFFF]"></span> 煤油 (160-250°C)</div>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-300"><span class="w-2 h-2 rounded-sm bg-[#FFA500]"></span> 柴油 (250-350°C)</div>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-300"><span class="w-2 h-2 rounded-sm bg-[#8B4513]"></span> 润滑油 (350-450°C)</div>
+                        <div class="flex items-center gap-2 text-[10px] text-slate-300"><span class="w-2 h-2 rounded-sm bg-[#1A1A1A]"></span> 沥青 (> 450°C)</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧分馏塔区域 -->
+            <div class="flex-1 flex justify-center items-center py-4 bg-slate-100 rounded-3xl relative border border-slate-200" style="min-height: 600px;">
+                <div class="distillation-tower-container" id="tower-root">
+                    <div class="distillation-tower-bg"></div>
+                    <div id="heat-glow" class="heat-glow"></div>
+                    <canvas id="particleCanvas"></canvas>
+                    <div id="layer-controls"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        const towerRoot = document.getElementById('tower-root');
+        const tempSlider = document.getElementById('temp-slider');
+        const tempDisplay = document.getElementById('temp-display');
+        const heatGlow = document.getElementById('heat-glow');
+        const fractionNameDisplay = document.getElementById('fraction-name');
+        const fractionDescDisplay = document.getElementById('fraction-desc');
+        const layerControls = document.getElementById('layer-controls');
+
+        let particles = [];
+        const PARTICLE_COUNT = 900;
+        let currentTemp = 0;
+
+        // 分馏层级配置
+        const fractions = [
+            { id: 'gas', top: 10, bp: 20, color: '#FF5555', name: '炼厂气 (Refinery Gas)', desc: '极轻组分，在阀门开启时会穿过所有托盘在塔顶聚集。', closed: false },
+            { id: 'petrol', top: 25, bp: 70, color: '#FFD700', name: '汽油 (Petrol)', desc: '高挥发性组分，主要用作内燃机燃料。', closed: false },
+            { id: 'naphtha', top: 40, bp: 160, color: '#00FF7F', name: '石脑油 (Naphtha)', desc: '重要的化工中间原料。', closed: false },
+            { id: 'kerosene', top: 55, bp: 250, color: '#00BFFF', name: '煤油 (Kerosene)', desc: '喷气发动机的主要燃料。', closed: false },
+            { id: 'diesel', top: 70, bp: 350, color: '#FFA500', name: '柴油 (Diesel)', desc: '用于重型车辆和工业引擎。', closed: false },
+            { id: 'lube', top: 85, bp: 400, color: '#8B4513', name: '润滑油 (Lubricating Oil)', desc: '较重组分，上升高度有限。', closed: false },
+            { id: 'bitumen', top: 96, bp: 999, color: '#1A1A1A', name: '沥青 (Bitumen)', desc: '塔底残留的液态物质，始终不汽化。', closed: false }
+        ];
+
+        function resize() {
+            canvas.width = towerRoot.offsetWidth || 240;
+            canvas.height = towerRoot.offsetHeight || 580;
+        }
+
+        function createLayerUI() {
+            layerControls.innerHTML = '';
+            fractions.forEach((f, index) => {
+                if (index < fractions.length - 1) {
+                    const line = document.createElement('div');
+                    line.id = `line-${f.id}`;
+                    line.className = 'tray-line';
+                    line.style.top = `${f.top}%`;
+                    layerControls.appendChild(line);
+                }
+
+                const ctrl = document.createElement('div');
+                ctrl.className = 'fraction-control';
+                ctrl.style.top = `${f.top - 2.5}%`;
+                
+                const label = document.createElement('div');
+                label.id = `label-${f.id}`;
+                label.className = 'fraction-label';
+                label.innerHTML = `<span class="inline-block w-2 h-2 rounded-full mr-1" style="background:${f.color}"></span> ${f.name}`;
+                
+                if (index < fractions.length - 1) {
+                    const btn = document.createElement('button');
+                    btn.className = 'valve-btn';
+                    btn.innerText = '阀门: 开启';
+                    btn.onclick = () => {
+                        f.closed = !f.closed;
+                        btn.innerText = f.closed ? '阀门: 关闭' : '阀门: 开启';
+                        btn.classList.toggle('closed', f.closed);
+                        document.getElementById(`line-${f.id}`).classList.toggle('closed', f.closed);
+                    };
+                    ctrl.appendChild(btn);
+                }
+
+                ctrl.appendChild(label);
+                layerControls.appendChild(ctrl);
+                f.pixelY = (f.top / 100) * canvas.height;
+            });
+        }
+
+        class Particle {
+            constructor() {
+                const rand = Math.random();
+                if (rand < 0.15) this.f = fractions[0];
+                else if (rand < 0.30) this.f = fractions[1];
+                else if (rand < 0.45) this.f = fractions[2];
+                else if (rand < 0.60) this.f = fractions[3];
+                else if (rand < 0.70) this.f = fractions[4];
+                else if (rand < 0.80) this.f = fractions[5];
+                else this.f = fractions[6];
+                this.reset();
+            }
+
+            reset() {
+                const towerWidth = canvas.width || 240;
+                this.x = Math.random() * (towerWidth - 40) + 20;
+                this.y = canvas.height - 15 - Math.random() * 25;
+                this.state = 'liquid';
+                this.speed = 0.5 + Math.random() * 1.5;
+                this.vx = (Math.random() - 0.5) * 0.8;
+                this.angle = Math.random() * Math.PI * 2;
+                this.wobbleSpeed = 0.02 + Math.random() * 0.05;
+                this.driftY = 0;
+            }
+
+            update() {
+                const towerWidth = canvas.width || 240;
+
+                if (this.state === 'liquid') {
+                    // 底部液态流体逻辑
+                    const liquidPhase = (Date.now() / 1000) + this.x * 0.01;
+                    this.x += Math.sin(liquidPhase) * 0.2 + this.vx * 0.2;
+                    this.y += Math.cos(liquidPhase) * 0.1;
+                    if (this.x < 15 || this.x > towerWidth - 15) this.vx *= -1;
+
+                    if (currentTemp >= this.f.bp && this.f.bp < 999) {
+                        this.state = 'rising';
+                    }
+                } else if (this.state === 'rising') {
+                    // 向上爬升并进行拦截检测
+                    let blockY = this.f.pixelY;
+                    const traysFromBottom = [...fractions].sort((a,b) => b.top - a.top);
+                    for(let tray of traysFromBottom) {
+                        if (tray.closed && tray.pixelY < this.y - 4 && tray.pixelY >= blockY) {
+                            blockY = tray.pixelY;
+                        }
+                    }
+                    this.y -= this.speed;
+                    this.x += this.vx + Math.sin(this.y * 0.08) * 0.4; 
+                    if (this.x < 15 || this.x > towerWidth - 15) this.vx *= -1;
+
+                    if (this.y <= blockY + (Math.random() * 20)) {
+                        this.state = 'settled';
+                    }
+                } else if (this.state === 'settled') {
+                    // 到达托盘后的气态扩散
+                    this.angle += this.wobbleSpeed;
+                    this.driftY = Math.sin(this.angle) * 8; 
+                    this.x += this.vx + Math.cos(this.angle) * 0.2;
+                    if (this.x < 15 || this.x > towerWidth - 15) this.vx *= -1;
+
+                    // 检查是否有阀门重新开启
+                    let currentBlockY = this.f.pixelY;
+                    const traysFromBottom = [...fractions].sort((a,b) => b.top - a.top);
+                    for(let tray of traysFromBottom) {
+                        if (tray.closed && tray.pixelY < this.y - 5 && tray.pixelY >= currentBlockY) {
+                            currentBlockY = tray.pixelY;
+                        }
+                    }
+                    if (this.y > currentBlockY + 25) {
+                        this.state = 'rising';
+                    }
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                const drawY = this.y + (this.state === 'settled' ? this.driftY : 0);
+                ctx.arc(this.x, drawY, 3, 0, Math.PI * 2);
+                ctx.fillStyle = this.f.color;
+                
+                if (this.state === 'rising') {
+                    ctx.globalAlpha = 0.7;
+                    ctx.shadowBlur = 6;
+                    ctx.shadowColor = this.f.color;
+                } else if (this.f.id === 'bitumen') {
+                    ctx.globalAlpha = 1; // 沥青颜色浓郁
+                    ctx.shadowBlur = 0;
+                } else {
+                    ctx.globalAlpha = 0.6; // 蒸气透明感
+                    ctx.shadowBlur = 2;
+                }
+                
+                ctx.fill();
+                ctx.globalAlpha = 1;
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        function init() {
+            resize();
+            createLayerUI();
+            particles = [];
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                particles.push(new Particle());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+            });
+            requestAnimationFrame(animate);
+        }
+
+        function resetSystem() {
+            tempSlider.value = 0;
+            currentTemp = 0;
+            tempDisplay.innerText = 0;
+            heatGlow.style.opacity = 0;
+            fractions.forEach(f => f.closed = false);
+            init();
+        }
+
+        tempSlider.addEventListener('input', (e) => {
+            currentTemp = parseInt(e.target.value);
+            tempDisplay.innerText = currentTemp;
+            heatGlow.style.opacity = currentTemp / 450;
+
+            let activeF = null;
+            fractions.forEach(f => {
+                const label = document.getElementById(`label-${f.id}`);
+                if (currentTemp >= f.bp || (f.id === 'bitumen' && currentTemp >= 400)) {
+                    label.classList.add('active');
+                    activeF = f;
+                } else {
+                    label.classList.remove('active');
+                }
+            });
+
+            if (activeF) {
+                fractionNameDisplay.innerText = activeF.name;
+                fractionDescDisplay.innerText = activeF.desc;
+            }
+        });
+
+        window.onload = () => {
+            init();
+            animate();
+        };
+
+        window.onresize = () => {
+            resize();
+            fractions.forEach(f => {
+                f.pixelY = (f.top / 100) * canvas.height;
+            });
+        };
+    </script>
+</body>
+</html>

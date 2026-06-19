@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H+对肌肉的腐蚀作用模拟</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        #simulation-area {
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 1rem;
+            box-shadow: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+            height: 500px;
+        }
+
+        #beaker {
+            position: absolute;
+            bottom: 20px;
+            left: 10%;
+            width: 80%;
+            height: 380px;
+            border: 6px solid rgba(255, 255, 255, 0.9);
+            border-top: none;
+            border-radius: 0 0 30px 30px;
+            box-shadow: 
+                inset 0 0 20px rgba(255,255,255,0.8), 
+                inset 0 -10px 20px rgba(0,0,0,0.1),
+                0 10px 20px rgba(0,0,0,0.1);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(1px);
+            z-index: 5;
+            overflow: hidden;
+        }
+
+        #beaker::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            width: 15px;
+            border-right: 2px solid rgba(255,255,255,0.5);
+            background: repeating-linear-gradient(
+                to bottom,
+                transparent,
+                transparent 38px,
+                rgba(255,255,255,0.8) 38px,
+                rgba(255,255,255,0.8) 40px
+            );
+        }
+
+        #liquid-level {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: rgba(186, 230, 253, 0.4);
+            transition: height 0.5s ease, background-color 1s ease;
+            z-index: 1;
+        }
+
+        #muscle-tissue {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 340px;
+            display: flex;
+            justify-content: space-around;
+            align-items: flex-end;
+            padding: 10px 20px;
+            transition: all 0.5s ease;
+            z-index: 2;
+        }
+
+        .muscle-fiber {
+            width: 18%;
+            height: 100%;
+            background: linear-gradient(to right, #ef4444, #dc2626);
+            border-radius: 20px 20px 5px 5px;
+            box-shadow: inset -5px 0 10px rgba(0,0,0,0.2), 0 5px 15px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease;
+            transform-origin: bottom center;
+        }
+
+        .muscle-fiber::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                to right,
+                transparent,
+                transparent 5px,
+                rgba(255,255,255,0.1) 5px,
+                rgba(255,255,255,0.1) 10px
+            );
+            pointer-events: none;
+        }
+
+        @keyframes muscle-spasm {
+            0%, 100% { transform: scaleY(1) rotate(0deg); }
+            25% { transform: scaleY(0.97) rotate(-1deg); }
+            75% { transform: scaleY(1.03) rotate(1deg); }
+        }
+
+        @keyframes acid-sizzle {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px) scaleY(0.98); }
+            75% { transform: translateX(3px) scaleY(1.02); }
+        }
+
+        @keyframes flesh-dissolve {
+            0% { height: 35%; opacity: 0.6; filter: grayscale(60%) blur(1px); }
+            100% { height: 8%; opacity: 0.15; filter: grayscale(100%) blur(3px); border-radius: 100% 100% 0 0; background: #000; }
+        }
+
+        .muscle-fiber.damaged {
+            background: linear-gradient(to right, #991b1b, #7f1d1d);
+            height: 75%;
+            opacity: 0.85;
+            filter: grayscale(30%);
+            animation: muscle-spasm 2s infinite, acid-sizzle 0.5s infinite;
+        }
+
+        .muscle-fiber.severely-damaged {
+            background: linear-gradient(to right, #4a0404, #270000, #4a0404);
+            height: 35%;
+            opacity: 0.6;
+            filter: grayscale(60%) blur(1px);
+            border-radius: 40% 40% 10px 10px;
+            box-shadow: inset -5px 0 20px rgba(0,0,0,0.9), 0 5px 15px rgba(0,0,0,0.5);
+            animation: acid-sizzle 0.15s infinite;
+        }
+        
+        .muscle-fiber.destroyed {
+            background: linear-gradient(to right, #1a0505, #000000);
+            border-radius: 50% 50% 5px 5px;
+            animation: flesh-dissolve 2.5s forwards;
+        }
+
+        .drop {
+            position: absolute;
+            width: 15px;
+            height: 25px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            top: -30px;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .drop.hcl { background-color: #facc15; box-shadow: 0 0 10px #facc15; }
+        .drop.h2co3 { background-color: #34d399; box-shadow: 0 0 10px #34d399; }
+        .drop.h2o { background-color: #60a5fa; box-shadow: 0 0 10px #60a5fa; }
+
+        @keyframes fall {
+            0% { top: -30px; opacity: 1; transform: scaleY(1.2); }
+            80% { opacity: 1; transform: scaleY(1); }
+            100% { top: 100px; opacity: 0; transform: scaleY(0.5) scaleX(1.5); }
+        }
+
+        .molecule {
+            position: absolute;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+            z-index: 15;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            opacity: 0;
+        }
+        .mol-hcl { background: linear-gradient(135deg, #facc15, #ca8a04); }
+        .mol-h2co3 { background: linear-gradient(135deg, #34d399, #059669); }
+        .mol-h2o { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+
+        .ion {
+            position: absolute;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 16;
+            opacity: 0;
+        }
+        
+        .ion.h-plus { 
+            background: #d946ef; /* 荧光紫红色 */
+            box-shadow: 0 0 12px #d946ef; 
+            animation: pulse-hplus 1s infinite;
+        }
+        @keyframes pulse-hplus {
+            0% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0.8); }
+            70% { box-shadow: 0 0 0 15px rgba(217, 70, 239, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(217, 70, 239, 0); }
+        }
+
+        .ion.cl-minus { background: #10b981; box-shadow: 0 0 10px #10b981; }
+        .ion.hco3-minus { background: #8b5cf6; box-shadow: 0 0 10px #8b5cf6; font-size: 10px; }
+
+        @keyframes appear-molecule {
+            0% { transform: scale(0) translateY(-20px); opacity: 0; }
+            50% { transform: scale(1.2) translateY(0); opacity: 1; }
+            100% { transform: scale(1) translateY(10px); opacity: 1; }
+        }
+
+        @keyframes split-ion-left {
+            0% { transform: translate(0, 0) scale(0.8); opacity: 1; }
+            100% { transform: translate(-35px, 20px) scale(1); opacity: 1; }
+        }
+
+        @keyframes split-ion-right {
+            0% { transform: translate(0, 0) scale(0.8); opacity: 1; }
+            100% { transform: translate(35px, 20px) scale(1); opacity: 1; }
+        }
+
+        @keyframes attack-muscle-stay {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 1; } 
+        }
+
+        @keyframes drift-away {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), 80px); opacity: 0; }
+        }
+
+        .bubble {
+            position: absolute;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(250, 204, 21, 0.4));
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            opacity: 0;
+            z-index: 20;
+            box-shadow: 0 0 5px rgba(250, 204, 21, 0.3);
+        }
+
+        @keyframes bubble-rise {
+            0% { transform: translateY(0) scale(0.5); opacity: 0.9; }
+            50% { transform: translateY(-75px) scale(1.2) translateX(10px); opacity: 0.6; }
+            100% { transform: translateY(-180px) scale(1.8) translateX(-10px); opacity: 0; } 
+        }
+        
+        .ph-scale {
+            background: linear-gradient(to right, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8 flex items-center justify-center">
+
+    <div class="max-w-4xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col md:flex-row">
+        
+        <div class="w-full md:w-1/3 bg-gray-50 p-6 border-b md:border-b-0 md:border-r border-gray-200 flex flex-col gap-6">
+            
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800 mb-2">酸性腐蚀模拟器</h1>
+                <p class="text-sm text-gray-500">探究不同浓度的 $H^+$ 对生物组织（肌肉）的影响。</p>
+            </div>
+
+            <div class="space-y-4">
+                <h2 class="text-lg font-semibold text-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-flask text-blue-500"></i> 添加试剂
+                </h2>
+                
+                <button onclick="addSubstance('hcl')" class="w-full py-3 px-4 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border border-yellow-300 rounded-lg shadow-sm transition-colors flex items-center justify-between group">
+                    <span class="font-bold">盐酸 (HCl)</span>
+                    <span class="text-xs px-2 py-1 bg-white rounded-md text-yellow-600 group-hover:bg-yellow-50">强酸</span>
+                </button>
+
+                <button onclick="addSubstance('h2co3')" class="w-full py-3 px-4 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300 rounded-lg shadow-sm transition-colors flex items-center justify-between group">
+                    <span class="font-bold">碳酸 (H₂CO₃)</span>
+                    <span class="text-xs px-2 py-1 bg-white rounded-md text-emerald-600 group-hover:bg-emerald-50">弱酸</span>
+                </button>
+
+                <button onclick="addSubstance('h2o')" class="w-full py-3 px-4 bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-300 rounded-lg shadow-sm transition-colors flex items-center justify-between group">
+                    <span class="font-bold">纯水 (H₂O)</span>
+                    <span class="text-xs px-2 py-1 bg-white rounded-md text-blue-600 group-hover:bg-blue-50">中性</span>
+                </button>
+                
+                <button onclick="resetSimulation()" class="w-full mt-4 py-2 text-gray-600 hover:text-gray-900 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> 重置实验
+                </button>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex-grow">
+                <h3 class="text-md font-semibold text-gray-700 mb-3 border-b pb-2">当前环境状态</h3>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="font-medium text-gray-600">环境 pH 值:</span>
+                        <span id="ph-display" class="font-bold text-gray-800">7.0</span>
+                    </div>
+                    <div class="w-full h-3 rounded-full ph-scale relative mt-2">
+                        <div id="ph-indicator" class="absolute w-1 h-5 bg-black rounded -top-1 transition-all duration-500" style="left: 50%;"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>0 (强酸)</span>
+                        <span>7 (中性)</span>
+                        <span>14 (强碱)</span>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1">
+                        <span class="font-medium text-gray-600">$H^+$ 相对浓度:</span>
+                        <span id="h-ion-display" class="font-bold text-red-500">低</span>
+                    </div>
+                </div>
+
+                <div>
+                    <span class="font-medium text-sm text-gray-600 block mb-1">肌肉组织状态:</span>
+                    <p id="status-description" class="text-sm text-gray-700 bg-gray-50 p-2 rounded border-l-4 border-blue-400 transition-colors duration-500">
+                        健康状态。细胞膜完整，蛋白质结构稳定。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full md:w-2/3 p-6 flex flex-col">
+            <h2 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-microscope text-purple-500"></i> 微观视图
+            </h2>
+            
+            <div id="simulation-area" class="flex-grow transition-colors duration-1000">
+                <div class="absolute top-0 left-1/2 transform -translate-x-1/2 w-8 h-4 bg-gray-400 rounded-b-full shadow-md z-20"></div>
+                
+                <div id="ions-container" class="absolute inset-0 z-10 pointer-events-none"></div>
+
+                <div id="beaker">
+                    <div id="liquid-level"></div>
+                    
+                    <div id="muscle-tissue">
+                        <div class="muscle-fiber" id="fiber-1"></div>
+                        <div class="muscle-fiber" id="fiber-2"></div>
+                        <div class="muscle-fiber" id="fiber-3"></div>
+                        <div class="muscle-fiber" id="fiber-4"></div>
+                        <div class="muscle-fiber" id="fiber-5"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4 text-xs text-gray-500 text-center">
+                *注意：这是一个简化的概念模型。高浓度的氢离子($H^+$)会破坏细胞膜，导致蛋白质变性凝固，从而对生物组织造成不可逆的腐蚀性损伤。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentPH = 7.0;
+        let damageLevel = 0; 
+        let liquidVolume = 0; 
+        
+        const simArea = document.getElementById('simulation-area');
+        const ionsContainer = document.getElementById('ions-container');
+        const fibers = document.querySelectorAll('.muscle-fiber');
+        const phDisplay = document.getElementById('ph-display');
+        const phIndicator = document.getElementById('ph-indicator');
+        const hIonDisplay = document.getElementById('h-ion-display');
+        const statusDesc = document.getElementById('status-description');
+        const liquidLevelEl = document.getElementById('liquid-level');
+
+        const substances = {
+            hcl: { name: '盐酸 (HCl)', type: 'hcl', phDrop: 1.5, damageInc: 35, color: 'rgba(253, 224, 71, 0.5)' },
+            h2co3: { name: '碳酸 (H₂CO₃)', type: 'h2co3', phDrop: 0.3, damageInc: 5, color: 'rgba(110, 231, 183, 0.5)' },
+            h2o: { name: '水 (H₂O)', type: 'h2o', phDrop: 0, damageInc: 0, color: 'rgba(186, 230, 253, 0.5)' }
+        };
+
+        let totalDamageScore = 0;
+
+        function addSubstance(type) {
+            const sub = substances[type];
+            
+            liquidVolume = Math.min(100, liquidVolume + 8);
+            liquidLevelEl.style.height = `${liquidVolume}%`;
+            liquidLevelEl.style.backgroundColor = sub.color;
+
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const drop = document.createElement('div');
+                    drop.className = `drop ${type}`;
+                    const offset = (Math.random() - 0.5) * 60; 
+                    const startLeft = `calc(50% + ${offset}px)`;
+                    drop.style.left = startLeft;
+                    drop.style.animation = `fall 0.6s cubic-bezier(0.55, 0.085, 0.68, 0.53) forwards`;
+                    simArea.appendChild(drop);
+
+                    setTimeout(() => {
+                        drop.remove();
+                        showDissociation(type, startLeft);
+                    }, 600);
+                }, i * 350);
+            }
+
+            // 延迟更新整体状态面板 (等待 H+ 停留5秒完毕)
+            const reactionDelay = 7500; 
+
+            setTimeout(() => {
+                updateEnvironment(sub);
+                applyDamage(sub.damageInc);
+                if(type !== 'h2o' && sub.damageInc > 0) {
+                    let bubbleCount = 5;
+                    if (totalDamageScore > 80) bubbleCount = 40;
+                    else if (totalDamageScore > 40) bubbleCount = 25;
+                    else if (sub.damageInc > 10) bubbleCount = 15;
+                    createBubbles(bubbleCount);
+                }
+            }, reactionDelay); 
+        }
+
+        function showDissociation(type, leftPos) {
+            const molecule = document.createElement('div');
+            molecule.className = `molecule mol-${type}`;
+            
+            let molText = '';
+            if(type === 'hcl') molText = 'HCl';
+            if(type === 'h2co3') molText = 'H₂CO₃';
+            if(type === 'h2o') molText = 'H₂O';
+            
+            molecule.innerText = molText;
+            molecule.style.left = leftPos;
+            molecule.style.top = '100px'; 
+            molecule.style.animation = 'appear-molecule 0.5s forwards';
+            ionsContainer.appendChild(molecule);
+
+            setTimeout(() => {
+                molecule.remove();
+                
+                if (type === 'hcl') {
+                    // 强酸 100% 解离
+                    createIon('H+', 'h-plus', leftPos, '110px', true);
+                    createIon('Cl-', 'cl-minus', leftPos, '110px', false);
+                    setTimeout(() => createIon('H+', 'h-plus', leftPos, '110px', true), 100);
+                } else if (type === 'h2co3') {
+                    // 弱酸部分解离
+                    if (Math.random() > 0.4) {
+                        const intactMol = document.createElement('div');
+                        intactMol.className = `molecule mol-h2co3`;
+                        intactMol.innerText = 'H₂CO₃';
+                        intactMol.style.left = leftPos;
+                        intactMol.style.top = '110px';
+                        intactMol.style.opacity = '1';
+                        intactMol.style.setProperty('--tx', `${(Math.random() - 0.5) * 80}px`);
+                        intactMol.style.animation = `drift-away 3s ease forwards`;
+                        ionsContainer.appendChild(intactMol);
+                        setTimeout(() => intactMol.remove(), 3000);
+                    } else {
+                        createIon('H+', 'h-plus', leftPos, '110px', true);
+                        createIon('HCO3-', 'hco3-minus', leftPos, '110px', false);
+                    }
+                } else {
+                    const intactMol = document.createElement('div');
+                    intactMol.className = `molecule mol-h2o`;
+                    intactMol.innerText = 'H₂O';
+                    intactMol.style.left = leftPos;
+                    intactMol.style.top = '110px';
+                    intactMol.style.opacity = '1';
+                    intactMol.style.setProperty('--tx', `${(Math.random() - 0.5) * 80}px`);
+                    intactMol.style.animation = `drift-away 3s ease forwards`;
+                    ionsContainer.appendChild(intactMol);
+                    setTimeout(() => intactMol.remove(), 3000);
+                }
+            }, 800);
+        }
+
+        function createIon(text, className, left, top, isAttackingHPlus) {
+            const ion = document.createElement('div');
+            ion.className = `ion ${className}`;
+            ion.innerText = text;
+            ion.style.left = left;
+            ion.style.top = top;
+            
+            const isLeft = Math.random() > 0.5;
+            ion.style.animation = `${isLeft ? 'split-ion-left' : 'split-ion-right'} 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards`;
+            
+            ionsContainer.appendChild(ion);
+
+            setTimeout(() => {
+                if (isAttackingHPlus) {
+                    // H+ 攻击行为：向下穿透并停留
+                    const targetY = 150 + Math.random() * 120;
+                    const targetX = (Math.random() - 0.5) * 120;
+                    ion.style.setProperty('--tx', `${targetX}px`);
+                    ion.style.setProperty('--ty', `${targetY}px`);
+                    
+                    ion.style.animation = `attack-muscle-stay 1.5s ease-in forwards`;
+
+                    // H+ 在肌肉上停留 5 秒钟
+                    const stayDuration = 5000; 
+                    const totalDuration = 1500 + stayDuration;
+
+                    setTimeout(() => {
+                        ion.style.transition = 'opacity 0.5s ease-out';
+                        ion.style.opacity = '0';
+                    }, totalDuration - 500);
+
+                    setTimeout(() => ion.remove(), totalDuration);
+
+                } else {
+                    const targetX = (Math.random() - 0.5) * 150;
+                    ion.style.setProperty('--tx', `${targetX}px`);
+                    ion.style.animation = `drift-away 2.5s ease-out forwards`;
+                    setTimeout(() => ion.remove(), 2500);
+                }
+            }, 450);
+        }
+
+        function updateEnvironment(sub) {
+            if (sub.type === 'h2o') {
+                currentPH = currentPH + (7 - currentPH) * 0.2; 
+            } else {
+                currentPH = Math.max(1.0, currentPH - sub.phDrop);
+            }
+
+            phDisplay.innerText = currentPH.toFixed(1);
+            const percent = (currentPH / 14) * 100;
+            phIndicator.style.left = `${percent}%`;
+
+            if (currentPH <= 2) {
+                hIonDisplay.innerText = "极高 (危险)";
+                hIonDisplay.className = "font-bold text-red-700";
+                simArea.style.background = "linear-gradient(180deg, #fef2f2 0%, #fecaca 100%)";
+            } else if (currentPH <= 4) {
+                hIonDisplay.innerText = "较高";
+                hIonDisplay.className = "font-bold text-orange-500";
+                simArea.style.background = "linear-gradient(180deg, #fff7ed 0%, #fed7aa 100%)";
+            } else if (currentPH < 6.5) {
+                hIonDisplay.innerText = "偏高";
+                hIonDisplay.className = "font-bold text-yellow-600";
+                simArea.style.background = "linear-gradient(180deg, #f0fdf4 0%, #bbf7d0 100%)";
+            } else {
+                hIonDisplay.innerText = "低 (正常)";
+                hIonDisplay.className = "font-bold text-green-500";
+                simArea.style.background = "linear-gradient(180deg, #e0f2fe 0%, #bae6fd 100%)";
+            }
+        }
+
+        function applyDamage(inc) {
+            totalDamageScore += inc;
+
+            let newStatusText = "";
+            let borderColor = "";
+
+            if (totalDamageScore > 80) {
+                fibers.forEach(f => f.className = 'muscle-fiber destroyed');
+                newStatusText = "组织溶解坏死！持续的剧烈化学反应彻底摧毁了细胞膜通透性，蛋白质深度变性凝固，组织结构瓦解解体。";
+                borderColor = "border-red-700";
+            } else if (totalDamageScore > 40) {
+                fibers.forEach(f => f.className = 'muscle-fiber severely-damaged');
+                newStatusText = "严重化学烧伤。高浓度 H+ 与细胞结构深度结合，蛋白质剧烈变性发黑，肌肉剧烈痉挛并失去形态。";
+                borderColor = "border-red-500";
+            } else if (totalDamageScore > 10) {
+                fibers.forEach(f => f.className = 'muscle-fiber damaged');
+                newStatusText = "组织受损。大量 H+ 改变细胞微环境，导致表面蛋白质开始变性凝固，引发组织防御性痉挛收缩。";
+                borderColor = "border-yellow-400";
+            } else {
+                if(totalDamageScore > 0 && inc === 0) {
+                    totalDamageScore = Math.max(0, totalDamageScore - 5);
+                }
+                if(totalDamageScore < 10){
+                   fibers.forEach(f => f.className = 'muscle-fiber');
+                   newStatusText = "健康状态。微弱的酸度变化不会影响细胞膜的完整性和蛋白质的三级结构。";
+                   borderColor = "border-blue-400";
+                }
+            }
+
+            if(newStatusText) {
+                statusDesc.innerText = newStatusText;
+                statusDesc.className = `text-sm text-gray-700 bg-gray-50 p-2 rounded border-l-4 ${borderColor} transition-colors duration-500`;
+            }
+        }
+
+        function createBubbles(count) {
+             for (let i = 0; i < count; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                
+                const size = 5 + Math.random() * 20;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                
+                const left = 5 + Math.random() * 90; 
+                bubble.style.left = `${left}%`;
+                bubble.style.bottom = `${100 + Math.random() * 100}px`; 
+                
+                const duration = 1.5 + Math.random() * 2;
+                bubble.style.animation = `bubble-rise ${duration}s ease-in forwards`;
+                
+                ionsContainer.appendChild(bubble);
+
+                setTimeout(() => bubble.remove(), duration * 1000 + 100);
+            }
+        }
+
+        function resetSimulation() {
+            currentPH = 7.0;
+            totalDamageScore = 0;
+            liquidVolume = 0;
+            
+            phDisplay.innerText = "7.0";
+            phIndicator.style.left = "50%";
+            hIonDisplay.innerText = "低 (正常)";
+            hIonDisplay.className = "font-bold text-green-500";
+            simArea.style.background = "linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)";
+            
+            liquidLevelEl.style.height = '0%';
+            liquidLevelEl.style.backgroundColor = 'rgba(186, 230, 253, 0.4)';
+            
+            fibers.forEach(f => f.className = 'muscle-fiber');
+            
+            statusDesc.innerText = "健康状态。细胞膜完整，蛋白质结构稳定。";
+            statusDesc.className = "text-sm text-gray-700 bg-gray-50 p-2 rounded border-l-4 border-blue-400";
+            
+            ionsContainer.innerHTML = '';
+        }
+
+        resetSimulation();
+
+    </script>
+</body>
+</html>
