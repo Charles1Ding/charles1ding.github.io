@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Lab Escape — Survive the Mutant</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Inter:wght@400;600;700;900&family=Creepster&family=Eater&display=swap');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--danger:0;--monster-y:0;--monster-scale:0.7}
+body{font-family:'Inter','Segoe UI',sans-serif;background:#050508;overflow:hidden;height:100vh;width:100vw;user-select:none;-webkit-user-select:none}
+.game-container{position:relative;width:100%;height:100vh;overflow:hidden}
+.lab-scene{position:absolute;inset:0;background:url('lab-bg.jpg') center/cover no-repeat;transition:filter 0.3s}
+.lab-scene::before{content:'';position:absolute;inset:0;background:rgba(4,4,16,.35);z-index:1;pointer-events:none}
+/* === CHAOS ANIMATIONS === */
+.overhead-light{position:absolute;top:0;left:30%;right:30%;height:10%;background:radial-gradient(ellipse at 50% 100%,rgba(255,240,200,.08) 0%,transparent 60%);z-index:3;pointer-events:none;animation:flickerLight 0.15s infinite alternate}
+@keyframes flickerLight{0%{opacity:.4}20%{opacity:1}40%{opacity:.2}60%{opacity:.8}80%{opacity:.1}100%{opacity:.6}}
+/* Sparking wire */
+.exposed-wire{position:absolute;top:8%;left:60%;z-index:4;pointer-events:none}.exposed-wire .wire{width:2px;height:40px;background:#444;transform:rotate(-15deg);position:relative;left:0}.exposed-wire .spark{position:absolute;left:-4px;top:28px;width:8px;height:8px;background:#ffcc00;border-radius:50%;box-shadow:0 0 12px #ff8800,0 0 24px #ff4400;animation:sparkBurst 0.3s infinite}
+@keyframes sparkBurst{0%{transform:scale(1);opacity:1}40%{transform:scale(2.5);opacity:.8}100%{transform:scale(.3);opacity:.3}}
+.spark-particle{position:absolute;width:3px;height:3px;background:#ffaa00;border-radius:50%;pointer-events:none;animation:sparkFly linear infinite}
+@keyframes sparkFly{0%{transform:translate(0,0);opacity:1}100%{transform:translate(var(--sx),var(--sy));opacity:0}}
+/* Bubbling flask */
+.chaos-flask{position:absolute;bottom:22%;left:32%;z-index:4;pointer-events:none}.chaos-flask .flask-body{width:24px;height:32px;background:rgba(100,200,255,.15);border:2px solid rgba(100,200,255,.25);border-radius:0 0 50% 50%/0 0 30% 30%;position:relative;overflow:hidden}.chaos-flask .flask-liquid{position:absolute;bottom:0;left:0;right:0;height:60%;background:rgba(0,200,100,.3);animation:bubbleLiquid 3s ease-in-out infinite}.chaos-flask .bubble{position:absolute;width:3px;height:3px;background:rgba(100,255,200,.6);border-radius:50%;animation:bubbleUp linear infinite}
+@keyframes bubbleLiquid{0%,100%{height:50%}50%{height:70%}}
+@keyframes bubbleUp{0%{transform:translateY(0);opacity:.6}100%{transform:translateY(-28px);opacity:0}}
+/* Steam from fume hood */
+.steam-vents{position:absolute;top:38%;left:42%;z-index:3;pointer-events:none}.steam{position:absolute;width:30px;height:20px;background:rgba(180,180,200,.08);border-radius:40% 60% 30% 50%;filter:blur(8px);animation:steamRise 2s ease-out infinite}
+@keyframes steamRise{0%{transform:translateY(0) scale(.8);opacity:.4}100%{transform:translateY(-40px) scale(1.5);opacity:0}}
+/* Floating paper */
+.floating-debris{position:absolute;inset:0;pointer-events:none;z-index:3}.paper-scrap{position:absolute;width:14px;height:10px;background:rgba(200,200,210,.12);clip-path:polygon(0 0,85% 0,100% 30%,90% 100%,10% 90%,0 60%);animation:paperFloat linear infinite}
+@keyframes paperFloat{0%{transform:translateY(0) translateX(0) rotate(0deg)}25%{transform:translateY(-30px) translateX(15px) rotate(5deg)}50%{transform:translateY(-15px) translateX(30px) rotate(-3deg)}75%{transform:translateY(-40px) translateX(10px) rotate(8deg)}100%{transform:translateY(-20px) translateX(25px) rotate(-5deg)}}
+/* Chemical spill on floor */
+.chemical-spill{position:absolute;bottom:10%;left:25%;width:80px;height:20px;background:radial-gradient(ellipse,rgba(0,200,100,.08) 0%,rgba(0,150,50,.04) 50%,transparent 80%);border-radius:50%;z-index:2;pointer-events:none;filter:blur(2px);animation:spillGlow 4s ease-in-out infinite}
+@keyframes spillGlow{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:.8;transform:scale(1.1)}}
+/* Rotating warning light */
+.warning-lamp{position:absolute;top:6%;left:20%;z-index:4;pointer-events:none;width:16px;height:26px;background:linear-gradient(180deg,rgba(255,100,30,.7),rgba(255,50,0,.3));border-radius:50% 50% 40% 40%;box-shadow:0 0 16px rgba(255,60,0,.4);animation:warningFlash 0.5s infinite alternate}
+@keyframes warningFlash{0%{opacity:.3;box-shadow:0 0 8px rgba(255,60,0,.2)}100%{opacity:1;box-shadow:0 0 24px rgba(255,60,0,.7)}}
+/* Tilted/cluttered items */
+.tilted-beaker{position:absolute;bottom:24%;left:44%;width:18px;height:22px;background:rgba(200,180,100,.1);border:1px solid rgba(200,180,100,.2);border-radius:2px 2px 8px 8px;transform:rotate(-25deg);z-index:3;pointer-events:none}
+/* Smoke wisps */
+.smoke-wisp{position:absolute;width:20px;height:15px;background:rgba(100,100,120,.06);border-radius:50%;filter:blur(6px);pointer-events:none;z-index:3;animation:wispDrift linear infinite}
+@keyframes wispDrift{0%{transform:translate(0,0) scale(.6);opacity:.3}50%{transform:translate(20px,-30px) scale(1);opacity:.15}100%{transform:translate(-10px,-60px) scale(.4);opacity:0}}
+.back-wall{position:absolute;top:0;left:18%;right:18%;bottom:52%;background:linear-gradient(180deg,rgba(12,12,20,.4),rgba(8,8,18,.3),rgba(5,5,15,.2));border-bottom:1px solid rgba(34,34,64,.15);z-index:2}
+.left-wall{position:absolute;top:0;left:0;bottom:52%;width:20%;background:linear-gradient(135deg,rgba(8,8,16,.35),rgba(4,4,12,.2),rgba(2,2,8,.1));clip-path:polygon(0 0,100% 5%,100% 100%,0 95%);z-index:2}
+.right-wall{position:absolute;top:0;right:0;bottom:52%;width:20%;background:linear-gradient(225deg,rgba(8,8,16,.35),rgba(4,4,12,.2),rgba(2,2,8,.1));clip-path:polygon(0 5%,100% 0,100% 95%,0 100%);z-index:2}
+.floor{position:absolute;bottom:0;left:0;right:0;height:52%;background:linear-gradient(180deg,rgba(12,12,20,.2),rgba(6,6,14,.3),rgba(4,4,10,.5));z-index:2}
+.floor::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0,transparent 39px,rgba(255,255,255,.006) 39px,rgba(255,255,255,.006) 40px),linear-gradient(to bottom,transparent 0,rgba(0,0,0,.4) 80%,rgba(0,0,0,.8) 100%)}
+.exit-sign{position:absolute;top:5%;right:28%;background:rgba(13,31,13,.7);border:1px solid rgba(26,58,26,.5);padding:4px 18px;font-family:'Share Tech Mono',monospace;color:#4CAF50;font-size:12px;letter-spacing:5px;animation:exitGlow 1.8s infinite;z-index:2;border-radius:4px}
+@keyframes exitGlow{0%,100%{text-shadow:0 0 6px rgba(76,175,80,.4)}50%{text-shadow:0 0 16px rgba(76,175,80,.8)}}
+.shelf{position:absolute;height:3px;background:rgba(42,42,66,.35);z-index:2}.s1{top:22%;left:4%;width:14%}.s2{top:34%;left:4%;width:14%}.s3{top:22%;right:4%;width:14%}.s4{top:34%;right:4%;width:14%}
+.bottle{position:absolute;width:10px;border-radius:3px 3px 0 0;z-index:2}.bottle::after{content:'';position:absolute;top:-3px;left:3px;width:4px;height:3px;background:rgba(58,58,58,.4);border-radius:50%}.b1{height:16px;background:rgba(76,175,80,.25);top:calc(22% - 16px);left:5.5%}.b2{height:20px;background:rgba(33,150,243,.25);top:calc(22% - 20px);left:10%}.b3{height:14px;background:rgba(244,67,54,.2);top:calc(34% - 14px);left:6%}.b4{height:18px;background:rgba(255,152,0,.2);top:calc(22% - 18px);left:84%}.b5{height:14px;background:rgba(156,39,176,.2);top:calc(34% - 14px);left:86%}
+.fume-hood{position:absolute;top:40%;left:38%;width:24%;height:10%;background:linear-gradient(180deg,rgba(20,20,30,.15),rgba(12,12,22,.1));border:1px solid rgba(30,30,50,.15);border-bottom:none;z-index:2}.fume-hood::after{content:'';position:absolute;bottom:0;left:-3px;right:-3px;height:3px;background:rgba(40,40,60,.1)}
+.shard{position:absolute;background:rgba(180,200,220,.06);clip-path:polygon(0 0,100% 20%,80% 100%,20% 80%);z-index:2}.shard1{width:18px;height:14px;top:41%;left:37%;transform:rotate(15deg)}.shard2{width:12px;height:10px;top:43%;left:42%;transform:rotate(-10deg)}.shard3{width:15px;height:12px;top:40%;left:58%;transform:rotate(25deg)}
+.lab-bench{position:absolute;bottom:0;left:0;right:0;height:22%;background:linear-gradient(180deg,rgba(16,16,28,.12),rgba(10,10,20,.2),rgba(5,5,12,.4));border-top:2px solid rgba(40,40,60,.15);z-index:2}
+.creature-stage{position:absolute;left:50%;bottom:calc(18% + var(--monster-y) * 1px);transform:translate(-50%,0) scale(var(--monster-scale));transform-origin:bottom center;transition:bottom .6s,transform .6s;z-index:5;filter:drop-shadow(0 0 40px rgba(150,20,0,.6)) drop-shadow(0 0 10px rgba(200,40,0,.3))}
+.creature-stage.s1{filter:drop-shadow(0 0 50px rgba(200,10,0,.7)) drop-shadow(0 0 15px rgba(255,30,0,.4))}
+.creature-stage.s2{filter:drop-shadow(0 0 60px rgba(255,0,0,.8)) drop-shadow(0 0 20px rgba(200,0,0,.5))}
+.creature-stage.s3{filter:drop-shadow(0 0 80px rgba(255,0,0,1)) drop-shadow(0 0 30px rgba(150,0,0,.7))}
+.creature-stage.staggered{animation:staggerFilter .35s ease-out}
+@keyframes staggerFilter{0%{filter:brightness(1.8) drop-shadow(0 0 80px rgba(255,200,50,.8))}100%{filter:brightness(1) drop-shadow(0 0 40px rgba(150,20,0,.6))}}
+.creature-stage.hit-flash{animation:hitFlash .4s ease-out}
+@keyframes hitFlash{0%,100%{brightness(1)}30%{filter:drop-shadow(0 0 100px rgba(255,200,50,.9)) brightness(2)}70%{filter:brightness(1)}}
+.creature-glow{position:absolute;width:260px;height:260px;background:radial-gradient(ellipse,rgba(100,20,0,.4) 0%,rgba(60,10,0,.2) 40%,transparent 70%);border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);animation:glowPulse 2s infinite}
+@keyframes glowPulse{0%,100%{opacity:.5;transform:translate(-50%,-50%) scale(1)}50%{opacity:.8;transform:translate(-50%,-50%) scale(1.2)}}
+.creature-glow.g1{background:radial-gradient(ellipse,rgba(180,30,0,.45) 0%,rgba(100,10,0,.25) 40%,transparent 70%)}
+.creature-glow.g2{background:radial-gradient(ellipse,rgba(220,15,0,.5) 0%,rgba(140,5,0,.3) 40%,transparent 70%)}
+.creature-glow.g3{background:radial-gradient(ellipse,rgba(255,0,0,.55) 0%,rgba(180,0,0,.35) 40%,transparent 70%);animation:glowPulse .8s infinite}
+.creature-svg{width:260px;height:380px;position:relative;z-index:2;transition:filter 1s}
+/* Mutation stages — creature transforms as danger rises */
+.creature-svg.m1{filter:hue-rotate(35deg) saturate(1.2) brightness(.85)}
+.creature-svg.m2{filter:hue-rotate(110deg) saturate(.5) brightness(.7) contrast(1.3)}
+.creature-svg.m3{filter:hue-rotate(160deg) saturate(.35) brightness(.55) contrast(1.6)}
+.eye-glow-left,.eye-glow-right{animation:eyeFlicker .15s infinite alternate}
+@keyframes eyeFlicker{0%{opacity:.7}100%{opacity:1}}
+.drip{position:absolute;width:2px;background:linear-gradient(180deg,rgba(100,200,40,.6),transparent);border-radius:50%;animation:dripFall linear infinite}
+@keyframes dripFall{0%{transform:translateY(0);opacity:.6}100%{transform:translateY(40px);opacity:0}}
+.reagent-splash{position:absolute;inset:0;pointer-events:none;z-index:6}
+.splash-particle{position:absolute;border-radius:50%;animation:splashBurst .8s ease-out forwards}
+@keyframes splashBurst{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--sx),var(--sy)) scale(0);opacity:0}}
+.splash-overlay{position:absolute;inset:0;opacity:0;transition:opacity .15s;z-index:5;pointer-events:none}
+.particles-layer{position:absolute;inset:0;pointer-events:none;z-index:3}
+.atmos-particle{position:absolute;border-radius:50%;background:rgba(120,200,60,.3);filter:blur(2px);animation:floatUp linear infinite}
+@keyframes floatUp{0%{transform:translateY(0) translateX(0);opacity:.5}50%{opacity:.15}100%{transform:translateY(-100vh) translateX(20px);opacity:0}}
+.alarm-light{position:absolute;inset:0;pointer-events:none;z-index:4;background:radial-gradient(ellipse at 50% 0%,rgba(255,20,20,calc(var(--danger)*.012)) 0%,transparent 60%)}
+.vignette{position:absolute;inset:0;pointer-events:none;z-index:7;background:radial-gradient(ellipse at center,transparent calc(85% - var(--danger)*.25*1%),rgba(10,0,0,calc(var(--danger)*.008)) calc(96% - var(--danger)*.1*1%),rgba(0,0,0,calc(var(--danger)*.01)) 100%)}
+.shake-layer{position:absolute;inset:0;pointer-events:none;z-index:8}
+.shake-layer.shaking{animation:sceneShake .4s ease-out}
+@keyframes sceneShake{0%,100%{transform:translate(0)}15%{transform:translate(-6px,3px)}30%{transform:translate(5px,-2px)}45%{transform:translate(-4px,4px)}60%{transform:translate(3px,-1px)}75%{transform:translate(-1px,0)}}
+.hud{position:absolute;top:0;left:0;right:0;z-index:20;pointer-events:none;padding:14px 20px;display:flex;justify-content:space-between;align-items:flex-start}
+.hud-item{background:rgba(0,0,0,.7);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 16px;color:#b0b0c0;font-family:'Share Tech Mono',monospace;font-size:13px;backdrop-filter:blur(10px)}
+.hud-level span{color:#4FC3F7;font-size:22px;font-weight:700}
+.hud-score-val{color:#FFD54F;font-size:22px;font-weight:700;text-align:center}
+.hud-score-label{font-size:10px;color:#7a7a8a;text-align:center;letter-spacing:2px}
+.hud-timer-val{color:#4FC3F7;font-size:28px;font-weight:700;font-family:'Share Tech Mono',monospace;text-align:center}
+.hud-timer-label{font-size:10px;color:#7a7a8a;text-align:center;letter-spacing:2px}
+.hud-timer-val.urgent{color:#f44336;animation:urgentPulse .5s infinite}
+@keyframes urgentPulse{0%,100%{opacity:1}50%{opacity:.3}}
+.time-bonus{position:absolute;top:80px;left:50%;transform:translateX(-50%);z-index:30;font-family:'Share Tech Mono',monospace;font-size:26px;font-weight:900;color:#4CAF50;text-shadow:0 0 20px rgba(76,175,80,.6);pointer-events:none;animation:timeBonusFly 1.5s ease-out forwards}
+@keyframes timeBonusFly{0%{opacity:0;transform:translateX(-50%) translateY(0)}20%{opacity:1;transform:translateX(-50%) translateY(-10px)}100%{opacity:0;transform:translateX(-50%) translateY(-50px)}}
+.danger-hud{text-align:right}
+.danger-label{font-size:9px;letter-spacing:1px;color:#ff6b6b;text-transform:uppercase}
+.danger-bar-outer{width:140px;height:6px;background:rgba(255,255,255,.08);border-radius:3px;margin-top:5px;overflow:hidden;border:1px solid rgba(255,80,80,.2)}
+.danger-bar-inner{height:100%;background:linear-gradient(90deg,#4CAF50,#FFC107,#FF5722,#f44336);border-radius:3px;transition:width .4s;width:var(--danger)}
+.question-panel-wrap{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);z-index:25;pointer-events:none}
+.question-panel{background:rgba(8,8,18,.92);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:22px 32px 28px;width:720px;max-width:95vw;pointer-events:all;backdrop-filter:blur(20px);box-shadow:0 8px 40px rgba(0,0,0,.6);animation:panelSlideUp .35s ease-out}
+@keyframes panelSlideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.panel-room{font-family:'Share Tech Mono',monospace;font-size:14px;color:#4FC3F7;letter-spacing:4px}
+.panel-cat{font-size:12px;color:#7a7a8a;background:rgba(79,195,247,.1);padding:3px 12px;border-radius:10px;letter-spacing:1px}
+.panel-question{font-size:19px;font-weight:600;color:#d8d8e8;line-height:1.5;margin-bottom:16px}.panel-question strong{color:#fff}
+.timer-bar-wrap{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-bottom:14px;overflow:hidden}
+.timer-bar-fill{height:100%;background:linear-gradient(90deg,#4FC3F7,#29B6F6);border-radius:2px;width:100%}
+.panel-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt-btn{padding:13px 20px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#c0c0d0;font-size:15px;cursor:pointer;transition:all .15s;text-align:left;font-family:'Inter',sans-serif}
+.opt-btn:hover{background:rgba(79,195,247,.12);border-color:rgba(79,195,247,.35);transform:translateY(-1px)}
+.opt-btn:active{transform:scale(.97)}
+.opt-btn .opt-letter{font-family:'Share Tech Mono',monospace;color:#4FC3F7;margin-right:8px;font-size:14px}
+.opt-btn.correct{background:rgba(76,175,80,.2);border-color:#4CAF50}
+.opt-btn.wrong{background:rgba(244,67,54,.2);border-color:#f44336;animation:btnShake .3s}
+@keyframes btnShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.opt-btn:disabled{pointer-events:none;opacity:.5}
+.reagent-msg{position:absolute;bottom:50%;left:50%;transform:translate(-50%,-50%);z-index:30;font-family:'Share Tech Mono',monospace;font-size:18px;font-weight:700;letter-spacing:3px;pointer-events:none;animation:reagentPop 1.6s ease-out forwards}
+@keyframes reagentPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.5)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.15)}30%{transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-70%) scale(1)}}
+.screen{position:absolute;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,4,12,.92);backdrop-filter:blur(12px);transition:opacity .5s}
+.screen.hidden{opacity:0;pointer-events:none}
+.start-title{font-family:'Creepster',cursive;font-size:110px;font-weight:400;color:#d4d0e0;letter-spacing:2px;margin-bottom:8px;text-shadow:0 0 60px rgba(255,30,0,.5),0 4px 8px rgba(0,0,0,.8),0 0 120px rgba(200,0,0,.3)}
+.start-sub{font-family:'Eater',cursive;color:#cc2222;font-size:26px;letter-spacing:3px;margin-bottom:32px;text-shadow:0 0 20px rgba(255,40,20,.6),0 2px 4px rgba(0,0,0,.9)}
+.start-desc{font-family:'Eater',cursive;color:#b08888;font-size:18px;text-align:center;max-width:720px;line-height:2.2;margin-bottom:36px;text-shadow:0 0 8px rgba(180,20,0,.3)}.start-desc em{color:#ff3333;font-style:normal;font-size:20px;text-shadow:0 0 16px rgba(255,30,10,.5)}.start-desc strong{color:#ff5555;font-size:19px;text-shadow:0 0 14px rgba(255,40,20,.5)}
+.diff-title{font-family:'Eater',cursive;color:#cc3333;font-size:20px;letter-spacing:2px;margin-bottom:16px;text-shadow:0 0 16px rgba(200,30,20,.5)}
+.diff-btns{display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap;justify-content:center}
+.diff-btn{padding:14px 26px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#c0c0d0;cursor:pointer;font-size:15px;font-family:'Inter',sans-serif;font-weight:600;transition:all .2s;min-width:100px;text-align:center}
+.diff-btn:hover{background:rgba(244,67,54,.1);border-color:rgba(244,67,54,.35);color:#ff8888}
+.diff-btn.active{background:rgba(180,20,20,.2);border-color:#cc3333;color:#ff5555;font-weight:700;text-shadow:0 0 8px rgba(255,50,30,.3)}
+.diff-btn .diff-name{font-family:'Eater',cursive;font-weight:400;display:block;margin-bottom:3px;font-size:20px;letter-spacing:1px}
+.diff-btn .diff-detail{font-size:10px;color:#8a8a9a;display:block;font-family:'Share Tech Mono',monospace}.diff-btn.active .diff-detail{color:#ff8888}
+.btn-start{font-family:'Creepster',cursive;padding:18px 56px;background:linear-gradient(135deg,#c62828,#6b0000);color:#ffcccc;border:none;border-radius:12px;font-size:26px;font-weight:400;cursor:pointer;letter-spacing:3px;transition:all .3s;box-shadow:0 10px 36px rgba(139,0,0,.5),0 0 60px rgba(200,0,0,.2);text-transform:uppercase}
+.btn-start:hover{transform:translateY(-2px);box-shadow:0 14px 44px rgba(198,40,40,.6),0 0 80px rgba(255,0,0,.3);color:#ffffff}.btn-start:active{transform:scale(.97)}
+.gameover-title{font-size:52px;font-weight:900;color:#f44336;text-shadow:0 0 50px rgba(244,67,54,.5)}
+.gameover-detail{color:#b0b0c0;font-size:16px;margin:16px 0 28px;text-align:center;line-height:1.7}
+.btn-retry{padding:14px 36px;background:rgba(255,255,255,.08);color:#d0d0e0;border:1px solid rgba(255,255,255,.15);border-radius:10px;font-size:16px;cursor:pointer;letter-spacing:1px;transition:all .3s}
+.btn-retry:hover{background:rgba(255,255,255,.15)}
+.win-title{font-size:52px;font-weight:900;color:#4CAF50;text-shadow:0 0 50px rgba(76,175,80,.5)}
+.win-desc{color:#b0c0b0;font-size:15px;margin:12px 0 20px;text-align:center}
+.win-img{max-width:340px;max-height:340px;border-radius:14px;box-shadow:0 8px 50px rgba(76,175,80,.3);margin-bottom:16px;object-fit:contain}
+.win-img-caption{font-family:'Share Tech Mono',monospace;color:#4CAF50;font-size:14px;letter-spacing:3px;margin-bottom:20px}
+.go-img{max-width:340px;max-height:340px;border-radius:14px;box-shadow:0 8px 50px rgba(244,67,54,.3);margin-bottom:16px;object-fit:contain}
+.win-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:28px}
+.win-stat{text-align:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px 22px}
+.win-stat-val{font-family:'Share Tech Mono',monospace;font-size:30px;color:#FFD54F;font-weight:700}
+.win-stat-label{font-size:11px;color:#7a7a8a;letter-spacing:2px;margin-top:4px}
+.sfx-toggle{position:absolute;bottom:16px;right:16px;z-index:60;width:36px;height:36px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#7a7a8a;font-size:16px;transition:all .2s}
+.sfx-toggle:hover{color:white;background:rgba(255,255,255,.1)}.sfx-toggle.muted{color:#444}
+@keyframes alarmBlink{0%,100%{opacity:.15}50%{opacity:.6}}
+@media(max-width:768px){.question-panel{width:95vw;padding:14px 18px 18px}.panel-question{font-size:15px}.opt-btn{font-size:13px;padding:10px 14px}.start-title{font-size:50px}.win-stats{grid-template-columns:1fr;gap:10px}.diff-btns{gap:8px}.diff-btn{padding:10px 16px;min-width:70px}}
+</style>
+</head>
+<body>
+<div class="game-container" id="gc">
+  <div class="lab-scene" id="labScene">
+    <div class="back-wall"></div><div class="left-wall"></div><div class="right-wall"></div><div class="floor"></div>
+    <div class="exit-sign">EXIT →</div>
+    <div class="shelf s1"></div><div class="shelf s2"></div><div class="shelf s3"></div><div class="shelf s4"></div>
+    <div class="bottle b1"></div><div class="bottle b2"></div><div class="bottle b3"></div><div class="bottle b4"></div><div class="bottle b5"></div>
+    <div class="fume-hood"></div>
+    <div class="shard shard1"></div><div class="shard shard2"></div><div class="shard shard3"></div>
+    <!-- Chaos elements -->
+    <div class="overhead-light"></div>
+    <div class="exposed-wire"><div class="wire"></div><div class="spark"></div></div>
+    <div class="warning-lamp"></div>
+    <div class="chaos-flask"><div class="flask-body"><div class="flask-liquid"></div></div></div>
+    <div class="steam-vents"><div class="steam" style="animation-delay:0s"></div><div class="steam" style="animation-delay:0.8s"></div><div class="steam" style="animation-delay:1.5s"></div></div>
+    <div class="floating-debris" id="debrisLayer"></div>
+    <div class="chemical-spill"></div>
+    <div class="tilted-beaker"></div>
+    <div class="lab-bench"></div>
+    <div class="creature-stage" id="creatureStage">
+      <div class="creature-glow" id="creatureGlow"></div>
+      <svg class="creature-svg" id="creatureSvg" viewBox="0 0 180 280"><defs><filter id="gf"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter><radialGradient id="bg" cx="50%" cy="40%"><stop offset="0%" stop-color="#3a4a3a"/><stop offset="60%" stop-color="#1a2a1a"/><stop offset="100%" stop-color="#0a1a0a"/></radialGradient></defs><ellipse cx="90" cy="260" rx="60" ry="12" fill="rgba(0,0,0,.5)" filter="url(#gf)"/><path d="M65,210 L55,265 L65,265 L70,220 Z" fill="#152015"/><path d="M115,210 L125,265 L115,265 L110,220 Z" fill="#152015"/><path d="M55,100 Q50,60 90,55 Q130,60 125,100 L135,200 Q130,210 120,215 L60,215 Q50,210 55,200 Z" fill="url(#bg)"/><path d="M55,100 Q48,95 50,105 Q45,115 58,110 Q52,122 56,115 Q50,130 60,120 L55,200" fill="none" stroke="#0d1d0d" stroke-width="2" opacity=".6"/><path d="M125,100 Q132,95 130,105 Q135,115 122,110 Q128,122 124,115 Q130,130 120,120 L125,200" fill="none" stroke="#0d1d0d" stroke-width="2" opacity=".6"/><path d="M70,120 Q75,150 68,180" stroke="#0d1d0d" stroke-width="1.5" fill="none" opacity=".4"/><path d="M110,120 Q105,150 112,180" stroke="#0d1d0d" stroke-width="1.5" fill="none" opacity=".4"/><path d="M57,130 Q30,115 15,70 Q12,65 18,62 Q25,68 20,70 Q38,100 57,150" fill="#1a2a1a"/><path d="M18,62 L12,50 L16,55 M20,65 L16,52 L19,58 M22,68 L21,55 L23,62" stroke="#1a351a" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M123,130 Q150,115 165,70 Q168,65 162,62 Q155,68 160,70 Q142,100 123,150" fill="#1a2a1a"/><path d="M162,62 L168,50 L164,55 M160,65 L164,52 L161,58 M158,68 L159,55 L157,62" stroke="#1a351a" stroke-width="2" fill="none" stroke-linecap="round"/><ellipse cx="90" cy="52" rx="30" ry="34" fill="#1a281a"/><path d="M72,62 Q90,78 108,62" stroke="#221111" stroke-width="3" fill="none"/><path d="M75,63 Q90,74 105,63" fill="#1a0a0a" opacity=".5"/><path d="M78,63 L80,68 L82,63" fill="#2a3a2a" opacity=".6"/><path d="M98,63 L100,68 L102,63" fill="#2a3a2a" opacity=".6"/><circle cx="78" cy="45" r="5.5" fill="#330000" filter="url(#gf)"/><circle cx="102" cy="45" r="5.5" fill="#330000" filter="url(#gf)"/><circle class="eye-glow-left" cx="78" cy="45" r="4.5" fill="#44ff44" id="eyeLeft"/><circle class="eye-glow-right" cx="102" cy="45" r="4.5" fill="#44ff44" id="eyeRight"/><circle cx="78" cy="45" r="8" fill="none" stroke="rgba(0,255,60,.2)" stroke-width="2" id="eyeRingL"/><circle cx="102" cy="45" r="8" fill="none" stroke="rgba(0,255,60,.2)" stroke-width="2" id="eyeRingR"/><ellipse cx="82" cy="75" rx="2" ry="5" fill="rgba(100,200,40,.4)"/><ellipse cx="98" cy="72" rx="1.5" ry="4" fill="rgba(100,200,40,.3)"/><circle cx="65" cy="90" r="5" fill="#1a2a1a"/><circle cx="115" cy="88" r="4" fill="#1a2a1a"/></svg>
+    </div>
+    <div id="dripsContainer" style="position:absolute;left:50%;bottom:18%;z-index:4;pointer-events:none;"></div>
+    <div class="reagent-splash" id="splashLayer"></div><div class="splash-overlay" id="splashOverlay"></div>
+    <div class="particles-layer" id="particlesLayer"></div>
+    <div class="alarm-light" id="alarmLight"></div><div class="vignette"></div><div class="shake-layer" id="shakeLayer"></div>
+  </div>
+  <div class="hud">
+    <div class="hud-item hud-level">ROOM <span id="hudLevel">1</span>/<span id="hudTotal">7</span></div>
+    <div class="hud-item"><div class="hud-timer-label">TIME LEFT</div><div class="hud-timer-val" id="hudTimer">60</div></div>
+    <div class="hud-item"><div class="hud-score-label">SCORE</div><div class="hud-score-val" id="hudScore">0</div></div>
+    <div class="hud-item danger-hud"><div class="danger-label" id="dangerLabel">⚠ APPROACHING</div><div class="danger-bar-outer"><div class="danger-bar-inner" id="dangerBar"></div></div></div>
+  </div>
+  <div class="question-panel-wrap" id="qPanelWrap" style="display:none;"><div class="question-panel" id="qPanel"><div class="panel-header"><div class="panel-room" id="pnlRoom">ROOM 1</div><div class="panel-cat" id="pnlCat">CHEM</div></div><div class="timer-bar-wrap"><div class="timer-bar-fill" id="timerBar"></div></div><div class="panel-question" id="pnlQ"></div><div class="panel-options" id="pnlOpts"></div></div></div>
+  <div class="screen" id="startScreen">
+    <div class="start-title">LAB ESCAPE</div><div class="start-sub">SURVIVE THE MUTANT</div>
+    <div class="start-desc">A <em>biochemical experiment</em> has gone wrong.<br>The mutated subject is <em>advancing toward you</em>.<br><br>Solve chemistry problems to <strong>deploy reagents</strong> and slow it down.<br>Each correct answer <strong>+5 seconds</strong> to your escape clock.<br>Finish all questions before time runs out!</div>
+    <div class="diff-title">SELECT DIFFICULTY</div>
+    <div class="diff-btns" id="diffBtns">
+      <div class="diff-btn" data-diff="easy" onclick="setDifficulty('easy')"><span class="diff-name">EASY</span><span class="diff-detail">5 Qs · 27s</span></div>
+      <div class="diff-btn active" data-diff="normal" onclick="setDifficulty('normal')"><span class="diff-name">NORMAL</span><span class="diff-detail">7 Qs · 36s</span></div>
+      <div class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')"><span class="diff-name">HARD</span><span class="diff-detail">10 Qs · 45s</span></div>
+      <div class="diff-btn" data-diff="insane" onclick="setDifficulty('insane')"><span class="diff-name">INSANE</span><span class="diff-detail">15 Qs · 54s</span></div>
+    </div>
+    <button class="btn-start" onclick="startGame()">BEGIN ESCAPE</button>
+    <div class="sfx-toggle" id="sfxBtn" onclick="toggleSfx()" title="Sound">🔊</div>
+  </div>
+  <div class="screen hidden" id="goScreen"><div class="gameover-title">CAUGHT</div><img class="go-img" id="goImg" src="" alt="Game Over"><div class="gameover-detail" id="goDetail"></div><button class="btn-retry" onclick="restartGame()">TRY AGAIN</button></div>
+  <div class="screen hidden" id="winScreen">
+    <div class="win-title">YOU ESCAPED!</div><div class="win-desc">You held off the mutant and made it to the exit.</div>
+    <img class="win-img" id="winImg" src="" alt="Victory!"><div class="win-img-caption">WELL DONE, CHEMIST!</div>
+    <div class="win-stats"><div class="win-stat"><div class="win-stat-val" id="wsScore">0</div><div class="win-stat-label">SCORE</div></div><div class="win-stat"><div class="win-stat-val" id="wsAcc">0%</div><div class="win-stat-label">ACCURACY</div></div><div class="win-stat"><div class="win-stat-val" id="wsGrade">-</div><div class="win-stat-label">GRADE</div></div></div>
+    <button class="btn-retry" onclick="restartGame()" style="border-color:rgba(76,175,80,.35);color:#4CAF50;">PLAY AGAIN</button>
+  </div>
+</div>
+<script>
+const AC=window.AudioContext||window.webkitAudioContext;let ac=null,sfxOn=true;
+function initAc(){if(!ac)ac=new AC();}
+function tone(f,d,t='square',v=.06){if(!sfxOn||!ac)return;try{let o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(v,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d);}catch(e){}}
+function alarm(i=.5){if(!sfxOn||!ac||i<.3)return;try{let o=ac.createOscillator(),g=ac.createGain();o.type='sawtooth';o.frequency.setValueAtTime(800,ac.currentTime);o.frequency.linearRampToValueAtTime(1200,ac.currentTime+.08);o.frequency.linearRampToValueAtTime(800,ac.currentTime+.16);g.gain.setValueAtTime(i*.03,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.16);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+.16);}catch(e){}}
+function sfxCorrect(){tone(523,.08);setTimeout(function(){tone(659,.08)},80);setTimeout(function(){tone(784,.15)},160);}
+function sfxWrong(){tone(180,.25,'sawtooth',.07);setTimeout(function(){tone(130,.25,'sawtooth',.06)},120);}
+function sfxWin(){[523,659,784,1047].forEach(function(n,i){setTimeout(function(){tone(n,.18,'square',.06)},i*130)});}
+function sfxLose(){[400,330,260,160].forEach(function(n,i){setTimeout(function(){tone(n,.25,'sawtooth',.05)},i*180)});}
+function sfxSplash(){[800,600,400].forEach(function(n,i){setTimeout(function(){tone(n,.06,'triangle',.04)},i*50)});}
+function sfxTimeBonus(){tone(880,.1,'triangle',.08);setTimeout(function(){tone(1100,.15,'triangle',.06)},100);}
+function toggleSfx(){sfxOn=!sfxOn;var b=document.getElementById('sfxBtn');b.textContent=sfxOn?'🔊':'🔇';b.classList.toggle('muted',!sfxOn);if(sfxOn)initAc();}
+
+var Q=[
+  {cat:'CHEMICAL SYMBOLS',q:'What is the chemical symbol for <strong>Potassium</strong>?',opts:['Po','K','Pt','P'],ans:1,reagent:'HCl',color:'#80ff80',hint:'K = Kalium (Latin)'},
+  {cat:'COMMON COMPOUNDS',q:'What is the formula of <strong>sulfuric acid</strong>?',opts:['HCl','HNO₃','H₂SO₄','H₂CO₃'],ans:2,reagent:'H₂SO₄',color:'#ffcc00',hint:'Strong acid, S in +6 state'},
+  {cat:'EQUATION BALANCING',q:'Balance C₃H₈+O₂→CO₂+H₂O.<br>What is the coefficient of <strong>O₂</strong>?',opts:['3','4','5','10'],ans:2,reagent:'NaOH',color:'#e0e0ff',hint:'C₃H₈ + 5O₂ → 3CO₂ + 4H₂O'},
+  {cat:'CHEMICAL BONDING',q:'Which compound has <strong>both ionic and covalent</strong> bonds?',opts:['NaCl','NaOH','H₂O','CO₂'],ans:1,reagent:'KMnO₄',color:'#cc80ff',hint:'Na⁺ OH⁻ ionic, O–H covalent'},
+  {cat:'REDOX REACTIONS',q:'Zn+CuSO₄→ZnSO₄+Cu<br>Which species is <strong>oxidized</strong>?',opts:['Zn','Cu²⁺','Cu','SO₄²⁻'],ans:0,reagent:'CuSO₄',color:'#4488ff',hint:'Zn loses e⁻ → oxidised'},
+  {cat:'MOLE CALCULATIONS',q:'How many <strong>moles</strong> in 98g H₂SO₄ (Mᵣ=98)?',opts:['0.5 mol','1.0 mol','2.0 mol','0.1 mol'],ans:1,reagent:'FeCl₃',color:'#ff8844',hint:'n = m / Mᵣ = 98/98'},
+  {cat:'ORGANIC CHEMISTRY',q:'Butan-1-ol &amp; butan-2-ol are <strong>position isomers</strong>. Why?',opts:['Different carbon chain','–OH on different C','Different functional group','Cis-trans difference'],ans:1,reagent:'AgNO₃',color:'#ffffff',hint:'–OH group position differs'},
+  {cat:'OXIDATION STATES',q:'What is the oxidation state of <strong>Mn</strong> in KMnO₄?',opts:['+2','+4','+6','+7'],ans:3,reagent:'K₂Cr₂O₇',color:'#ff8844',hint:'K=+1, O₄=-8, so Mn=+7'},
+  {cat:'GAS TESTS',q:'Which gas turns <strong>limewater milky</strong>?',opts:['O₂','H₂','CO₂','N₂'],ans:2,reagent:'Ca(OH)₂',color:'#e0e0ff',hint:'CO₂ + Ca(OH)₂ → CaCO₃↓ + H₂O'},
+  {cat:'ACIDS & BASES',q:'What is the <strong>pH</strong> of a neutral solution at 25°C?',opts:['0','5','7','14'],ans:2,reagent:'Universal indicator',color:'#ffcc00',hint:'[H⁺] = [OH⁻] at pH 7'},
+  {cat:'ORGANIC REACTIONS',q:'Ethanoic acid + ethanol → ?',opts:['Ethane','Ethyl ethanoate','Ethanol','Ethene'],ans:1,reagent:'Esterification cat.',color:'#ff88aa',hint:'Acid + alcohol → ester + water'},
+  {cat:'STATES OF MATTER',q:'Solid → gas skipping liquid = ?',opts:['Evaporation','Condensation','Sublimation','Deposition'],ans:2,reagent:'I₂ (iodine)',color:'#cc80ff',hint:'I₂ sublimes — solid to purple vapor'},
+  {cat:'REACTION TYPES',q:'CH₄+2O₂→CO₂+2H₂O is?',opts:['Neutralization','Combustion','Displacement','Decomposition'],ans:1,reagent:'CH₄ (methane)',color:'#4488ff',hint:'Hydrocarbon + O₂ → CO₂ + H₂O'},
+  {cat:'EMPIRICAL FORMULAS',q:'Empirical formula of <strong>C₆H₁₂O₆</strong>?',opts:['C₆H₁₂O₆','C₃H₆O₃','CH₂O','C₂H₄O₂'],ans:2,reagent:"Benedict's sol.",color:'#4488ff',hint:'Divide by greatest common factor (6)'},
+  {cat:'ELECTROLYSIS',q:'Electrolysis of molten NaCl → at cathode?',opts:['Cl₂','Na','O₂','H₂'],ans:1,reagent:'NaCl (molten)',color:'#ffffff',hint:'Na⁺ reduced at cathode → Na metal'}
+];
+
+var DIFF={easy:{qs:5,time:27},normal:{qs:7,time:36},hard:{qs:10,time:45},insane:{qs:15,time:54}};
+var selDiff='normal';
+function setDifficulty(d){selDiff=d;document.querySelectorAll('.diff-btn').forEach(function(b){b.classList.toggle('active',b.dataset.diff===d)});}
+
+var G={level:0,score:0,correct:0,total:0,danger:0,playing:false,timerId:null,globalTime:0,maxGlobalTime:0,totalQs:0,locked:false,shuffled:[]};
+function shuffle(arr){for(var i=arr.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=arr[i];arr[i]=arr[j];arr[j]=t;}return arr;}
+
+var D={
+  cs:document.getElementById('creatureStage'),alarm:document.getElementById('alarmLight'),shake:document.getElementById('shakeLayer'),
+  splashL:document.getElementById('splashLayer'),splashO:document.getElementById('splashOverlay'),parts:document.getElementById('particlesLayer'),
+  drips:document.getElementById('dripsContainer'),qWrap:document.getElementById('qPanelWrap'),qPanel:document.getElementById('qPanel'),
+  pnlRoom:document.getElementById('pnlRoom'),pnlCat:document.getElementById('pnlCat'),pnlQ:document.getElementById('pnlQ'),pnlOpts:document.getElementById('pnlOpts'),
+  timerBar:document.getElementById('timerBar'),hudLevel:document.getElementById('hudLevel'),hudTotal:document.getElementById('hudTotal'),hudScore:document.getElementById('hudScore'),
+  hudTimer:document.getElementById('hudTimer'),dangerBar:document.getElementById('dangerBar'),dangerLabel:document.getElementById('dangerLabel'),
+  startS:document.getElementById('startScreen'),goS:document.getElementById('goScreen'),winS:document.getElementById('winScreen'),
+  goDetail:document.getElementById('goDetail'),wsScore:document.getElementById('wsScore'),wsAcc:document.getElementById('wsAcc'),wsGrade:document.getElementById('wsGrade'),
+  winImg:document.getElementById('winImg'),goImg:document.getElementById('goImg'),crSvg:document.getElementById('creatureSvg'),crGlow:document.getElementById('creatureGlow')
+};
+
+function updateCreature(){
+  var d=G.danger;
+  document.documentElement.style.setProperty('--monster-y',d*0.25);
+  document.documentElement.style.setProperty('--monster-scale',0.7+d*0.011);
+  document.documentElement.style.setProperty('--danger',d);
+  D.dangerBar.style.setProperty('--danger',d+'%');
+  if(d<25)D.dangerLabel.textContent='⚠ APPROACHING';else if(d<50)D.dangerLabel.textContent='⚠ GETTING CLOSE';else if(d<75)D.dangerLabel.textContent='⚠ DANGER ZONE';else D.dangerLabel.textContent='⚠ RIGHT BEHIND YOU';
+  D.dangerLabel.style.color=d<25?'#FFC107':d<50?'#FF9800':d<75?'#f44336':'#ff1744';
+  if(d>20)D.alarm.style.animation='alarmBlink 0.7s ease-in-out infinite';else D.alarm.style.animation='alarmBlink 0.7s ease-in-out infinite paused';
+  // Mutation phases: creature transforms color as danger rises
+  var svg=D.crSvg,glw=D.crGlow,stg=D.cs;
+  svg.className='creature-svg';glw.className='creature-glow';stg.className='creature-stage';
+  if(d>25){svg.classList.add('m1');glw.classList.add('g1');stg.classList.add('s1');}
+  if(d>50){svg.classList.add('m2');glw.classList.add('g2');stg.classList.add('s2');}
+  if(d>75){svg.classList.add('m3');glw.classList.add('g3');stg.classList.add('s3');}
+  // Eye glow — compensate hue-rotate so eyes stay green, intensify with danger
+  var el2=document.getElementById('eyeLeft'),er2=document.getElementById('eyeRight');
+  var eringL=document.getElementById('eyeRingL'),eringR=document.getElementById('eyeRingR');
+  var ec='#44ff44',er=4.5,es='rgba(0,255,60,.25)',esw=2;
+  if(d>75){ec='#ff00dd';er=9.5;es='rgba(0,255,60,.8)';esw=4;}
+  else if(d>50){ec='#ff5500';er=7.5;es='rgba(0,255,60,.5)';esw=3;}
+  else if(d>25){ec='#aaff00';er=6;es='rgba(0,255,60,.35)';esw=2.5;}
+  el2.setAttribute('fill',ec);el2.setAttribute('r',er);
+  er2.setAttribute('fill',ec);er2.setAttribute('r',er);
+  eringL.setAttribute('stroke',es);eringL.setAttribute('stroke-width',esw);
+  eringR.setAttribute('stroke',es);eringR.setAttribute('stroke-width',esw);
+  updateAtmo(d);
+}
+function updateAtmo(d){var t=Math.floor(d*0.25),c=D.parts.querySelectorAll('.atmos-particle').length;if(c<t)for(var i=c;i<t;i++)spawnParticle();}
+function spawnParticle(){var p=document.createElement('div');p.className='atmos-particle';p.style.left=Math.random()*100+'%';p.style.bottom=(10+Math.random()*30)+'%';p.style.width=(2+Math.random()*3)+'px';p.style.height=p.style.width;p.style.animationDuration=(4+Math.random()*6)+'s';D.parts.appendChild(p);setTimeout(function(){p.remove()},10000);}
+// Spawn floating paper debris
+function spawnDebris(){var d=document.getElementById('debrisLayer');if(!d)return;var p=document.createElement('div');p.className='paper-scrap';p.style.left=(15+Math.random()*70)+'%';p.style.top=(30+Math.random()*40)+'%';p.style.animationDuration=(6+Math.random()*8)+'s';p.style.animationDelay=Math.random()*3+'s';d.appendChild(p);setTimeout(function(){if(p.parentNode)p.remove();},14000);}
+// Spawn bubbles in flask
+function spawnBubble(){var f=document.querySelector('.chaos-flask .flask-liquid');if(!f)return;var b=document.createElement('div');b.className='bubble';b.style.left=(3+Math.random()*14)+'px';b.style.bottom=(2+Math.random()*10)+'px';b.style.animationDuration=(1+Math.random()*1.5)+'s';var flask=document.querySelector('.chaos-flask');flask.appendChild(b);setTimeout(function(){if(b.parentNode)b.remove();},2500);}
+// Spawn spark particles near wire
+function spawnSpark(){var w=document.querySelector('.exposed-wire');if(!w)return;var s=document.createElement('div');s.className='spark-particle';s.style.left='60%';s.style.top='9%';var sx=(Math.random()-.5)*60;var sy=-(Math.random()*30+10);s.style.setProperty('--sx',sx+'px');s.style.setProperty('--sy',sy+'px');s.style.animationDuration=(.3+Math.random()*.3)+'s';document.getElementById('labScene').appendChild(s);setTimeout(function(){if(s.parentNode)s.remove();},600);}
+// Spawn smoke wisps
+function spawnSmoke(){var sc=document.getElementById('labScene');var w=document.createElement('div');w.className='smoke-wisp';w.style.left=(35+Math.random()*30)+'%';w.style.top='38%';w.style.animationDuration=(3+Math.random()*3)+'s';sc.appendChild(w);setTimeout(function(){if(w.parentNode)w.remove();},6000);}
+// Init ambient chaos effects
+function initChaosAmbient(){
+  for(var i=0;i<5;i++)spawnDebris();
+  setInterval(function(){spawnDebris()},4000);
+  setInterval(function(){spawnBubble()},800);
+  setInterval(function(){spawnSpark()},500);
+  setInterval(function(){spawnSmoke()},2000);
+}
+initChaosAmbient();
+function staggerCreature(){
+  D.cs.classList.add('staggered');
+  var cur=parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--monster-scale'));
+  document.documentElement.style.setProperty('--monster-scale',cur*0.7);
+  setTimeout(function(){document.documentElement.style.setProperty('--monster-scale',cur);},250);
+  setTimeout(function(){D.cs.classList.remove('staggered')},400);
+}
+function flashCreature(){D.cs.classList.add('hit-flash');setTimeout(function(){D.cs.classList.remove('hit-flash')},450);}
+function spawnDrips(){var c=D.drips;for(var i=0;i<3;i++){var d=document.createElement('div');d.className='drip';d.style.left=(35+Math.random()*30)+'%';d.style.animationDuration=(1.5+Math.random()*2)+'s';c.appendChild(d);setTimeout(function(){d.remove()},3500);}}
+function triggerSplash(color){var layer=D.splashL;for(var i=0;i<24;i++){var p=document.createElement('div');p.className='splash-particle';var angle=Math.random()*Math.PI*2,dist=60+Math.random()*180;p.style.setProperty('--sx',Math.cos(angle)*dist+'px');p.style.setProperty('--sy',Math.sin(angle)*dist+'px');p.style.left='50%';p.style.top='55%';p.style.width=(4+Math.random()*10)+'px';p.style.height=p.style.width;p.style.background=color;p.style.boxShadow='0 0 '+(6+Math.random()*10)+'px '+color;layer.appendChild(p);setTimeout(function(){p.remove()},1000);}D.splashO.style.background='radial-gradient(ellipse at 50% 60%,'+color+'44 0%,transparent 60%)';D.splashO.style.opacity='0.6';setTimeout(function(){D.splashO.style.opacity='0'},300);sfxSplash();}
+function showReagentMsg(name,color){var m=document.createElement('div');m.className='reagent-msg';m.style.color=color;m.style.textShadow='0 0 20px '+color;m.innerHTML='🧪 '+name+'<br><span style="font-size:12px;opacity:0.7;">DEPLOYED!</span>';document.body.appendChild(m);setTimeout(function(){m.remove()},1800);}
+function showTimeBonus(){var m=document.createElement('div');m.className='time-bonus';m.textContent='+5s';document.getElementById('gc').appendChild(m);setTimeout(function(){m.remove()},1600);sfxTimeBonus();}
+function showTimePenalty(){var m=document.createElement('div');m.className='time-bonus';m.textContent='-5s';m.style.color='#f44336';m.style.textShadow='0 0 16px rgba(244,67,54,.6)';document.getElementById('gc').appendChild(m);setTimeout(function(){m.remove()},1600);}
+function doShake(){D.shake.classList.add('shaking');setTimeout(function(){D.shake.classList.remove('shaking')},450);}
+function addDanger(v){G.danger=Math.min(100,G.danger+v);updateCreature();if(G.danger>=100)endGame(false);}
+function subDanger(v){G.danger=Math.max(0,G.danger-v);updateCreature();}
+
+function startGlobalTimer(){
+  G.globalTime=G.maxGlobalTime;updateGlobalTimer();
+  G.timerId=setInterval(function(){
+    G.globalTime-=.1;updateGlobalTimer();
+    var timePct=G.globalTime/G.maxGlobalTime;G.danger=Math.min(100,(1-timePct)*100);updateCreature();
+    if(G.globalTime<=0){stopAllTimers();endGame(false);}
+    if(G.globalTime<10){if(Math.floor(G.globalTime*10)%5===0)alarm(G.danger/100);}
+  },100);
+}
+function stopAllTimers(){if(G.timerId){clearInterval(G.timerId);G.timerId=null;}}
+function updateGlobalTimer(){var s=Math.max(0,Math.ceil(G.globalTime));D.hudTimer.textContent=s;D.hudTimer.classList.toggle('urgent',G.globalTime<10);}
+
+function showQuestion(){
+  if(G.level>=G.totalQs){endGame(true);return;}
+  var q=G.shuffled[G.level];D.pnlRoom.textContent='ROOM '+(G.level+1);D.pnlCat.textContent=q.cat;D.pnlQ.innerHTML=q.q;
+  D.timerBar.style.width='100%';D.timerBar.classList.remove('urgent');
+  D.pnlOpts.innerHTML=q.opts.map(function(o,i){return '<button class="opt-btn" onclick="answer('+i+')"><span class="opt-letter">'+String.fromCharCode(65+i)+'</span>'+o+'</button>';}).join('');
+  D.qWrap.style.display='block';D.qPanel.style.animation='none';D.qPanel.offsetHeight;D.qPanel.style.animation='panelSlideUp 0.35s ease-out';
+  if(G.danger>30)spawnDrips();
+}
+function hideQuestion(){D.qWrap.style.display='none';}
+
+function answer(i){
+  if(G.locked||!G.playing)return;G.locked=true;G.total++;
+  var q=G.shuffled[G.level],correct=i===q.ans;
+  var btns=D.pnlOpts.querySelectorAll('.opt-btn');
+  btns.forEach(function(b,j){b.disabled=true;if(j===q.ans)b.classList.add('correct');if(j===i&&!correct)b.classList.add('wrong');});
+  if(correct){G.correct++;G.score+=100;sfxCorrect();D.hudScore.textContent=G.score;
+    G.globalTime+=5;updateGlobalTimer();showTimeBonus();
+    showReagentMsg(q.reagent,q.color);triggerSplash(q.color);staggerCreature();flashCreature();subDanger(10);
+    setTimeout(function(){G.locked=false;G.level++;D.hudLevel.textContent=G.level+1;hideQuestion();setTimeout(showQuestion,500);},1700);
+  }else{G.score=Math.max(0,G.score-50);G.globalTime-=5;if(G.globalTime<0)G.globalTime=0;updateGlobalTimer();showTimePenalty();sfxWrong();doShake();addDanger(15);D.hudScore.textContent=G.score;
+    var hint=document.createElement('div');hint.style.cssText='margin-top:8px;padding:6px 10px;background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.2);border-radius:6px;color:#FFC107;font-size:11px;';
+    hint.innerHTML='💡 <strong>Hint:</strong> '+q.hint;D.qPanel.appendChild(hint);
+    setTimeout(function(){G.locked=false;G.level++;D.hudLevel.textContent=G.level+1;hideQuestion();setTimeout(showQuestion,600);},2000);
+  }
+}
+
+function startGame(){
+  initAc();var cfg=DIFF[selDiff];
+  G={level:0,score:0,correct:0,total:0,danger:5,playing:true,timerId:null,globalTime:cfg.time,maxGlobalTime:cfg.time,totalQs:cfg.qs,locked:false,shuffled:shuffle(Q.slice()).slice(0,cfg.qs)};
+  D.startS.classList.add('hidden');D.goS.classList.add('hidden');D.winS.classList.add('hidden');
+  D.hudScore.textContent='0';D.hudLevel.textContent='1';D.hudTotal.textContent=cfg.qs;
+  D.hudTimer.textContent=cfg.time;D.hudTimer.classList.remove('urgent');
+  D.parts.innerHTML='';G.danger=5;updateCreature();
+  startGlobalTimer();setTimeout(showQuestion,500);
+}
+
+function endGame(won){
+  G.playing=false;stopAllTimers();hideQuestion();
+  if(won){sfxWin();var acc=G.total>0?Math.round(G.correct/G.total*100):100;
+    var g;if(acc===100)g='S+';else if(acc>=85)g='S';else if(acc>=70)g='A';else if(acc>=50)g='B';else g='C';
+    D.wsScore.textContent=G.score;D.wsAcc.textContent=acc+'%';D.wsGrade.textContent=g;
+    D.winImg.src='ryan-gosling-thumbs-up.png';D.winS.classList.remove('hidden');
+  }else{sfxLose();
+    D.goImg.src='RG.jpg';
+    D.goDetail.innerHTML='The mutant caught you in <strong>Room '+(G.level+1)+'</strong>.<br>Correct: <strong>'+G.correct+'</strong> &nbsp;|&nbsp; Score: <strong>'+G.score+'</strong>';D.goS.classList.remove('hidden');
+    D.alarm.style.animation='alarmBlink 0.3s ease-in-out infinite';
+  }
+}
+function restartGame(){stopAllTimers();hideQuestion();D.goS.classList.add('hidden');D.winS.classList.add('hidden');D.startS.classList.remove('hidden');G.danger=0;updateCreature();D.alarm.style.animation='alarmBlink 0.7s ease-in-out infinite paused';}
+
+updateCreature();
+document.addEventListener('click',function(){if(!ac)initAc();},{once:true});
+
+console.log('LAB ESCAPE — Survive the Mutant');
+console.log('Select difficulty and click BEGIN ESCAPE');
+</script>
+</body>
+</html>

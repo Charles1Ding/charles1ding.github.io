@@ -210,8 +210,8 @@
       width: 100%;
       max-width: 1100px;
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr 1fr;
-      gap: 40px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 24px;
       justify-items: center;
       align-items: start;
     }
@@ -227,7 +227,7 @@
     .res-img-card:hover { transform: translateY(-6px) scale(1.02); }
     .res-img-card img {
       width: 100%;
-      max-width: 360px;
+      max-width: 200px;
       border-radius: 18px;
       box-shadow: 0 8px 32px rgba(37,99,199,0.14);
       transition: box-shadow 0.28s;
@@ -258,8 +258,13 @@
     footer span { color: #c06a7a; }
 
     /* ── Responsive ── */
+    @media (max-width: 900px) {
+      .resource-grid { grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+      .res-img-card img { max-width: 280px; }
+    }
     @media (max-width: 580px) {
-      .resource-grid { grid-template-columns: 1fr; }
+      .resource-grid { grid-template-columns: 1fr; gap: 32px; }
+      .res-img-card img { max-width: 360px; }
       .hero-name { font-size: 2.2rem; }
       .hero-sub { font-size: 1.2rem; }
       .about-text { font-size: 1rem; }
@@ -335,6 +340,12 @@
     <a class="res-img-card" href="review-notes.html">
       <img src="img-review-notes.jpg" alt="Review Notes" />
       <span class="res-img-label">Review Notes</span>
+    </a>
+
+    <!-- Gaming Time -->
+    <a class="res-img-card" href="gaming.html">
+      <img src="img-gaming.jpg" alt="Gaming Time" />
+      <span class="res-img-label">Gaming Time</span>
     </a>
 
   </div>

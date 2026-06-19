@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gaming Time · Charles</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      min-height: 100vh;
+      font-family: 'Nunito', sans-serif;
+      background: #f5f0e8;
+    }
+
+    .bg {
+      position: fixed;
+      inset: 0;
+      background: url('bg.png') center center / cover no-repeat;
+      z-index: 0;
+    }
+    .bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.35);
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px 80px;
+    }
+
+    nav {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 0 0;
+    }
+    .nav-logo {
+      font-family: 'Caveat', cursive;
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #2d5fa3;
+      letter-spacing: 0.5px;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #3a5a8c;
+      text-decoration: none;
+      letter-spacing: 0.3px;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #1a3a6b; }
+
+    .header {
+      margin-top: 48px;
+      text-align: center;
+    }
+    .header h1 {
+      font-family: 'Nunito', sans-serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      font-style: italic;
+      color: #1e3a6e;
+    }
+    .header-line {
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, #4a78c8, #0e8a6d);
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+    .header p {
+      margin-top: 10px;
+      color: #5a7aaa;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .games-grid {
+      width: 100%;
+      max-width: 1100px;
+      margin-top: 40px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 28px;
+    }
+
+    .game-card {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(10px);
+      border: 2px solid rgba(74,120,200,0.18);
+      border-radius: 20px;
+      overflow: hidden;
+      text-decoration: none;
+      transition: all 0.3s;
+      cursor: pointer;
+    }
+    .game-card:hover {
+      transform: translateY(-8px) scale(1.02);
+      box-shadow: 0 16px 48px rgba(37,99,199,0.18);
+      border-color: rgba(74,120,200,0.4);
+    }
+
+    .game-thumb {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      display: block;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+    }
+
+    .game-info {
+      padding: 20px 22px 24px;
+    }
+    .game-name {
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.35rem;
+      font-weight: 800;
+      font-style: italic;
+      color: #1e3a6e;
+      margin-bottom: 6px;
+    }
+    .game-desc {
+      font-size: 0.9rem;
+      color: #6a8fc0;
+      line-height: 1.55;
+      margin-bottom: 14px;
+    }
+    .game-tags {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .game-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #2563c7;
+      background: rgba(37,99,199,0.08);
+      padding: 3px 10px;
+      border-radius: 12px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .play-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, #2563c7, #1e3a6e);
+      color: #fff;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 800;
+      font-style: italic;
+      font-size: 0.95rem;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.25s;
+      letter-spacing: 0.3px;
+    }
+    .play-btn:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 24px rgba(37,99,199,0.35);
+    }
+    .play-icon {
+      font-size: 1.15rem;
+    }
+
+    footer {
+      margin-top: auto;
+      padding-top: 60px;
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: #6a8fc0;
+      text-align: center;
+      letter-spacing: 0.3px;
+    }
+    footer span { color: #c06a7a; }
+
+    @media (max-width: 580px) {
+      .games-grid { grid-template-columns: 1fr; }
+      .header h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="page">
+
+  <nav>
+    <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
+    <ul class="nav-links">
+      <li><a href="index.html">← Home</a></li>
+    </ul>
+  </nav>
+
+  <div class="header">
+    <h1>🎮 Gaming Time</h1>
+    <div class="header-line"></div>
+    <p>Chemistry-themed games — Learn while having fun!</p>
+  </div>
+
+  <div class="games-grid">
+    <!-- Lab Escape -->
+    <div class="game-card" onclick="window.location.href='gaming/lab-escape.html'">
+      <img class="game-thumb" src="gaming/lab-bg.jpg" alt="Lab Escape" />
+      <div class="game-info">
+        <div class="game-name">Lab Escape 🧪</div>
+        <div class="game-desc">A biochemical experiment has gone wrong! Solve chemistry problems to deploy reagents and escape before time runs out.</div>
+        <div class="game-tags">
+          <span class="game-tag">Chemistry Quiz</span>
+          <span class="game-tag">Survival</span>
+          <span class="game-tag">Multi-difficulty</span>
+        </div>
+        <button class="play-btn"><span class="play-icon">▶</span> Play Now</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>Made with <span>♥</span> by Charles · Game on! 🎮</footer>
+
+</div>
+
+</body>
+</html>
