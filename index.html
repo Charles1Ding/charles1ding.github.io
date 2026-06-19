@@ -210,7 +210,7 @@
       width: 100%;
       max-width: 1100px;
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 24px;
       justify-items: center;
       align-items: start;
@@ -258,8 +258,8 @@
     footer span { color: #c06a7a; }
 
     /* ── Responsive ── */
-    @media (max-width: 900px) {
-      .resource-grid { grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+    @media (max-width: 720px) {
+      .resource-grid { grid-template-columns: 1fr 1fr; gap: 28px; }
       .res-img-card img { max-width: 280px; }
     }
     @media (max-width: 580px) {
@@ -346,6 +346,12 @@
     <a class="res-img-card" href="gaming.html">
       <img src="img-gaming.jpg" alt="Gaming Time" />
       <span class="res-img-label">Gaming Time</span>
+    </a>
+
+    <!-- Private Space -->
+    <a class="res-img-card" href="private-space.html">
+      <img src="img-private.jpg" alt="Private Space" />
+      <span class="res-img-label">Private Space</span>
     </a>
 
   </div>

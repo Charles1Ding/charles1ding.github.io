@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Private Space · Charles</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      min-height: 100vh;
+      font-family: 'Nunito', sans-serif;
+    }
+
+    .bg {
+      position: fixed;
+      inset: 0;
+      background: url('bg.png') center center / cover no-repeat;
+      z-index: 0;
+    }
+    .bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0.22);
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px 80px;
+    }
+
+    nav {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 0 0;
+      gap: 36px;
+    }
+    .nav-logo {
+      font-family: 'Caveat', cursive;
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #2d5fa3;
+      letter-spacing: 0.5px;
+    }
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #3a5a8c;
+      text-decoration: none;
+      letter-spacing: 0.3px;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #1a3a6b; }
+
+    .page-title {
+      margin-top: 50px;
+      font-family: 'Nunito', sans-serif;
+      font-size: clamp(2.2rem, 5.5vw, 3.5rem);
+      font-weight: 800;
+      font-style: italic;
+      color: #1e3a6e;
+      text-align: center;
+      letter-spacing: 0.3px;
+    }
+    .page-subtitle {
+      margin-top: 8px;
+      font-size: clamp(1rem, 2vw, 1.15rem);
+      font-weight: 600;
+      font-style: italic;
+      color: #2563c7;
+      opacity: 0.85;
+      text-align: center;
+    }
+    .page-divider {
+      width: 120px;
+      height: 3px;
+      background: linear-gradient(90deg, #4a78c8, #0e8a6d);
+      border-radius: 2px;
+      margin: 16px auto 0;
+    }
+
+    .back-link {
+      margin-top: 48px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #4a78c8;
+      text-decoration: none;
+      letter-spacing: 0.3px;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #1a3a6b; }
+
+    footer {
+      margin-top: 50px;
+      font-family: 'Caveat', cursive;
+      font-size: 1.15rem;
+      color: #6a8fc0;
+      text-align: center;
+      letter-spacing: 0.3px;
+    }
+    footer span { color: #c06a7a; }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="page">
+
+  <nav>
+    <div class="nav-logo">Charles.chem ⚗️</div>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+    </ul>
+  </nav>
+
+  <h1 class="page-title">🔐 Private Space</h1>
+  <p class="page-subtitle">Coming soon — stay tuned!</p>
+  <div class="page-divider"></div>
+
+  <a class="back-link" href="index.html">← Back to Home</a>
+
+  <footer>Made with <span>♥</span> by Charles · Chemistry is everywhere 🧪</footer>
+
+</div>
+</body>
+</html>
