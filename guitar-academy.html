@@ -599,6 +599,7 @@ h1 {
 
 <div class="site-bar">
   <a href="index.html">← Back to Charles.chem ⚗️</a>
+  <button onclick="openSearch()" style="margin-left:auto;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:16px;padding:4px 12px;cursor:pointer;color:rgba(255,255,255,0.85);font-size:0.8rem;font-weight:600;">🔍 Search</button>
 </div>
 
 <!-- Sidebar -->
@@ -1856,5 +1857,6 @@ window.addEventListener('beforeunload', () => {
   if (tunerActive) stopTuner();
 });
 </script>
+<script src="search-widget.js"></script>
 </body>
 </html>

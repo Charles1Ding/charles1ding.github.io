@@ -3,6 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="favicon.png" />
+  <meta property="og:title" content="Charles · Chem Teacher <link rel="icon" type="image/png" href="favicon.png" /> More" />
+  <meta property="og:title" content="Charles · Chem Teacher & More" />
+  <meta property="og:description" content="Free Chemistry tutorials, past papers, simulation models, music & more" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <meta property="og:image" content="https://charles1ding.github.io/favicon.png" />
+  <meta property="og:url" content="https://charles1ding.github.io" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Charles · Chem Teacher & More</title>
   <style>
@@ -13,6 +21,7 @@
     html, body {
       min-height: 100vh;
       font-family: 'Nunito', sans-serif;
+      opacity: 1; transition: opacity 0.3s ease, background 0.4s ease;
     }
 
     /* ── Background ── */
@@ -481,6 +490,39 @@
       pointer-events: none;
     }
 
+    /* ── Dark mode override ── */
+    body.dark { background: #0f172a; }
+    body.dark .bg::after { background: rgba(15,23,42,0.55); }
+    body.dark .nav-logo,
+    body.dark .nav-links a,
+    body.dark .search-btn,
+    body.dark .search-btn span { color: #c8d6e5; }
+    body.dark .search-btn { background: rgba(30,50,80,0.7); border-color: rgba(148,180,220,0.25); }
+    body.dark .hero-name { color: #7ba8e0; text-shadow: 0 2px 16px rgba(0,0,0,0.4); }
+    body.dark .hero-sub { color: #7ba8e0; }
+    body.dark .hero-divider { background: #4a6a9a; }
+    body.dark .about-text { color: #90b4e0; }
+    body.dark .about-text .highlight { color: #a8c8f0; }
+    body.dark .section-title { color: #b8cde8; }
+    body.dark .res-img-label { color: #b8cde8; }
+    body.dark .res-img-card:hover .res-img-label { color: #a0c8f0; }
+    body.dark .res-img-card:nth-child(3):hover .res-img-label { color: #e8a0b8; }
+    body.dark .res-img-card:nth-child(4):hover .res-img-label { color: #d0a868; }
+    body.dark .res-img-card:nth-child(5):hover .res-img-label { color: #b0a0e8; }
+    body.dark .bottom-text { color: #90b4e0; }
+    body.dark .bottom-text .highlight { color: #a8c8f0; }
+    body.dark .icon-pill { background: rgba(30,50,80,0.7); border-color: rgba(148,180,220,0.2); color: #b0c8e8; }
+    body.dark footer { color: #6a8ab0; }
+
+    .theme-toggle {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.6); border: 1.5px solid rgba(74,120,200,0.2);
+      cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+    .theme-toggle:hover { background: rgba(255,255,255,0.85); }
+    body.dark .theme-toggle { background: rgba(30,50,80,0.7); border-color: rgba(148,180,220,0.3); }
+
     /* ── Responsive ── */
     @media (max-width: 580px) {
       .search-panel { max-height: 60vh; }
@@ -517,6 +559,7 @@
       <span style="color:#3a5a8c;">Search</span>
       <span class="search-kbd">⌘K</span>
     </button>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
   </nav>
 
   <!-- Hero -->
@@ -736,6 +779,28 @@ function searchKeydown(e) {
 
 document.addEventListener('keydown', function(e) {
   if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); openSearch(); }
+});
+
+/* ── Dark mode toggle ── */
+(function() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+    document.getElementById('themeBtn').textContent = '☀️';
+  }
+})();
+window.toggleTheme = function() {
+  var d = document.body.classList.toggle('dark');
+  localStorage.setItem('theme', d ? 'dark' : 'light');
+  document.getElementById('themeBtn').textContent = d ? '☀️' : '🌙';
+};
+
+/* ── Page transition ── */
+document.addEventListener('DOMContentLoaded', function() {
+  document.body.style.opacity = '0';
+  requestAnimationFrame(function() {
+    document.body.style.transition = 'opacity 0.3s ease';
+    document.body.style.opacity = '1';
+  });
 });
 </script>
 </body>
