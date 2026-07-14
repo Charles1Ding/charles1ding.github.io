@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <meta property="og:title" content="Pearls of Wisdom · Charles" />
+  <meta property="og:description" content="Thoughts, reflections & ideas from Charles" />
+  <meta property="og:image" content="https://charles1ding.github.io/favicon.png" />
+  <meta property="og:url" content="https://charles1ding.github.io" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pearls of Wisdom · Charles</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { min-height:100vh; font-family:'Nunito',sans-serif; }
+    .bg { position:fixed; inset:0; background:url('bg.png') center/cover no-repeat; z-index:0; }
+    .bg::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,0.22); }
+    .page { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:0 20px 80px; }
+
+    nav { width:100%; max-width:900px; display:flex; justify-content:center; align-items:center; padding:24px 0 0; gap:24px; }
+    .nav-logo { font-family:'Caveat',cursive; font-size:1.7rem; font-weight:700; color:#2d5fa3; letter-spacing:0.5px; text-decoration:none; }
+    .nav-links { display:flex; gap:28px; list-style:none; }
+    .nav-links a { font-size:0.95rem; font-weight:600; color:#3a5a8c; text-decoration:none; letter-spacing:0.3px; transition:color 0.2s; }
+    .nav-links a:hover { color:#1a3a6b; }
+
+    .page-title { margin-top:50px; font-size:clamp(2.2rem,5.5vw,3.5rem); font-weight:800; font-style:italic; color:#1e3a6e; text-align:center; }
+    .page-subtitle { margin-top:8px; font-size:clamp(1rem,2vw,1.15rem); font-weight:600; font-style:italic; color:#2563c7; opacity:0.85; text-align:center; }
+    .page-divider { width:120px; height:3px; background:linear-gradient(90deg,#c084fc,#6366f1); border-radius:2px; margin:16px auto 0; }
+
+    .pearls-list { width:100%; max-width:680px; margin-top:44px; display:flex; flex-direction:column; gap:20px; }
+
+    .pearl { position:relative; background:rgba(255,255,255,0.8); backdrop-filter:blur(8px); border:1.5px solid rgba(99,102,241,0.15); border-radius:20px; padding:24px 28px; transition:all 0.22s; overflow:hidden; }
+    .pearl::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:linear-gradient(180deg,#c084fc,#6366f1); border-radius:0 4px 4px 0; }
+    .pearl:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(99,102,241,0.1); border-color:rgba(99,102,241,0.3); }
+    .pearl-date { font-size:0.8rem; font-weight:700; color:#a78bfa; letter-spacing:0.5px; text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+    .pearl-date::after { content:''; flex:1; height:1px; background:rgba(167,139,250,0.2); }
+    .pearl-body { font-size:1.05rem; font-weight:500; color:#334155; line-height:1.75; }
+    .pearl-body em { color:#6366f1; font-style:italic; }
+    .pearl-body strong { color:#1e3a6e; }
+    .pearl-mood { margin-top:12px; font-size:0.78rem; color:#a78bfa; font-weight:600; }
+    .pearl-mood span { background:rgba(167,139,250,0.1); padding:2px 10px; border-radius:10px; }
+
+    .empty-state { text-align:center; padding:60px 20px; }
+    .empty-state .icon { font-size:3rem; margin-bottom:16px; }
+    .empty-state p { color:#8aafd8; font-size:0.95rem; font-weight:600; font-style:italic; }
+
+    .edit-hint { margin-top:32px; background:rgba(255,255,255,0.6); backdrop-filter:blur(6px); border:1.5px dashed rgba(99,102,241,0.2); border-radius:14px; padding:16px 24px; font-size:0.85rem; color:#6366f1; text-align:center; max-width:680px; width:100%; }
+    .edit-hint strong { color:#4f46e5; }
+
+    .back-link { margin-top:48px; font-size:0.95rem; font-weight:700; color:#4a78c8; text-decoration:none; }
+    footer { margin-top:50px; font-family:'Caveat',cursive; font-size:1.15rem; color:#6a8fc0; text-align:center; }
+    footer span { color:#c06a7a; }
+    @media(max-width:580px){ .pearl{padding:18px 20px;} .pearl-body{font-size:0.95rem;} }
+  </style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="page">
+  <nav>
+    <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
+    <ul class="nav-links"><li><a href="private-space.html">← Private Space</a></li></ul>
+    <button onclick="openSearch()" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(6px);border:1.5px solid rgba(74,120,200,0.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:700;color:#2d5fa3;display:flex;align-items:center;gap:6px;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.92)'" onmouseout="this.style.background='rgba(255,255,255,0.78)'">🔍 Search</button>
+  </nav>
+
+  <h1 class="page-title">🦪 Pearls of Wisdom</h1>
+  <p class="page-subtitle">Thoughts, reflections & ideas I've collected along the way</p>
+  <div class="page-divider"></div>
+
+  <div class="pearls-list" id="pearls"></div>
+
+  <div class="edit-hint">
+    <strong>✏️ How to add a new pearl:</strong> open this HTML file in an editor and copy one of the <code>&lt;div class="pearl"&gt;</code> blocks
+  </div>
+
+  <a class="back-link" href="private-space.html">← Back to Private Space</a>
+  <footer>Made with <span>♥</span> by Charles · Every pearl tells a story 🌊</footer>
+</div>
+
+<script src="search-widget.js"></script>
+<script>
+// ── Pearls data — add new entries at the TOP of the array ──
+var pearls = [
+  {
+    date: "July 14, 2026",
+    mood: "Reflective",
+    body: "Teaching is not about filling a bucket, but lighting a fire. Every time a student's eyes light up when they <em>finally</em> understand why the copper ions turn blue — that's the moment I live for. Chemistry isn't just equations and mechanisms; it's the language the universe speaks. And I get to be the translator."
+  },
+  {
+    date: "July 10, 2026",
+    mood: "Inspired",
+    body: "Had a conversation with a student today who told me, <em>'Mr. Charles, I used to hate Chemistry, but now I think it's actually kind of cool.'</em> That single sentence made my entire week. Sometimes the biggest victories aren't in exam scores — they're in shifting someone's mindset from fear to curiosity."
+  },
+  {
+    date: "July 5, 2026",
+    mood: "Philosophical",
+    body: "Been thinking about how <strong>AI is changing education</strong>. It's not here to replace teachers — it's here to amplify us. A good teacher with AI tools becomes a <em>super-teacher</em>. But the human connection, the empathy, the ability to read a room and adjust — that's still ours. And it always will be."
+  },
+  {
+    date: "June 28, 2026",
+    mood: "Grateful",
+    body: "Built this website from scratch over the past few weeks. What started as a simple page for past papers has grown into something much more — a digital home for my teaching, my music, and my thoughts. To anyone reading this who's also building something: <strong>just keep going</strong>. The momentum builds faster than you expect."
+  }
+];
+
+// ── Render ──
+var html = '';
+for (var i = 0; i < pearls.length; i++) {
+  var p = pearls[i];
+  html +=
+    '<div class="pearl">' +
+      '<div class="pearl-date">' + p.date + '</div>' +
+      '<div class="pearl-body">' + p.body + '</div>' +
+      '<div class="pearl-mood"><span>' + p.mood + '</span></div>' +
+    '</div>';
+}
+document.getElementById('pearls').innerHTML = html;
+</script>
+</body>
+</html>
