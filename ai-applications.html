@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <meta property="og:title" content="AI Applications · Charles" />
+  <meta property="og:description" content="AI tools & guides for Chemistry teaching and learning" />
+  <meta property="og:image" content="https://charles1ding.github.io/favicon.png" />
+  <meta property="og:url" content="https://charles1ding.github.io" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Applications · Charles</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { min-height:100vh; font-family:'Nunito',sans-serif; }
+    .bg { position:fixed; inset:0; background:url('bg.png') center/cover no-repeat; z-index:0; }
+    .bg::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,0.25); }
+    .page { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:0 20px 80px; }
+
+    nav { width:100%; max-width:900px; display:flex; justify-content:center; align-items:center; padding:24px 0 0; gap:24px; }
+    .nav-logo { font-family:'Caveat',cursive; font-size:1.7rem; font-weight:700; color:#2d5fa3; letter-spacing:0.5px; text-decoration:none; }
+    .nav-links { display:flex; gap:28px; list-style:none; }
+    .nav-links a { font-size:0.95rem; font-weight:600; color:#3a5a8c; text-decoration:none; letter-spacing:0.3px; transition:color 0.2s; }
+    .nav-links a:hover { color:#1a3a6b; }
+
+    .page-title { margin-top:50px; font-size:clamp(2.2rem,5.5vw,3.5rem); font-weight:800; font-style:italic; color:#1e3a6e; text-align:center; }
+    .page-subtitle { margin-top:8px; font-size:clamp(1rem,2vw,1.15rem); font-weight:600; font-style:italic; color:#2563c7; opacity:0.85; text-align:center; }
+    .page-divider { width:120px; height:3px; background:linear-gradient(90deg,#6366f1,#0e8a6d); border-radius:2px; margin:16px auto 0; }
+
+    /* ── Tabs ── */
+    .tabs { display:flex; gap:8px; margin-top:40px; flex-wrap:wrap; justify-content:center; }
+    .tab { padding:10px 22px; border-radius:12px; border:1.5px solid rgba(99,102,241,0.25); background:rgba(255,255,255,0.75); color:#475569; cursor:pointer; font-size:0.9rem; font-weight:700; transition:all 0.2s; }
+    .tab:hover { border-color:#6366f1; color:#4f46e5; }
+    .tab.active { background:#6366f1; color:#fff; border-color:#6366f1; }
+
+    /* ── Cards ── */
+    .content { width:100%; max-width:900px; margin-top:32px; display:none; flex-direction:column; gap:20px; }
+    .content.active { display:flex; }
+    .tool-card { display:flex; gap:20px; background:rgba(255,255,255,0.8); backdrop-filter:blur(8px); border:1.5px solid rgba(99,102,241,0.18); border-radius:18px; padding:22px 26px; transition:all 0.22s; text-decoration:none; color:inherit; align-items:center; }
+    .tool-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(99,102,241,0.12); border-color:rgba(99,102,241,0.35); }
+    .tc-icon { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; font-size:1.6rem; flex-shrink:0; }
+    .tc-icon.sci { background:linear-gradient(135deg,#e0e7ff,#c7d2fe); }
+    .tc-icon.gen { background:linear-gradient(135deg,#ede9fe,#ddd6fe); }
+    .tc-icon.vis { background:linear-gradient(135deg,#d1fae5,#a7f3d0); }
+    .tc-icon.qz  { background:linear-gradient(135deg,#fef3c7,#fde68a); }
+    .tc-icon.wrt { background:linear-gradient(135deg,#fce7f3,#fbcfe8); }
+    .tc-icon.prd { background:linear-gradient(135deg,#e0f2fe,#bae6fd); }
+    .tc-body { flex:1; min-width:0; }
+    .tc-title { font-size:1.1rem; font-weight:800; font-style:italic; color:#1e3a6e; }
+    .tc-desc { font-size:0.88rem; color:#5a7aaa; font-weight:500; line-height:1.5; margin-top:4px; }
+    .tc-tag { display:inline-block; padding:2px 10px; border-radius:8px; font-size:0.7rem; font-weight:800; letter-spacing:0.3px; margin-top:6px; }
+    .tc-tag.tch { background:#e0e7ff; color:#4f46e5; }
+    .tc-tag.std { background:#d1fae5; color:#059669; }
+    .tc-tag.both { background:#fef3c7; color:#b45309; }
+    .tc-arrow { font-size:1.4rem; color:#6366f1; flex-shrink:0; transition:transform 0.2s; }
+    .tool-card:hover .tc-arrow { transform:translateX(4px); }
+
+    .back-link { margin-top:48px; font-size:0.95rem; font-weight:700; color:#4a78c8; text-decoration:none; }
+    footer { margin-top:50px; font-family:'Caveat',cursive; font-size:1.15rem; color:#6a8fc0; text-align:center; }
+    footer span { color:#c06a7a; }
+    @media(max-width:580px){ .tool-card{flex-direction:column;text-align:center;} .tc-arrow{display:none;} }
+  </style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="page">
+  <nav>
+    <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
+    <ul class="nav-links"><li><a href="index.html">← Back to Home</a></li></ul>
+    <button onclick="openSearch()" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(6px);border:1.5px solid rgba(74,120,200,0.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:700;color:#2d5fa3;display:flex;align-items:center;gap:6px;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.92)'" onmouseout="this.style.background='rgba(255,255,255,0.78)'">🔍 Search</button>
+  </nav>
+
+  <h1 class="page-title">🤖 AI Applications</h1>
+  <p class="page-subtitle">Empowering students & teachers with AI tools for Chemistry</p>
+  <div class="page-divider"></div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="teachers" onclick="switchTab('teachers')">👨‍🏫 For Teachers</div>
+    <div class="tab" data-tab="students" onclick="switchTab('students')">🎓 For Students</div>
+    <div class="tab" data-tab="tools" onclick="switchTab('tools')">🛠️ AI Tools</div>
+  </div>
+
+  <!-- Teachers -->
+  <div class="content active" id="tab-teachers">
+    <div class="tool-card" onclick="window.open('https://chat.openai.com','_blank')" style="cursor:pointer;">
+      <div class="tc-icon sci">📝</div>
+      <div class="tc-body">
+        <div class="tc-title">AI-Assisted Lesson Planning</div>
+        <div class="tc-desc">Use ChatGPT to draft lesson plans, generate scaffolded worksheets, and create differentiated materials for mixed-ability classes. Ask: "Create a 45-min IGCSE lesson on Electrolysis with 3 levels of difficulty."</div>
+        <span class="tc-tag tch">Teacher Tool</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://chat.openai.com','_blank')" style="cursor:pointer;">
+      <div class="tc-icon gen">📊</div>
+      <div class="tc-body">
+        <div class="tc-title">Auto-Generate Exam Questions</div>
+        <div class="tc-desc">Prompt AI to generate past-paper-style questions on specific topics (Stoichiometry, Organic Chemistry, etc.) with model answers and mark schemes. Save hours of manual question-writing.</div>
+        <span class="tc-tag tch">Teacher Tool</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://chat.openai.com','_blank')" style="cursor:pointer;">
+      <div class="tc-icon wrt">📧</div>
+      <div class="tc-body">
+        <div class="tc-title">Parent Communication & Reports</div>
+        <div class="tc-desc">Draft progress reports, parent emails, and student feedback summaries. Let AI handle the phrasing while you focus on the content.</div>
+        <span class="tc-tag tch">Teacher Tool</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://www.canva.com','_blank')" style="cursor:pointer;">
+      <div class="tc-icon vis">🎨</div>
+      <div class="tc-body">
+        <div class="tc-title">Visual Content Creation (Canva AI)</div>
+        <div class="tc-desc">Use Canva's AI Magic Studio to generate chemistry diagrams, infographics, and classroom posters. Describe the concept and get professional visuals in seconds.</div>
+        <span class="tc-tag tch">Teacher Tool</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+  </div>
+
+  <!-- Students -->
+  <div class="content" id="tab-students">
+    <div class="tool-card" onclick="window.open('https://chat.openai.com','_blank')" style="cursor:pointer;">
+      <div class="tc-icon sci">🧠</div>
+      <div class="tc-body">
+        <div class="tc-title">Personal AI Chemistry Tutor</div>
+        <div class="tc-desc">Use ChatGPT as a 24/7 tutor. Ask it to explain Le Chatelier's Principle in simple terms, walk through stoichiometry calculations step-by-step, or quiz you on organic reaction mechanisms.</div>
+        <span class="tc-tag std">Student Tool</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://chat.openai.com','_blank')" style="cursor:pointer;">
+      <div class="tc-icon qz">✅</div>
+      <div class="tc-body">
+        <div class="tc-title">Self-Testing & Spaced Repetition</div>
+        <div class="tc-desc">Prompt AI to create custom flashcards and quizzes on weak topics. Practice recalling definitions, equations, and concepts at optimal intervals for long-term retention.</div>
+        <span class="tc-tag std">Student Tool</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://chat.openai.com','_blank')" style="cursor:pointer;">
+      <div class="tc-icon wrt">📖</div>
+      <div class="tc-body">
+        <div class="tc-title">Mark Scheme Analysis</div>
+        <div class="tc-desc">Paste mark scheme text and your answer into ChatGPT. It will compare them, highlight missing keywords, and explain how to score full marks on exam questions.</div>
+        <span class="tc-tag std">Student Tool</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://www.perplexity.ai','_blank')" style="cursor:pointer;">
+      <div class="tc-icon gen">🔍</div>
+      <div class="tc-body">
+        <div class="tc-title">Research with Perplexity AI</div>
+        <div class="tc-desc">Use Perplexity for chemistry research — it cites real sources. Ask "What are the latest applications of graphene?" and get verifiable, up-to-date answers.</div>
+        <span class="tc-tag std">Student Tool</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+  </div>
+
+  <!-- Tools -->
+  <div class="content" id="tab-tools">
+    <div class="tool-card" onclick="window.open('https://chat.openai.com','_blank')" style="cursor:pointer;">
+      <div class="tc-icon sci">💬</div>
+      <div class="tc-body">
+        <div class="tc-title">ChatGPT</div>
+        <div class="tc-desc">The most versatile AI assistant. Free tier available. Best for: lesson planning, tutoring, question generation, writing assistance.</div>
+        <span class="tc-tag both">Free + Paid</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://www.perplexity.ai','_blank')" style="cursor:pointer;">
+      <div class="tc-icon gen">🌐</div>
+      <div class="tc-body">
+        <div class="tc-title">Perplexity AI</div>
+        <div class="tc-desc">AI-powered search engine with real citations. Best for: research, finding up-to-date information, verifying chemical facts. Free tier available.</div>
+        <span class="tc-tag both">Free + Paid</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://www.canva.com/ai-image-generator/','_blank')" style="cursor:pointer;">
+      <div class="tc-icon vis">🖼️</div>
+      <div class="tc-body">
+        <div class="tc-title">Canva AI (Magic Studio)</div>
+        <div class="tc-desc">AI image generation, design, and presentation tool. Best for: creating classroom visuals, posters, diagrams. Free for educators.</div>
+        <span class="tc-tag both">Free (Edu)</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://quizlet.com/features/q-chat','_blank')" style="cursor:pointer;">
+      <div class="tc-icon qz">🎯</div>
+      <div class="tc-body">
+        <div class="tc-title">Quizlet Q-Chat</div>
+        <div class="tc-desc">AI-powered study assistant that creates personalized quizzes from your study sets. Best for: self-testing, spaced repetition, vocabulary memorization.</div>
+        <span class="tc-tag std">Free + Paid</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://gamma.app','_blank')" style="cursor:pointer;">
+      <div class="tc-icon prd">📽️</div>
+      <div class="tc-body">
+        <div class="tc-title">Gamma AI</div>
+        <div class="tc-desc">Create stunning presentations, documents, and websites with AI in seconds. Best for: lecture slides, student projects, quick visual materials. Free tier available.</div>
+        <span class="tc-tag both">Free + Paid</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+
+    <div class="tool-card" onclick="window.open('https://notebooklm.google','_blank')" style="cursor:pointer;">
+      <div class="tc-icon sci">🎙️</div>
+      <div class="tc-body">
+        <div class="tc-title">NotebookLM (Google)</div>
+        <div class="tc-desc">Upload textbooks, notes, or past papers and get AI-powered summaries, study guides, and even podcast-style audio discussions. Completely free.</div>
+        <span class="tc-tag both">Free</span>
+      </div>
+      <div class="tc-arrow">→</div>
+    </div>
+  </div>
+
+  <a class="back-link" href="index.html">← Back to Home</a>
+  <footer>Made with <span>♥</span> by Charles · AI for better learning 🚀</footer>
+</div>
+
+<script src="search-widget.js"></script>
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.content').forEach(c => c.classList.remove('active'));
+  document.querySelector('[data-tab="' + name + '"]').classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+}
+</script>
+</body>
+</html>
