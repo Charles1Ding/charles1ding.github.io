@@ -21,6 +21,20 @@
 
 * { margin:0; padding:0; box-sizing:border-box; }
 
+/* ── Site top bar ── */
+.site-bar {
+  height: 44px;
+  background: linear-gradient(135deg, #1a3a6b, #1a56a0);
+  display: flex; align-items: center; padding: 0 16px;
+  flex-shrink: 0;
+}
+.site-bar a {
+  color: rgba(255,255,255,0.85); text-decoration: none;
+  font-size: 0.85rem; font-weight: 600; letter-spacing: 0.3px;
+  transition: color 0.2s;
+}
+.site-bar a:hover { color: #fff; }
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background: var(--bg);
@@ -582,6 +596,10 @@ h1 {
 </style>
 </head>
 <body>
+
+<div class="site-bar">
+  <a href="index.html">← Back to Charles.chem ⚗️</a>
+</div>
 
 <!-- Sidebar -->
 <nav class="sidebar">
