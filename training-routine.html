@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>每日健身训练手册 · 水彩笔记版</title>
+<style>
+  /* ================= 全局变量（水彩蓝调） ================= */
+  :root {
+    --bg-paper: #f4f8fc;          /* 笔记本纸面 */
+    --bg-card: #ffffff;           /* 卡片白 */
+    --bg-tint: #eaf2fa;           /* 淡蓝晕染 */
+    --bg-cream: #fbf3df;          /* 便利贴米色 */
+
+    --ink-deep: #1d3a6b;          /* 主文字：深海军蓝 */
+    --ink-mid: #4a6fa5;            /* 次文字：中等蓝 */
+    --ink-soft: #8ca8c8;           /* 辅助文字：浅蓝 */
+    --ink-pencil: #6b89b0;         /* 铅笔灰蓝 */
+
+    --blue-deep: #2c5d9c;          /* 主强调蓝 */
+    --blue-main: #4a8ac9;          /* 中蓝 */
+    --blue-soft: #94b9d8;          /* 浅蓝 */
+    --blue-pale: #c8ddef;          /* 极浅蓝（线条） */
+    --blue-mist: #dde8f3;          /* 雾蓝 */
+
+    --border: rgba(74, 138, 201, 0.18);
+    --border-strong: rgba(74, 138, 201, 0.35);
+
+    --shadow-watercolor: 0 6px 20px rgba(74, 138, 201, 0.10);
+    --shadow-note: 2px 4px 0 rgba(140, 168, 200, 0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg-paper);
+    color: var(--ink-deep);
+    font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", -apple-system, sans-serif;
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ================= 水彩晕染背景 ================= */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 10% 20%, rgba(148, 185, 216, 0.35) 0%, transparent 45%),
+      radial-gradient(ellipse at 90% 80%, rgba(200, 221, 239, 0.45) 0%, transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(235, 245, 253, 0.5) 0%, transparent 60%);
+    z-index: -2;
+    pointer-events: none;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(circle, rgba(74, 138, 201, 0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  /* ================= 头部英雄区 ================= */
+  .hero {
+    position: relative;
+    padding: 90px 40px 70px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 30% 30%, rgba(148, 185, 216, 0.4) 0%, transparent 40%),
+      radial-gradient(circle at 70% 70%, rgba(195, 215, 235, 0.4) 0%, transparent 40%);
+    z-index: -1;
+  }
+
+  .hero-burst {
+    display: inline-block;
+    background: var(--bg-cream);
+    color: var(--ink-deep);
+    padding: 6px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    transform: rotate(-2deg);
+    margin-bottom: 28px;
+    box-shadow: var(--shadow-note);
+    border: 1px dashed rgba(74, 138, 201, 0.25);
+    font-family: "Georgia", "Kaiti SC", serif;
+  }
+
+  .hero h1 {
+    font-size: clamp(44px, 7vw, 84px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+    margin-bottom: 18px;
+    color: var(--ink-deep);
+    font-family: "Georgia", "Kaiti SC", "Songti SC", serif;
+  }
+
+  .hero h2 {
+    font-size: clamp(16px, 1.8vw, 20px);
+    color: var(--ink-mid);
+    font-weight: 400;
+    letter-spacing: 8px;
+    margin-bottom: 36px;
+  }
+
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    flex-wrap: wrap;
+    margin-top: 36px;
+  }
+
+  .stat { text-align: center; }
+
+  .stat-value {
+    display: block;
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--blue-deep);
+    line-height: 1;
+    font-family: "Georgia", serif;
+  }
+
+  .stat-label {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-mid);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 10px;
+  }
+
+  /* ================= 装饰分隔 ================= */
+  .section-title {
+    text-align: center;
+    margin: 70px auto 50px;
+    position: relative;
+  }
+
+  .section-title h2 {
+    display: inline-block;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--ink-deep);
+    padding: 10px 32px;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-strong);
+    border-radius: 4px;
+    position: relative;
+    z-index: 2;
+    font-family: "Georgia", "Kaiti SC", serif;
+    letter-spacing: 4px;
+    box-shadow: var(--shadow-note);
+    transform: rotate(-0.5deg);
+  }
+
+  .section-title::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1.5px;
+    background: linear-gradient(90deg, transparent, var(--blue-soft), transparent);
+    z-index: 1;
+  }
+
+  /* ================= 卡片容器 ================= */
+  .container {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  .exercise {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 0;
+    margin-bottom: 44px;
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow-watercolor);
+    transition: all 0.3s ease;
+    page-break-inside: avoid;
+    position: relative;
+  }
+
+  .exercise::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(148, 185, 216, 0.15) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .exercise:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(74, 138, 201, 0.18);
+    border-color: var(--border-strong);
+  }
+
+  .exercise:nth-child(even) {
+    grid-template-columns: 1.2fr 1fr;
+  }
+  .exercise:nth-child(even) .exercise-image { order: 2; }
+  .exercise:nth-child(even) .exercise-info { order: 1; }
+
+  /* ================= 图片区 ================= */
+  .exercise-image {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    background: var(--bg-tint);
+    overflow: hidden;
+  }
+
+  .exercise-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.5s ease;
+    /* 让插画带一点水彩柔化 */
+    filter: saturate(0.85) contrast(0.95);
+  }
+
+  .exercise:hover .exercise-image img {
+    transform: scale(1.04);
+  }
+
+  /* 数字水印 */
+  .exercise-number {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    width: 58px;
+    height: 58px;
+    background: var(--bg-cream);
+    color: var(--blue-deep);
+    font-size: 28px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--blue-mid);
+    border-radius: 50%;
+    box-shadow: var(--shadow-note);
+    z-index: 3;
+    transform: rotate(-6deg);
+    font-family: "Georgia", serif;
+  }
+
+  .exercise-tag {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    background: rgba(255, 255, 255, 0.92);
+    color: var(--blue-deep);
+    padding: 5px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    border: 1px solid var(--blue-soft);
+    border-radius: 12px;
+    z-index: 3;
+    backdrop-filter: blur(4px);
+  }
+
+  /* ================= 文字区 ================= */
+  .exercise-info {
+    padding: 36px 32px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+  }
+
+  .exercise-muscle {
+    display: inline-block;
+    background: var(--blue-pale);
+    color: var(--blue-deep);
+    padding: 4px 14px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    margin-bottom: 14px;
+    align-self: flex-start;
+    border-radius: 3px;
+  }
+
+  .exercise-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--ink-deep);
+    margin-bottom: 6px;
+    line-height: 1.25;
+    font-family: "Georgia", "Kaiti SC", serif;
+  }
+
+  .exercise-en {
+    font-size: 12px;
+    color: var(--ink-soft);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    border-bottom: 1px dashed var(--border);
+    padding-bottom: 14px;
+    font-style: italic;
+    font-family: "Georgia", serif;
+  }
+
+  .exercise-list {
+    list-style: none;
+    margin-bottom: 22px;
+  }
+
+  .exercise-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 0;
+    color: var(--ink-mid);
+    font-size: 15px;
+  }
+
+  .exercise-list li::before {
+    content: '~';
+    color: var(--blue-main);
+    font-weight: 800;
+    font-size: 16px;
+    flex-shrink: 0;
+    line-height: 1.7;
+    transform: rotate(-8deg);
+  }
+
+  .exercise-list li strong {
+    color: var(--ink-deep);
+    font-weight: 600;
+  }
+
+  .exercise-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .meta-pill {
+    background: var(--bg-tint);
+    color: var(--blue-deep);
+    border: 1px solid var(--border-strong);
+    padding: 5px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 14px;
+    font-family: "Georgia", serif;
+  }
+
+  .meta-pill.alt {
+    background: var(--bg-cream);
+    color: var(--ink-deep);
+    border-color: rgba(189, 165, 102, 0.3);
+  }
+
+  .meta-pill.warm {
+    background: #eaf3fa;
+    color: var(--ink-mid);
+    border-color: var(--border);
+  }
+
+  /* ================= 励志条 ================= */
+  .quote-bar {
+    margin: 70px auto 0;
+    padding: 36px 48px;
+    text-align: center;
+    background: var(--bg-card);
+    color: var(--ink-deep);
+    border: 1.5px solid var(--border-strong);
+    border-radius: 8px;
+    box-shadow: var(--shadow-watercolor);
+    max-width: 880px;
+    position: relative;
+    transform: rotate(-0.5deg);
+  }
+
+  .quote-bar::before {
+    content: '"';
+    position: absolute;
+    top: -20px;
+    left: 24px;
+    font-size: 88px;
+    color: var(--blue-soft);
+    font-weight: 800;
+    line-height: 1;
+    font-family: "Georgia", serif;
+  }
+
+  .quote-bar p {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    margin-bottom: 6px;
+    color: var(--ink-deep);
+    font-family: "Georgia", "Kaiti SC", serif;
+  }
+
+  .quote-bar small {
+    font-size: 12px;
+    color: var(--ink-mid);
+    letter-spacing: 6px;
+    font-style: italic;
+    font-family: "Georgia", serif;
+  }
+
+  /* ================= 底部 ================= */
+  footer {
+    text-align: center;
+    padding: 50px 24px 30px;
+    color: var(--ink-soft);
+    font-size: 12px;
+    letter-spacing: 1.5px;
+  }
+
+  footer .brand {
+    color: var(--blue-deep);
+    font-weight: 600;
+  }
+
+  /* ================= 打印 / PDF 样式 ================= */
+  @media print {
+    @page {
+      size: A4;
+      margin: 12mm;
+    }
+    body {
+      background: #fff !important;
+      color: #1a2b4a !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body::before, body::after { display: none; }
+    .hero {
+      background: #fff !important;
+      padding: 20px 0;
+    }
+    .hero h1, .hero h2 { color: #1a2b4a !important; }
+    .stat-value { color: #2c5d9c !important; }
+    .stat-label { color: #5a7090 !important; }
+    .section-title h2 {
+      background: #fff;
+      color: #1a2b4a !important;
+      border-color: #4a8ac9;
+    }
+    .exercise {
+      background: #fff !important;
+      border: 1.5px solid #4a8ac9 !important;
+      box-shadow: 0 2px 8px rgba(74, 138, 201, 0.15) !important;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin-bottom: 14px;
+    }
+    .exercise::before { display: none; }
+    .exercise-info { color: #1a2b4a; }
+    .exercise-title { color: #1a2b4a !important; }
+    .exercise-list li { color: #4a6fa5 !important; }
+    .exercise-muscle {
+      background: #c8ddef !important;
+      color: #1d3a6b !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .exercise-number {
+      background: #fbf3df !important;
+      color: #2c5d9c !important;
+      border-color: #4a8ac9 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .meta-pill {
+      background: #f4f8fc !important;
+      color: #2c5d9c !important;
+      border: 1px solid #94b9d8 !important;
+    }
+    .meta-pill.alt {
+      background: #fbf3df !important;
+      color: #1a2b4a !important;
+      border-color: rgba(189, 165, 102, 0.4) !important;
+    }
+    .quote-bar {
+      background: #fff !important;
+      color: #1a2b4a !important;
+      border: 1.5px solid #4a8ac9 !important;
+    }
+    .quote-bar::before { color: #94b9d8; }
+    .exercise-image img {
+      filter: none;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .exercise, .exercise:nth-child(even) {
+      grid-template-columns: 1fr;
+    }
+    .exercise:nth-child(even) .exercise-image { order: 0; }
+    .exercise:nth-child(even) .exercise-info { order: 1; }
+    .hero { padding: 60px 20px 40px; }
+    .hero-stats { gap: 28px; }
+    .stat-value { font-size: 36px; }
+    .exercise-info { padding: 24px 20px; }
+    .exercise-title { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============== 头部 ============== -->
+<header class="hero">
+  <span class="hero-burst">DAILY · TRAINING · NOTES</span>
+  <h1>每日健身训练手册</h1>
+  <h2>健 身 顺 序 · 笔 记 本 漫 游</h2>
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-value">07</span>
+      <span class="stat-label">训练动作</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">06</span>
+      <span class="stat-label">目标肌群</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">28</span>
+      <span class="stat-label">训练组数</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">∞</span>
+      <span class="stat-label">温柔力量</span>
+    </div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ============== 训练菜单 ============== -->
+  <div class="section-title"><h2>训 练 菜 单</h2></div>
+
+  <!-- 动作 1：小臂 -->
+  <article class="exercise">
+    <div class="exercise-image">
+      <span class="exercise-number">01</span>
+      <span class="exercise-tag">WARM UP</span>
+      <img src="01_forearm_curl.png" alt="小臂哑铃翻举">
+    </div>
+    <div class="exercise-info">
+      <span class="exercise-muscle">FOREARMS · 小臂</span>
+      <h3 class="exercise-title">哑铃翻举</h3>
+      <div class="exercise-en">Dumbbell Wrist Curl</div>
+      <ul class="exercise-list">
+        <li>5kg 哑铃，双手翻举动作</li>
+        <li>充分感受小臂前侧收缩</li>
+        <li>腕关节主导，肘部固定</li>
+      </ul>
+      <div class="exercise-meta">
+        <span class="meta-pill">4 组</span>
+        <span class="meta-pill alt">每组 100 次</span>
+        <span class="meta-pill warm">激活前臂</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- 动作 2：肩部 -->
+  <article class="exercise">
+    <div class="exercise-image">
+      <span class="exercise-number">02</span>
+      <span class="exercise-tag">SHOULDER</span>
+      <img src="02_shoulder_lateral_raise.png" alt="肩部飞肩推举">
+    </div>
+    <div class="exercise-info">
+      <span class="exercise-muscle">SHOULDERS · 肩部</span>
+      <h3 class="exercise-title">哑铃飞肩 + 站姿推举</h3>
+      <div class="exercise-en">Lateral Raise + Shoulder Press</div>
+      <ul class="exercise-list">
+        <li><strong>飞肩：</strong>5kg 哑铃侧平举，肩部主导</li>
+        <li><strong>推举：</strong>站姿哑铃推举，过头举起</li>
+        <li>两个动作复合训练，三角肌全角度刺激</li>
+      </ul>
+      <div class="exercise-meta">
+        <span class="meta-pill">飞肩 4×18</span>
+        <span class="meta-pill alt">推举 4×30</span>
+        <span class="meta-pill warm">三角肌轰炸</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- 动作 3：胸部 -->
+  <article class="exercise">
+    <div class="exercise-image">
+      <span class="exercise-number">03</span>
+      <span class="exercise-tag">CHEST</span>
+      <img src="03_chest_press.png" alt="胸部推胸飞鸟">
+    </div>
+    <div class="exercise-info">
+      <span class="exercise-muscle">CHEST · 胸部</span>
+      <h3 class="exercise-title">哑铃推胸 + 哑铃飞鸟</h3>
+      <div class="exercise-en">Dumbbell Bench Press + Fly</div>
+      <ul class="exercise-list">
+        <li><strong>推胸：</strong>10kg 哑铃卧推，胸肌主导发力</li>
+        <li><strong>飞鸟：</strong>10kg 哑铃开合，胸部拉伸</li>
+        <li>推胸练厚度，飞鸟练宽度，相辅相成</li>
+      </ul>
+      <div class="exercise-meta">
+        <span class="meta-pill">推胸 4×20</span>
+        <span class="meta-pill alt">飞鸟 4×20</span>
+        <span class="meta-pill warm">胸肌撕裂</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- 动作 4：二头 -->
+  <article class="exercise">
+    <div class="exercise-image">
+      <span class="exercise-number">04</span>
+      <span class="exercise-tag">BICEPS</span>
+      <img src="04_bicep_curl.png" alt="二头组合弯举">
+    </div>
+    <div class="exercise-info">
+      <span class="exercise-muscle">BICEPS · 二头肌</span>
+      <h3 class="exercise-title">组合弯举</h3>
+      <div class="exercise-en">Combo Dumbbell Curl</div>
+      <ul class="exercise-list">
+        <li>5kg 哑铃，交替或同步弯举</li>
+        <li>顶峰收缩停顿 1 秒</li>
+        <li>大臂贴紧身体两侧，不要前后晃动借力</li>
+      </ul>
+      <div class="exercise-meta">
+        <span class="meta-pill">4 组</span>
+        <span class="meta-pill alt">每组 30 次</span>
+        <span class="meta-pill warm">泵感爆炸</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- 动作 5：背部 -->
+  <article class="exercise">
+    <div class="exercise-image">
+      <span class="exercise-number">05</span>
+      <span class="exercise-tag">BACK</span>
+      <img src="05_back_row.png" alt="背部划船下拉">
+    </div>
+    <div class="exercise-info">
+      <span class="exercise-muscle">BACK · 背部</span>
+      <h3 class="exercise-title">单边划船 + 高位下拉 + 坐姿划船</h3>
+      <div class="exercise-en">One-arm Row + Lat Pulldown + Seated Row</div>
+      <ul class="exercise-list">
+        <li><strong>单边划船：</strong>10kg 哑铃，背阔肌收缩</li>
+        <li><strong>高位下拉：</strong>32kg 负重，背阔肌宽度</li>
+        <li><strong>坐姿划船：</strong>28kg 负重，背部厚度</li>
+      </ul>
+      <div class="exercise-meta">
+        <span class="meta-pill">划船 4×30</span>
+        <span class="meta-pill alt">下拉 4×20</span>
+        <span class="meta-pill warm">背部雕刻</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- 动作 6：腿部 -->
+  <article class="exercise">
+    <div class="exercise-image">
+      <span class="exercise-number">06</span>
+      <span class="exercise-tag">LEGS</span>
+      <img src="06_leg_squat.png" alt="腿部负重深蹲">
+    </div>
+    <div class="exercise-info">
+      <span class="exercise-muscle">LEGS · 腿部</span>
+      <h3 class="exercise-title">负重深蹲</h3>
+      <div class="exercise-en">Weighted Back Squat</div>
+      <ul class="exercise-list">
+        <li>20kg 杠铃置于肩后</li>
+        <li>下蹲至大腿平行地面，膝盖不超过脚尖</li>
+        <li>腿部三大肌群同时发力，力量根基</li>
+      </ul>
+      <div class="exercise-meta">
+        <span class="meta-pill">4 组</span>
+        <span class="meta-pill alt">每组 30 次</span>
+        <span class="meta-pill warm">王者之组</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- 动作 7：跑步机 -->
+  <article class="exercise">
+    <div class="exercise-image">
+      <span class="exercise-number">07</span>
+      <span class="exercise-tag">CARDIO</span>
+      <img src="07_treadmill.png" alt="跑步机爬坡">
+    </div>
+    <div class="exercise-info">
+      <span class="exercise-muscle">CARDIO · 有氧收尾</span>
+      <h3 class="exercise-title">跑步机爬坡</h3>
+      <div class="exercise-en">Treadmill Incline Walk</div>
+      <ul class="exercise-list">
+        <li>坡度：<strong>10</strong>，速度：<strong>5</strong> km/h</li>
+        <li>持续时间：<strong>20 分钟</strong></li>
+        <li>高强度燃脂 + 巩固肌肉耐力</li>
+      </ul>
+      <div class="exercise-meta">
+        <span class="meta-pill">坡度 10</span>
+        <span class="meta-pill alt">速度 5 km/h</span>
+        <span class="meta-pill warm">燃脂收尾</span>
+      </div>
+    </div>
+  </article>
+
+  <!-- 励志条 -->
+  <div class="quote-bar">
+    <p>今 日 不 锻 炼 ， 明 日 徒 伤 悲</p>
+    <small>NO PAIN · NO GAIN</small>
+  </div>
+
+</div>
+
+<footer>
+  <p>训练顺序来自 <span class="brand">健身顺序.docx</span> · 健身愉快</p>
+  <p style="margin-top:8px; opacity:0.6;">本手册仅供参考训练参考，请根据自身情况调整强度</p>
+</footer>
+
+</body>
+</html>
