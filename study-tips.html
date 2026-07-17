@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <meta property="og:title" content="Study Tips · Charles" />
+  <meta property="og:description" content="IGCSE Chemistry exam strategies & study guides" />
+  <meta property="og:image" content="https://charles1ding.github.io/favicon.png" />
+  <meta property="og:url" content="https://charles1ding.github.io" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Tips · IGCSE Chemistry</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html,body { min-height:100vh; font-family:'Nunito',sans-serif; scroll-behavior:smooth; }
+    .bg { position:fixed; inset:0; background:url('bg.png') center/cover no-repeat; z-index:0; }
+    .bg::after { content:''; position:absolute; inset:0; background:rgba(255,255,255,0.22); }
+    .page { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:0 20px 80px; }
+
+    nav { width:100%; max-width:900px; display:flex; justify-content:center; align-items:center; padding:24px 0 0; gap:24px; }
+    .nav-logo { font-family:'Caveat',cursive; font-size:1.7rem; font-weight:700; color:#2d5fa3; letter-spacing:0.5px; text-decoration:none; }
+    .nav-links { display:flex; gap:28px; list-style:none; }
+    .nav-links a { font-size:0.95rem; font-weight:600; color:#3a5a8c; text-decoration:none; }
+
+    .page-title { margin-top:50px; font-size:clamp(2.2rem,5.5vw,3rem); font-weight:800; font-style:italic; color:#1e3a6e; text-align:center; }
+    .page-subtitle { margin-top:6px; font-size:clamp(1rem,2vw,1.1rem); font-weight:600; font-style:italic; color:#2563c7; opacity:0.85; text-align:center; }
+    .page-divider { width:120px; height:3px; background:linear-gradient(90deg,#f59e0b,#2563c7); border-radius:2px; margin:14px auto 0; }
+
+    .content { width:100%; max-width:820px; margin-top:36px; display:flex; flex-direction:column; gap:24px; }
+
+    .section-card { background:rgba(255,255,255,0.8); backdrop-filter:blur(8px); border:1.5px solid rgba(74,120,200,0.15); border-radius:18px; padding:24px 28px; transition:all 0.2s; }
+    .section-card:hover { box-shadow:0 4px 20px rgba(37,99,199,0.08); }
+
+    .sec-header { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+    .sec-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0; }
+    .sec-icon.orange { background:linear-gradient(135deg,#fef3c7,#fde68a); }
+    .sec-icon.blue { background:linear-gradient(135deg,#dbeafe,#bfdbfe); }
+    .sec-icon.green { background:linear-gradient(135deg,#d1fae5,#a7f3d0); }
+    .sec-icon.purple { background:linear-gradient(135deg,#ede9fe,#ddd6fe); }
+    .sec-icon.pink { background:linear-gradient(135deg,#fce7f3,#fbcfe8); }
+    .sec-title { font-size:1.2rem; font-weight:800; font-style:italic; color:#1e3a6e; }
+
+    .sec-body { color:#334155; line-height:1.75; font-size:0.95rem; }
+    .sec-body ul { padding-left:20px; margin-top:8px; }
+    .sec-body li { margin-bottom:6px; }
+    .sec-body li strong { color:#1e3a6e; }
+    .sec-body .highlight { background:rgba(245,158,11,0.12); padding:2px 6px; border-radius:4px; font-weight:700; color:#b45309; }
+
+    .tip-box { background:linear-gradient(135deg,#fef9e7,#fef3c7); border-left:4px solid #f59e0b; border-radius:0 12px 12px 0; padding:14px 20px; margin-top:12px; font-size:0.9rem; color:#92400e; }
+    .tip-box strong { color:#b45309; }
+
+    .stat-row { display:flex; gap:10px; flex-wrap:wrap; margin-top:10px; }
+    .stat-pill { background:rgba(37,99,199,0.08); border-radius:10px; padding:6px 14px; font-size:0.85rem; font-weight:700; color:#1d4ed8; }
+
+    .back-link { margin-top:48px; font-size:0.95rem; font-weight:700; color:#4a78c8; text-decoration:none; }
+    footer { margin-top:50px; font-family:'Caveat',cursive; font-size:1.15rem; color:#6a8fc0; text-align:center; }
+    footer span { color:#c06a7a; }
+    @media(max-width:580px){ .section-card{padding:16px 18px;} }
+  </style>
+</head>
+<body>
+<div class="bg"></div>
+<div class="page">
+  <nav>
+    <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
+    <ul class="nav-links"><li><a href="index.html">← Back to Home</a></li></ul>
+    <button onclick="openSearch()" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(6px);border:1.5px solid rgba(74,120,200,0.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:700;color:#2d5fa3;display:flex;align-items:center;gap:6px;">🔍 Search</button>
+  </nav>
+
+  <h1 class="page-title">📖 Study Tips</h1>
+  <p class="page-subtitle">IGCSE Chemistry exam strategies &amp; study guides</p>
+  <div class="page-divider"></div>
+
+  <div class="content">
+
+    <!-- 1. Exam Structure -->
+    <div class="section-card">
+      <div class="sec-header">
+        <div class="sec-icon blue">🧪</div>
+        <div class="sec-title">Know the Exam Structure</div>
+      </div>
+      <div class="sec-body">
+        <p>Understanding the paper format <strong>before</strong> you walk into the exam is half the battle.</p>
+        <div class="stat-row">
+          <span class="stat-pill">📝 25 MC Questions</span>
+          <span class="stat-pill">📄 3 Structured Questions</span>
+          <span class="stat-pill">⏱️ 60 Minutes</span>
+        </div>
+        <ul style="margin-top:8px;">
+          <li><strong>Multiple Choice:</strong> 25 questions covering the entire syllabus. Typical difficulty is <span class="highlight">slightly harder</span> than the official past papers.</li>
+          <li><strong>Structured Questions:</strong> Only 3 questions — but <strong>each one tests many topics simultaneously</strong>. One question alone may span atomic structure, bonding, stoichiometry, and electrochemistry.</li>
+          <li><strong>Scoring:</strong> The structured section has 2-mark and 3-mark sub-questions. A 2-mark question typically requires <span class="highlight">two key points</span> — don't lose marks by giving only one.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 2. Time Management -->
+    <div class="section-card">
+      <div class="sec-header">
+        <div class="sec-icon orange">⏱️</div>
+        <div class="sec-title">Master Time Management</div>
+      </div>
+      <div class="sec-body">
+        <p>The #1 reason students lose marks is not lack of knowledge — <strong>it's running out of time.</strong></p>
+        <ul>
+          <li><strong>Survey First:</strong> Before answering, scan the entire paper for 1 minute. Note which questions look familiar and which look challenging.</li>
+          <li><strong>MC Rule of Thumb:</strong> <span class="highlight">1 minute per MC question</span>. If you're stuck after 60 seconds, circle it and move on. Come back later.</li>
+          <li><strong>Do Your Strengths First:</strong> Solve the questions you're confident about first. Build momentum — then tackle the hard ones.</li>
+          <li><strong>Structured Questions:</strong> Allocate ~15 minutes per question. Read all sub-parts before answering — later parts often give clues to earlier ones.</li>
+          <li><strong>Reserve 3-5 minutes</strong> at the end to check answers, especially calculation steps and units.</li>
+        </ul>
+        <div class="tip-box">
+          <strong>Pro Tip:</strong> Many students spend 30+ minutes on the first structured question and panic on the last two. Stick to your time allocation — even if it means moving on mid-question.
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Question Analysis -->
+    <div class="section-card">
+      <div class="sec-header">
+        <div class="sec-icon purple">🔍</div>
+        <div class="sec-title">Analyse Questions Like a Pro</div>
+      </div>
+      <div class="sec-body">
+        <p>IGCSE Chemistry questions are <strong>interconnected</strong> — each sub-question builds on the previous one.</p>
+        <ul>
+          <li><strong>Look for Clues:</strong> Part (b) might give you the answer to part (a). Read ahead!</li>
+          <li><strong>Watch the Mark Count:</strong> [2] means two distinct points, [3] means three. Don't write a paragraph when two words will do — and vice versa.</li>
+          <li><strong>Command Words Matter:</strong>
+            <div class="stat-row">
+              <span class="stat-pill">State → short answer</span>
+              <span class="stat-pill">Describe → details</span>
+              <span class="stat-pill">Explain → reason + result</span>
+              <span class="stat-pill">Suggest → apply logic</span>
+              <span class="stat-pill">Calculate → show working</span>
+            </div>
+          </li>
+          <li><strong>Common Question Pattern:</strong> A typical structured question goes: <em>Name → Define → Calculate → Explain → Apply</em>. Master this flow.</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 4. Vocabulary -->
+    <div class="section-card">
+      <div class="sec-header">
+        <div class="sec-icon green">📝</div>
+        <div class="sec-title">Memorise Key Vocabulary</div>
+      </div>
+      <div class="sec-body">
+        <p>Many marks are lost simply because students <strong>don't know the exact definition</strong> required.</p>
+        <ul>
+          <li><strong>Must-Know Terms:</strong> isotope, nucleon number, proton number, relative atomic mass, mole, Avogadro constant, empirical formula, molecular formula, electronegativity, allotrope, isotope, catalyst, activation energy, dynamic equilibrium.</li>
+          <li><strong>English &amp; Chinese:</strong> Know the terms in <span class="highlight">both languages</span>. Many exam questions use specific English phrasing you must recognise instantly.</li>
+          <li><strong>Flashcard Method:</strong> Write the term on one side, the definition on the other. Test yourself daily — <span class="highlight">5 minutes a day beats 2 hours cramming</span>.</li>
+          <li><strong>Use the</strong> <a href="review-notes.html" style="color:#2563c7;font-weight:700;">Review Notes</a> section for vocabulary lists and definition practice.</li>
+        </ul>
+        <div class="tip-box">
+          <strong>Example:</strong> <em>"What term describes atoms of the same element with different numbers of neutrons?"</em> → <strong>Isotopes</strong>. One word, 2 marks. Know it cold.
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Past Paper Strategy -->
+    <div class="section-card">
+      <div class="sec-header">
+        <div class="sec-icon orange">📚</div>
+        <div class="sec-title">Smart Past Paper Practice</div>
+      </div>
+      <div class="sec-body">
+        <p>Not all past paper practice is equal. Here's how to do it <strong>effectively</strong>:</p>
+        <ul>
+          <li><strong>Phase 1 — Untimed:</strong> Do 2-3 papers with your notes open. Focus on understanding, not speed.</li>
+          <li><strong>Phase 2 — Timed:</strong> Simulate exam conditions. 60 minutes, no notes, no phone.</li>
+          <li><strong>Phase 3 — Mark Scheme Study:</strong> After marking, <span class="highlight">read the mark scheme word-for-word</span>. Note the exact phrasing they expect. This is where you pick up 10-15% extra marks.</li>
+          <li><strong>Error Log:</strong> Keep a notebook of every mistake. Group them by topic. Review before the next practice session.</li>
+          <li><strong>Rotate Topics:</strong> Don't do 5 papers on the same topic. Mix it up — the real exam does.</li>
+        </ul>
+        <div class="tip-box">
+          <strong>Recommended:</strong> Use the <a href="past-papers.html" style="color:#b45309;font-weight:700;">Past Papers</a> page — 127 papers from 2022 to 2026. Start with June 2023 → June 2024 → June 2025 as your core practice set.
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Common Mistakes -->
+    <div class="section-card">
+      <div class="sec-header">
+        <div class="sec-icon pink">⚠️</div>
+        <div class="sec-title">Avoid These Common Mistakes</div>
+      </div>
+      <div class="sec-body">
+        <ul>
+          <li><strong>Forgetting Units:</strong> Every calculation answer needs units. No unit = lost mark.</li>
+          <li><strong>Mixing up Moles &amp; Mass:</strong> Molar mass (g/mol) ≠ mass (g) ≠ moles (mol). Always label!</li>
+          <li><strong>Balancing Equations Carelessly:</strong> Count atoms on both sides. Double-check.</li>
+          <li><strong>Confusing Ionic &amp; Covalent:</strong> Metal + non-metal = ionic. Non-metal + non-metal = covalent. Simple rule, often forgotten under pressure.</li>
+          <li><strong>Skipping Sub-questions:</strong> Even if you can't do part (a), you can often still do parts (b) and (c). Never leave anything blank.</li>
+          <li><strong>Over-thinking MC:</strong> Multiple choice questions are designed to be answered in ~1 minute. If your answer requires a complex calculation, you're probably on the wrong track.</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <a class="back-link" href="index.html">← Back to Home</a>
+  <footer>Made with <span>♥</span> by Charles · Study smart, not just hard 📚</footer>
+</div>
+
+<script src="search-widget.js"></script>
+</body>
+</html>
