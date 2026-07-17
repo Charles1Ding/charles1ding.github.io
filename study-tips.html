@@ -48,6 +48,18 @@
     .sec-body li strong { color:#1e3a6e; }
     .sec-body .highlight { background:rgba(245,158,11,0.12); padding:2px 6px; border-radius:4px; font-weight:700; color:#b45309; }
 
+    /* Paper cards */
+    .paper-cards { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:14px; }
+    @media(max-width:640px){ .paper-cards{grid-template-columns:1fr;} }
+    .paper-card-mini { background:rgba(255,255,255,0.85); border-radius:14px; padding:16px; border:1.5px solid rgba(74,120,200,0.12); text-align:center; transition:all 0.2s; }
+    .paper-card-mini:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(37,99,199,0.08); }
+    .pcm-num { font-size:2rem; font-weight:800; font-style:italic; }
+    .pcm-num.p2 { color:#2563eb; }
+    .pcm-num.p4 { color:#7c3aed; }
+    .pcm-num.p6 { color:#f59e0b; }
+    .pcm-type { font-size:0.85rem; font-weight:700; color:#475569; margin-top:2px; }
+    .pcm-detail { font-size:0.78rem; color:#64748b; margin-top:4px; line-height:1.4; }
+
     .tip-box { background:linear-gradient(135deg,#fef9e7,#fef3c7); border-left:4px solid #f59e0b; border-radius:0 12px 12px 0; padding:14px 20px; margin-top:12px; font-size:0.9rem; color:#92400e; }
     .tip-box strong { color:#b45309; }
 
@@ -79,19 +91,32 @@
     <div class="section-card">
       <div class="sec-header">
         <div class="sec-icon blue">🧪</div>
-        <div class="sec-title">Know the Exam Structure</div>
+        <div class="sec-title">Know the CAIE IGCSE Exam Structure</div>
       </div>
       <div class="sec-body">
-        <p>Understanding the paper format <strong>before</strong> you walk into the exam is half the battle.</p>
-        <div class="stat-row">
-          <span class="stat-pill">📝 25 MC Questions</span>
-          <span class="stat-pill">📄 3 Structured Questions</span>
-          <span class="stat-pill">⏱️ 60 Minutes</span>
+        <p>IGCSE Chemistry (0620) has <strong>three papers</strong> for Extended tier students. Understanding each paper's format is essential.</p>
+        <div class="paper-cards">
+          <div class="paper-card-mini">
+            <div class="pcm-num p2">P2</div>
+            <div class="pcm-type">Multiple Choice</div>
+            <div class="pcm-detail">40 questions · 45 min<br>30% of total grade<br>Covers full syllabus</div>
+          </div>
+          <div class="paper-card-mini">
+            <div class="pcm-num p4">P4</div>
+            <div class="pcm-type">Theory (Extended)</div>
+            <div class="pcm-detail">Short answer + structured<br>1 hr 15 min · 50% of total<br>Deepest + most valuable</div>
+          </div>
+          <div class="paper-card-mini">
+            <div class="pcm-num p6">P6</div>
+            <div class="pcm-type">Alt. to Practical</div>
+            <div class="pcm-detail">Written practical paper<br>1 hr · 20% of total<br>Experimental design + data</div>
+          </div>
         </div>
-        <ul style="margin-top:8px;">
-          <li><strong>Multiple Choice:</strong> 25 questions covering the entire syllabus. Typical difficulty is <span class="highlight">slightly harder</span> than the official past papers.</li>
-          <li><strong>Structured Questions:</strong> Only 3 questions — but <strong>each one tests many topics simultaneously</strong>. One question alone may span atomic structure, bonding, stoichiometry, and electrochemistry.</li>
-          <li><strong>Scoring:</strong> The structured section has 2-mark and 3-mark sub-questions. A 2-mark question typically requires <span class="highlight">two key points</span> — don't lose marks by giving only one.</li>
+        <ul style="margin-top:14px;">
+          <li><strong>Paper 2 — Multiple Choice:</strong> <span class="highlight">40 questions in 45 minutes</span> (~67 sec per question). Tests every topic. Be fast and accurate. Use elimination strategy when unsure.</li>
+          <li><strong>Paper 4 — Theory:</strong> The <span class="highlight">50% paper</span>. Short answer + extended structured questions. Every mark matters more here. Focus your revision on P4 topics: stoichiometry, organic chemistry, electrolysis, and energetics.</li>
+          <li><strong>Paper 6 — Alternative to Practical:</strong> No lab needed, but you must know experimental procedures, graphs, data interpretation, and sources of error. Practice reading measurements and identifying variables.</li>
+          <li><strong>Core vs Extended:</strong> Core students take P1 + P3 + P6 (grades C-G). <span class="highlight">Extended students take P2 + P4 + P6</span> (grades A*-G). Most of you are Extended.</li>
         </ul>
       </div>
     </div>
@@ -105,14 +130,14 @@
       <div class="sec-body">
         <p>The #1 reason students lose marks is not lack of knowledge — <strong>it's running out of time.</strong></p>
         <ul>
-          <li><strong>Survey First:</strong> Before answering, scan the entire paper for 1 minute. Note which questions look familiar and which look challenging.</li>
-          <li><strong>MC Rule of Thumb:</strong> <span class="highlight">1 minute per MC question</span>. If you're stuck after 60 seconds, circle it and move on. Come back later.</li>
-          <li><strong>Do Your Strengths First:</strong> Solve the questions you're confident about first. Build momentum — then tackle the hard ones.</li>
-          <li><strong>Structured Questions:</strong> Allocate ~15 minutes per question. Read all sub-parts before answering — later parts often give clues to earlier ones.</li>
-          <li><strong>Reserve 3-5 minutes</strong> at the end to check answers, especially calculation steps and units.</li>
+          <li><strong>Survey First:</strong> 1 minute to scan the paper. Know what's coming.</li>
+          <li><strong>P2 — Multiple Choice:</strong> <span class="highlight">~67 seconds per question</span>. If stuck, eliminate 2 options, mark your best guess, and move on. Circle it to revisit later.</li>
+          <li><strong>P4 — Theory:</strong> 1 hr 15 min. Allocate time by mark count — roughly <span class="highlight">1.5 min per mark</span>. The 6-mark extended question at the end needs at least 8 minutes.</li>
+          <li><strong>P6 — Practical:</strong> 1 hr. Don't rush experimental design questions — they're worth the most. Leave 5 min at the end to check graph labels, units, and sig figs.</li>
+          <li><strong>Golden Rule:</strong> Do your strengths first. Build momentum, then tackle the hard ones.</li>
         </ul>
         <div class="tip-box">
-          <strong>Pro Tip:</strong> Many students spend 30+ minutes on the first structured question and panic on the last two. Stick to your time allocation — even if it means moving on mid-question.
+          <strong>Pro Tip:</strong> Many students spend 20+ min on the first P4 question and rush the 6-mark final question. Start from the back if that's where your strong topics are.
         </div>
       </div>
     </div>
