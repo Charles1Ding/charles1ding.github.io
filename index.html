@@ -523,6 +523,21 @@
     .theme-toggle:hover { background: rgba(255,255,255,0.85); }
     body.dark .theme-toggle { background: rgba(30,50,80,0.7); border-color: rgba(148,180,220,0.3); }
 
+    /* ── Hamburger menu ── */
+    .hamburger { display:none; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.6); border:1.5px solid rgba(74,120,200,0.2); cursor:pointer; flex-direction:column; align-items:center; justify-content:center; gap:4px; flex-shrink:0; }
+    .hamburger span { display:block; width:18px; height:2px; background:#3a5a8c; border-radius:1px; transition:all 0.25s; }
+    body.dark .hamburger { background:rgba(30,50,80,0.7); border-color:rgba(148,180,220,0.3); }
+    body.dark .hamburger span { background:#b0c8e8; }
+    @media (max-width: 720px) {
+      .hamburger { display:flex; }
+      .nav-links, .search-btn, .theme-toggle { display:none; }
+      .nav-links.open { display:flex; flex-direction:column; position:absolute; top:64px; right:16px; background:rgba(255,255,255,0.95); backdrop-filter:blur(14px); border-radius:14px; padding:12px; box-shadow:0 8px 32px rgba(0,0,0,0.12); z-index:100; gap:8px; }
+      .nav-links.open a { padding:6px 16px; border-radius:8px; }
+      .nav-expanded .search-btn, .nav-expanded .theme-toggle { display:flex; }
+      body.dark .nav-links.open { background:rgba(30,41,59,0.95); }
+      body.dark .nav-links.open a { color:#c8d6e5; }
+    }
+
     /* ── Responsive ── */
     @media (max-width: 580px) {
       .search-panel { max-height: 60vh; }
@@ -562,6 +577,9 @@
       <span class="search-kbd">⌘K</span>
     </button>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
+    <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
   </nav>
 
   <!-- Hero -->
@@ -597,37 +615,37 @@
 
     <!-- Past Paper -->
     <a class="res-img-card" href="past-papers.html">
-      <img src="img-pastpaper.jpg" alt="Past Papers" />
+      <img src="img-pastpaper.jpg" loading="lazy" alt="Past Papers" />
       <span class="res-img-label">Past Papers</span>
     </a>
 
     <!-- Simulation Models -->
     <a class="res-img-card" href="simulation-models.html">
-      <img src="img-simulation.jpg" alt="Simulation Models" />
+      <img src="img-simulation.jpg" loading="lazy" alt="Simulation Models" />
       <span class="res-img-label">Simulation Models</span>
     </a>
 
     <!-- Music -->
     <a class="res-img-card" href="music.html">
-      <img src="img-music.jpg" alt="Music" />
+      <img src="img-music.jpg" loading="lazy" alt="Music" />
       <span class="res-img-label">Music</span>
     </a>
 
     <!-- Review Notes -->
     <a class="res-img-card" href="review-notes.html">
-      <img src="img-review-notes.jpg" alt="Review Notes" />
+      <img src="img-review-notes.jpg" loading="lazy" alt="Review Notes" />
       <span class="res-img-label">Review Notes</span>
     </a>
 
     <!-- Gaming Time -->
     <a class="res-img-card" href="gaming.html">
-      <img src="img-gaming.jpg" alt="Gaming Time" />
+      <img src="img-gaming.jpg" loading="lazy" alt="Gaming Time" />
       <span class="res-img-label">Gaming Time</span>
     </a>
 
     <!-- Private Space -->
     <a class="res-img-card" href="private-space.html">
-      <img src="img-private.jpg" alt="Private Space" />
+      <img src="img-private.jpg" loading="lazy" alt="Private Space" />
       <span class="res-img-label">Private Space</span>
     </a>
 
@@ -794,6 +812,12 @@ window.toggleTheme = function() {
   var d = document.body.classList.toggle('dark');
   localStorage.setItem('theme', d ? 'dark' : 'light');
   document.getElementById('themeBtn').textContent = d ? '☀️' : '🌙';
+};
+
+/* ── Hamburger toggle ── */
+window.toggleMenu = function() {
+  document.querySelector('.nav-links').classList.toggle('open');
+  document.querySelector('nav').classList.toggle('nav-expanded');
 };
 
 /* ── Page transition ── */
