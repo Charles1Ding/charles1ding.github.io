@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="favicon.png" />
-  <meta property="og:title" content="Charles · Chem Teacher <link rel="icon" type="image/png" href="favicon.png" /> More" />
-  <meta property="og:description" content="Free Chemistry tutorials, past papers, simulation models, music <link rel="icon" type="image/png" href="favicon.png" /> more" />
+  <meta property="og:title" content="Interactive Simulation Models · IGCSE Chemistry" />
+  <meta property="og:description" content="Interactive chemistry simulation models for IGCSE & A-Level teaching" />
   <meta property="og:image" content="https://charles1ding.github.io/favicon.png" />
   <meta property="og:url" content="https://charles1ding.github.io" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AQA Chemistry Interactive Models</title>
+  <title>Interactive Simulation Models · IGCSE Chemistry</title>
   <style>
     :root {
       --bg: #f0f4f8;
@@ -221,9 +221,9 @@
 
 <header>
   <div class="logo">⚗️</div>
-  <h1>AQA Chemistry Interactive Models</h1>
-  <p>Interactive simulations for A-Level &amp; GCSE Chemistry teaching</p>
-  <span class="badge">63 Models · A-Level AQA</span>
+  <h1>Chemistry Interactive Models</h1>
+  <p>Interactive simulations for IGCSE &amp; A-Level Chemistry teaching</p>
+  <span class="badge">57 Models · IGCSE & A-Level</span>
 </header>
 
 <div class="controls">
@@ -244,12 +244,12 @@
   </div>
 </div>
 
-<div class="stats" id="statsBar">Showing all 40 models</div>
+<div class="stats" id="statsBar">Showing all 63 models</div>
 
 <div class="grid" id="cardGrid"></div>
 
 <footer>
-  Charles Ding · AQA Chemistry · Interactive Teaching Resources
+  Charles Ding · IGCSE & A-Level Chemistry · Interactive Teaching Resources
 </footer>
 
 <script>
@@ -856,7 +856,7 @@ function renderCards(list) {
     stats.textContent = 'No models found';
     return;
   }
-  stats.textContent = `Showing ${list.length} of 63 models`;
+  stats.textContent = `Showing ${list.length} of ${models.length} models`;
   list.forEach(m => {
     const a = document.createElement('a');
     a.className = 'card';
