@@ -11,6 +11,8 @@
   <meta name="twitter:card" content="summary" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Interactive Simulation Models · IGCSE Chemistry</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #f0f4f8;
@@ -32,7 +34,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-family: 'Nunito', sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -194,6 +196,16 @@
       color: var(--subtext);
       line-height: 1.5;
     }
+    .card-observe {
+      font-size: 0.78rem;
+      color: #2563c7;
+      background: rgba(37,99,199,0.06);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-top: 10px;
+      line-height: 1.4;
+      font-weight: 600;
+    }
 
     .no-result {
       grid-column: 1 / -1;
@@ -216,6 +228,7 @@
       .grid { grid-template-columns: 1fr; }
     }
   </style>
+<link rel="stylesheet" href="dark-mode.css">
 </head>
 <body>
 
@@ -225,6 +238,11 @@
   <p>Interactive simulations for IGCSE &amp; A-Level Chemistry teaching</p>
   <span class="badge">57 Models · IGCSE & A-Level</span>
 </header>
+
+<div class="back-link" style="text-align:center;margin-bottom:20px;">
+  <a href="index.html" style="font-family:Nunito,sans-serif;font-size:0.9rem;font-weight:700;color:#2d5fa3;text-decoration:none;margin-right:16px;">← Back to Home</a>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
+</div>
 
 <div class="controls">
   <div class="search-box">
@@ -253,6 +271,16 @@
 </footer>
 
 <script>
+const topicTips = {
+  kinetics: "Observe how changing temperature/concentration affects the rate curve. 观察温度/浓度如何影响反应速率曲线。",
+  electrochemistry: "Watch ion movement and electron flow at electrodes. 观察离子移动和电极上的电子流动。",
+  metals: "See how metals are extracted from their ores. 观察金属如何从矿石中提取。",
+  acids: "Watch pH changes during titration and neutralisation. 观察滴定和中和过程中pH的变化。",
+  thermochemistry: "Observe how energy is absorbed or released. 观察能量如何被吸收或释放。",
+  organic: "Follow the reaction pathway and identify functional groups. 追踪反应路径，识别官能团。",
+  equilibrium: "See how the equilibrium shifts when conditions change. 观察条件改变时平衡如何移动。",
+  other: "Explore the model and note the key chemical principles. 探索模型并注意关键化学原理。"
+};
 const models = [
   {
     file: "Collision.html",
@@ -871,6 +899,7 @@ function renderCards(list) {
         <span class="tag tag-topic">${m.topicLabel}</span>
       </div>
       <div class="card-desc">${m.desc}</div>
+      ${topicTips[m.topic] ? '<div class="card-observe">🔍 ' + topicTips[m.topic] + '</div>' : ''}
     `;
     grid.appendChild(a);
   });
@@ -899,5 +928,6 @@ function setFilter(filter, btn) {
 renderCards(models);
 </script>
 <script src="search-widget.js"></script>
+<script src="dark-mode.js"></script>
 </body>
 </html>

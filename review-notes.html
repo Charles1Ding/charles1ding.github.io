@@ -226,6 +226,7 @@
       .header h1 { font-size: 1.8rem; }
     }
   </style>
+<link rel="stylesheet" href="dark-mode.css">
 </head>
 <body>
 
@@ -238,7 +239,8 @@
     <ul class="nav-links">
       <li><a href="index.html" class="back-link">← Home</a></li>
     </ul>
-  </nav>
+  
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button></nav>
 
   <div class="header">
     <h1>📝 Review Notes</h1>
@@ -289,15 +291,56 @@
 <script>
 (function() {
 
+var subtitles = {
+  "C1 期末复习试题": "Ch1 States of Matter — Review Qs",
+  "C2 期末复习试题": "Ch2 Atoms, Elements & Compounds — Review Qs",
+  "C3期末复习试题": "Ch3 Stoichiometry — Review Qs",
+  "C4 期末复习试题": "Ch4 Electrochemistry — Review Qs",
+  "C5 期末复习试题": "Ch5 Chemical Energetics — Review Qs",
+  "C6期末复习试题": "Ch6 Chemical Reactions — Review Qs",
+  "C7 期末复习清单": "Ch7 Acids, Bases & Salts — Checklist",
+  "C8期末复习试题": "Ch8 The Periodic Table — Review Qs",
+  "C9期末复习试题": "Ch9 Metals — Review Qs",
+  "C10期末复习试题": "Ch10 Chemistry of the Environment — Review Qs",
+  "C11 期末复习清单": "Ch11 Organic Chemistry — Checklist",
+  "C11 期末复习清单答案": "Ch11 Organic Chemistry — Checklist Answers",
+  "C12 期末复习清单": "Ch12 Experimental Techniques — Checklist",
+  "C13 期末复习清单": "Ch13 Chemical Analysis — Checklist",
+  "C15期末复习清单 ": "Ch15 Polymers — Checklist",
+  "期末key point list答案": "End-of-Term Key Points — Answers",
+  "第一章期末复习handout": "Ch1 States of Matter — Handout",
+  "第八章复习提纲": "Ch8 Periodic Table — Study Outline",
+  "第6章复习提纲": "Ch6 Chemical Reactions — Study Outline",
+  "handout for reviewing": "General Review Handout",
+  "Chapter 3 answer": "Ch3 Stoichiometry — Answer Key",
+  "实验装置名称": "Lab Apparatus Names",
+  "P2 2026答案": "P2 2026 — Answer Key",
+  "P2 电化学 重难点针对性练习题": "P2 Electrochemistry — Targeted Practice",
+  "P2 金属 重难点针对性练习题": "P2 Metals — Targeted Practice",
+  "印度卷P2 ": "India Variant — P2 Paper",
+  "quiz paper": "Quiz Paper",
+  "Quiz Paper1 ": "Quiz Paper 1",
+  "Quiz paper2 ": "Quiz Paper 2",
+  "IG化学会考定义": "IGCSE Chemistry — Key Definitions",
+  "IG单词汇总": "IGCSE Chemistry — Vocabulary List",
+  "Nomenclature": "Chemical Nomenclature Guide",
+  "定义考核": "Definitions Quiz",
+  "定义考核答案": "Definitions Quiz — Answers",
+  "考察定义题": "Definitions Practice Questions",
+  "颜色表格": "Colour Reference Table",
+  "小马的问题与解析": "Student Q&A — Problems & Solutions"
+};
+
 function card(file, encFile) {
   var ext = file.endsWith('.pdf') ? 'pdf' : 'docx';
   var icon = ext === 'pdf' ? '📄' : '📘';
   var displayName = file.replace(/\.docx$/, '').replace(/\.pdf$/, '');
+  var sub = subtitles[displayName] || '';
   return '<div class="file-card">' +
     '<div class="file-icon ' + ext + '">' + icon + '</div>' +
     '<div class="file-info">' +
       '<div class="file-name">' + displayName + '</div>' +
-      '<div class="file-meta">.' + ext + '</div>' +
+      (sub ? '<div class="file-meta">' + sub + '</div>' : '<div class="file-meta">.' + ext + '</div>') +
     '</div>' +
     '<div class="file-actions">' +
       '<a class="file-btn" href="review-notes/' + encFile + '" target="_blank" title="Open">↗</a>' +
@@ -381,5 +424,6 @@ render('grid-other', otherFiles);
 </script>
 
 <script src="search-widget.js"></script>
+<script src="dark-mode.js"></script>
 </body>
 </html>

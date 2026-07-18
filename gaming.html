@@ -208,6 +208,7 @@
       .header h1 { font-size: 1.8rem; }
     }
   </style>
+<link rel="stylesheet" href="dark-mode.css">
 </head>
 <body>
 
@@ -220,7 +221,8 @@
     <ul class="nav-links">
       <li><a href="index.html">← Home</a></li>
     </ul>
-  </nav>
+  
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button></nav>
 
   <div class="header">
     <h1>🎮 Gaming Time</h1>
@@ -243,6 +245,36 @@
         <button class="play-btn"><span class="play-icon">▶</span> Play Now</button>
       </div>
     </div>
+
+    <!-- Element Match -->
+    <div class="game-card" onclick="window.location.href='gaming/element-match.html'">
+      <div class="game-thumb" style="background:linear-gradient(135deg,#1a1a2e,#0f3460,#1a1a2e);display:flex;align-items:center;justify-content:center;font-size:3rem;">🧩</div>
+      <div class="game-info">
+        <div class="game-name">Element Match 🧩</div>
+        <div class="game-desc">Flip cards and match element symbols with their names. Train your memory while learning the periodic table!</div>
+        <div class="game-tags">
+          <span class="game-tag">Memory</span>
+          <span class="game-tag">Elements</span>
+          <span class="game-tag">Matching</span>
+        </div>
+        <button class="play-btn"><span class="play-icon">▶</span> Play Now</button>
+      </div>
+    </div>
+
+    <!-- Periodic Quiz -->
+    <div class="game-card" onclick="window.location.href='gaming/periodic-quiz.html'">
+      <div class="game-thumb" style="background:linear-gradient(135deg,#16213e,#0f3460,#16213e);display:flex;align-items:center;justify-content:center;font-size:3rem;">⚛️</div>
+      <div class="game-info">
+        <div class="game-name">Periodic Table Quiz ⚛️</div>
+        <div class="game-desc">20 IGCSE Chemistry questions — from atomic structure to organic chemistry. How many can you get right?</div>
+        <div class="game-tags">
+          <span class="game-tag">Quiz</span>
+          <span class="game-tag">IGCSE</span>
+          <span class="game-tag">All Topics</span>
+        </div>
+        <button class="play-btn"><span class="play-icon">▶</span> Play Now</button>
+      </div>
+    </div>
   </div>
 
   <footer>Made with <span>♥</span> by Charles · Game on! 🎮</footer>
@@ -250,5 +282,6 @@
 </div>
 
 <script src="search-widget.js"></script>
+<script src="dark-mode.js"></script>
 </body>
 </html>

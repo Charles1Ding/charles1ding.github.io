@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Periodic Quiz · Charles</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,600;0,700;0,800;1,700;1,800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Nunito',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;background:linear-gradient(135deg,#0f172a,#1e293b,#0f172a);color:#fff;padding:20px}
+h1{font-size:2rem;font-weight:800;font-style:italic;margin:20px 0 4px;color:#7ba8e0}
+.sub{color:#90a8c8;margin-bottom:16px;font-weight:600}
+.score{font-size:1.15rem;font-weight:800;color:#f59e0b;margin-bottom:20px}
+.quiz-card{background:rgba(255,255,255,0.08);border:2px solid rgba(255,255,255,0.15);border-radius:20px;padding:32px 28px;max-width:500px;width:100%;text-align:center}
+.question{font-size:1.4rem;font-weight:800;font-style:italic;color:#e2e8f0;margin-bottom:24px;line-height:1.4}
+.options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{padding:14px 20px;border-radius:14px;background:rgba(255,255,255,0.06);border:2px solid rgba(255,255,255,0.15);color:#c8d6e5;font-weight:700;font-size:1rem;cursor:pointer;transition:all 0.2s}
+.opt:hover{background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.3)}
+.opt.correct{background:rgba(14,138,109,0.3);border-color:#0e8a6d;color:#5ecca0}
+.opt.wrong{background:rgba(199,37,62,0.3);border-color:#c7253e;color:#f08090}
+.opt:disabled{pointer-events:none}
+.feedback{font-size:1.1rem;font-weight:700;margin:20px 0;min-height:32px;color:#f59e0b}
+.next-btn{padding:12px 32px;background:#f59e0b;color:#0f172a;border:none;border-radius:12px;font-weight:800;font-size:1rem;cursor:pointer;margin-top:8px;transition:all 0.2s;display:none}
+.next-btn.show{display:inline-block}
+.next-btn:hover{transform:scale(1.05)}
+.back{display:inline-block;padding:10px 24px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);border-radius:12px;color:#90b0d8;text-decoration:none;font-weight:700;margin-top:20px;transition:all 0.2s}
+.back:hover{background:rgba(255,255,255,0.2)}
+@media(max-width:420px){.options{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<h1>⚛️ Periodic Table Quiz</h1>
+<p class="sub">Test your IGCSE Chemistry knowledge</p>
+<div class="score">Score: <span id="score">0</span> / <span id="total">0</span></div>
+<div class="quiz-card">
+  <div class="question" id="qText"></div>
+  <div class="options" id="qOptions"></div>
+  <div class="feedback" id="feedback"></div>
+  <button class="next-btn" id="nextBtn" onclick="nextQ()">Next →</button>
+</div>
+<a class="back" href="../gaming.html">← Back to Games</a>
+
+<script>
+var questions=[
+  {q:"What is the chemical symbol for Gold?", opts:["Au","Ag","Go","Gd"], ans:0},
+  {q:"Which element has atomic number 6?", opts:["Nitrogen","Oxygen","Carbon","Boron"], ans:2},
+  {q:"What is the charge of a proton?", opts:["-1","0","+1","+2"], ans:2},
+  {q:"Which group are the Noble Gases in?", opts:["Group 1","Group 7","Group 0","Group 2"], ans:2},
+  {q:"What is the formula of water?", opts:["HO","H₂O","H₂O₂","OH"], ans:1},
+  {q:"Which element is a halogen?", opts:["Sodium","Magnesium","Chlorine","Calcium"], ans:2},
+  {q:"What type of bond shares electrons?", opts:["Ionic","Metallic","Covalent","Hydrogen"], ans:2},
+  {q:"What is the pH of a neutral solution?", opts:["0","1","7","14"], ans:2},
+  {q:"Which gas turns limewater milky?", opts:["O₂","H₂","CO₂","N₂"], ans:2},
+  {q:"What is the relative mass of an electron?", opts:["1","1/1840","0","1840"], ans:1},
+  {q:"Which element is in Group 1, Period 3?", opts:["Lithium","Sodium","Potassium","Magnesium"], ans:1},
+  {q:"What colour is chlorine gas?", opts:["Colourless","Yellow-green","Brown","Purple"], ans:1},
+  {q:"What is the product at the cathode during electrolysis of molten NaCl?", opts:["Chlorine","Sodium","Hydrogen","Oxygen"], ans:1},
+  {q:"Which acid is found in the stomach?", opts:["Sulfuric","Nitric","Hydrochloric","Ethanoic"], ans:2},
+  {q:"What catalyst is used in the Haber process?", opts:["Platinum","Iron","Vanadium(V) oxide","Nickel"], ans:1},
+  {q:"What is the functional group of carboxylic acids?", opts:["-OH","-CHO","-COOH","-CO-"], ans:2},
+  {q:"Which process separates crude oil?", opts:["Crystallisation","Distillation","Fractional distillation","Chromatography"], ans:2},
+  {q:"What is the monomer of poly(ethene)?", opts:["Ethane","Ethene","Ethanol","Ethanoic acid"], ans:1},
+  {q:"Which metal is extracted by electrolysis?", opts:["Iron","Copper","Aluminium","Zinc"], ans:2},
+  {q:"What ion makes a solution acidic?", opts:["OH⁻","H⁺","Na⁺","Cl⁻"], ans:1}
+];
+var qIdx=0,score=0,answered=false;
+
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}}
+shuffle(questions);
+
+function showQ(){
+  if(qIdx>=questions.length){end();return}
+  answered=false;
+  var q=questions[qIdx];
+  document.getElementById('qText').textContent=(qIdx+1)+'. '+q.q;
+  document.getElementById('total').textContent=questions.length;
+  document.getElementById('feedback').textContent='';
+  document.getElementById('nextBtn').classList.remove('show');
+  var optsHtml='';
+  for(var i=0;i<q.opts.length;i++){
+    optsHtml+='<button class="opt" onclick="answer('+i+')">'+q.opts[i]+'</button>';
+  }
+  document.getElementById('qOptions').innerHTML=optsHtml;
+}
+
+function answer(i){
+  if(answered)return;answered=true;
+  var q=questions[qIdx];
+  var btns=document.querySelectorAll('.opt');
+  for(var j=0;j<btns.length;j++)btns[j].disabled=true;
+  if(i===q.ans){btns[i].classList.add('correct');score++;document.getElementById('score').textContent=score;document.getElementById('feedback').textContent='✅ Correct!';document.getElementById('feedback').style.color='#5ecca0'}
+  else{btns[i].classList.add('wrong');btns[q.ans].classList.add('correct');document.getElementById('feedback').textContent='❌ The answer is '+q.opts[q.ans];document.getElementById('feedback').style.color='#f08090'}
+  document.getElementById('nextBtn').classList.add('show');
+}
+
+function nextQ(){qIdx++;showQ();}
+
+function end(){
+  var pct=Math.round(score/questions.length*100);
+  var msg=pct>=80?'🏆 Excellent!':pct>=60?'👍 Good job!':'📚 Keep studying!';
+  document.getElementById('qText').textContent='Quiz Complete!';
+  document.getElementById('qOptions').innerHTML='';
+  document.getElementById('feedback').textContent=msg+' You got '+score+'/'+questions.length+' ('+pct+'%)';
+  document.getElementById('nextBtn').classList.remove('show');
+}
+showQ();
+</script>
+</body>
+</html>

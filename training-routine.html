@@ -524,9 +524,11 @@
     .exercise-title { font-size: 22px; }
   }
 </style>
+<link rel="stylesheet" href="dark-mode.css">
 </head>
 <body>
 <a href="private-space.html" style="position:fixed;top:12px;left:16px;z-index:100;background:rgba(255,255,255,0.85);backdrop-filter:blur(6px);border-radius:14px;padding:6px 14px;font-family:Nunito,sans-serif;font-size:0.82rem;font-weight:700;color:#2d5fa3;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.08);">← Private Space</a>
+<button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn" style="position:fixed;top:10px;right:16px;z-index:100;">🌙</button>
 
 <!-- ============== 头部 ============== -->
 <header class="hero">
@@ -740,5 +742,6 @@
 </footer>
 
 <script src="search-widget.js"></script>
+<script src="dark-mode.js"></script>
 </body>
 </html>

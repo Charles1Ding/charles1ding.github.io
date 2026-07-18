@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Element Match · Charles</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,600;0,700;0,800;1,700;1,800&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Nunito',sans-serif;display:flex;flex-direction:column;align-items:center;min-height:100vh;background:linear-gradient(135deg,#0f172a,#1e293b,#0f172a);color:#fff;padding:20px}
+h1{font-size:2rem;font-weight:800;font-style:italic;margin:20px 0 8px;color:#7ba8e0}
+.sub{color:#90a8c8;margin-bottom:8px;font-weight:600}
+.score{font-size:1.2rem;font-weight:800;color:#f59e0b;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:500px;width:100%}
+.card{aspect-ratio:1;border-radius:14px;cursor:pointer;font-weight:800;font-size:1.1rem;display:flex;align-items:center;justify-content:center;transition:all 0.25s;user-select:none;text-align:center;padding:6px}
+.card.hidden{background:linear-gradient(135deg,#2563c7,#1e3a6e);color:transparent;box-shadow:0 4px 16px rgba(37,99,199,0.3)}
+.card.hidden:hover{transform:scale(1.05)}
+.card.revealed{background:rgba(255,255,255,0.12);color:#fff;border:2px solid rgba(255,255,255,0.25)}
+.card.matched{background:rgba(14,138,109,0.3);color:#5ecca0;border:2px solid #0e8a6d;pointer-events:none}
+.card.wrong{background:rgba(199,37,62,0.3);border:2px solid #c7253e;animation:shake 0.4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.msg{font-size:1.1rem;font-weight:700;margin:16px 0;min-height:28px;color:#f59e0b}
+.back{display:inline-block;padding:10px 24px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.2);border-radius:12px;color:#90b0d8;text-decoration:none;font-weight:700;margin-top:20px;transition:all 0.2s}
+.back:hover{background:rgba(255,255,255,0.2)}
+.restart{padding:10px 28px;background:#f59e0b;color:#0f172a;border:none;border-radius:12px;font-weight:800;font-size:1rem;cursor:pointer;margin-top:12px;transition:all 0.2s}
+.restart:hover{transform:scale(1.05)}
+@media(max-width:420px){.grid{grid-template-columns:repeat(4,1fr);gap:6px}.card{font-size:0.85rem}}
+</style>
+</head>
+<body>
+<h1>🧪 Element Match</h1>
+<p class="sub">Match element symbols with their names</p>
+<div class="score">Score: <span id="score">0</span> | Moves: <span id="moves">0</span></div>
+<div class="msg" id="msg"></div>
+<div class="grid" id="grid"></div>
+<button class="restart" onclick="init()">🔄 New Game</button>
+<a class="back" href="../gaming.html">← Back to Games</a>
+
+<script>
+var pairs = [
+  {symbol:'H', name:'Hydrogen'},{symbol:'He', name:'Helium'},
+  {symbol:'C', name:'Carbon'},{symbol:'O', name:'Oxygen'},
+  {symbol:'Na', name:'Sodium'},{symbol:'Cl', name:'Chlorine'},
+  {symbol:'Fe', name:'Iron'},{symbol:'Au', name:'Gold'}
+];
+var cards=[], revealed=[], score=0, moves=0, canClick=true;
+
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+
+function init(){
+  cards=[];revealed=[];score=0;moves=0;canClick=true;
+  document.getElementById('score').textContent='0';
+  document.getElementById('moves').textContent='0';
+  document.getElementById('msg').textContent='';
+  var items=[];
+  for(var i=0;i<pairs.length;i++){
+    items.push({id:i, type:'symbol', text:pairs[i].symbol});
+    items.push({id:i, type:'name', text:pairs[i].name});
+  }
+  shuffle(items);
+  var html='';
+  for(var i=0;i<items.length;i++){
+    cards.push(items[i]);
+    html+='<div class="card hidden" data-idx="'+i+'" onclick="flip('+i+')"></div>';
+  }
+  document.getElementById('grid').innerHTML=html;
+}
+
+function flip(idx){
+  if(!canClick||revealed.length>=2||cards[idx].matched)return;
+  var el=document.querySelectorAll('.card')[idx];
+  el.classList.remove('hidden');
+  el.classList.add('revealed');
+  el.textContent=cards[idx].text;
+  revealed.push(idx);
+  if(revealed.length===2){
+    canClick=false;
+    var a=revealed[0],b=revealed[1];
+    var ca=cards[a],cb=cards[b];
+    if(ca.id===cb.id && ca.type!==cb.type){
+      score++;moves++;
+      document.getElementById('score').textContent=score;
+      document.getElementById('moves').textContent=moves;
+      setTimeout(function(){
+        document.querySelectorAll('.card')[a].classList.add('matched');
+        document.querySelectorAll('.card')[b].classList.add('matched');
+        revealed=[];canClick=true;
+        if(score===pairs.length)document.getElementById('msg').textContent='🎉 All matched! You win!';
+      },400);
+    }else{
+      moves++;
+      document.getElementById('moves').textContent=moves;
+      var elA=document.querySelectorAll('.card')[a];
+      var elB=document.querySelectorAll('.card')[b];
+      elA.classList.add('wrong');elB.classList.add('wrong');
+      setTimeout(function(){
+        elA.classList.remove('revealed','wrong');elA.classList.add('hidden');elA.textContent='';
+        elB.classList.remove('revealed','wrong');elB.classList.add('hidden');elB.textContent='';
+        revealed=[];canClick=true;
+      },700);
+    }
+  }
+}
+init();
+</script>
+</body>
+</html>

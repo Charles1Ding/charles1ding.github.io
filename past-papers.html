@@ -12,12 +12,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Past Papers · CAIE IGCSE Chemistry 0620</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Nunito', sans-serif;
       background: #f2f5f9;
       color: #1e293b;
       min-height: 100vh;
@@ -145,7 +145,7 @@
       font-size: 0.9rem;
       width: 220px;
       outline: none;
-      font-family: 'Inter', sans-serif;
+      font-family: 'Nunito', sans-serif;
       transition: border-color 0.18s;
     }
     .search-box input:focus { border-color: #4a78c8; }
@@ -357,6 +357,7 @@
 
     .hidden { display: none; }
   </style>
+<link rel="stylesheet" href="dark-mode.css">
 </head>
 <body>
 
@@ -367,7 +368,7 @@
 </header>
 
 <div class="back-link">
-  <a href="index.html">← Back to Home</a> <button onclick="openSearch()" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(6px);border:1.5px solid rgba(74,120,200,0.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:700;color:#2d5fa3;display:flex;align-items:center;gap:6px;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.92)'" onmouseout="this.style.background='rgba(255,255,255,0.78)'">🔍 Search</button>
+  <a href="index.html">← Back to Home</a> <button onclick="openSearch()" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(6px);border:1.5px solid rgba(74,120,200,0.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:700;color:#2d5fa3;display:flex;align-items:center;gap:6px;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.92)'" onmouseout="this.style.background='rgba(255,255,255,0.78)'">🔍 Search</button> <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
 </div>
 
 <div class="year-selector" id="yearSelector"></div>
@@ -609,5 +610,6 @@ function filterPapers() {
 
 <footer>Based on Cambridge materials · For Educational Use Only</footer>
 <script src="search-widget.js"></script>
+<script src="dark-mode.js"></script>
 </body>
 </html>

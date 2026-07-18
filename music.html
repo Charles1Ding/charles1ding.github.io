@@ -223,6 +223,7 @@
       .song-name { font-size: 1rem; }
     }
   </style>
+<link rel="stylesheet" href="dark-mode.css">
 </head>
 <body>
 
@@ -235,7 +236,8 @@
     <ul class="nav-links">
       <li><a href="index.html">Home</a></li>
     </ul>
-  </nav>
+  
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button></nav>
 
   <h1 class="page-title">🎵 My Playlist</h1>
   <p class="page-subtitle">Songs I've been vibing to lately — click to listen</p>
@@ -368,5 +370,6 @@
 
 </div>
 <script src="search-widget.js"></script>
+<script src="dark-mode.js"></script>
 </body>
 </html>

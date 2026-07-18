@@ -71,6 +71,7 @@
     footer span { color:#c06a7a; }
     @media(max-width:580px){ .section-card{padding:16px 18px;} }
   </style>
+<link rel="stylesheet" href="dark-mode.css">
 </head>
 <body>
 <div class="bg"></div>
@@ -78,7 +79,8 @@
   <nav>
     <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
     <ul class="nav-links"><li><a href="index.html">← Back to Home</a></li></ul>
-    <button onclick="openSearch()" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(6px);border:1.5px solid rgba(74,120,200,0.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:700;color:#2d5fa3;display:flex;align-items:center;gap:6px;">🔍 Search</button>
+    
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button><button onclick="openSearch()" style="background:rgba(255,255,255,0.78);backdrop-filter:blur(6px);border:1.5px solid rgba(74,120,200,0.25);border-radius:20px;padding:6px 14px;cursor:pointer;font-family:Nunito,sans-serif;font-size:0.85rem;font-weight:700;color:#2d5fa3;display:flex;align-items:center;gap:6px;">🔍 Search</button>
   </nav>
 
   <h1 class="page-title">📖 Study Tips</h1>
@@ -226,6 +228,42 @@
       </div>
     </div>
 
+    <!-- 7. Recommended Resources -->
+    <div class="section-card">
+      <div class="sec-header">
+        <div class="sec-icon blue">📚</div>
+        <div class="sec-title">Recommended Resources</div>
+      </div>
+      <div class="sec-body">
+        <p>Resources I personally recommend for <strong>IGCSE Chemistry 0620</strong> success.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:12px;">
+          <div class="tip-box" style="margin:0;">
+            <strong>📖 Textbooks</strong>
+            <ul style="margin-top:4px;">
+              <li><strong>Cambridge IGCSE Chemistry Coursebook</strong> (Harwood & Lodge) — the official textbook, covers everything</li>
+              <li><strong>Complete Chemistry for Cambridge IGCSE</strong> (Gallagher & Ingram) — clear explanations + lots of practice</li>
+            </ul>
+          </div>
+          <div class="tip-box" style="margin:0;">
+            <strong>🎥 YouTube Channels</strong>
+            <ul style="margin-top:4px;">
+              <li><strong>Cognito</strong> — concise, well-animated topic videos</li>
+              <li><strong>Science with Hazel</strong> — full syllabus revision guides</li>
+              <li><strong>Free Science Lessons</strong> — clear GCSE-level explanations</li>
+            </ul>
+          </div>
+          <div class="tip-box" style="margin:0;">
+            <strong>🌐 Websites</strong>
+            <ul style="margin-top:4px;">
+              <li><strong>Save My Exams</strong> — topic-wise notes + past paper solutions</li>
+              <li><strong>Physics & Maths Tutor</strong> — free past papers by topic</li>
+              <li><strong>CAIE Official Site</strong> — syllabus PDF + grade thresholds</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <a class="back-link" href="index.html">← Back to Home</a>
@@ -233,5 +271,6 @@
 </div>
 
 <script src="search-widget.js"></script>
+<script src="dark-mode.js"></script>
 </body>
 </html>
