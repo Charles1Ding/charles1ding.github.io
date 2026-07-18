@@ -1,1 +1,1348 @@
-[{"title": "Home", "url": "index.html", "category": "Page"}, {"title": "Past Papers", "url": "past-papers.html", "category": "Page"}, {"title": "Simulation Models", "url": "simulation-models.html", "category": "Page"}, {"title": "Music", "url": "music.html", "category": "Page"}, {"title": "Review Notes", "url": "review-notes.html", "category": "Page"}, {"title": "Gaming Time", "url": "gaming.html", "category": "Page"}, {"title": "Guitar Academy", "url": "guitar-academy.html", "category": "Private Space"}, {"title": "Private Space", "url": "private-space.html", "category": "Page"}, {"title": "AI Applications", "url": "ai-applications.html", "category": "Private Space"}, {"title": "Pearls of Wisdom", "url": "pearls-of-wisdom.html", "category": "Private Space"}, {"title": "Training Routine", "url": "training-routine.html", "category": "Private Space"}, {"title": "404", "url": "404.html", "category": "Simulation Model"}, {"title": "Addition Reaction of Ethene", "url": "Addtion reaction of ethene.html", "category": "Simulation Model"}, {"title": "Collision Theory", "url": "Collision.html", "category": "Simulation Model"}, {"title": "Copper Plating", "url": "Copper plating.html", "category": "Simulation Model"}, {"title": "Cracking", "url": "Cracking.html", "category": "Simulation Model"}, {"title": "Endo & Exo", "url": "Endo and exo .html", "category": "Simulation Model"}, {"title": "Ethane Cracking", "url": "Ethane cracking.html", "category": "Simulation Model"}, {"title": "Extraction of Al", "url": "Extraction of Al .html", "category": "Simulation Model"}, {"title": "Extraction of Al", "url": "Extraction of al.html", "category": "Simulation Model"}, {"title": "Fermentation", "url": "Fermentation.html", "category": "Simulation Model"}, {"title": "Haber Process", "url": "Haber process 公开课模型.html", "category": "Simulation Model"}, {"title": "Halogen Displacement", "url": "Halogen displacement.html", "category": "Simulation Model"}, {"title": "Hydrogen Fuel Cell", "url": "Hydrogen fuel cell.html", "category": "Simulation Model"}, {"title": "Identify Amino Acid", "url": "Identify amino acid.html", "category": "Simulation Model"}, {"title": "Mass Spectrum", "url": "Mass spectrum.html", "category": "Simulation Model"}, {"title": "pH Value", "url": "PHvalue.html", "category": "Simulation Model"}, {"title": "pH & Appetite", "url": "PH与食欲.html", "category": "Simulation Model"}, {"title": "Polyamide", "url": "Polyamide.html", "category": "Simulation Model"}, {"title": "Polyester", "url": "Polyester.html", "category": "Simulation Model"}, {"title": "Protein", "url": "Protein.html", "category": "Simulation Model"}, {"title": "Substitution Reaction", "url": "Substitution reaction.html", "category": "Simulation Model"}, {"title": "Titration 2 ", "url": "Titration 2 .html", "category": "Simulation Model"}, {"title": "Alcohol Change", "url": "alcohol change .html", "category": "Simulation Model"}, {"title": "Delta Hc", "url": "delta H c.html", "category": "Simulation Model"}, {"title": "Esterification", "url": "esterification.html", "category": "Simulation Model"}, {"title": "Fractional Distillation", "url": "fractional distillation.html", "category": "Simulation Model"}, {"title": "Identify Substance", "url": "identify substance.html", "category": "Simulation Model"}, {"title": "Mass Spectrum Model", "url": "mass_spec_model.html", "category": "Simulation Model"}, {"title": "Oxidation of Alcohol", "url": "oxidation of alcohol.html", "category": "Simulation Model"}, {"title": "Simple Calorimeter", "url": "公开课simple calorimeter.html", "category": "Simulation Model"}, {"title": "公开课模型", "url": "公开课模型.html", "category": "Simulation Model"}, {"title": "制备可溶性盐", "url": "制备可溶性盐.html", "category": "Simulation Model"}, {"title": "反应平衡", "url": "反应平衡.html", "category": "Simulation Model"}, {"title": "Alloy Ductility", "url": "合金的延展性.html", "category": "Simulation Model"}, {"title": "强酸与弱酸的水解", "url": "强酸与弱酸的水解.html", "category": "Simulation Model"}, {"title": "Strong vs Weak Acid Dissociation", "url": "强酸与弱酸的解离.html", "category": "Simulation Model"}, {"title": "Strong vs Weak Acid Experiment", "url": "强酸弱酸实验.html", "category": "Simulation Model"}, {"title": "Strong Acid Corrosion", "url": "强酸的腐蚀性.html", "category": "Simulation Model"}, {"title": "Improved Calorimeter", "url": "改进量热计.html", "category": "Simulation Model"}, {"title": "Orange Juice Analysis", "url": "橙汁分析.html", "category": "Simulation Model"}, {"title": "沉淀的产生", "url": "沉淀的产生.html", "category": "Simulation Model"}, {"title": "沉淀盐的产生", "url": "沉淀盐的产生.html", "category": "Simulation Model"}, {"title": "Treating Stings", "url": "治疗sting.html", "category": "Simulation Model"}, {"title": "滴定", "url": "滴定.html", "category": "Simulation Model"}, {"title": "电池闭合回路的产生", "url": "电池闭合回路的产生.html", "category": "Simulation Model"}, {"title": "电解不同溶液", "url": "电解不同溶液.html", "category": "Simulation Model"}, {"title": "电解氯化铜", "url": "电解氯化铜.html", "category": "Simulation Model"}, {"title": "电解水", "url": "电解水.html", "category": "Simulation Model"}, {"title": "电解池的微观构成", "url": "电解池的微观构成.html", "category": "Simulation Model"}, {"title": "电镀电极材料", "url": "电镀电极材料.html", "category": "Simulation Model"}, {"title": "电镀金模型", "url": "电镀金模型.html", "category": "Simulation Model"}, {"title": "盐的制备1", "url": "盐的制备1.html", "category": "Simulation Model"}, {"title": "Alkali Neutralization", "url": "碱性的中和.html", "category": "Simulation Model"}, {"title": "碳酸根", "url": "碳酸根.html", "category": "Simulation Model"}, {"title": "触电模拟", "url": "触电模拟.html", "category": "Simulation Model"}, {"title": "酸与金属", "url": "酸与金属.html", "category": "Simulation Model"}, {"title": "Acid Corrosion", "url": "酸性腐蚀.html", "category": "Simulation Model"}, {"title": "Metal Displacement Reaction", "url": "金属displacement reaction.html", "category": "Simulation Model"}, {"title": "金属与酸", "url": "金属与酸.html", "category": "Simulation Model"}, {"title": "铵盐与碱", "url": "铵盐与碱.html", "category": "Simulation Model"}, {"title": "镀铜", "url": "镀铜.html", "category": "Simulation Model"}, {"title": "难溶盐的制备", "url": "难溶盐的制备.html", "category": "Simulation Model"}, {"title": "高炉炼铁", "url": "高炉炼铁.html", "category": "Simulation Model"}, {"title": "0620 June 2022 Mark Scheme 21", "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_21.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Mark Scheme 22", "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_22.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Mark Scheme 23", "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_23.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Mark Scheme 41", "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_41.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Mark Scheme 42", "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_42.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Mark Scheme 43", "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_43.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Mark Scheme 61", "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_61.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Mark Scheme 62", "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_62.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Mark Scheme 63", "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_63.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Question paper 21", "url": "past-papers/0620_Chemistry_June_2022_Question_paper_21.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Question paper 22", "url": "past-papers/0620_Chemistry_June_2022_Question_paper_22.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Question paper 23", "url": "past-papers/0620_Chemistry_June_2022_Question_paper_23.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Question paper 41", "url": "past-papers/0620_Chemistry_June_2022_Question_paper_41.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Question paper 42", "url": "past-papers/0620_Chemistry_June_2022_Question_paper_42.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Question paper 43", "url": "past-papers/0620_Chemistry_June_2022_Question_paper_43.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Question paper 61", "url": "past-papers/0620_Chemistry_June_2022_Question_paper_61.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Question paper 62", "url": "past-papers/0620_Chemistry_June_2022_Question_paper_62.pdf", "category": "Past Paper"}, {"title": "0620 June 2022 Question paper 63", "url": "past-papers/0620_Chemistry_June_2022_Question_paper_63.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Mark Scheme 21", "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_21.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Mark Scheme 22", "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_22.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Mark Scheme 23", "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_23.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Mark Scheme 41", "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_41.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Mark Scheme 42", "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_42.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Mark Scheme 43", "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_43.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Mark Scheme 61", "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_61.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Mark Scheme 62", "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_62.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Mark Scheme 63", "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_63.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Question paper 21", "url": "past-papers/0620_Chemistry_June_2023_Question_paper_21.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Question paper 22", "url": "past-papers/0620_Chemistry_June_2023_Question_paper_22.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Question paper 23", "url": "past-papers/0620_Chemistry_June_2023_Question_paper_23.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Question paper 41", "url": "past-papers/0620_Chemistry_June_2023_Question_paper_41.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Question paper 42", "url": "past-papers/0620_Chemistry_June_2023_Question_paper_42.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Question paper 43", "url": "past-papers/0620_Chemistry_June_2023_Question_paper_43.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Question paper 61", "url": "past-papers/0620_Chemistry_June_2023_Question_paper_61.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Question paper 62", "url": "past-papers/0620_Chemistry_June_2023_Question_paper_62.pdf", "category": "Past Paper"}, {"title": "0620 June 2023 Question paper 63", "url": "past-papers/0620_Chemistry_June_2023_Question_paper_63.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Mark Scheme 21", "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_21.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Mark Scheme 22", "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_22.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Mark Scheme 23", "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_23.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Mark Scheme 41", "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_41.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Mark Scheme 42", "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_42.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Mark Scheme 43", "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_43.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Mark Scheme 61", "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_61.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Mark Scheme 62", "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_62.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Mark Scheme 63", "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_63.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Question Paper 23", "url": "past-papers/0620_Chemistry_June_2024_Question_Paper_23.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Question paper 21", "url": "past-papers/0620_Chemistry_June_2024_Question_paper_21.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Question paper 22", "url": "past-papers/0620_Chemistry_June_2024_Question_paper_22.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Question paper 41", "url": "past-papers/0620_Chemistry_June_2024_Question_paper_41.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Question paper 42", "url": "past-papers/0620_Chemistry_June_2024_Question_paper_42.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Question paper 43", "url": "past-papers/0620_Chemistry_June_2024_Question_paper_43.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Question paper 61", "url": "past-papers/0620_Chemistry_June_2024_Question_paper_61.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Question paper 62", "url": "past-papers/0620_Chemistry_June_2024_Question_paper_62.pdf", "category": "Past Paper"}, {"title": "0620 June 2024 Question paper 63", "url": "past-papers/0620_Chemistry_June_2024_Question_paper_63.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Mark Scheme 21", "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_21.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Mark Scheme 22", "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_22.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Mark Scheme 23", "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_23.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Mark Scheme 41", "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_41.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Mark Scheme 42", "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_42.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Mark Scheme 43", "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_43.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Mark Scheme 61", "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_61.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Mark Scheme 62", "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_62.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Mark Scheme 63", "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_63.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Question Paper 21", "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_21.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Question Paper 22", "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_22.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Question Paper 23", "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_23.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Question Paper 41", "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_41.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Question Paper 42", "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_42.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Question Paper 43", "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_43.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Question Paper 61", "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_61.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Question Paper 62", "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_62.pdf", "category": "Past Paper"}, {"title": "0620 June 2025 Question Paper 63", "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_63.pdf", "category": "Past Paper"}, {"title": "0620 March 2022 Mark Scheme 22", "url": "past-papers/0620_Chemistry_March_2022_Mark_Scheme_22.pdf", "category": "Past Paper"}, {"title": "0620 March 2022 Mark Scheme 42", "url": "past-papers/0620_Chemistry_March_2022_Mark_Scheme_42.pdf", "category": "Past Paper"}, {"title": "0620 March 2022 Mark Scheme 62", "url": "past-papers/0620_Chemistry_March_2022_Mark_Scheme_62.pdf", "category": "Past Paper"}, {"title": "0620 March 2022 Question paper 22", "url": "past-papers/0620_Chemistry_March_2022_Question_paper_22.pdf", "category": "Past Paper"}, {"title": "0620 March 2022 Question paper 42", "url": "past-papers/0620_Chemistry_March_2022_Question_paper_42.pdf", "category": "Past Paper"}, {"title": "0620 March 2022 Question paper 62", "url": "past-papers/0620_Chemistry_March_2022_Question_paper_62.pdf", "category": "Past Paper"}, {"title": "0620 March 2023 Mark Scheme 22", "url": "past-papers/0620_Chemistry_March_2023_Mark_Scheme_22.pdf", "category": "Past Paper"}, {"title": "0620 March 2023 Mark Scheme 32", "url": "past-papers/0620_Chemistry_March_2023_Mark_Scheme_32.pdf", "category": "Past Paper"}, {"title": "0620 March 2023 Mark Scheme 42", "url": "past-papers/0620_Chemistry_March_2023_Mark_Scheme_42.pdf", "category": "Past Paper"}, {"title": "0620 March 2023 Mark Scheme 62", "url": "past-papers/0620_Chemistry_March_2023_Mark_Scheme_62.pdf", "category": "Past Paper"}, {"title": "0620 March 2023 Question paper 22", "url": "past-papers/0620_Chemistry_March_2023_Question_paper_22.pdf", "category": "Past Paper"}, {"title": "0620 March 2023 Question paper 42", "url": "past-papers/0620_Chemistry_March_2023_Question_paper_42.pdf", "category": "Past Paper"}, {"title": "0620 March 2023 Question paper 62", "url": "past-papers/0620_Chemistry_March_2023_Question_paper_62.pdf", "category": "Past Paper"}, {"title": "0620 March 2024 Mark Scheme 22", "url": "past-papers/0620_Chemistry_March_2024_Mark_Scheme_22.pdf", "category": "Past Paper"}, {"title": "0620 March 2024 Mark Scheme 32", "url": "past-papers/0620_Chemistry_March_2024_Mark_Scheme_32.pdf", "category": "Past Paper"}, {"title": "0620 March 2024 Mark Scheme 42", "url": "past-papers/0620_Chemistry_March_2024_Mark_Scheme_42.pdf", "category": "Past Paper"}, {"title": "0620 March 2026 Question Paper 22", "url": "past-papers/0620_Chemistry_March_2026_Question_Paper_22.pdf", "category": "Past Paper"}, {"title": "0620 March 2026 Question Paper 42", "url": "past-papers/0620_Chemistry_March_2026_Question_Paper_42.pdf", "category": "Past Paper"}, {"title": "0620 March 2026 Question Paper 62", "url": "past-papers/0620_Chemistry_March_2026_Question_Paper_62.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Mark Scheme 21", "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_21.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Mark Scheme 22", "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_22.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Mark Scheme 23", "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_23.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Mark Scheme 41", "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_41.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Mark Scheme 42", "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_42.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Mark Scheme 43", "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_43.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Mark Scheme 61", "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_61.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Mark Scheme 62", "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_62.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Mark Scheme 63", "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_63.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Question paper 21", "url": "past-papers/0620_Chemistry_November_2022_Question_paper_21.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Question paper 22", "url": "past-papers/0620_Chemistry_November_2022_Question_paper_22.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Question paper 23", "url": "past-papers/0620_Chemistry_November_2022_Question_paper_23.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Question paper 41", "url": "past-papers/0620_Chemistry_November_2022_Question_paper_41.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Question paper 42", "url": "past-papers/0620_Chemistry_November_2022_Question_paper_42.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Question paper 43", "url": "past-papers/0620_Chemistry_November_2022_Question_paper_43.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Question paper 61", "url": "past-papers/0620_Chemistry_November_2022_Question_paper_61.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Question paper 62", "url": "past-papers/0620_Chemistry_November_2022_Question_paper_62.pdf", "category": "Past Paper"}, {"title": "0620 November 2022 Question paper 63", "url": "past-papers/0620_Chemistry_November_2022_Question_paper_63.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Mark Scheme 21", "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_21.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Mark Scheme 22", "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_22.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Mark Scheme 23", "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_23.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Mark Scheme 41", "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_41.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Mark Scheme 42", "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_42.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Mark Scheme 43", "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_43.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Mark Scheme 61", "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_61.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Mark Scheme 62", "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_62.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Mark Scheme 63", "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_63.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Question paper 21", "url": "past-papers/0620_Chemistry_November_2023_Question_paper_21.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Question paper 22", "url": "past-papers/0620_Chemistry_November_2023_Question_paper_22.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Question paper 23", "url": "past-papers/0620_Chemistry_November_2023_Question_paper_23.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Question paper 41", "url": "past-papers/0620_Chemistry_November_2023_Question_paper_41.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Question paper 42", "url": "past-papers/0620_Chemistry_November_2023_Question_paper_42.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Question paper 43", "url": "past-papers/0620_Chemistry_November_2023_Question_paper_43.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Question paper 61", "url": "past-papers/0620_Chemistry_November_2023_Question_paper_61.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Question paper 62", "url": "past-papers/0620_Chemistry_November_2023_Question_paper_62.pdf", "category": "Past Paper"}, {"title": "0620 November 2023 Question paper 63", "url": "past-papers/0620_Chemistry_November_2023_Question_paper_63.pdf", "category": "Past Paper"}, {"title": "C1 期末复习试题", "url": "review-notes/C1 期末复习试题.docx", "category": "Review Note"}, {"title": "C10期末复习试题", "url": "review-notes/C10期末复习试题.docx", "category": "Review Note"}, {"title": "C11 期末复习清单", "url": "review-notes/C11 期末复习清单.docx", "category": "Review Note"}, {"title": "C11 期末复习清单答案", "url": "review-notes/C11 期末复习清单答案.docx", "category": "Review Note"}, {"title": "C12 期末复习清单", "url": "review-notes/C12 期末复习清单.docx", "category": "Review Note"}, {"title": "C13 期末复习清单", "url": "review-notes/C13 期末复习清单.docx", "category": "Review Note"}, {"title": "C15期末复习清单", "url": "review-notes/C15期末复习清单 .docx", "category": "Review Note"}, {"title": "C2 期末复习试题", "url": "review-notes/C2 期末复习试题.docx", "category": "Review Note"}, {"title": "C3期末复习试题", "url": "review-notes/C3期末复习试题.docx", "category": "Review Note"}, {"title": "C4 期末复习试题", "url": "review-notes/C4 期末复习试题.docx", "category": "Review Note"}, {"title": "C5 期末复习试题", "url": "review-notes/C5 期末复习试题.docx", "category": "Review Note"}, {"title": "C6期末复习试题", "url": "review-notes/C6期末复习试题.docx", "category": "Review Note"}, {"title": "C7 期末复习清单", "url": "review-notes/C7 期末复习清单.docx", "category": "Review Note"}, {"title": "C8期末复习试题", "url": "review-notes/C8期末复习试题.docx", "category": "Review Note"}, {"title": "C9期末复习试题", "url": "review-notes/C9期末复习试题.docx", "category": "Review Note"}, {"title": "Chapter 3 answer", "url": "review-notes/Chapter 3 answer.docx", "category": "Review Note"}, {"title": "IG化学会考定义", "url": "review-notes/IG化学会考定义.docx", "category": "Review Note"}, {"title": "IG单词汇总", "url": "review-notes/IG单词汇总.docx", "category": "Review Note"}, {"title": "Nomenclature", "url": "review-notes/Nomenclature.docx", "category": "Review Note"}, {"title": "P2 2026答案", "url": "review-notes/P2 2026答案.pdf", "category": "Review Note"}, {"title": "P2 电化学 重难点针对性练习题", "url": "review-notes/P2 电化学 重难点针对性练习题.docx", "category": "Review Note"}, {"title": "P2 金属 重难点针对性练习题", "url": "review-notes/P2 金属 重难点针对性练习题.docx", "category": "Review Note"}, {"title": "Quiz Paper1", "url": "review-notes/Quiz Paper1 .docx", "category": "Review Note"}, {"title": "Quiz paper2", "url": "review-notes/Quiz paper2 .docx", "category": "Review Note"}, {"title": "handout for reviewing", "url": "review-notes/handout for reviewing.docx", "category": "Review Note"}, {"title": "quiz paper", "url": "review-notes/quiz paper.docx", "category": "Review Note"}, {"title": "印度卷P2", "url": "review-notes/印度卷P2 .pdf", "category": "Review Note"}, {"title": "定义考核", "url": "review-notes/定义考核.docx", "category": "Review Note"}, {"title": "定义考核答案", "url": "review-notes/定义考核答案.docx", "category": "Review Note"}, {"title": "实验装置名称", "url": "review-notes/实验装置名称.docx", "category": "Review Note"}, {"title": "小马的问题与解析", "url": "review-notes/小马的问题与解析.docx", "category": "Review Note"}, {"title": "期末key point list答案", "url": "review-notes/期末key point list答案.docx", "category": "Review Note"}, {"title": "第6章复习提纲", "url": "review-notes/第6章复习提纲.docx", "category": "Review Note"}, {"title": "第一章期末复习handout", "url": "review-notes/第一章期末复习handout.docx", "category": "Review Note"}, {"title": "第八章复习提纲", "url": "review-notes/第八章复习提纲.docx", "category": "Review Note"}, {"title": "考察定义题", "url": "review-notes/考察定义题.docx", "category": "Review Note"}, {"title": "颜色表格", "url": "review-notes/颜色表格.docx", "category": "Review Note"}, {"title": "From The Start · Laufey", "url": "music.html", "category": "Music"}, {"title": "恋爱俘虏 · 彭佳慧", "url": "music.html", "category": "Music"}, {"title": "Self Control · Frank Ocean", "url": "music.html", "category": "Music"}, {"title": "If Only My Heart Could Speak (Acoustic) · Cody Fry", "url": "music.html", "category": "Music"}, {"title": "1234567 · 方大同", "url": "music.html", "category": "Music"}, {"title": "爱在 · 方大同", "url": "music.html", "category": "Music"}, {"title": "黑白灰 · 方大同", "url": "music.html", "category": "Music"}, {"title": "Runaway · Ye", "url": "music.html", "category": "Music"}, {"title": "If I Ain't Got You (Acoustic) · John Adams", "url": "music.html", "category": "Music"}, {"title": "Lab Escape · Chemistry Quiz Game", "url": "gaming/lab-escape.html", "category": "Gaming"}, {"title": "AI-Assisted Lesson Planning", "url": "ai-applications.html", "category": "AI Tool"}, {"title": "Auto-Generate Exam Questions", "url": "ai-applications.html", "category": "AI Tool"}, {"title": "Personal AI Chemistry Tutor", "url": "ai-applications.html", "category": "AI Tool"}, {"title": "ChatGPT Tool Guide", "url": "ai-applications.html", "category": "AI Tool"}, {"title": "Perplexity AI Tool", "url": "ai-applications.html", "category": "AI Tool"}, {"title": "Canva AI Magic Studio", "url": "ai-applications.html", "category": "AI Tool"}, {"title": "Gamma AI", "url": "ai-applications.html", "category": "AI Tool"}, {"title": "NotebookLM Google", "url": "ai-applications.html", "category": "AI Tool"}]
+[
+  {
+    "title": "Home",
+    "url": "index.html",
+    "category": "Page"
+  },
+  {
+    "title": "Past Papers",
+    "url": "past-papers.html",
+    "category": "Page"
+  },
+  {
+    "title": "Simulation Models",
+    "url": "simulation-models.html",
+    "category": "Page"
+  },
+  {
+    "title": "Music",
+    "url": "music.html",
+    "category": "Page"
+  },
+  {
+    "title": "Review Notes",
+    "url": "review-notes.html",
+    "category": "Page"
+  },
+  {
+    "title": "Gaming Time",
+    "url": "gaming.html",
+    "category": "Page"
+  },
+  {
+    "title": "Guitar Academy",
+    "url": "guitar-academy.html",
+    "category": "Private Space"
+  },
+  {
+    "title": "Private Space",
+    "url": "private-space.html",
+    "category": "Page"
+  },
+  {
+    "title": "AI Applications",
+    "url": "ai-applications.html",
+    "category": "Private Space"
+  },
+  {
+    "title": "Pearls of Wisdom",
+    "url": "pearls-of-wisdom.html",
+    "category": "Private Space"
+  },
+  {
+    "title": "Training Routine",
+    "url": "training-routine.html",
+    "category": "Private Space"
+  },
+  {
+    "title": "404",
+    "url": "404.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Addition Reaction of Ethene",
+    "url": "Addtion reaction of ethene.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Collision Theory",
+    "url": "Collision.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Copper Plating",
+    "url": "Copper plating.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Cracking",
+    "url": "Cracking.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Endo & Exo",
+    "url": "Endo and exo .html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Ethane Cracking",
+    "url": "Ethane cracking.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Extraction of Al",
+    "url": "Extraction of Al .html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Extraction of Al",
+    "url": "Extraction of al.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Fermentation",
+    "url": "Fermentation.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Haber Process",
+    "url": "Haber process 公开课模型.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Halogen Displacement",
+    "url": "Halogen displacement.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Hydrogen Fuel Cell",
+    "url": "Hydrogen fuel cell.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Identify Amino Acid",
+    "url": "Identify amino acid.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Mass Spectrum",
+    "url": "Mass spectrum.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "pH Value",
+    "url": "PHvalue.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "pH & Appetite",
+    "url": "PH与食欲.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Polyamide",
+    "url": "Polyamide.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Polyester",
+    "url": "Polyester.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Protein",
+    "url": "Protein.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Substitution Reaction",
+    "url": "Substitution reaction.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Titration 2 ",
+    "url": "Titration 2 .html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Alcohol Change",
+    "url": "alcohol change .html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Delta Hc",
+    "url": "delta H c.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Esterification",
+    "url": "esterification.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Fractional Distillation",
+    "url": "fractional distillation.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Identify Substance",
+    "url": "identify substance.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Mass Spectrum Model",
+    "url": "mass_spec_model.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Oxidation of Alcohol",
+    "url": "oxidation of alcohol.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Simple Calorimeter",
+    "url": "公开课simple calorimeter.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "公开课模型",
+    "url": "公开课模型.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "制备可溶性盐",
+    "url": "制备可溶性盐.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "反应平衡",
+    "url": "反应平衡.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Alloy Ductility",
+    "url": "合金的延展性.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "强酸与弱酸的水解",
+    "url": "强酸与弱酸的水解.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Strong vs Weak Acid Dissociation",
+    "url": "强酸与弱酸的解离.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Strong vs Weak Acid Experiment",
+    "url": "强酸弱酸实验.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Strong Acid Corrosion",
+    "url": "强酸的腐蚀性.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Improved Calorimeter",
+    "url": "改进量热计.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Orange Juice Analysis",
+    "url": "橙汁分析.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "沉淀的产生",
+    "url": "沉淀的产生.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "沉淀盐的产生",
+    "url": "沉淀盐的产生.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Treating Stings",
+    "url": "治疗sting.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "滴定",
+    "url": "滴定.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "电池闭合回路的产生",
+    "url": "电池闭合回路的产生.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "电解不同溶液",
+    "url": "电解不同溶液.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "电解氯化铜",
+    "url": "电解氯化铜.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "电解水",
+    "url": "电解水.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "电解池的微观构成",
+    "url": "电解池的微观构成.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "电镀电极材料",
+    "url": "电镀电极材料.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "电镀金模型",
+    "url": "电镀金模型.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "盐的制备1",
+    "url": "盐的制备1.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Alkali Neutralization",
+    "url": "碱性的中和.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "碳酸根",
+    "url": "碳酸根.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "触电模拟",
+    "url": "触电模拟.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "酸与金属",
+    "url": "酸与金属.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Acid Corrosion",
+    "url": "酸性腐蚀.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "Metal Displacement Reaction",
+    "url": "金属displacement reaction.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "金属与酸",
+    "url": "金属与酸.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "铵盐与碱",
+    "url": "铵盐与碱.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "镀铜",
+    "url": "镀铜.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "难溶盐的制备",
+    "url": "难溶盐的制备.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "高炉炼铁",
+    "url": "高炉炼铁.html",
+    "category": "Simulation Model"
+  },
+  {
+    "title": "0620 June 2022 Mark Scheme 21",
+    "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Mark Scheme 22",
+    "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Mark Scheme 23",
+    "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Mark Scheme 41",
+    "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Mark Scheme 42",
+    "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Mark Scheme 43",
+    "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Mark Scheme 61",
+    "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Mark Scheme 62",
+    "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Mark Scheme 63",
+    "url": "past-papers/0620_Chemistry_June_2022_Mark_Scheme_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Question paper 21",
+    "url": "past-papers/0620_Chemistry_June_2022_Question_paper_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Question paper 22",
+    "url": "past-papers/0620_Chemistry_June_2022_Question_paper_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Question paper 23",
+    "url": "past-papers/0620_Chemistry_June_2022_Question_paper_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Question paper 41",
+    "url": "past-papers/0620_Chemistry_June_2022_Question_paper_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Question paper 42",
+    "url": "past-papers/0620_Chemistry_June_2022_Question_paper_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Question paper 43",
+    "url": "past-papers/0620_Chemistry_June_2022_Question_paper_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Question paper 61",
+    "url": "past-papers/0620_Chemistry_June_2022_Question_paper_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Question paper 62",
+    "url": "past-papers/0620_Chemistry_June_2022_Question_paper_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2022 Question paper 63",
+    "url": "past-papers/0620_Chemistry_June_2022_Question_paper_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Mark Scheme 21",
+    "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Mark Scheme 22",
+    "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Mark Scheme 23",
+    "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Mark Scheme 41",
+    "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Mark Scheme 42",
+    "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Mark Scheme 43",
+    "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Mark Scheme 61",
+    "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Mark Scheme 62",
+    "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Mark Scheme 63",
+    "url": "past-papers/0620_Chemistry_June_2023_Mark_Scheme_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Question paper 21",
+    "url": "past-papers/0620_Chemistry_June_2023_Question_paper_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Question paper 22",
+    "url": "past-papers/0620_Chemistry_June_2023_Question_paper_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Question paper 23",
+    "url": "past-papers/0620_Chemistry_June_2023_Question_paper_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Question paper 41",
+    "url": "past-papers/0620_Chemistry_June_2023_Question_paper_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Question paper 42",
+    "url": "past-papers/0620_Chemistry_June_2023_Question_paper_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Question paper 43",
+    "url": "past-papers/0620_Chemistry_June_2023_Question_paper_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Question paper 61",
+    "url": "past-papers/0620_Chemistry_June_2023_Question_paper_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Question paper 62",
+    "url": "past-papers/0620_Chemistry_June_2023_Question_paper_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2023 Question paper 63",
+    "url": "past-papers/0620_Chemistry_June_2023_Question_paper_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Mark Scheme 21",
+    "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Mark Scheme 22",
+    "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Mark Scheme 23",
+    "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Mark Scheme 41",
+    "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Mark Scheme 42",
+    "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Mark Scheme 43",
+    "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Mark Scheme 61",
+    "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Mark Scheme 62",
+    "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Mark Scheme 63",
+    "url": "past-papers/0620_Chemistry_June_2024_Mark_Scheme_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Question Paper 23",
+    "url": "past-papers/0620_Chemistry_June_2024_Question_Paper_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Question paper 21",
+    "url": "past-papers/0620_Chemistry_June_2024_Question_paper_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Question paper 22",
+    "url": "past-papers/0620_Chemistry_June_2024_Question_paper_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Question paper 41",
+    "url": "past-papers/0620_Chemistry_June_2024_Question_paper_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Question paper 42",
+    "url": "past-papers/0620_Chemistry_June_2024_Question_paper_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Question paper 43",
+    "url": "past-papers/0620_Chemistry_June_2024_Question_paper_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Question paper 61",
+    "url": "past-papers/0620_Chemistry_June_2024_Question_paper_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Question paper 62",
+    "url": "past-papers/0620_Chemistry_June_2024_Question_paper_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2024 Question paper 63",
+    "url": "past-papers/0620_Chemistry_June_2024_Question_paper_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Mark Scheme 21",
+    "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Mark Scheme 22",
+    "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Mark Scheme 23",
+    "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Mark Scheme 41",
+    "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Mark Scheme 42",
+    "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Mark Scheme 43",
+    "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Mark Scheme 61",
+    "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Mark Scheme 62",
+    "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Mark Scheme 63",
+    "url": "past-papers/0620_Chemistry_June_2025_Mark_Scheme_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Question Paper 21",
+    "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Question Paper 22",
+    "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Question Paper 23",
+    "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Question Paper 41",
+    "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Question Paper 42",
+    "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Question Paper 43",
+    "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Question Paper 61",
+    "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Question Paper 62",
+    "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 June 2025 Question Paper 63",
+    "url": "past-papers/0620_Chemistry_June_2025_Question_Paper_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2022 Mark Scheme 22",
+    "url": "past-papers/0620_Chemistry_March_2022_Mark_Scheme_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2022 Mark Scheme 42",
+    "url": "past-papers/0620_Chemistry_March_2022_Mark_Scheme_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2022 Mark Scheme 62",
+    "url": "past-papers/0620_Chemistry_March_2022_Mark_Scheme_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2022 Question paper 22",
+    "url": "past-papers/0620_Chemistry_March_2022_Question_paper_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2022 Question paper 42",
+    "url": "past-papers/0620_Chemistry_March_2022_Question_paper_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2022 Question paper 62",
+    "url": "past-papers/0620_Chemistry_March_2022_Question_paper_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2023 Mark Scheme 22",
+    "url": "past-papers/0620_Chemistry_March_2023_Mark_Scheme_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2023 Mark Scheme 32",
+    "url": "past-papers/0620_Chemistry_March_2023_Mark_Scheme_32.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2023 Mark Scheme 42",
+    "url": "past-papers/0620_Chemistry_March_2023_Mark_Scheme_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2023 Mark Scheme 62",
+    "url": "past-papers/0620_Chemistry_March_2023_Mark_Scheme_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2023 Question paper 22",
+    "url": "past-papers/0620_Chemistry_March_2023_Question_paper_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2023 Question paper 42",
+    "url": "past-papers/0620_Chemistry_March_2023_Question_paper_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2023 Question paper 62",
+    "url": "past-papers/0620_Chemistry_March_2023_Question_paper_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2024 Mark Scheme 22",
+    "url": "past-papers/0620_Chemistry_March_2024_Mark_Scheme_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2024 Mark Scheme 32",
+    "url": "past-papers/0620_Chemistry_March_2024_Mark_Scheme_32.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2024 Mark Scheme 42",
+    "url": "past-papers/0620_Chemistry_March_2024_Mark_Scheme_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2026 Question Paper 22",
+    "url": "past-papers/0620_Chemistry_March_2026_Question_Paper_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2026 Question Paper 42",
+    "url": "past-papers/0620_Chemistry_March_2026_Question_Paper_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 March 2026 Question Paper 62",
+    "url": "past-papers/0620_Chemistry_March_2026_Question_Paper_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Mark Scheme 21",
+    "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Mark Scheme 22",
+    "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Mark Scheme 23",
+    "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Mark Scheme 41",
+    "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Mark Scheme 42",
+    "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Mark Scheme 43",
+    "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Mark Scheme 61",
+    "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Mark Scheme 62",
+    "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Mark Scheme 63",
+    "url": "past-papers/0620_Chemistry_November_2022_Mark_Scheme_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Question paper 21",
+    "url": "past-papers/0620_Chemistry_November_2022_Question_paper_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Question paper 22",
+    "url": "past-papers/0620_Chemistry_November_2022_Question_paper_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Question paper 23",
+    "url": "past-papers/0620_Chemistry_November_2022_Question_paper_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Question paper 41",
+    "url": "past-papers/0620_Chemistry_November_2022_Question_paper_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Question paper 42",
+    "url": "past-papers/0620_Chemistry_November_2022_Question_paper_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Question paper 43",
+    "url": "past-papers/0620_Chemistry_November_2022_Question_paper_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Question paper 61",
+    "url": "past-papers/0620_Chemistry_November_2022_Question_paper_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Question paper 62",
+    "url": "past-papers/0620_Chemistry_November_2022_Question_paper_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2022 Question paper 63",
+    "url": "past-papers/0620_Chemistry_November_2022_Question_paper_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Mark Scheme 21",
+    "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Mark Scheme 22",
+    "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Mark Scheme 23",
+    "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Mark Scheme 41",
+    "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Mark Scheme 42",
+    "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Mark Scheme 43",
+    "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Mark Scheme 61",
+    "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Mark Scheme 62",
+    "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Mark Scheme 63",
+    "url": "past-papers/0620_Chemistry_November_2023_Mark_Scheme_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Question paper 21",
+    "url": "past-papers/0620_Chemistry_November_2023_Question_paper_21.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Question paper 22",
+    "url": "past-papers/0620_Chemistry_November_2023_Question_paper_22.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Question paper 23",
+    "url": "past-papers/0620_Chemistry_November_2023_Question_paper_23.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Question paper 41",
+    "url": "past-papers/0620_Chemistry_November_2023_Question_paper_41.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Question paper 42",
+    "url": "past-papers/0620_Chemistry_November_2023_Question_paper_42.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Question paper 43",
+    "url": "past-papers/0620_Chemistry_November_2023_Question_paper_43.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Question paper 61",
+    "url": "past-papers/0620_Chemistry_November_2023_Question_paper_61.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Question paper 62",
+    "url": "past-papers/0620_Chemistry_November_2023_Question_paper_62.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "0620 November 2023 Question paper 63",
+    "url": "past-papers/0620_Chemistry_November_2023_Question_paper_63.pdf",
+    "category": "Past Paper"
+  },
+  {
+    "title": "C1 期末复习试题",
+    "url": "review-notes/C1 期末复习试题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C10期末复习试题",
+    "url": "review-notes/C10期末复习试题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C11 期末复习清单",
+    "url": "review-notes/C11 期末复习清单.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C11 期末复习清单答案",
+    "url": "review-notes/C11 期末复习清单答案.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C12 期末复习清单",
+    "url": "review-notes/C12 期末复习清单.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C13 期末复习清单",
+    "url": "review-notes/C13 期末复习清单.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C15期末复习清单",
+    "url": "review-notes/C15期末复习清单 .docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C2 期末复习试题",
+    "url": "review-notes/C2 期末复习试题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C3期末复习试题",
+    "url": "review-notes/C3期末复习试题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C4 期末复习试题",
+    "url": "review-notes/C4 期末复习试题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C5 期末复习试题",
+    "url": "review-notes/C5 期末复习试题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C6期末复习试题",
+    "url": "review-notes/C6期末复习试题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C7 期末复习清单",
+    "url": "review-notes/C7 期末复习清单.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C8期末复习试题",
+    "url": "review-notes/C8期末复习试题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "C9期末复习试题",
+    "url": "review-notes/C9期末复习试题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "Chapter 3 answer",
+    "url": "review-notes/Chapter 3 answer.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "IG化学会考定义",
+    "url": "review-notes/IG化学会考定义.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "IG单词汇总",
+    "url": "review-notes/IG单词汇总.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "Nomenclature",
+    "url": "review-notes/Nomenclature.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "P2 2026答案",
+    "url": "review-notes/P2 2026答案.pdf",
+    "category": "Review Note"
+  },
+  {
+    "title": "P2 电化学 重难点针对性练习题",
+    "url": "review-notes/P2 电化学 重难点针对性练习题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "P2 金属 重难点针对性练习题",
+    "url": "review-notes/P2 金属 重难点针对性练习题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "Quiz Paper1",
+    "url": "review-notes/Quiz Paper1 .docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "Quiz paper2",
+    "url": "review-notes/Quiz paper2 .docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "handout for reviewing",
+    "url": "review-notes/handout for reviewing.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "quiz paper",
+    "url": "review-notes/quiz paper.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "印度卷P2",
+    "url": "review-notes/印度卷P2 .pdf",
+    "category": "Review Note"
+  },
+  {
+    "title": "定义考核",
+    "url": "review-notes/定义考核.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "定义考核答案",
+    "url": "review-notes/定义考核答案.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "实验装置名称",
+    "url": "review-notes/实验装置名称.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "小马的问题与解析",
+    "url": "review-notes/小马的问题与解析.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "期末key point list答案",
+    "url": "review-notes/期末key point list答案.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "第6章复习提纲",
+    "url": "review-notes/第6章复习提纲.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "第一章期末复习handout",
+    "url": "review-notes/第一章期末复习handout.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "第八章复习提纲",
+    "url": "review-notes/第八章复习提纲.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "考察定义题",
+    "url": "review-notes/考察定义题.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "颜色表格",
+    "url": "review-notes/颜色表格.docx",
+    "category": "Review Note"
+  },
+  {
+    "title": "From The Start · Laufey",
+    "url": "music.html",
+    "category": "Music"
+  },
+  {
+    "title": "恋爱俘虏 · 彭佳慧",
+    "url": "music.html",
+    "category": "Music"
+  },
+  {
+    "title": "Self Control · Frank Ocean",
+    "url": "music.html",
+    "category": "Music"
+  },
+  {
+    "title": "If Only My Heart Could Speak (Acoustic) · Cody Fry",
+    "url": "music.html",
+    "category": "Music"
+  },
+  {
+    "title": "1234567 · 方大同",
+    "url": "music.html",
+    "category": "Music"
+  },
+  {
+    "title": "爱在 · 方大同",
+    "url": "music.html",
+    "category": "Music"
+  },
+  {
+    "title": "黑白灰 · 方大同",
+    "url": "music.html",
+    "category": "Music"
+  },
+  {
+    "title": "Runaway · Ye",
+    "url": "music.html",
+    "category": "Music"
+  },
+  {
+    "title": "If I Ain't Got You (Acoustic) · John Adams",
+    "url": "music.html",
+    "category": "Music"
+  },
+  {
+    "title": "Lab Escape · Chemistry Quiz Game",
+    "url": "gaming/lab-escape.html",
+    "category": "Gaming"
+  },
+  {
+    "title": "AI-Assisted Lesson Planning",
+    "url": "ai-applications.html",
+    "category": "AI Tool"
+  },
+  {
+    "title": "Auto-Generate Exam Questions",
+    "url": "ai-applications.html",
+    "category": "AI Tool"
+  },
+  {
+    "title": "Personal AI Chemistry Tutor",
+    "url": "ai-applications.html",
+    "category": "AI Tool"
+  },
+  {
+    "title": "ChatGPT Tool Guide",
+    "url": "ai-applications.html",
+    "category": "AI Tool"
+  },
+  {
+    "title": "Perplexity AI Tool",
+    "url": "ai-applications.html",
+    "category": "AI Tool"
+  },
+  {
+    "title": "Canva AI Magic Studio",
+    "url": "ai-applications.html",
+    "category": "AI Tool"
+  },
+  {
+    "title": "Gamma AI",
+    "url": "ai-applications.html",
+    "category": "AI Tool"
+  },
+  {
+    "title": "NotebookLM Google",
+    "url": "ai-applications.html",
+    "category": "AI Tool"
+  },
+  {
+    "title": "Thinking About You · Frank Ocean",
+    "category": "Music",
+    "description": "In Bed with DJ Battle",
+    "url": "music.html"
+  },
+  {
+    "title": "浪人的告白 · 张震岳",
+    "category": "Music",
+    "description": "跟着感觉走",
+    "url": "music.html"
+  },
+  {
+    "title": "Cinderella · 林俊杰",
+    "category": "Music",
+    "description": "学不会 Lost N Found",
+    "url": "music.html"
+  },
+  {
+    "title": "我的秘密 · G.E.M. 邓紫棋",
+    "category": "Music",
+    "description": "My Secret",
+    "url": "music.html"
+  },
+  {
+    "title": "爱的就是你 · 王力宏",
+    "category": "Music",
+    "description": "唯一",
+    "url": "music.html"
+  },
+  {
+    "title": "大城小爱 · 王力宏",
+    "category": "Music",
+    "description": "盖世英雄",
+    "url": "music.html"
+  },
+  {
+    "title": "Pure Imagination (Wonka) · Timothée Chalamet",
+    "category": "Music",
+    "description": "Wonka Soundtrack",
+    "url": "music.html"
+  },
+  {
+    "title": "If I Ain't Got You · Brandon Victor Dixon",
+    "category": "Music",
+    "description": "Hell's Kitchen Broadway",
+    "url": "music.html"
+  },
+  {
+    "title": "玻璃 · Gareth.T",
+    "category": "Music",
+    "description": "玻璃",
+    "url": "music.html"
+  },
+  {
+    "title": "吴哥优昙 · 周菲戈",
+    "category": "Music",
+    "description": "24:01",
+    "url": "music.html"
+  },
+  {
+    "title": "Rock With You · Michael Jackson",
+    "category": "Music",
+    "description": "HIStory",
+    "url": "music.html"
+  }
+]
