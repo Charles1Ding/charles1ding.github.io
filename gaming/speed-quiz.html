@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Chemistry Speed Quiz · Charles</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Nunito', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0f172a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 20px;
+      color: #f8fafc;
+    }
+    .game-card {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 32px 28px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+    }
+    .score-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+    .score { font-weight: 800; font-size: 1.2rem; color: #22d3ee; }
+    .timer { font-weight: 800; font-size: 1.1rem; }
+    .timer.warn { color: #facc15; }
+    .timer.danger { color: #ef4444; animation: pulse 0.5s infinite; }
+    @keyframes pulse { 50% { opacity: 0.5; } }
+    .question {
+      font-size: 1.35rem;
+      font-weight: 800;
+      margin-bottom: 24px;
+      line-height: 1.5;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .option {
+      background: rgba(255,255,255,0.08);
+      border: 2px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 14px 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: #e2e8f0;
+    }
+    .option:hover { background: rgba(255,255,255,0.14); border-color: rgba(34,211,238,0.4); }
+    .option.correct { background: rgba(34,197,94,0.25); border-color: #22c55e; color: #86efac; }
+    .option.wrong { background: rgba(239,68,68,0.25); border-color: #ef4444; color: #fca5a5; }
+    .option:disabled { pointer-events: none; }
+    .streak { font-size: 0.85rem; color: #fbbf24; margin-top: 4px; }
+    .start-btn {
+      background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+      color: #0f172a;
+      border: none;
+      border-radius: 16px;
+      padding: 16px 40px;
+      font-size: 1.15rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .start-btn:hover { transform: scale(1.04); }
+    .game-over {
+      font-size: 2rem;
+      font-weight: 900;
+      color: #22d3ee;
+    }
+    .back-link {
+      color: #94a3b8;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-top: 12px;
+    }
+    .back-link:hover { color: #f8fafc; }
+
+    @media (max-width: 480px) {
+      .game-card { padding: 20px 16px; }
+      .question { font-size: 1.15rem; }
+      .options { gap: 8px; }
+      .option { padding: 12px 8px; font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-card">
+  <div class="score-bar" id="scoreBar" style="display:none">
+    <span>✅ <span class="score" id="scoreDisplay">0</span> / 15</span>
+    <span class="timer" id="timerDisplay">⏱ 8s</span>
+    <span class="streak" id="streakDisplay"></span>
+  </div>
+
+  <div class="question" id="questionArea">⚗️ Chemistry Speed Quiz</div>
+
+  <div class="options" id="optionsArea">
+    <div class="option" disabled>—</div><div class="option" disabled>—</div>
+    <div class="option" disabled>—</div><div class="option" disabled>—</div>
+  </div>
+
+  <button class="start-btn" id="startBtn" onclick="startGame()">▶ Start</button>
+</div>
+
+<a class="back-link" href="../gaming.html">← Back to Gaming</a>
+
+<script>
+const QUESTIONS = [
+  { q: "What is the chemical symbol for potassium?", opts: ["P", "Po", "K", "Pt"], ans: 2 },
+  { q: "How many electrons does a neutral oxygen atom have?", opts: ["6", "8", "10", "16"], ans: 1 },
+  { q: "Which gas is produced when a metal reacts with acid?", opts: ["Oxygen", "Carbon dioxide", "Hydrogen", "Nitrogen"], ans: 2 },
+  { q: "What is the pH of pure water at 25°C?", opts: ["0", "5", "7", "14"], ans: 2 },
+  { q: "Which element is a halogen?", opts: ["Sodium", "Chlorine", "Magnesium", "Calcium"], ans: 1 },
+  { q: "What type of bond holds NaCl together?", opts: ["Covalent", "Metallic", "Ionic", "Hydrogen"], ans: 2 },
+  { q: "What is the formula of sulfuric acid?", opts: ["HCl", "HNO₃", "H₂SO₄", "H₃PO₄"], ans: 2 },
+  { q: "Which subatomic particle has no charge?", opts: ["Proton", "Neutron", "Electron", "Positron"], ans: 1 },
+  { q: "What is the simplest alkane?", opts: ["Ethane", "Methane", "Propane", "Butane"], ans: 1 },
+  { q: "Which metal is liquid at room temperature?", opts: ["Iron", "Gold", "Mercury", "Silver"], ans: 2 },
+  { q: "What catalyst is used in the Haber process?", opts: ["Platinum", "Iron", "Nickel", "Vanadium(V) oxide"], ans: 1 },
+  { q: "What is the charge on a sulfate ion (SO₄)?", opts: ["+1", "-1", "-2", "+2"], ans: 2 },
+  { q: "Which process separates crude oil into fractions?", opts: ["Cracking", "Distillation", "Fractional distillation", "Filtration"], ans: 2 },
+  { q: "What color does litmus turn in acid?", opts: ["Blue", "Red", "Green", "Yellow"], ans: 1 },
+  { q: "How many atoms in one mole? (Avogadro's number)", opts: ["6.02×10²²", "6.02×10²³", "6.02×10²⁴", "3.01×10²³"], ans: 1 },
+  { q: "Which gas makes up ~78% of air?", opts: ["Oxygen", "Carbon dioxide", "Nitrogen", "Argon"], ans: 2 },
+  { q: "What type of reaction is: 2H₂ + O₂ → 2H₂O?", opts: ["Decomposition", "Combustion", "Neutralization", "Displacement"], ans: 1 },
+  { q: "What is the name of Group 1 elements?", opts: ["Halogens", "Noble gases", "Alkali metals", "Transition metals"], ans: 2 },
+  { q: "Which element has the symbol 'Fe'?", opts: ["Fluorine", "Francium", "Iron", "Fermium"], ans: 2 },
+  { q: "What is the test for carbon dioxide?", opts: ["Glowing splint relights", "Limewater turns milky", "Burns with pop", "Turns litmus blue"], ans: 1 },
+  { q: "How many bonds does carbon typically form?", opts: ["2", "3", "4", "6"], ans: 2 },
+  { q: "What is the formula for ammonia?", opts: ["NH₄", "NH₃", "NO₂", "N₂H₄"], ans: 1 },
+  { q: "Which of these is an endothermic process?", opts: ["Combustion of methane", "Neutralization of acid", "Photosynthesis", "Respiration"], ans: 2 },
+  { q: "What is the atomic number of magnesium?", opts: ["10", "11", "12", "13"], ans: 2 },
+  { q: "Which apparatus measures volume of gas produced?", opts: ["Burette", "Gas syringe", "Thermometer", "Voltmeter"], ans: 1 },
+];
+
+let score, currentQ, timeLeft, timerId, streak, questions;
+const TOTAL = 15;
+
+function shuffle(a) { for (let i = a.length-1; i>0; i--) { let j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; }
+
+function startGame() {
+  questions = shuffle([...QUESTIONS]).slice(0, TOTAL);
+  score = 0; currentQ = 0; streak = 0;
+  document.getElementById('startBtn').style.display = 'none';
+  document.getElementById('scoreBar').style.display = 'flex';
+  document.getElementById('scoreDisplay').textContent = '0';
+  document.getElementById('streakDisplay').textContent = '';
+  loadQuestion();
+}
+
+function loadQuestion() {
+  if (currentQ >= questions.length) return endGame();
+  const q = questions[currentQ];
+  document.getElementById('questionArea').textContent = q.q;
+  const opts = document.getElementById('optionsArea');
+  opts.innerHTML = q.opts.map((o, i) =>
+    `<button class="option" onclick="answer(${i})">${o}</button>`
+  ).join('');
+  timeLeft = 10;
+  updateTimer();
+  clearInterval(timerId);
+  timerId = setInterval(() => {
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) { clearInterval(timerId); answer(-1); }
+  }, 1000);
+}
+
+function updateTimer() {
+  const td = document.getElementById('timerDisplay');
+  td.textContent = '⏱ ' + timeLeft + 's';
+  td.className = 'timer' + (timeLeft <= 3 ? ' danger' : timeLeft <= 5 ? ' warn' : '');
+}
+
+function answer(choice) {
+  clearInterval(timerId);
+  const q = questions[currentQ];
+  const btns = document.querySelectorAll('.option');
+  btns.forEach(b => b.disabled = true);
+  if (choice === q.ans) {
+    btns[choice].classList.add('correct');
+    score++; streak++;
+    document.getElementById('streakDisplay').textContent = streak > 1 ? '🔥×' + streak : '';
+  } else {
+    if (choice >= 0) btns[choice].classList.add('wrong');
+    btns[q.ans].classList.add('correct');
+    streak = 0;
+    document.getElementById('streakDisplay').textContent = '';
+  }
+  document.getElementById('scoreDisplay').textContent = score;
+  setTimeout(() => { currentQ++; loadQuestion(); }, 800);
+}
+
+function endGame() {
+  clearInterval(timerId);
+  document.getElementById('questionArea').innerHTML = '<div class="game-over">' + score + ' / ' + TOTAL + '</div>';
+  document.getElementById('optionsArea').innerHTML = '';
+  document.getElementById('timerDisplay').textContent = '⏱ Done!';
+  document.getElementById('timerDisplay').className = 'timer';
+  document.getElementById('streakDisplay').textContent = score >= 12 ? '🏆 Chemistry Master!' : score >= 8 ? '👍 Good job!' : '📚 Keep studying!';
+  document.getElementById('startBtn').style.display = 'inline-block';
+  document.getElementById('startBtn').textContent = '🔄 Play Again';
+}
+</script>
+</body>
+</html>

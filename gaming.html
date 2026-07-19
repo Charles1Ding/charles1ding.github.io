@@ -275,6 +275,21 @@
         <button class="play-btn"><span class="play-icon">▶</span> Play Now</button>
       </div>
     </div>
+
+    <!-- Speed Quiz -->
+    <div class="game-card" onclick="window.location.href='gaming/speed-quiz.html'">
+      <div class="game-thumb" style="background:linear-gradient(135deg,#0f172a,#1e3a5f,#0ea5e9);display:flex;align-items:center;justify-content:center;font-size:3rem;">⏱️</div>
+      <div class="game-info">
+        <div class="game-name">Chemistry Speed Quiz ⏱️</div>
+        <div class="game-desc">15 rapid-fire questions, 10 seconds each. Symbols, formulas, reactions, and IGCSE core facts. Beat the timer!</div>
+        <div class="game-tags">
+          <span class="game-tag">Timer</span>
+          <span class="game-tag">IGCSE</span>
+          <span class="game-tag">Core Facts</span>
+        </div>
+        <button class="play-btn"><span class="play-icon">▶</span> Play Now</button>
+      </div>
+    </div>
   </div>
 
   <footer>Made with <span>♥</span> by Charles · Game on! 🎮</footer>
@@ -283,5 +298,6 @@
 
 <script src="search-widget.js"></script>
 <script src="dark-mode.js"></script>
+<script>if("serviceWorker"in navigator){navigator.serviceWorker.register("/sw.js").catch(()=>{})}</script>
 </body>
 </html>
