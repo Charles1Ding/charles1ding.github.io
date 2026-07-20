@@ -517,5 +517,16 @@
 
         window.onload = () => { initParticles(); renderLoop(); };
     </script>
+
+<style>
+.model-nav { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:9998; display:flex; gap:8px; align-items:center; }
+.model-nav a { background:rgba(30,45,70,0.85); backdrop-filter:blur(10px); border:1px solid rgba(148,180,220,0.25); border-radius:12px; padding:8px 16px; color:#c8ddf8; text-decoration:none; font-family:Nunito,sans-serif; font-size:0.85rem; font-weight:700; transition:all 0.2s; }
+.model-nav a:hover { background:rgba(34,211,238,0.2); border-color:rgba(34,211,238,0.5); color:#22d3ee; }
+.model-nav .nav-count { color:#94a3b8; font-size:0.78rem; padding:0 4px; }
+.model-nav .nav-disabled { opacity:0.35; pointer-events:none; }
+</style>
+
+<div class="model-nav"><a href="Copper plating.html">← Prev</a><span class="nav-count">3 / 63</span><a href="Extraction of al.html">Next →</a></div>
+
 </body>
 </html>
