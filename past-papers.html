@@ -358,6 +358,18 @@
     .hidden { display: none; }
   </style>
 <link rel="stylesheet" href="dark-mode.css">
+
+<link rel="canonical" href="https://charles1ding.github.io/past-papers.html" />
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "IGCSE Chemistry Past Papers (0620)",
+  "description": "127 past papers and mark schemes from 2022-2026, organized by year and session.",
+  "url": "https://charles1ding.github.io/past-papers.html",
+  "isPartOf": {"@type": "WebSite", "name": "Charles · Chem Teacher", "url": "https://charles1ding.github.io/"}
+}
+</script>
 </head>
 <body>
 
@@ -486,10 +498,12 @@ function renderSessionPanel(year, session, container) {
   qp.forEach(p => {
     if (!paperMap[p.paper]) paperMap[p.paper] = { label: p.label };
     paperMap[p.paper].qpFile = p.file;
+      paperMap[p.paper].qpSize = p.size || "";
   });
   ms.forEach(p => {
     if (!paperMap[p.paper]) paperMap[p.paper] = { label: p.label };
     paperMap[p.paper].msFile = p.file;
+      paperMap[p.paper].msSize = p.size || "";
   });
 
   const paperNums = Object.keys(paperMap).sort((a,b) => parseInt(a) - parseInt(b));
@@ -543,7 +557,7 @@ function renderSessionPanel(year, session, container) {
       qpRow.className = 'paper-file-row';
       if (info.qpFile) {
         qpRow.innerHTML = `<span class="ft qp-tag">QP</span>
-          <span class="fn">Question Paper</span>
+          <span class="fn">Question Paper</span><span class="size-tag" style="font-size:0.7rem;color:#94a3b8;margin-left:6px;white-space:nowrap;">${info.qpSize || ""}</span>
           <span class="actions">
             <a href="past-papers/${encodeURIComponent(info.qpFile)}" target="_blank" class="open-link">Open</a>
             <a href="past-papers/${encodeURIComponent(info.qpFile)}" download class="dl-link">Download</a>
@@ -559,7 +573,7 @@ function renderSessionPanel(year, session, container) {
       msRow.className = 'paper-file-row';
       if (info.msFile) {
         msRow.innerHTML = `<span class="ft ms-tag">MS</span>
-          <span class="fn">Mark Scheme</span>
+          <span class="fn">Mark Scheme</span><span class="size-tag" style="font-size:0.7rem;color:#94a3b8;margin-left:6px;white-space:nowrap;">${info.msSize || ""}</span>
           <span class="actions">
             <a href="past-papers/${encodeURIComponent(info.msFile)}" target="_blank" class="open-link ms-link">Open</a>
             <a href="past-papers/${encodeURIComponent(info.msFile)}" download class="dl-link ms-link">Download</a>

@@ -20,6 +20,7 @@ const STATIC = [
   '/dark-mode.js',
   '/search-widget.js',
   '/search-index.json',
+  '/past-papers-data.js',
   '/gaming/element-match.html',
   '/gaming/periodic-quiz.html',
   '/gaming/speed-quiz.html',
