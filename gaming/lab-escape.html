@@ -152,6 +152,16 @@ body{font-family:'Inter','Segoe UI',sans-serif;background:#050508;overflow:hidde
 .sfx-toggle{position:absolute;bottom:16px;right:16px;z-index:60;width:36px;height:36px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.12);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#7a7a8a;font-size:16px;transition:all .2s}
 .sfx-toggle:hover{color:white;background:rgba(255,255,255,.1)}.sfx-toggle.muted{color:#444}
 @keyframes alarmBlink{0%,100%{opacity:.15}50%{opacity:.6}}
+.btn-start-row{display:flex;justify-content:center}
+.best-scores{margin-top:16px;text-align:center;font-family:'Share Tech Mono',monospace;font-size:12px;color:#7a7a8a}
+.best-scores .best-item{margin:4px 0;letter-spacing:1px}
+.best-scores .best-diff{color:#4FC3F7;font-weight:700}
+.best-scores .best-grade{color:#FFD54F;font-weight:700}
+.best-scores .best-score{color:#4CAF50;font-weight:700}
+.kbd-hint{margin-top:10px;font-family:'Share Tech Mono',monospace;font-size:11px;color:#555;text-align:center;letter-spacing:1px}
+.kbd-hint kbd{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:4px;padding:1px 6px;font-family:inherit;font-size:10px}
+@media(max-width:768px){.kbd-hint{display:none}}
+
 @media(max-width:768px){.question-panel{width:95vw;padding:14px 18px 18px}.panel-question{font-size:15px}.opt-btn{font-size:13px;padding:10px 14px}.start-title{font-size:50px}.win-stats{grid-template-columns:1fr;gap:10px}.diff-btns{gap:8px}.diff-btn{padding:10px 16px;min-width:70px}}
 </style>
 </head>
@@ -200,7 +210,11 @@ body{font-family:'Inter','Segoe UI',sans-serif;background:#050508;overflow:hidde
       <div class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')"><span class="diff-name">HARD</span><span class="diff-detail">10 Qs · 45s</span></div>
       <div class="diff-btn" data-diff="insane" onclick="setDifficulty('insane')"><span class="diff-name">INSANE</span><span class="diff-detail">15 Qs · 54s</span></div>
     </div>
-    <button class="btn-start" onclick="startGame()">BEGIN ESCAPE</button>
+    <div class="kbd-hint">Press <kbd>A</kbd> <kbd>B</kbd> <kbd>C</kbd> <kbd>D</kbd> or <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> to answer</div>
+    <div class="btn-start-row">
+      <button class="btn-start" onclick="startGame()">BEGIN ESCAPE</button>
+    </div>
+    <div class="best-scores" id="bestScores"></div>
     <div class="sfx-toggle" id="sfxBtn" onclick="toggleSfx()" title="Sound">🔊</div>
   </div>
   <div class="screen hidden" id="goScreen"><div class="gameover-title">CAUGHT</div><img class="go-img" id="goImg" src="" alt="Game Over"><div class="gameover-detail" id="goDetail"></div><button class="btn-retry" onclick="restartGame()">TRY AGAIN</button></div>
@@ -394,15 +408,45 @@ function endGame(won){
     var g;if(acc===100)g='S+';else if(acc>=85)g='S';else if(acc>=70)g='A';else if(acc>=50)g='B';else g='C';
     D.wsScore.textContent=G.score;D.wsAcc.textContent=acc+'%';D.wsGrade.textContent=g;
     D.winImg.src='ryan-gosling-thumbs-up.png';D.winS.classList.remove('hidden');
+    // Save high score
+    var isNew=saveHighScore(selDiff,G.score,g,acc);
+    if(isNew){var rec=document.createElement('div');rec.style.cssText='font-family:Share Tech Mono,monospace;color:#FFD54F;font-size:14px;margin-bottom:12px;text-shadow:0 0 16px rgba(255,215,79,.5);animation:timeBonusFly 1.5s ease-out forwards;';rec.textContent='🏆 NEW RECORD!';D.winS.querySelector('.win-stats').parentNode.insertBefore(rec,D.winS.querySelector('.win-stats'));}
+    renderHighScores();
   }else{sfxLose();
     D.goImg.src='RG.jpg';
     D.goDetail.innerHTML='The mutant caught you in <strong>Room '+(G.level+1)+'</strong>.<br>Correct: <strong>'+G.correct+'</strong> &nbsp;|&nbsp; Score: <strong>'+G.score+'</strong>';D.goS.classList.remove('hidden');
+    renderHighScores();
     D.alarm.style.animation='alarmBlink 0.3s ease-in-out infinite';
   }
 }
 function restartGame(){stopAllTimers();hideQuestion();D.goS.classList.add('hidden');D.winS.classList.add('hidden');D.startS.classList.remove('hidden');G.danger=0;updateCreature();D.alarm.style.animation='alarmBlink 0.7s ease-in-out infinite paused';}
 
+// === HIGH SCORES (localStorage) ===
+var HS_KEY='labEscape_highScores';
+function getHighScores(){try{return JSON.parse(localStorage.getItem(HS_KEY))||{}}catch(e){return{}}}
+function saveHighScore(diff,score,grade,acc){var hs=getHighScores();if(!hs[diff]||score>hs[diff].score){hs[diff]={score:score,grade:grade,acc:acc};localStorage.setItem(HS_KEY,JSON.stringify(hs));return true}return false}
+function renderHighScores(){
+  var hs=getHighScores(),el=document.getElementById('bestScores');
+  var order=['easy','normal','hard','insane'],names={easy:'EASY',normal:'NORMAL',hard:'HARD',insane:'INSANE'};
+  var html='';
+  order.forEach(function(d){if(hs[d]){html+='<div class="best-item"><span class="best-diff">'+names[d]+'</span> — <span class="best-grade">'+hs[d].grade+'</span> · <span class="best-score">'+hs[d].score+'</span> pts · '+hs[d].acc+'%</div>';}});
+  el.innerHTML=html||'<div class="best-item" style="opacity:0.5">No records yet — escape to set one!</div>';
+}
+
+// === KEYBOARD SHORTCUTS ===
+document.addEventListener('keydown',function(e){
+  if(!G.playing)return;
+  var k=e.key.toLowerCase();
+  var idx=-1;
+  if(k==='a'||k==='1')idx=0;
+  else if(k==='b'||k==='2')idx=1;
+  else if(k==='c'||k==='3')idx=2;
+  else if(k==='d'||k==='4')idx=3;
+  if(idx>=0&&!G.locked){answer(idx);}
+});
+
 updateCreature();
+renderHighScores();
 document.addEventListener('click',function(){if(!ac)initAc();},{once:true});
 
 console.log('LAB ESCAPE — Survive the Mutant');
