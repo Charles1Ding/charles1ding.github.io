@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="../favicon.png">
+<title>ChemType · Chemistry Typing Quiz</title>
+<meta property="og:title" content="ChemType · Chemistry Typing Quiz">
+<meta property="og:description" content="Type the answer to each falling chemistry question — element symbols, reaction products, and term abbreviations — before it breaches the reactor.">
+<meta property="og:image" content="https://charles1ding.github.io/favicon.png">
+<meta property="og:url" content="https://charles1ding.github.io/gaming/typing-chemistry.html">
+<meta name="twitter:card" content="summary">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,600;0,700;0,800;1,700;1,800&family=Share+Tech+Mono&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{
+  font-family:'Nunito',sans-serif;
+  background:radial-gradient(ellipse at 50% -10%,#0b2545 0%,#061325 55%,#03070f 100%);
+  color:#e6f0ff;
+  user-select:none;-webkit-user-select:none;
+}
+.wrap{position:relative;height:100vh;display:flex;flex-direction:column}
+
+/* ===== HUD ===== */
+.hud{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;gap:14px;z-index:5;
+  background:linear-gradient(180deg,rgba(8,20,40,.92),rgba(8,20,40,.4));
+  border-bottom:1px solid rgba(80,160,255,.18);
+}
+.hud .block{display:flex;flex-direction:column;line-height:1.1}
+.hud .label{font-size:.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#6f9bd1;font-weight:700}
+.hud .value{font-size:1.35rem;font-weight:800;font-family:'Share Tech Mono',monospace;color:#fff}
+.hud .value.accent{color:#39e6a8}
+.hud .value.warn{color:#ff5d73}
+.hud .center{display:flex;gap:26px;align-items:center}
+.lives{font-size:1.4rem;letter-spacing:2px;filter:drop-shadow(0 0 6px rgba(255,80,110,.6))}
+.combo{color:#ffd166;font-weight:800;font-family:'Share Tech Mono',monospace}
+
+/* ===== Field ===== */
+.field{
+  position:relative;flex:1;overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 120%,rgba(57,230,168,.10),transparent 45%),
+    repeating-linear-gradient(0deg,transparent,transparent 38px,rgba(80,160,255,.04) 39px,transparent 40px);
+}
+.field.shake{animation:shake .35s}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(5px)}}
+
+.chamber{
+  position:absolute;left:0;right:0;bottom:0;height:64px;
+  background:linear-gradient(180deg,rgba(255,93,115,.05),rgba(255,93,115,.22));
+  border-top:2px dashed rgba(255,93,115,.5);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Share Tech Mono',monospace;font-size:.8rem;letter-spacing:3px;
+  color:rgba(255,150,160,.85);text-transform:uppercase;pointer-events:none;
+}
+
+/* ===== Question enemy ===== */
+.enemy{
+  position:absolute;top:0;left:0;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:7px 13px;border-radius:12px;
+  background:rgba(20,40,70,.80);border:1.5px solid rgba(90,160,255,.35);
+  box-shadow:0 4px 18px rgba(0,0,0,.35);
+  transition:transform .04s linear,opacity .25s,box-shadow .2s;
+  will-change:transform;text-align:center;min-width:104px;
+}
+.enemy .badge{
+  font-family:'Share Tech Mono',monospace;font-size:.56rem;letter-spacing:1.5px;
+  font-weight:700;padding:1px 7px;border-radius:8px;text-transform:uppercase;
+  background:rgba(90,160,255,.18);color:#8fc0ff;border:1px solid rgba(90,160,255,.3);
+}
+.enemy .prompt{
+  font-family:'Nunito',sans-serif;font-weight:800;font-size:1.18rem;color:#eaf3ff;
+  line-height:1.05;white-space:nowrap;
+}
+.enemy .prompt sub{font-size:.72em;font-weight:700}
+.enemy .progress{display:flex;gap:3px;font-family:'Share Tech Mono',monospace;font-size:1.05rem;font-weight:700}
+.enemy .ch{display:inline-block;min-width:11px}
+.enemy .ch.blank{color:rgba(150,180,220,.42)}
+.enemy .ch.done{color:#39e6a8;text-shadow:0 0 10px rgba(57,230,168,.9)}
+.enemy.active{border-color:#39e6a8;background:rgba(20,60,50,.92);box-shadow:0 0 22px rgba(57,230,168,.45)}
+.enemy.boss{
+  background:linear-gradient(135deg,rgba(70,20,60,.92),rgba(40,20,70,.92));
+  border-color:#ff8adf;
+}
+.enemy.boss .badge{background:rgba(255,138,223,.2);color:#ffb8ee;border-color:rgba(255,138,223,.4)}
+.enemy.boss .prompt{color:#ffd9f4;font-size:1.35rem}
+.enemy.boss .ch.done{color:#ffe066;text-shadow:0 0 12px rgba(255,224,102,.9)}
+.enemy.dying{animation:pop .28s forwards}
+@keyframes pop{to{transform:scale(1.6);opacity:0}}
+
+/* floating answer reveal */
+.float{position:absolute;font-family:'Share Tech Mono',monospace;font-weight:800;font-size:1.1rem;pointer-events:none;animation:floatUp .95s forwards;z-index:8;white-space:nowrap}
+.float.ok{color:#39e6a8;text-shadow:0 0 10px rgba(57,230,168,.7)}
+.float.bad{color:#ff6b81;text-shadow:0 0 10px rgba(255,80,110,.6)}
+.float sub{font-size:.72em}
+@keyframes floatUp{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-48px)}}
+
+/* ===== Overlays ===== */
+.overlay{
+  position:absolute;inset:0;z-index:20;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:24px;
+  background:radial-gradient(ellipse at 50% 40%,rgba(6,18,36,.86),rgba(3,7,15,.96));
+  backdrop-filter:blur(4px);
+}
+.overlay.hidden{display:none}
+.overlay h1{
+  font-size:clamp(2rem,7vw,3.4rem);font-weight:800;font-style:italic;
+  color:#7bd1ff;text-shadow:0 0 24px rgba(80,180,255,.5);margin-bottom:6px;
+}
+.overlay .tagline{color:#9fc0e8;font-size:1rem;font-weight:600;margin-bottom:22px;max-width:540px;line-height:1.6}
+.overlay .howto{
+  background:rgba(20,40,70,.5);border:1px solid rgba(90,160,255,.25);
+  border-radius:14px;padding:16px 22px;margin-bottom:24px;max-width:560px;
+  font-size:.86rem;color:#bcd4f0;line-height:1.8;text-align:left;
+}
+.overlay .howto b{color:#39e6a8}
+.overlay .howto .ex{color:#ffd9a8;font-family:'Share Tech Mono',monospace}
+.diffs{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.diff-btn{
+  width:160px;padding:16px 14px;border-radius:16px;cursor:pointer;
+  background:linear-gradient(135deg,rgba(30,70,130,.55),rgba(20,45,90,.55));
+  border:1.5px solid rgba(90,160,255,.4);color:#e6f0ff;
+  transition:all .2s;font-family:'Nunito',sans-serif;
+}
+.diff-btn:hover{transform:translateY(-5px) scale(1.03);border-color:#39e6a8;box-shadow:0 10px 30px rgba(57,230,168,.25)}
+.diff-btn .dn{font-size:1.25rem;font-weight:800;font-style:italic}
+.diff-btn .dd{font-size:.72rem;color:#9fc0e8;margin:4px 0 8px;font-weight:600}
+.diff-btn .db{font-family:'Share Tech Mono',monospace;font-size:.95rem;color:#ffd166}
+.record{color:#ffd166;font-weight:800;font-size:1.1rem;margin:14px 0 4px;min-height:24px}
+.big-score{font-family:'Share Tech Mono',monospace;font-size:2.6rem;font-weight:800;color:#39e6a8;text-shadow:0 0 18px rgba(57,230,168,.5);margin:6px 0}
+.stats-row{display:flex;gap:26px;flex-wrap:wrap;justify-content:center;margin:14px 0 22px}
+.stat{display:flex;flex-direction:column}
+.stat .s-l{font-size:.62rem;letter-spacing:1.5px;text-transform:uppercase;color:#6f9bd1;font-weight:700}
+.stat .s-v{font-family:'Share Tech Mono',monospace;font-size:1.3rem;font-weight:800;color:#fff}
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 30px;margin:6px;border:none;border-radius:30px;cursor:pointer;
+  font-family:'Nunito',sans-serif;font-weight:800;font-style:italic;font-size:1rem;
+  background:linear-gradient(135deg,#2563c7,#1e3a6e);color:#fff;transition:all .2s;
+}
+.btn:hover{transform:scale(1.05);box-shadow:0 6px 24px rgba(37,99,199,.4)}
+.btn.ghost{background:rgba(255,255,255,.08);border:1.5px solid rgba(255,255,255,.2)}
+.btn-row{display:flex;flex-wrap:wrap;justify-content:center}
+
+.back{
+  position:absolute;top:14px;left:16px;z-index:30;
+  font-size:.82rem;font-weight:700;color:#9fc0e8;text-decoration:none;
+  background:rgba(10,25,45,.7);border:1px solid rgba(90,160,255,.3);
+  padding:7px 14px;border-radius:20px;transition:all .2s;
+}
+.back:hover{color:#fff;border-color:#39e6a8}
+.hint{position:absolute;bottom:8px;right:14px;z-index:6;font-size:.68rem;color:#5f7fa8;font-weight:600}
+
+@media(max-width:480px){.enemy .prompt{font-size:1rem}.enemy.boss .prompt{font-size:1.15rem}.hud .center{gap:14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../gaming.html">← Games</a>
+
+  <!-- HUD -->
+  <div class="hud">
+    <div class="block"><span class="label">Score</span><span class="value accent" id="score">0</span></div>
+    <div class="center">
+      <div class="block" style="align-items:center"><span class="label">Stage</span><span class="value" id="stage">1</span></div>
+      <div class="block" style="align-items:center"><span class="label">Lives</span><span class="lives" id="lives">❤️❤️❤️</span></div>
+      <div class="block" style="align-items:center"><span class="label">Combo</span><span class="combo" id="combo">x1</span></div>
+    </div>
+    <div class="block" style="align-items:flex-end">
+      <span class="label">WPM · Acc</span>
+      <span class="value" id="wpm">0 · 100%</span>
+    </div>
+  </div>
+
+  <!-- Play field -->
+  <div class="field" id="field">
+    <div class="chamber">⚗ REACTION CHAMBER — DON'T LET A QUESTION BREACH ⚗</div>
+  </div>
+  <div class="hint">💡 Best with a physical keyboard · 推荐用电脑键盘</div>
+
+  <!-- Start overlay -->
+  <div class="overlay" id="startScreen">
+    <h1>⚗️ ChemType</h1>
+    <p class="tagline">Chemistry typing quiz — each falling card is a question. Type the <b>answer</b> (element symbol, reaction product, or term abbreviation) letter by letter before it reaches the reactor.</p>
+    <div class="howto">
+      <b>Three question types fall from the top:</b><br>
+      🔹 <b>SYMBOL</b> — given the element name, type its <b>formula</b>. &nbsp;<span class="ex">Sodium → Na</span><br>
+      🔹 <b>PRODUCT</b> — given the reactants + arrow, type the <b>product</b>. &nbsp;<span class="ex">C + O₂ → CO₂</span><br>
+      🔹 <b>ABBREV</b> — given the term, type its <b>abbreviation</b>. &nbsp;<span class="ex">Activation energy → Ea</span><br><br>
+      <b>How to play:</b><br>
+      • Type the <b>first letter of the answer</b> to lock onto a card (it glows green).<br>
+      • Finish typing the answer = points + combo. Let one breach = lose a life.<br>
+      • A pink <b>BOSS</b> card (long equation) appears now and then — type it fully or lose 2 lives.<br>
+      • When a card is destroyed or breaches, its correct answer flashes so you learn it.<br>
+      • Speed &amp; spawn rate ramp up each stage. How high can you score?
+    </div>
+    <div class="diffs" id="diffBtns"></div>
+  </div>
+
+  <!-- Game over overlay -->
+  <div class="overlay hidden" id="overScreen">
+    <h1 id="overTitle">Reaction Breached!</h1>
+    <div class="record" id="recordMsg"></div>
+    <div class="big-score" id="finalScore">0</div>
+    <div class="stats-row">
+      <div class="stat"><span class="s-l">Best</span><span class="s-v" id="bestScore">0</span></div>
+      <div class="stat"><span class="s-l">WPM</span><span class="s-v" id="finalWpm">0</span></div>
+      <div class="stat"><span class="s-l">Accuracy</span><span class="s-v" id="finalAcc">100%</span></div>
+      <div class="stat"><span class="s-l">Max Combo</span><span class="s-v" id="finalCombo">x1</span></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="againBtn">🔄 Play Again</button>
+      <a class="btn ghost" href="../gaming.html">← All Games</a>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Question banks ----------
+  // Type 1: element name -> chemical symbol
+  var ELEMENTS = [
+    ["Hydrogen","H"],["Helium","He"],["Lithium","Li"],["Beryllium","Be"],["Boron","B"],
+    ["Carbon","C"],["Nitrogen","N"],["Oxygen","O"],["Fluorine","F"],["Neon","Ne"],
+    ["Sodium","Na"],["Magnesium","Mg"],["Aluminium","Al"],["Silicon","Si"],["Phosphorus","P"],
+    ["Sulfur","S"],["Chlorine","Cl"],["Argon","Ar"],["Potassium","K"],["Calcium","Ca"],
+    ["Iron","Fe"],["Copper","Cu"],["Zinc","Zn"],["Silver","Ag"],["Gold","Au"],
+    ["Bromine","Br"],["Iodine","I"],["Tin","Sn"],["Lead","Pb"],["Nickel","Ni"],
+    ["Barium","Ba"],["Manganese","Mn"]
+  ];
+  // Type 2: reactants (ASCII) -> product (ASCII)
+  var REACTIONS = [
+    ["C+O2","CO2"],["S+O2","SO2"],["2Mg+O2","2MgO"],["2H2+O2","2H2O"],
+    ["CaCO3","CaO"],["CuCO3","CuO"],["Fe+S","FeS"],["2Cu+O2","2CuO"],
+    ["2Na+Cl2","2NaCl"],["N2+3H2","2NH3"],["H2+Cl2","2HCl"],
+    ["CaO+H2O","Ca(OH)2"],["SO2+H2O","H2SO3"],["CO2+H2O","H2CO3"],
+    ["NH3+HCl","NH4Cl"],["P4+5O2","P2O5"]
+  ];
+  // Type 3: term -> abbreviation
+  var TERMS = [
+    ["Activation energy","Ea"],["Relative atomic mass","Ar"],["Relative formula mass","Mr"],
+    ["Rate constant","k"],["Equilibrium constant","Kc"],["Enthalpy change","dH"],
+    ["Ionisation energy","IE"],["Molar mass","M"],["Molar volume","Vm"],
+    ["Standard conditions","STP"],["Gas constant","R"],["Faraday constant","F"],
+    ["Oxidation state","OS"],["Electronegativity","EN"],["Empirical formula","EF"],
+    ["Molecular formula","MF"],["Atomic number","Z"],["Mass number","A"],["Bond enthalpy","BE"]
+  ];
+  // Boss questions (longer products)
+  var BOSSES = [
+    ["N2+3H2","2NH3"],["CaO+H2O","Ca(OH)2"],["NH3+HCl","NH4Cl"],["P4+5O2","P2O5"],
+    ["2Mg+O2","2MgO"],["2Cu+O2","2CuO"],["2Na+Cl2","2NaCl"],["H2+Cl2","2HCl"]
+  ];
+
+  var DIFF = {
+    easy:   {speed:24, spawn:2400, label:"Easy",   desc:"Slow · 3 lives"},
+    normal: {speed:38, spawn:1800, label:"Normal", desc:"Steady · 3 lives"},
+    hard:   {speed:56, spawn:1300, label:"Hard",   desc:"Fast · 3 lives"}
+  };
+
+  // ---------- DOM ----------
+  var field=document.getElementById('field');
+  var startScreen=document.getElementById('startScreen');
+  var overScreen=document.getElementById('overScreen');
+  var elScore=document.getElementById('score'),elStage=document.getElementById('stage'),
+      elLives=document.getElementById('lives'),elCombo=document.getElementById('combo'),
+      elWpm=document.getElementById('wpm');
+
+  // ---------- State ----------
+  var cfg, enemies=[], activeId=null, eid=0;
+  var score=0, lives=3, combo=0, maxCombo=0, stage=1, solved=0;
+  var correct=0, mistakes=0, startTime=0;
+  var running=false, lastT=0, spawnAcc=0, bossAcc=0;
+  var rafId=0;
+
+  function bestKey(d){return 'chemtype_best_'+d;}
+  function getBest(d){return parseInt(localStorage.getItem(bestKey(d))||'0',10);}
+  function setBest(d,v){localStorage.setItem(bestKey(d),String(v));}
+
+  // subscript digits in display strings
+  function sub(s){return s.replace(/(\d+)/g,'<sub>$1</sub>');}
+  function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+  function makeQuestion(isBoss){
+    if(isBoss){
+      var b=BOSSES[(Math.random()*BOSSES.length)|0];
+      return {promptHTML:sub(b[0])+' →', answer:b[1], cat:'BOSS', boss:true};
+    }
+    var r=Math.random();
+    if(r<0.40){
+      var e=ELEMENTS[(Math.random()*ELEMENTS.length)|0];
+      return {promptHTML:esc(e[0]), answer:e[1], cat:'SYMBOL'};
+    } else if(r<0.75){
+      var rx=REACTIONS[(Math.random()*REACTIONS.length)|0];
+      return {promptHTML:sub(rx[0])+' →', answer:rx[1], cat:'PRODUCT'};
+    } else {
+      var t=TERMS[(Math.random()*TERMS.length)|0];
+      return {promptHTML:esc(t[0]), answer:t[1], cat:'ABBREV'};
+    }
+  }
+
+  function renderProgress(w){
+    var h='';
+    for(var i=0;i<w.answer.length;i++){
+      if(i<w.typed){
+        h+='<span class="ch done">'+sub(w.answer[i])+'</span>';
+      } else {
+        h+='<span class="ch blank">▮</span>';
+      }
+    }
+    w.progEl.innerHTML=h;
+  }
+
+  function setActive(w){
+    if(activeId){
+      var old=enemies.find(function(x){return x.id===activeId;});
+      if(old){old.el.classList.remove('active');}
+    }
+    activeId=w?w.id:null;
+    if(w){w.el.classList.add('active');}
+  }
+
+  function floatText(x,y,html,cls){
+    var f=document.createElement('div');
+    f.className='float '+cls;
+    f.innerHTML=html;
+    f.style.left=x+'px';
+    f.style.top=y+'px';
+    field.appendChild(f);
+    setTimeout(function(){if(f&&f.parentNode)f.parentNode.removeChild(f);},950);
+  }
+
+  function spawn(q,isBoss){
+    var el=document.createElement('div');
+    el.className='enemy'+(isBoss?' boss':'');
+    el.innerHTML='<div class="badge">'+q.cat+'</div>'+
+                 '<div class="prompt">'+q.promptHTML+'</div>'+
+                 '<div class="progress"></div>';
+    field.appendChild(el);
+    var w={id:++eid,answer:q.answer,typed:0,x:0,y:-60,isBoss:!!isBoss,el:el,
+           progEl:el.querySelector('.progress')};
+    renderProgress(w);
+    var ew=el.offsetWidth, fw=field.clientWidth;
+    w.x=Math.max(8,Math.random()*(fw-ew-16)+8);
+    var sp=(isBoss?cfg.speed*0.5:cfg.speed)*(1+stage*0.10)*(0.85+Math.random()*0.3);
+    w.speed=sp;
+    el.style.transform='translate('+w.x+'px,-60px)';
+    enemies.push(w);
+  }
+
+  function destroyWord(w,scored){
+    w.el.classList.add('dying');
+    var el=w.el, ex=w.x, ey=w.y;
+    setTimeout(function(){if(el&&el.parentNode)el.parentNode.removeChild(el);},280);
+    enemies=enemies.filter(function(x){return x.id!==w.id;});
+    if(activeId===w.id)setActive(null);
+    if(scored){
+      solved++;
+      combo++;
+      if(combo>maxCombo)maxCombo=combo;
+      var gain=Math.round((w.isBoss?120:10)+(w.answer.length*2)*(1+combo*0.08));
+      score+=gain;
+      elScore.textContent=score;
+      elCombo.textContent='x'+(combo+1);
+      stage=1+Math.floor(score/250);
+      elStage.textContent=stage;
+      floatText(ex,ey,sub(w.answer)+' ✓','ok');
+    }
+  }
+
+  function breach(w){
+    field.classList.add('shake');
+    setTimeout(function(){field.classList.remove('shake');},350);
+    var lose=w.isBoss?2:1;
+    lives-=lose;
+    if(lives<0)lives=0;
+    combo=0;elCombo.textContent='x1';
+    elLives.textContent='❤️'.repeat(lives)+'🖤'.repeat(3-lives);
+    // reveal correct answer for learning
+    floatText(w.x,w.y,w.answer+' ?','bad');
+    enemies=enemies.filter(function(x){return x.id!==w.id;});
+    if(activeId===w.id)setActive(null);
+    if(w.el&&w.el.parentNode)w.el.parentNode.removeChild(w.el);
+    if(lives<=0)gameOver();
+  }
+
+  function frame(t){
+    if(!running)return;
+    if(!lastT)lastT=t;
+    var dt=(t-lastT)/1000; lastT=t;
+    if(dt>0.1)dt=0.1;
+
+    var fh=field.clientHeight, line=fh-70;
+    for(var i=enemies.length-1;i>=0;i--){
+      if(!running)break;
+      var w=enemies[i];
+      w.y+=w.speed*dt;
+      w.el.style.transform='translate('+w.x+'px,'+w.y+'px)';
+      if(w.y>=line){ breach(w); }
+    }
+
+    spawnAcc+=dt*1000;
+    var interval=cfg.spawn*Math.max(0.5,1-stage*0.07);
+    if(spawnAcc>=interval){spawnAcc=0;spawn(makeQuestion(false),false);}
+
+    bossAcc+=dt;
+    if(bossAcc>=30){bossAcc=0;spawn(makeQuestion(true),true);}
+
+    if(running)rafId=requestAnimationFrame(frame);
+  }
+
+  function onKey(e){
+    if(!running)return;
+    if(e.key.length!==1)return;
+    var k=e.key.toLowerCase();
+    if(!/[a-z0-9]/.test(k))return;
+
+    if(activeId){
+      var w=enemies.find(function(x){return x.id===activeId;});
+      if(!w){setActive(null);return;}
+      var expected=w.answer[w.typed].toLowerCase();
+      if(k===expected){
+        correct++; w.typed++;
+        renderProgress(w);
+        if(w.typed>=w.answer.length){destroyWord(w,true);}
+      }else{
+        mistakes++; combo=0; elCombo.textContent='x1';
+        field.classList.add('shake');setTimeout(function(){field.classList.remove('shake');},200);
+      }
+      updateWpm();
+      return;
+    }
+    // no active target -> lock onto lowest enemy whose answer starts with k
+    var cand=null;
+    for(var i=0;i<enemies.length;i++){
+      var x=enemies[i];
+      if(x.answer[0].toLowerCase()===k){
+        if(!cand||x.y>cand.y)cand=x;
+      }
+    }
+    if(cand){
+      setActive(cand);
+      correct++; cand.typed=1; renderProgress(cand);
+      if(cand.typed>=cand.answer.length)destroyWord(cand,true);
+      updateWpm();
+    }
+  }
+
+  function updateWpm(){
+    var mins=(Date.now()-startTime)/60000;
+    var wpm=mins>0?Math.round((correct/5)/mins):0;
+    var total=correct+mistakes;
+    var acc=total>0?Math.round(correct/total*100):100;
+    elWpm.textContent=wpm+' · '+acc+'%';
+  }
+
+  function start(diff){
+    cfg=DIFF[diff];
+    enemies.forEach(function(w){if(w.el&&w.el.parentNode)w.el.parentNode.removeChild(w.el);});
+    enemies=[];activeId=null;eid=0;
+    score=0;lives=3;combo=0;maxCombo=0;stage=1;solved=0;correct=0;mistakes=0;
+    spawnAcc=0;bossAcc=0;lastT=0;startTime=Date.now();
+    elScore.textContent='0';elStage.textContent='1';
+    elLives.textContent='❤️❤️❤️';elCombo.textContent='x1';elWpm.textContent='0 · 100%';
+    startScreen.classList.add('hidden');
+    overScreen.classList.add('hidden');
+    running=true;
+    rafId=requestAnimationFrame(frame);
+  }
+
+  function gameOver(){
+    running=false;
+    cancelAnimationFrame(rafId);
+    var mins=(Date.now()-startTime)/60000;
+    var wpm=mins>0?Math.round((correct/5)/mins):0;
+    var total=correct+mistakes;
+    var acc=total>0?Math.round(correct/total*100):100;
+    var d=cfg?Object.keys(DIFF).find(function(k){return DIFF[k]===cfg;}):'normal';
+    if(!d)d='normal';
+    var prev=getBest(d);
+    document.getElementById('finalScore').textContent=score;
+    document.getElementById('finalWpm').textContent=wpm;
+    document.getElementById('finalAcc').textContent=acc+'%';
+    document.getElementById('finalCombo').textContent='x'+(maxCombo+1);
+    document.getElementById('bestScore').textContent=Math.max(prev,score);
+    var rec=document.getElementById('recordMsg');
+    if(score>prev && score>0){
+      setBest(d,score);
+      rec.textContent='🏆 NEW RECORD!';
+    }else{
+      rec.textContent=score>=prev?'':'Try again!';
+    }
+    overScreen.classList.remove('hidden');
+  }
+
+  // build difficulty buttons with best scores
+  (function buildDiffs(){
+    var host=document.getElementById('diffBtns');
+    ['easy','normal','hard'].forEach(function(d){
+      var b=DIFF[d];
+      var btn=document.createElement('div');
+      btn.className='diff-btn';
+      btn.innerHTML='<div class="dn">'+b.label+'</div><div class="dd">'+b.desc+'</div><div class="db">Best: '+getBest(d)+'</div>';
+      btn.onclick=function(){start(d);};
+      host.appendChild(btn);
+    });
+  })();
+
+  document.getElementById('againBtn').onclick=function(){
+    if(cfg){
+      var d=Object.keys(DIFF).find(function(k){return DIFF[k]===cfg;});
+      start(d||'normal');
+    }
+  };
+
+  document.addEventListener('keydown',onKey);
+  window.addEventListener('blur',function(){lastT=0;});
+})();
+</script>
+</body>
+</html>
