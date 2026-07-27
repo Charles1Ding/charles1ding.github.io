@@ -37,6 +37,8 @@
     });
     var notesLabel = document.getElementById('notesCardLabel');
     if (notesLabel) notesLabel.textContent = mode === 'ap' ? 'AP Revision' : 'Review Notes';
+    var papersLabel = document.getElementById('papersCardLabel');
+    if (papersLabel) papersLabel.textContent = mode === 'ap' ? 'AP Past Papers' : 'Past Papers';
   }
   // Run swap after DOM is ready (script is loaded in <head>, so the body is
   // empty at IIFE run time).

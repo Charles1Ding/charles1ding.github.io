@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <meta property="og:title" content="AP Past Papers · Charles" />
+  <meta property="og:description" content="AP Chemistry past papers 2016-2025 — FRQ questions & marking schemes" />
+  <meta property="og:image" content="https://charles1ding.github.io/favicon.png" />
+  <meta property="og:url" content="https://charles1ding.github.io" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AP Past Papers · Charles</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { min-height: 100vh; font-family: 'Nunito', sans-serif; background: #fdf6f0; }
+    .bg { position: fixed; inset: 0; background: url('img-ap-music-bg.jpg') center center / cover no-repeat; z-index: 0; }
+    .bg::after { content: ''; position: absolute; inset: 0; background: rgba(255,248,240,0.70); }
+    .page { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 0 20px 80px; }
+
+    nav { width: 100%; max-width: 1100px; display: flex; justify-content: space-between; align-items: center; padding: 24px 0 0; }
+    .nav-logo { font-family: 'Caveat', cursive; font-size: 1.7rem; font-weight: 700; color: #8B1A4A; letter-spacing: 0.5px; text-decoration: none; }
+    .nav-links { display: flex; gap: 24px; list-style: none; }
+    .nav-links a { font-size: 0.95rem; font-weight: 600; color: #a04068; text-decoration: none; letter-spacing: 0.3px; transition: color 0.2s; }
+    .nav-links a:hover { color: #b02850; }
+    .back-link { font-weight: 800 !important; color: #8B1A4A !important; }
+
+    .header { margin-top: 48px; text-align: center; }
+    .header h1 { font-family: 'Nunito', sans-serif; font-size: clamp(2rem, 5vw, 3rem); font-weight: 800; font-style: italic; color: #b02850; }
+    .header-line { width: 80px; height: 3px; background: linear-gradient(90deg, #b02850, #c04070); border-radius: 2px; margin: 12px auto 0; }
+    .header p { margin-top: 10px; color: #a04068; font-size: 1rem; font-weight: 600; }
+
+    .category { width: 100%; max-width: 1100px; margin-top: 40px; }
+    .cat-title { font-family: 'Nunito', sans-serif; font-size: 1.3rem; font-weight: 800; font-style: italic; color: #b02850; margin-bottom: 16px; padding-left: 8px; border-left: 4px solid #b02850; }
+
+    .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-bottom: 36px; }
+
+    .file-card { background: rgba(255,245,238,0.88); backdrop-filter: blur(6px); border: 1.5px solid rgba(176,40,80,0.18); border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; transition: all 0.22s; }
+    .file-card:hover { background: rgba(255,240,230,0.96); border-color: rgba(176,40,80,0.40); box-shadow: 0 4px 20px rgba(176,40,80,0.12); transform: translateY(-2px); }
+    .file-icon { font-size: 1.4rem; flex-shrink: 0; width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, rgba(176,40,80,0.12), rgba(192,64,112,0.10)); display: flex; align-items: center; justify-content: center; }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name { font-weight: 700; font-size: 0.95rem; color: #602040; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .file-desc { font-size: 0.78rem; color: #b08098; margin-top: 2px; }
+    .file-btn { background: linear-gradient(135deg, #b02850, #8B1A4A); color: #fff; border: none; border-radius: 20px; padding: 7px 16px; font-size: 0.78rem; font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background 0.2s, transform 0.15s; display: inline-block; }
+    .file-btn:hover { background: linear-gradient(135deg, #c04070, #a02058); transform: scale(1.04); }
+
+    footer { margin-top: 40px; font-family: 'Caveat', cursive; font-size: 1.1rem; color: #a08080; text-align: center; letter-spacing: 0.3px; }
+    footer span { color: #c06a7a; }
+
+    @media (max-width: 640px) { .file-grid { grid-template-columns: 1fr; } .header h1 { font-size: 1.8rem; } }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="page">
+  <nav>
+    <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="back-link">← Home</a></li>
+    </ul>
+  </nav>
+
+  <div class="header">
+    <h1>AP Chemistry Past Papers</h1>
+    <div class="header-line"></div>
+    <p>2016-2025 · Free Response Questions &amp; Marking Schemes</p>
+  </div>
+
+  <div class="category">
+    <div class="cat-title">Paper Downloads</div>
+    <div class="file-grid">
+
+      <!-- 2025 -->
+      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2025 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP25 pdf.pdf" download>Download</a></div>
+      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2025 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP25-MS-chemistry.pdf" download>Download</a></div>
+
+      <!-- 2024 -->
+      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2024 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP24.pdf" download>Download</a></div>
+      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2024 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP24-MS-chemistry.pdf" download>Download</a></div>
+
+      <!-- 2023 -->
+      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2023 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP23-frq-pdf.pdf" download>Download</a></div>
+      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2023 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP23-MS-chemistry.pdf" download>Download</a></div>
+
+      <!-- 2022 -->
+      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2022 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP22-frq-chemistry.pdf" download>Download</a></div>
+      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2022 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP22-MS-chemistry.pdf" download>Download</a></div>
+
+      <!-- 2021 -->
+      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2021 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP21-frq-chemistry.pdf" download>Download</a></div>
+      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2021 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP21-MS-chemistry.pdf" download>Download</a></div>
+
+      <!-- 2019 -->
+      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2019 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP19-frq-chemistry.pdf" download>Download</a></div>
+      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2019 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP19-MS-chemistry.pdf" download>Download</a></div>
+
+      <!-- 2018 -->
+      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2018 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP18-frq-chemistry.pdf" download>Download</a></div>
+      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2018 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP18-MS-chemistry.pdf" download>Download</a></div>
+
+      <!-- 2017 -->
+      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2017 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP17-MS-chemistry.pdf" download>Download</a></div>
+
+      <!-- 2016 -->
+      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2016 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP16-frq-chemistry.pdf" download>Download</a></div>
+      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2016 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP16-MS.pdf" download>Download</a></div>
+
+    </div>
+  </div>
+
+  <footer>Made with <span>♥</span> by Charles · AP Chemistry Past Papers</footer>
+</div>
+
+</body>
+</html>
