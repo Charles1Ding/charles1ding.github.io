@@ -7,9 +7,12 @@
   var KEY = 'chem_curriculum';       // 'alig' (default) | 'ap'
   var EVT = 'curriculumchange';
 
+  // Default is always AL. localStorage is ignored on first load so every
+  // fresh visit opens the blue page; the toggle only persists within the
+  // session via set(). To force AL at all times, the get() below can ignore
+  // localStorage entirely.
   function get() {
-    var v = localStorage.getItem(KEY);
-    return v === 'ap' ? 'ap' : 'alig';
+    return 'alig';
   }
 
   function set(v) {
@@ -35,7 +38,14 @@
     var notesLabel = document.getElementById('notesCardLabel');
     if (notesLabel) notesLabel.textContent = mode === 'ap' ? 'AP Revision' : 'Review Notes';
   }
-  swapAssets(get());
+  // Run swap after DOM is ready (script is loaded in <head>, so the body is
+  // empty at IIFE run time).
+  function initSwap() { swapAssets(get()); }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSwap);
+  } else {
+    initSwap();
+  }
   window.addEventListener(EVT, function (e) { swapAssets(e.detail.curriculum); });
 
   /* ---- AP copy accessors (safe fallback to AL/IG) ---- */
