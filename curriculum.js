@@ -6,18 +6,16 @@
 (function () {
   var KEY = 'chem_curriculum';       // 'alig' (default) | 'ap'
   var EVT = 'curriculumchange';
+  var STORE = sessionStorage;         // sessionStorage: a fresh tab = AL; persists within tab for subpages
 
-  // Default is always AL. localStorage is ignored on first load so every
-  // fresh visit opens the blue page; the toggle only persists within the
-  // session via set(). To force AL at all times, the get() below can ignore
-  // localStorage entirely.
   function get() {
-    return 'alig';
+    var v = STORE.getItem(KEY);
+    return v === 'ap' ? 'ap' : 'alig';
   }
 
   function set(v) {
     v = v === 'ap' ? 'ap' : 'alig';
-    localStorage.setItem(KEY, v);
+    STORE.setItem(KEY, v);
     document.documentElement.setAttribute('data-curriculum', v);
     window.dispatchEvent(new CustomEvent(EVT, { detail: { curriculum: v } }));
   }

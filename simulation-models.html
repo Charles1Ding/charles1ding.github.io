@@ -13,6 +13,9 @@
   <title>Interactive Simulation Models · IGCSE Chemistry</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="curriculum.css">
+  <script src="ap-models.js"></script>
+  <script src="curriculum.js"></script>
   <style>
     :root {
       --bg: #f0f4f8;
@@ -256,21 +259,26 @@
   <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
 </div>
 
+<div class="curr-toggle-wrap" style="display:flex;justify-content:center;align-items:center;gap:10px;margin:-6px 0 20px;">
+  <span class="curr-toggle-caption">Curriculum:</span>
+  <span id="currToggleHost"></span>
+</div>
+
 <div class="controls">
   <div class="search-box">
     <span class="icon">🔍</span>
     <input type="text" id="searchInput" placeholder="Search models... 搜索模型..." oninput="filterCards()" />
   </div>
   <div class="filter-btns">
-    <button class="active" onclick="setFilter('all', this)">All</button>
-    <button onclick="setFilter('en', this)">English</button>
-    <button onclick="setFilter('cn', this)">中文</button>
-    <button onclick="setFilter('electrochemistry', this)">Electrochemistry</button>
-    <button onclick="setFilter('acids', this)">Acids &amp; Salts</button>
-    <button onclick="setFilter('metals', this)">Metals</button>
-    <button onclick="setFilter('thermochemistry', this)">Thermochemistry</button>
-    <button onclick="setFilter('organic', this)">Organic</button>
-    <button onclick="setFilter('other', this)">Other</button>
+    <button class="active" data-filter="all" data-label-alig="All" onclick="setFilter('all', this)">All</button>
+    <button data-filter="en" data-label-alig="English" onclick="setFilter('en', this)">English</button>
+    <button data-filter="cn" data-label-alig="中文" onclick="setFilter('cn', this)">中文</button>
+    <button data-filter="electrochemistry" data-label-alig="Electrochemistry" onclick="setFilter('electrochemistry', this)">Electrochemistry</button>
+    <button data-filter="acids" data-label-alig="Acids &amp; Salts" onclick="setFilter('acids', this)">Acids &amp; Salts</button>
+    <button data-filter="metals" data-label-alig="Metals" onclick="setFilter('metals', this)">Metals</button>
+    <button data-filter="thermochemistry" data-label-alig="Thermochemistry" onclick="setFilter('thermochemistry', this)">Thermochemistry</button>
+    <button data-filter="organic" data-label-alig="Organic" onclick="setFilter('organic', this)">Organic</button>
+    <button data-filter="other" data-label-alig="Other" onclick="setFilter('other', this)">Other</button>
   </div>
 </div>
 
@@ -897,24 +905,51 @@ function renderCards(list) {
     return;
   }
   stats.textContent = `Showing ${list.length} of ${models.length} models`;
+  const C = window.Curriculum;
   list.forEach(m => {
     const a = document.createElement('a');
     a.className = 'card';
     a.href = encodeURIComponent(m.file);
     a.target = '_blank';
     a.rel = 'noopener';
+    const title = C ? C.modelTitle(m) : m.title;
+    const desc  = C ? C.modelDesc(m)  : m.desc;
+    const tLabel = C ? C.topicLabel(m.topic, m.topicLabel) : m.topicLabel;
+    const tip = C ? C.topicTip(m.topic, topicTips[m.topic]) : topicTips[m.topic];
     a.innerHTML = `
       <div class="card-icon">${m.icon}</div>
-      <div class="card-title">${m.title}</div>
+      <div class="card-title">${title}</div>
       <div class="card-tags">
         <span class="tag ${m.lang === 'en' ? 'tag-en' : 'tag-cn'}">${m.lang === 'en' ? 'English' : '中文'}</span>
-        <span class="tag tag-topic">${m.topicLabel}</span>
+        <span class="tag tag-topic">${tLabel}</span>
       </div>
-      <div class="card-desc">${m.desc}</div>
-      ${topicTips[m.topic] ? '<div class="card-observe">🔍 ' + topicTips[m.topic] + '</div>' : ''}
+      <div class="card-desc">${desc}</div>
+      ${tip ? '<div class="card-observe">🔍 ' + tip + '</div>' : ''}
     `;
     grid.appendChild(a);
   });
+}
+
+// Relabel filter buttons + header badge according to current curriculum.
+function applyCurriculumLabels() {
+  const C = window.Curriculum;
+  document.querySelectorAll('.filter-btns button').forEach(b => {
+    const key = b.getAttribute('data-filter');
+    const fallback = b.getAttribute('data-label-alig');
+    b.innerHTML = C ? C.filterLabel(key, fallback) : fallback;
+  });
+  const badge = document.querySelector('header .badge');
+  if (badge && C) {
+    badge.textContent = C.get() === 'ap'
+      ? `${models.length} Models · AP Chemistry`
+      : `${models.length} Models · IGCSE & A-Level`;
+  }
+  const sub = document.querySelector('header p');
+  if (sub && C) {
+    sub.textContent = C.get() === 'ap'
+      ? 'Interactive simulations for AP Chemistry teaching'
+      : 'Interactive simulations for IGCSE & A-Level Chemistry teaching';
+  }
 }
 
 function filterCards() {
@@ -924,7 +959,10 @@ function filterCards() {
                     : currentFilter === 'cn' ? m.lang === 'cn'
                     : currentFilter === 'all' ? true
                     : topicInFilter(m.topic, currentFilter);
-    const matchQ = !q || m.title.toLowerCase().includes(q) || m.desc.toLowerCase().includes(q) || m.file.toLowerCase().includes(q);
+    const C = window.Curriculum;
+    const apTitle = C ? C.modelTitle(m) : m.title;
+    const apDesc = C ? C.modelDesc(m) : m.desc;
+    const matchQ = !q || m.title.toLowerCase().includes(q) || m.desc.toLowerCase().includes(q) || m.file.toLowerCase().includes(q) || apTitle.toLowerCase().includes(q) || apDesc.toLowerCase().includes(q);
     return matchLang && matchQ;
   });
   renderCards(filtered);
@@ -935,6 +973,16 @@ function setFilter(filter, btn) {
   document.querySelectorAll('.filter-btns button').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   filterCards();
+}
+
+// ── Curriculum switch wiring ──
+if (window.Curriculum) {
+  window.Curriculum.renderToggle('#currToggleHost');
+  applyCurriculumLabels();
+  window.addEventListener(window.Curriculum.EVENT, function () {
+    applyCurriculumLabels();
+    filterCards();
+  });
 }
 
 renderCards(models);
