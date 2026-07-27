@@ -11,6 +11,9 @@
   <meta name="twitter:card" content="summary" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Charles · Chem Teacher & More</title>
+  <link rel="stylesheet" href="curriculum.css">
+  <script src="ap-models.js"></script>
+  <script src="curriculum.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
 
@@ -585,6 +588,7 @@
       <span style="color:#3a5a8c;">Search</span>
       <span class="search-kbd">⌘K</span>
     </button>
+    <span id="currToggleHost" style="margin-left:14px;"></span>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
     <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
       <span></span><span></span><span></span>
@@ -631,13 +635,13 @@
     <!-- Simulation Models -->
     <a class="res-img-card" href="simulation-models.html">
       <img src="img-simulation.jpg" loading="lazy" alt="Simulation Models" />
-      <span class="res-img-label">Simulation Models</span>
+      <span class="res-img-label" id="simCardLabel">Simulation Models</span>
     </a>
 
     <!-- Music -->
     <a class="res-img-card" href="music.html">
-      <img src="img-music.jpg" loading="lazy" alt="Music" />
-      <span class="res-img-label">Music</span>
+      <img src="img-music.jpg" loading="lazy" alt="Vibing Music" />
+      <span class="res-img-label">Vibing Music</span>
     </a>
 
     <!-- Review Notes -->
@@ -839,6 +843,22 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.style.opacity = '1';
   });
 });
+
+/* ── Curriculum switch (AL/IG ↔ AP) ── */
+(function() {
+  if (!window.Curriculum) return;
+  window.Curriculum.renderToggle('#currToggleHost');
+  function applyHome() {
+    var label = document.getElementById('simCardLabel');
+    if (label) {
+      label.textContent = window.Curriculum.get() === 'ap'
+        ? 'AP Chem Simulations'
+        : 'Simulation Models';
+    }
+  }
+  window.addEventListener(window.Curriculum.EVENT, applyHome);
+  applyHome();
+})();
 </script>
 <script>
 if ('serviceWorker' in navigator) {
