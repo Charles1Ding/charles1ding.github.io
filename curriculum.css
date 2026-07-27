@@ -1,0 +1,88 @@
+/* ============================================================
+   Curriculum Toggle — shared component (AL/IG ↔ AP)
+   Layout-neutral: only styles the pill switch itself.
+   ============================================================ */
+
+.curr-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: #ffffff;
+  border: 2px solid #d4a017;
+  border-radius: 999px;
+  padding: 4px;
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  user-select: none;
+  vertical-align: middle;
+  line-height: 1;
+  box-shadow: 0 2px 10px rgba(212, 160, 23, 0.18);
+}
+
+.curr-toggle button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 800;
+  font-size: 0.85rem;
+  letter-spacing: 0.3px;
+  color: #64748b;
+  padding: 8px 18px;
+  border-radius: 999px;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  white-space: nowrap;
+}
+
+.curr-toggle button.active {
+  background: #d4a017;
+  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(212, 160, 23, 0.45);
+}
+
+.curr-toggle button:not(.active):hover {
+  color: #d4a017;
+  background: rgba(212, 160, 23, 0.08);
+}
+
+/* Floating variant used on model detail pages */
+.curr-toggle.floating {
+  position: fixed;
+  top: 12px;
+  right: 16px;
+  z-index: 9999;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+  backdrop-filter: blur(8px);
+  background: rgba(232, 238, 246, 0.92);
+}
+
+/* Dark-mode awareness (works with dark-mode.css convention) */
+body.dark .curr-toggle,
+html.dark .curr-toggle {
+  background: #1e293b;
+  border-color: #334155;
+}
+body.dark .curr-toggle button,
+html.dark .curr-toggle button {
+  color: #94a3b8;
+}
+body.dark .curr-toggle button.active,
+html.dark .curr-toggle button.active {
+  background: #2563c7;
+  color: #ffffff;
+}
+
+/* Optional small label preceding the pill */
+.curr-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  vertical-align: middle;
+}
+.curr-toggle-wrap .curr-toggle-caption {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #64748b;
+}

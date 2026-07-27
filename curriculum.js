@@ -89,6 +89,7 @@
       if (!host) return;
       var pill = document.createElement('div');
       pill.className = 'curr-toggle' + (opts.floating ? ' floating' : '');
+      pill.title = 'Switch curriculum: AL/IG ↔ AP';
       pill.innerHTML =
         '<button data-curr="alig">\uD83D\uDCD8 AL / IG</button>' +
         '<button data-curr="ap">\uD83D\uDCD7 AP</button>';
