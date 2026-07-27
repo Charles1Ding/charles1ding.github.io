@@ -491,6 +491,38 @@
       pointer-events: none;
     }
 
+    /* ── AP Curriculum theme (warm red/gold palette) ── */
+    body[data-curriculum="ap"] .bg::after { background: rgba(255,220,190,0.10); }
+    body[data-curriculum="ap"] .hero-name { color: #e8c090; }
+    body[data-curriculum="ap"] .hero-sub { color: #d4a060; }
+    body[data-curriculum="ap"] .hero-divider { background: #8B1A1A; }
+    body[data-curriculum="ap"] .about-text { color: #c8b090; }
+    body[data-curriculum="ap"] .section-title { color: #d4a460; }
+    body[data-curriculum="ap"] .section-line { background: linear-gradient(90deg, #C0392B, #D4A017); }
+    body[data-curriculum="ap"] .res-img-label { color: #a88050; }
+    body[data-curriculum="ap"] .res-img-card:hover img { box-shadow: 0 14px 44px rgba(180,80,30,0.28); }
+    body[data-curriculum="ap"] .res-img-card:nth-child(1):hover img { box-shadow: 0 14px 44px rgba(180,80,30,0.32); }
+    body[data-curriculum="ap"] .res-img-card:nth-child(1):hover .res-img-label { color: #C0392B; }
+    body[data-curriculum="ap"] .res-img-card:nth-child(2):hover img { box-shadow: 0 0 0 8px rgba(180,80,30,0.12), 0 14px 44px rgba(160,60,20,0.25); }
+    body[data-curriculum="ap"] .res-img-card:nth-child(2):hover .res-img-label { color: #D4A017; }
+    body[data-curriculum="ap"] .res-img-card:nth-child(3):hover img { box-shadow: 0 14px 44px rgba(199,106,80,0.3); }
+    body[data-curriculum="ap"] .res-img-card:nth-child(3):hover .res-img-label { color: #c76a4a; }
+    body[data-curriculum="ap"] .res-img-card:nth-child(4):hover img { box-shadow: 0 14px 44px rgba(192,122,58,0.32); }
+    body[data-curriculum="ap"] .res-img-card:nth-child(4):hover .res-img-label { background: linear-gradient(90deg, #C0392B, #D4A017); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    body[data-curriculum="ap"] .res-img-card:nth-child(5):hover img { box-shadow: 0 14px 44px rgba(170,80,30,0.3); }
+    body[data-curriculum="ap"] .res-img-card:nth-child(5):hover .res-img-label { color: #c07030; }
+    body[data-curriculum="ap"] .res-img-card:nth-child(6):hover img { box-shadow: 0 0 0 6px rgba(180,80,30,0.12), 0 16px 48px rgba(160,60,20,0.2); }
+    body[data-curriculum="ap"] .res-img-card:nth-child(6):hover .res-img-label { color: #C0392B; }
+    body[data-curriculum="ap"] .icon-pill { background: rgba(255,240,220,0.80); border-color: rgba(200,120,50,0.25); }
+    body[data-curriculum="ap"] .bottom-text { color: #a08060; }
+    body[data-curriculum="ap"] .bottom-text .highlight { color: #c08050; }
+    body[data-curriculum="ap"] .search-btn { border-color: rgba(200,120,50,0.25); }
+    body[data-curriculum="ap"] .search-btn:hover { border-color: #D4A017; }
+    body[data-curriculum="ap"] .search-btn svg { stroke: #C0392B; }
+    body[data-curriculum="ap"] .search-btn span { color: #C0392B; }
+    body[data-curriculum="ap"] .nav-links a { color: #b08050; }
+    body[data-curriculum="ap"] .nav-links a:hover { color: #D4A017; }
+
     /* ── Dark mode override ── */
     body.dark { background: #0f172a; }
     body.dark .bg::after { background: rgba(15,23,42,0.55); }
@@ -640,25 +672,25 @@
 
     <!-- Music -->
     <a class="res-img-card" href="music.html">
-      <img src="img-music.jpg" loading="lazy" alt="Vibing Music" />
+      <img src="img-music.jpg" data-al-src="img-music.jpg" data-ap-src="img-ap-music.jpg" loading="lazy" alt="Vibing Music" />
       <span class="res-img-label">Vibing Music</span>
     </a>
 
     <!-- Review Notes -->
     <a class="res-img-card" href="review-notes.html">
-      <img src="img-review-notes.jpg" loading="lazy" alt="Review Notes" />
+      <img src="img-review-notes.jpg" data-al-src="img-review-notes.jpg" data-ap-src="img-ap-notes.jpg" loading="lazy" alt="Review Notes" />
       <span class="res-img-label">Review Notes</span>
     </a>
 
     <!-- Gaming Time -->
     <a class="res-img-card" href="gaming.html">
-      <img src="img-gaming.jpg" loading="lazy" alt="Gaming Time" />
+      <img src="img-gaming.jpg" data-al-src="img-gaming.jpg" data-ap-src="img-ap-gaming.jpg" loading="lazy" alt="Gaming Time" />
       <span class="res-img-label">Gaming Time</span>
     </a>
 
     <!-- Private Space -->
     <a class="res-img-card" href="private-space.html">
-      <img src="img-private.jpg" loading="lazy" alt="Private Space" />
+      <img src="img-private.jpg" data-al-src="img-private.jpg" data-ap-src="img-ap-private.jpg" loading="lazy" alt="Private Space" />
       <span class="res-img-label">Private Space</span>
     </a>
 
