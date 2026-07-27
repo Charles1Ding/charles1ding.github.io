@@ -25,7 +25,9 @@
   /* ---- Card image & link swap (data-ap-* / data-al-*) ---- */
   function swapAssets(mode) {
     document.querySelectorAll('img[data-ap-src]').forEach(function (img) {
-      img.src = mode === 'ap' ? (img.dataset.apSrc || img.dataset.alSrc) : (img.dataset.alSrc || img.src);
+      var target = mode === 'ap' ? (img.dataset.apSrc || img.dataset.alSrc) : (img.dataset.alSrc || img.src);
+      // Cache-busting so the browser always re-fetches the new theme image.
+      img.src = target.split('?')[0] + '?v=' + (mode === 'ap' ? 'ap' : 'alig');
     });
     document.querySelectorAll('a[data-ap-href]').forEach(function (a) {
       a.href = mode === 'ap' ? (a.dataset.apHref || a.dataset.alHref) : (a.dataset.alHref || a.href);
