@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <meta property="og:title" content="AP Revision Lists · Charles" />
+  <meta property="og:description" content="13 chapter revision checklists + answer keys & multi-topic practice for AP Chemistry" />
+  <meta property="og:image" content="https://charles1ding.github.io/favicon.png" />
+  <meta property="og:url" content="https://charles1ding.github.io/ap-revision.html" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AP Revision Lists · Charles</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      min-height: 100vh;
+      font-family: 'Nunito', sans-serif;
+      background: #fdf6f0;
+    }
+
+    .bg {
+      position: fixed;
+      inset: 0;
+      background: url('img-ap-music-bg.jpg') center center / cover no-repeat;
+      z-index: 0;
+    }
+    .bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,248,240,0.70);
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 20px 80px;
+    }
+
+    nav {
+      width: 100%;
+      max-width: 1100px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 0 0;
+    }
+    .nav-logo {
+      font-family: 'Caveat', cursive;
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: #8B1A1A;
+      letter-spacing: 0.5px;
+      text-decoration: none;
+    }
+    .nav-links {
+      display: flex;
+      gap: 24px;
+      list-style: none;
+    }
+    .nav-links a {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #a06040;
+      text-decoration: none;
+      letter-spacing: 0.3px;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: #C0392B; }
+    .back-link { font-weight: 800 !important; color: #8B1A1A !important; }
+
+    .header {
+      margin-top: 48px;
+      text-align: center;
+    }
+    .header h1 {
+      font-family: 'Nunito', sans-serif;
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      font-style: italic;
+      color: #8B1A1A;
+    }
+    .header-line {
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, #C0392B, #D4A017);
+      border-radius: 2px;
+      margin: 12px auto 0;
+    }
+    .header p {
+      margin-top: 10px;
+      color: #a08060;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .category {
+      width: 100%;
+      max-width: 1100px;
+      margin-top: 40px;
+    }
+    .cat-title {
+      font-family: 'Nunito', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 800;
+      font-style: italic;
+      color: #8B1A1A;
+      margin-bottom: 16px;
+      padding-left: 8px;
+      border-left: 4px solid #C0392B;
+    }
+
+    .file-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+
+    .file-card {
+      background: rgba(255,245,238,0.88);
+      backdrop-filter: blur(6px);
+      border: 1.5px solid rgba(192,57,43,0.18);
+      border-radius: 14px;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: all 0.22s;
+    }
+    .file-card:hover {
+      background: rgba(255,240,230,0.96);
+      border-color: rgba(192,57,43,0.40);
+      box-shadow: 0 4px 20px rgba(192,57,43,0.12);
+      transform: translateY(-2px);
+    }
+    .file-icon {
+      font-size: 1.6rem;
+      flex-shrink: 0;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(192,57,43,0.12), rgba(212,160,23,0.10));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .file-info { flex: 1; min-width: 0; }
+    .file-name {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #603020;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .file-desc {
+      font-size: 0.78rem;
+      color: #b09070;
+      margin-top: 2px;
+    }
+    .file-btn {
+      background: linear-gradient(135deg, #C0392B, #a04030);
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      padding: 7px 16px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.2s, transform 0.15s;
+      display: inline-block;
+    }
+    .file-btn:hover { background: linear-gradient(135deg, #D4A017, #c08020); transform: scale(1.04); }
+
+    footer {
+      margin-top: 40px;
+      font-family: 'Caveat', cursive;
+      font-size: 1.1rem;
+      color: #a08060;
+      text-align: center;
+      letter-spacing: 0.3px;
+    }
+    footer span { color: #c06a7a; }
+
+    @media (max-width: 640px) {
+      .file-grid { grid-template-columns: 1fr; }
+      .header h1 { font-size: 1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+
+<div class="page">
+
+  <nav>
+    <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="back-link">← Home</a></li>
+    </ul>
+  </nav>
+
+  <div class="header">
+    <h1>AP Chemistry Revision Lists</h1>
+    <div class="header-line"></div>
+    <p>Chapter-by-chapter review checklists, answer keys, and multi-topic practice</p>
+  </div>
+
+  <div class="category">
+    <div class="cat-title">Chapter Revision Checklists</div>
+    <div class="file-grid">
+
+      <div class="file-card">
+        <div class="file-icon">1</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 1 &mdash; Atomic Structure &amp; Periodic Table</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C01 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">2</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 2 &mdash; Chemical Bonding &amp; Molecular Structure</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C02 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">3</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 3 &mdash; Intermolecular Forces &amp; Properties</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C03 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">4</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 4 &mdash; Chemical Reactions</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C04 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">5</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 5 &mdash; Stoichiometry</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C05 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">6</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 6 &mdash; Gases</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C06 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">7</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 7 &mdash; Solutions &amp; Spectroscopy</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C07 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">8</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 8 &mdash; Thermochemistry</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C08 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">9</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 9 &mdash; Kinetics</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C09 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">10</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 10 &mdash; Chemical Equilibrium</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C10 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">11</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 11 &mdash; Acids &amp; Bases</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C11 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">12</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 12 &mdash; Thermodynamics &amp; Electrochemistry</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C12 期末复习清单.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">13</div>
+        <div class="file-info">
+          <div class="file-name">Chapter 13 &mdash; Laboratory Techniques</div>
+          <div class="file-desc">Revision checklist</div>
+        </div>
+        <a class="file-btn" href="ap-revision/C13 期末复习清单.docx" download>Download</a>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="category">
+    <div class="cat-title">Answer Keys &amp; Multi-topic Practice</div>
+    <div class="file-grid">
+
+      <div class="file-card">
+        <div class="file-icon">📝</div>
+        <div class="file-info">
+          <div class="file-name">Answer Keys (All Chapters)</div>
+          <div class="file-desc">Complete answer compilation</div>
+        </div>
+        <a class="file-btn" href="ap-revision/答案汇总.docx" download>Download</a>
+      </div>
+
+      <div class="file-card">
+        <div class="file-icon">🔬</div>
+        <div class="file-info">
+          <div class="file-name">Multi-Topic Questions</div>
+          <div class="file-desc">Cross-chapter integrated practice</div>
+        </div>
+        <a class="file-btn" href="ap-revision/综合多考点题汇总.docx" download>Download</a>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>Made with <span>♥</span> by Charles &middot; AP Chemistry 2026</footer>
+
+</div>
+
+</body>
+</html>

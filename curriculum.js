@@ -22,14 +22,19 @@
   // Reflect current state on <html> as early as possible (no layout shift).
   document.documentElement.setAttribute('data-curriculum', get());
 
-  /* ---- Card image swap (data-ap-src / data-al-src) ---- */
-  function swapImages(mode) {
+  /* ---- Card image & link swap (data-ap-* / data-al-*) ---- */
+  function swapAssets(mode) {
     document.querySelectorAll('img[data-ap-src]').forEach(function (img) {
       img.src = mode === 'ap' ? (img.dataset.apSrc || img.dataset.alSrc) : (img.dataset.alSrc || img.src);
     });
+    document.querySelectorAll('a[data-ap-href]').forEach(function (a) {
+      a.href = mode === 'ap' ? (a.dataset.apHref || a.dataset.alHref) : (a.dataset.alHref || a.href);
+    });
+    var notesLabel = document.getElementById('notesCardLabel');
+    if (notesLabel) notesLabel.textContent = mode === 'ap' ? 'AP Revision' : 'Review Notes';
   }
-  swapImages(get());
-  window.addEventListener(EVT, function (e) { swapImages(e.detail.curriculum); });
+  swapAssets(get());
+  window.addEventListener(EVT, function (e) { swapAssets(e.detail.curriculum); });
 
   /* ---- AP copy accessors (safe fallback to AL/IG) ---- */
 
