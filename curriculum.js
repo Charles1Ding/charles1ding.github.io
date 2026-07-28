@@ -25,10 +25,7 @@
   function swapAssets(mode) {
     document.querySelectorAll('img[data-ap-src]').forEach(function (img) {
       var target = mode === 'ap' ? (img.dataset.apSrc || img.dataset.alSrc) : (img.dataset.alSrc || img.src);
-      // Cache-busting with a live timestamp + mode so the browser always
-      // re-fetches the new theme image.
-      var bust = '?v=' + mode + 't=' + Date.now();
-      img.src = target.split('?')[0] + bust;
+      img.src = target.split('?')[0] + '?v=' + mode;
     });
     document.querySelectorAll('a[data-ap-href]').forEach(function (a) {
       a.href = mode === 'ap' ? (a.dataset.apHref || a.dataset.alHref) : (a.dataset.alHref || a.href);
