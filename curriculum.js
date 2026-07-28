@@ -4,21 +4,23 @@
    Depends on: ap-models.js (window.AP_MODELS, window.AP_TOPICS)
    ============================================================ */
 (function () {
-  var KEY = 'chem_curriculum_v2';   // 'alig' (default) | 'ap' — v2 ignores any stale chem_curriculum state
+  var KEY = 'chem_curriculum_v3';       // 'alig' (default) | 'ap'
+  var CLICKED = 'chem_curriculum_v3_clicked'; // flag set only after first toggle click
   var EVT = 'curriculumchange';
-  var STORE = sessionStorage;       // sessionStorage: a fresh tab = AL; persists within tab for subpages
+  var STORE = sessionStorage;           // per-tab persistence; subpages stay in sync
 
+  // Hard default = AL. Only honor stored state if the user has explicitly
+  // clicked the toggle at least once in this tab (CLICKED flag set).
   function get() {
+    if (!STORE.getItem(CLICKED)) return 'alig';
     var v = STORE.getItem(KEY);
-    // Cleanup: drop any v1 residue from earlier sessions so it can never
-    // re-bleed AP state into a fresh tab.
-    STORE.removeItem('chem_curriculum');
     return v === 'ap' ? 'ap' : 'alig';
   }
 
   function set(v) {
     v = v === 'ap' ? 'ap' : 'alig';
     STORE.setItem(KEY, v);
+    STORE.setItem(CLICKED, '1');
     document.documentElement.setAttribute('data-curriculum', v);
     window.dispatchEvent(new CustomEvent(EVT, { detail: { curriculum: v } }));
   }
