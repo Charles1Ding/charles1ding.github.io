@@ -129,7 +129,6 @@
   }
 
   window.Curriculum = {
-    KEY: KEY,
     EVENT: EVT,
     get: get,
     set: set,
