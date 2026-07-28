@@ -626,8 +626,8 @@
       <span class="search-kbd">⌘K</span>
     </button>
     <span id="currToggleHost" style="margin-left:14px;display:inline-flex;gap:6px;align-items:center;">
-      <button class="curr-btn" onclick="window.Curriculum&&window.Curriculum.set('alig')" style="padding:4px 10px;border-radius:14px;border:1.5px solid rgba(37,99,199,0.3);background:rgba(37,99,199,0.08);color:#2563c7;font-size:0.8rem;font-weight:700;cursor:pointer;">📘 AL / IG</button>
-      <button class="curr-btn" onclick="window.Curriculum&&window.Curriculum.set('ap')" style="padding:4px 10px;border-radius:14px;border:1.5px solid rgba(180,40,80,0.3);background:rgba(180,40,80,0.06);color:#a04068;font-size:0.8rem;font-weight:700;cursor:pointer;">📗 AP</button>
+      <button class="curr-btn" onclick="document.documentElement.setAttribute('data-curriculum','alig');window.Curriculum&&window.Curriculum.set('alig')" style="padding:4px 10px;border-radius:14px;border:1.5px solid rgba(37,99,199,0.3);background:rgba(37,99,199,0.08);color:#2563c7;font-size:0.8rem;font-weight:700;cursor:pointer;">📘 AL / IG</button>
+      <button class="curr-btn" onclick="document.documentElement.setAttribute('data-curriculum','ap');window.Curriculum&&window.Curriculum.set('ap')" style="padding:4px 10px;border-radius:14px;border:1.5px solid rgba(180,40,80,0.3);background:rgba(180,40,80,0.06);color:#a04068;font-size:0.8rem;font-weight:700;cursor:pointer;">📗 AP</button>
     </span>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
     <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
