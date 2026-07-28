@@ -95,36 +95,38 @@
   }
 
   /* ---- Toggle pill renderer ---- */
-  // Renders a pill into the element(s) matching selector. `opts.floating` adds
-  // fixed positioning. Multiple pills stay in sync via the global event.
-  function renderToggle(selector, opts) {
-    opts = opts || {};
-    var hosts = typeof selector === 'string'
-      ? document.querySelectorAll(selector)
-      : [selector];
+  // Since the toggle buttons are hardcoded in index.html, this function
+  // just wires up the active-state paint and click handling.
+  function wireToggle(selector) {
+    var hosts = typeof selector === 'string' ? document.querySelectorAll(selector) : [selector];
     hosts.forEach(function (host) {
       if (!host) return;
+      function paint() {
+        var cur = get();
+        host.querySelectorAll('.curr-btn,[data-curr]').forEach(function (b) {
+          b.classList.toggle('active', (b.getAttribute('data-curr') || b.textContent.includes('AP') ? 'ap' : 'alig') === cur);
+        });
+      }
+      window.addEventListener(EVT, paint);
+      paint();
+    });
+  }
+  // Also keep base renderToggle for pages that still need dynamic rendering.
+  function renderToggle(selector, opts) {
+    opts = opts || {};
+    var hosts = typeof selector === 'string' ? document.querySelectorAll(selector) : [selector];
+    hosts.forEach(function (host) {
+      if (!host) return;
+      // If the host already has buttons (hardcoded), just wire them.
+      if (host.querySelector('.curr-btn,[data-curr]')) { wireToggle(host); return; }
       var pill = document.createElement('div');
       pill.className = 'curr-toggle' + (opts.floating ? ' floating' : '');
       pill.title = 'Switch curriculum: AL/IG ↔ AP';
       pill.innerHTML =
-        '<button data-curr="alig">\uD83D\uDCD8 AL / IG</button>' +
-        '<button data-curr="ap">\uD83D\uDCD7 AP</button>';
+        '<button class="curr-btn" data-curr="alig">📘 AL / IG</button>' +
+        '<button class="curr-btn" data-curr="ap">📗 AP</button>';
       host.appendChild(pill);
-
-      function paint() {
-        var cur = get();
-        pill.querySelectorAll('button').forEach(function (b) {
-          b.classList.toggle('active', b.getAttribute('data-curr') === cur);
-        });
-      }
-      pill.addEventListener('click', function (e) {
-        var b = e.target.closest('button');
-        if (!b) return;
-        set(b.getAttribute('data-curr'));
-      });
-      window.addEventListener(EVT, paint);
-      paint();
+      wireToggle(pill);
     });
   }
 
