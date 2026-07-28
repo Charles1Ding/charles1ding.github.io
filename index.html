@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <link rel="icon" type="image/png" href="favicon.png" />
   <meta property="og:title" content="Charles · Chem Teacher & More" />
   <meta property="og:description" content="Free Chemistry tutorials, past papers, simulation models, music & more" />
@@ -13,7 +16,7 @@
   <title>Charles · Chem Teacher & More</title>
   <link rel="stylesheet" href="curriculum.css">
   <script src="ap-models.js"></script>
-  <script src="curriculum.js"></script>
+  <script src="curriculum.js?v=4"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
 
@@ -491,42 +494,42 @@
       pointer-events: none;
     }
 
-    /* ── AP Curriculum theme (deep saturated pink) ── */
+    /* ── AP Curriculum theme (deep saturated pink — matching the guitar) ── */
     html[data-curriculum="ap"] .bg { background: url('img-ap-music-bg.jpg') center center / cover no-repeat; }
     html[data-curriculum="ap"] .bg::after { background: rgba(255,248,250,0.05); }
-    html[data-curriculum="ap"] .hero-name { color: #d05078; }
-    html[data-curriculum="ap"] .hero-sub { color: #c04070; }
-    html[data-curriculum="ap"] .hero-divider { background: #6B1028; }
-    html[data-curriculum="ap"] .about-text { color: #c06088; }
-    html[data-curriculum="ap"] .section-title { color: #c04070; }
-    html[data-curriculum="ap"] .section-line { background: linear-gradient(90deg, #b02850, #c04070); }
-    html[data-curriculum="ap"] .res-img-label { color: #a04068; }
-    html[data-curriculum="ap"] .res-img-card:hover img { box-shadow: 0 14px 44px rgba(180,40,70,0.30); }
-    html[data-curriculum="ap"] .res-img-card:nth-child(1):hover img { box-shadow: 0 14px 44px rgba(180,40,70,0.36); }
-    html[data-curriculum="ap"] .res-img-card:nth-child(1):hover .res-img-label { color: #b02850; }
-    html[data-curriculum="ap"] .res-img-card:nth-child(2):hover img { box-shadow: 0 0 0 8px rgba(180,40,70,0.12), 0 14px 44px rgba(160,30,60,0.25); }
-    html[data-curriculum="ap"] .res-img-card:nth-child(2):hover .res-img-label { color: #c04070; }
-    html[data-curriculum="ap"] .res-img-card:nth-child(3):hover img { box-shadow: 0 14px 44px rgba(190,40,80,0.32); }
-    html[data-curriculum="ap"] .res-img-card:nth-child(3):hover .res-img-label { color: #b84878; }
-    html[data-curriculum="ap"] .res-img-card:nth-child(4):hover img { box-shadow: 0 14px 44px rgba(180,50,80,0.32); }
-    html[data-curriculum="ap"] .res-img-card:nth-child(4):hover .res-img-label { background: linear-gradient(90deg, #b02850, #c04070); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    html[data-curriculum="ap"] .res-img-card:nth-child(5):hover img { box-shadow: 0 14px 44px rgba(160,30,60,0.30); }
-    html[data-curriculum="ap"] .res-img-card:nth-child(5):hover .res-img-label { color: #a03860; }
-    html[data-curriculum="ap"] .res-img-card:nth-child(6):hover img { box-shadow: 0 0 0 6px rgba(180,40,70,0.12), 0 16px 48px rgba(160,30,60,0.20); }
-    html[data-curriculum="ap"] .res-img-card:nth-child(6):hover .res-img-label { color: #b02850; }
-    html[data-curriculum="ap"] .icon-pill { background: rgba(255,240,248,0.80); border-color: rgba(180,40,80,0.30); }
-    html[data-curriculum="ap"] .bottom-text { color: #a04068; }
-    html[data-curriculum="ap"] .bottom-text .highlight { color: #b84878; }
-    html[data-curriculum="ap"] .search-btn { border-color: rgba(180,40,80,0.30); }
-    html[data-curriculum="ap"] .search-btn:hover { border-color: #c04070; }
-    html[data-curriculum="ap"] .search-btn svg { stroke: #b02850; }
-    html[data-curriculum="ap"] .search-btn span { color: #b02850 !important; }
-    html[data-curriculum="ap"] .nav-links a { color: #a04068; }
-    html[data-curriculum="ap"] .nav-links a:hover { color: #c04070; }
-    html[data-curriculum="ap"] .nav-logo { color: #c04070; }
-    html[data-curriculum="ap"] .about-text .highlight { color: #c04070; }
-    html[data-curriculum="ap"] .bottom-text a { color: #b02850 !important; }
-    html[data-curriculum="ap"] footer { color: #a04068; }
+    html[data-curriculum="ap"] .hero-name { color: #b02048; }
+    html[data-curriculum="ap"] .hero-sub { color: #901838; }
+    html[data-curriculum="ap"] .hero-divider { background: #501020; }
+    html[data-curriculum="ap"] .about-text { color: #981848; }
+    html[data-curriculum="ap"] .section-title { color: #901838; }
+    html[data-curriculum="ap"] .section-line { background: linear-gradient(90deg, #881838, #a02048); }
+    html[data-curriculum="ap"] .res-img-label { color: #801838; }
+    html[data-curriculum="ap"] .res-img-card:hover img { box-shadow: 0 14px 44px rgba(160,20,50,0.30); }
+    html[data-curriculum="ap"] .res-img-card:nth-child(1):hover img { box-shadow: 0 14px 44px rgba(160,20,50,0.36); }
+    html[data-curriculum="ap"] .res-img-card:nth-child(1):hover .res-img-label { color: #881838; }
+    html[data-curriculum="ap"] .res-img-card:nth-child(2):hover img { box-shadow: 0 0 0 8px rgba(160,20,50,0.12), 0 14px 44px rgba(140,20,40,0.25); }
+    html[data-curriculum="ap"] .res-img-card:nth-child(2):hover .res-img-label { color: #a02048; }
+    html[data-curriculum="ap"] .res-img-card:nth-child(3):hover img { box-shadow: 0 14px 44px rgba(170,30,60,0.32); }
+    html[data-curriculum="ap"] .res-img-card:nth-child(3):hover .res-img-label { color: #901848; }
+    html[data-curriculum="ap"] .res-img-card:nth-child(4):hover img { box-shadow: 0 14px 44px rgba(160,30,60,0.32); }
+    html[data-curriculum="ap"] .res-img-card:nth-child(4):hover .res-img-label { background: linear-gradient(90deg, #881838, #a02048); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    html[data-curriculum="ap"] .res-img-card:nth-child(5):hover img { box-shadow: 0 14px 44px rgba(140,20,40,0.30); }
+    html[data-curriculum="ap"] .res-img-card:nth-child(5):hover .res-img-label { color: #801838; }
+    html[data-curriculum="ap"] .res-img-card:nth-child(6):hover img { box-shadow: 0 0 0 6px rgba(160,20,50,0.12), 0 16px 48px rgba(140,20,40,0.20); }
+    html[data-curriculum="ap"] .res-img-card:nth-child(6):hover .res-img-label { color: #881838; }
+    html[data-curriculum="ap"] .icon-pill { background: rgba(255,240,248,0.80); border-color: rgba(160,20,50,0.30); }
+    html[data-curriculum="ap"] .bottom-text { color: #801838; }
+    html[data-curriculum="ap"] .bottom-text .highlight { color: #901848; }
+    html[data-curriculum="ap"] .search-btn { border-color: rgba(160,20,50,0.30); }
+    html[data-curriculum="ap"] .search-btn:hover { border-color: #a02048; }
+    html[data-curriculum="ap"] .search-btn svg { stroke: #881838; }
+    html[data-curriculum="ap"] .search-btn span { color: #881838 !important; }
+    html[data-curriculum="ap"] .nav-links a { color: #801838; }
+    html[data-curriculum="ap"] .nav-links a:hover { color: #a02048; }
+    html[data-curriculum="ap"] .nav-logo { color: #a02048; }
+    html[data-curriculum="ap"] .about-text .highlight { color: #a02048; }
+    html[data-curriculum="ap"] .bottom-text a { color: #881838 !important; }
+    html[data-curriculum="ap"] footer { color: #801838; }
 
     /* ── Dark mode override ── */
     body.dark { background: #0f172a; }

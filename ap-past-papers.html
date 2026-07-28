@@ -16,7 +16,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { min-height: 100vh; font-family: 'Nunito', sans-serif; background: #fdf6f0; }
     .bg { position: fixed; inset: 0; background: url('img-ap-music-bg.jpg') center center / cover no-repeat; z-index: 0; }
-    .bg::after { content: ''; position: absolute; inset: 0; background: rgba(255,248,240,0.70); }
+    .bg::after { content: ''; position: absolute; inset: 0; background: rgba(255,248,240,0.72); }
     .page { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 0 20px 80px; }
 
     nav { width: 100%; max-width: 1100px; display: flex; justify-content: space-between; align-items: center; padding: 24px 0 0; }
@@ -31,10 +31,16 @@
     .header-line { width: 80px; height: 3px; background: linear-gradient(90deg, #b02850, #c04070); border-radius: 2px; margin: 12px auto 0; }
     .header p { margin-top: 10px; color: #a04068; font-size: 1rem; font-weight: 600; }
 
-    .category { width: 100%; max-width: 1100px; margin-top: 40px; }
-    .cat-title { font-family: 'Nunito', sans-serif; font-size: 1.3rem; font-weight: 800; font-style: italic; color: #b02850; margin-bottom: 16px; padding-left: 8px; border-left: 4px solid #b02850; }
+    /* Year tabs */
+    .year-tabs { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 36px; max-width: 1100px; width: 100%; }
+    .year-tab { padding: 8px 18px; border-radius: 20px; font-weight: 700; font-size: 0.9rem; cursor: pointer; border: 1.5px solid rgba(176,40,80,0.25); background: rgba(255,245,238,0.7); color: #802040; transition: all 0.2s; }
+    .year-tab:hover { border-color: rgba(176,40,80,0.5); background: rgba(255,240,230,0.9); }
+    .year-tab.active { background: linear-gradient(135deg, #b02850, #8B1A4A); color: #fff; border-color: transparent; }
 
-    .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-bottom: 36px; }
+    .category { width: 100%; max-width: 1100px; margin-top: 28px; }
+    .cat-title { font-family: 'Nunito', sans-serif; font-size: 1.25rem; font-weight: 800; font-style: italic; color: #b02850; margin-bottom: 14px; padding-left: 8px; border-left: 4px solid #b02850; }
+
+    .file-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; margin-bottom: 20px; }
 
     .file-card { background: rgba(255,245,238,0.88); backdrop-filter: blur(6px); border: 1.5px solid rgba(176,40,80,0.18); border-radius: 14px; padding: 16px 20px; display: flex; align-items: center; gap: 14px; transition: all 0.22s; }
     .file-card:hover { background: rgba(255,240,230,0.96); border-color: rgba(176,40,80,0.40); box-shadow: 0 4px 20px rgba(176,40,80,0.12); transform: translateY(-2px); }
@@ -48,14 +54,13 @@
     footer { margin-top: 40px; font-family: 'Caveat', cursive; font-size: 1.1rem; color: #a08080; text-align: center; letter-spacing: 0.3px; }
     footer span { color: #c06a7a; }
 
-    @media (max-width: 640px) { .file-grid { grid-template-columns: 1fr; } .header h1 { font-size: 1.8rem; } }
+    @media (max-width: 640px) { .file-grid { grid-template-columns: 1fr; } .header h1 { font-size: 1.8rem; } .year-tab { padding: 6px 14px; font-size: 0.82rem; } }
   </style>
 </head>
 <body>
-
 <div class="bg"></div>
-
 <div class="page">
+
   <nav>
     <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
     <ul class="nav-links">
@@ -69,50 +74,56 @@
     <p>2016-2025 · Free Response Questions &amp; Marking Schemes</p>
   </div>
 
-  <div class="category">
-    <div class="cat-title">Paper Downloads</div>
-    <div class="file-grid">
+  <div class="year-tabs" id="yearTabs"></div>
 
-      <!-- 2025 -->
-      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2025 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP25 pdf.pdf" download>Download</a></div>
-      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2025 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP25-MS-chemistry.pdf" download>Download</a></div>
-
-      <!-- 2024 -->
-      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2024 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP24.pdf" download>Download</a></div>
-      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2024 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP24-MS-chemistry.pdf" download>Download</a></div>
-
-      <!-- 2023 -->
-      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2023 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP23-frq-pdf.pdf" download>Download</a></div>
-      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2023 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP23-MS-chemistry.pdf" download>Download</a></div>
-
-      <!-- 2022 -->
-      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2022 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP22-frq-chemistry.pdf" download>Download</a></div>
-      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2022 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP22-MS-chemistry.pdf" download>Download</a></div>
-
-      <!-- 2021 -->
-      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2021 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP21-frq-chemistry.pdf" download>Download</a></div>
-      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2021 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP21-MS-chemistry.pdf" download>Download</a></div>
-
-      <!-- 2019 -->
-      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2019 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP19-frq-chemistry.pdf" download>Download</a></div>
-      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2019 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP19-MS-chemistry.pdf" download>Download</a></div>
-
-      <!-- 2018 -->
-      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2018 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP18-frq-chemistry.pdf" download>Download</a></div>
-      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2018 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP18-MS-chemistry.pdf" download>Download</a></div>
-
-      <!-- 2017 -->
-      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2017 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP17-MS-chemistry.pdf" download>Download</a></div>
-
-      <!-- 2016 -->
-      <div class="file-card"><div class="file-icon">📄</div><div class="file-info"><div class="file-name">AP 2016 — FRQ Questions</div><div class="file-desc">Free Response Questions</div></div><a class="file-btn" href="ap-past-papers/AP16-frq-chemistry.pdf" download>Download</a></div>
-      <div class="file-card"><div class="file-icon">📝</div><div class="file-info"><div class="file-name">AP 2016 — Marking Scheme</div><div class="file-desc">Scoring Guidelines</div></div><a class="file-btn" href="ap-past-papers/AP16-MS.pdf" download>Download</a></div>
-
-    </div>
-  </div>
+  <div class="category" id="yearContent"></div>
 
   <footer>Made with <span>♥</span> by Charles · AP Chemistry Past Papers</footer>
 </div>
 
+<script>
+var papers = [
+  { year: 2025, name: 'FRQ Questions',       desc: 'Free Response Questions',         icon: '📄', file: 'ap-past-papers/AP25 pdf.pdf' },
+  { year: 2025, name: 'Marking Scheme',      desc: 'Scoring Guidelines',              icon: '📝', file: 'ap-past-papers/AP25-MS-chemistry.pdf' },
+  { year: 2024, name: 'FRQ Questions',       desc: 'Free Response Questions',         icon: '📄', file: 'ap-past-papers/AP24.pdf' },
+  { year: 2024, name: 'Marking Scheme',      desc: 'Scoring Guidelines',              icon: '📝', file: 'ap-past-papers/AP24-MS-chemistry.pdf' },
+  { year: 2023, name: 'FRQ Questions',       desc: 'Free Response Questions',         icon: '📄', file: 'ap-past-papers/AP23-frq-pdf.pdf' },
+  { year: 2023, name: 'Marking Scheme',      desc: 'Scoring Guidelines',              icon: '📝', file: 'ap-past-papers/AP23-MS-chemistry.pdf' },
+  { year: 2022, name: 'FRQ Questions',       desc: 'Free Response Questions',         icon: '📄', file: 'ap-past-papers/AP22-frq-chemistry.pdf' },
+  { year: 2022, name: 'Marking Scheme',      desc: 'Scoring Guidelines',              icon: '📝', file: 'ap-past-papers/AP22-MS-chemistry.pdf' },
+  { year: 2021, name: 'FRQ Questions',       desc: 'Free Response Questions',         icon: '📄', file: 'ap-past-papers/AP21-frq-chemistry.pdf' },
+  { year: 2021, name: 'Marking Scheme',      desc: 'Scoring Guidelines',              icon: '📝', file: 'ap-past-papers/AP21-MS-chemistry.pdf' },
+  { year: 2019, name: 'FRQ Questions',       desc: 'Free Response Questions',         icon: '📄', file: 'ap-past-papers/AP19-frq-chemistry.pdf' },
+  { year: 2019, name: 'Marking Scheme',      desc: 'Scoring Guidelines',              icon: '📝', file: 'ap-past-papers/AP19-MS-chemistry.pdf' },
+  { year: 2018, name: 'FRQ Questions',       desc: 'Free Response Questions',         icon: '📄', file: 'ap-past-papers/AP18-frq-chemistry.pdf' },
+  { year: 2018, name: 'Marking Scheme',      desc: 'Scoring Guidelines',              icon: '📝', file: 'ap-past-papers/AP18-MS-chemistry.pdf' },
+  { year: 2017, name: 'Marking Scheme',      desc: 'Scoring Guidelines',              icon: '📝', file: 'ap-past-papers/AP17-MS-chemistry.pdf' },
+  { year: 2016, name: 'FRQ Questions',       desc: 'Free Response Questions',         icon: '📄', file: 'ap-past-papers/AP16-frq-chemistry.pdf' },
+  { year: 2016, name: 'Marking Scheme',      desc: 'Scoring Guidelines',              icon: '📝', file: 'ap-past-papers/AP16-MS.pdf' },
+];
+
+var years = [...new Set(papers.map(p => p.year))].sort((a,b) => b - a);
+
+function renderTabs(activeYear) {
+  var h = '';
+  years.forEach(function(y) {
+    h += '<div class="year-tab' + (y === activeYear ? ' active' : '') + '" onclick="showYear(' + y + ')">' + y + '</div>';
+  });
+  document.getElementById('yearTabs').innerHTML = h;
+}
+
+function showYear(year) {
+  var yearPapers = papers.filter(function(p) { return p.year === year; });
+  var h = '<div class="cat-title">' + year + ' Exams</div><div class="file-grid">';
+  yearPapers.forEach(function(p) {
+    h += '<div class="file-card"><div class="file-icon">' + p.icon + '</div><div class="file-info"><div class="file-name">AP ' + p.name + '</div><div class="file-desc">' + p.desc + '</div></div><a class="file-btn" href="' + p.file + '" download>Download</a></div>';
+  });
+  h += '</div>';
+  document.getElementById('yearContent').innerHTML = h;
+  renderTabs(year);
+}
+
+showYear(years[0]);
+</script>
 </body>
 </html>
