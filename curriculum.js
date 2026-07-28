@@ -4,12 +4,15 @@
    Depends on: ap-models.js (window.AP_MODELS, window.AP_TOPICS)
    ============================================================ */
 (function () {
-  var KEY = 'chem_curriculum';       // 'alig' (default) | 'ap'
+  var KEY = 'chem_curriculum_v2';   // 'alig' (default) | 'ap' — v2 ignores any stale chem_curriculum state
   var EVT = 'curriculumchange';
-  var STORE = sessionStorage;         // sessionStorage: a fresh tab = AL; persists within tab for subpages
+  var STORE = sessionStorage;       // sessionStorage: a fresh tab = AL; persists within tab for subpages
 
   function get() {
     var v = STORE.getItem(KEY);
+    // Cleanup: drop any v1 residue from earlier sessions so it can never
+    // re-bleed AP state into a fresh tab.
+    STORE.removeItem('chem_curriculum');
     return v === 'ap' ? 'ap' : 'alig';
   }
 
@@ -27,8 +30,10 @@
   function swapAssets(mode) {
     document.querySelectorAll('img[data-ap-src]').forEach(function (img) {
       var target = mode === 'ap' ? (img.dataset.apSrc || img.dataset.alSrc) : (img.dataset.alSrc || img.src);
-      // Cache-busting so the browser always re-fetches the new theme image.
-      img.src = target.split('?')[0] + '?v=' + (mode === 'ap' ? 'ap' : 'alig');
+      // Cache-busting with a live timestamp + mode so the browser always
+      // re-fetches the new theme image.
+      var bust = '?v=' + mode + 't=' + Date.now();
+      img.src = target.split('?')[0] + bust;
     });
     document.querySelectorAll('a[data-ap-href]').forEach(function (a) {
       a.href = mode === 'ap' ? (a.dataset.apHref || a.dataset.alHref) : (a.dataset.alHref || a.href);
