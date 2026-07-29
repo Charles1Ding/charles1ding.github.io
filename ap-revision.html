@@ -193,7 +193,16 @@
     }
     footer span { color: #c06a7a; }
 
-    @media (max-width: 640px) {
+    /* Homework: 2-col layout (wider cards) */
+    .compact2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+    .pair-tag { grid-column: 1 / -1; font-size: 0.85rem; font-weight: 700; color: #8B1A1A; padding: 0 0 0 2px; }
+    .compact4 .file-card { padding: 10px 12px; gap: 8px; border-radius: 10px; }
+    .compact4 .file-card .file-icon { width: 32px; height: 32px; font-size: 1.1rem; border-radius: 8px; }
+    .compact4 .file-card .file-name { font-size: 0.78rem; }
+    .compact4 .file-card .file-desc { font-size: 0.68rem; }
+    .compact4 .file-card .file-btn { padding: 4px 10px; font-size: 0.68rem; border-radius: 14px; }
+
+    @media (max-width: 640px) { .pair-grid { grid-template-columns: 1fr; } .pair-row { flex-direction: column; } }
       .file-grid { grid-template-columns: 1fr; }
       .header h1 { font-size: 1.8rem; }
     }
@@ -371,5 +380,108 @@
 
 </div>
 
-</body>
-</html>
+<script>
+// ── Homework data ──
+var hwChapters = [
+  { ch:1, title:"Atomic Structure & Periodic Table", parts: [
+    {name:"Atomic Structure",       sg:"SG_Chapter01Part1AtomicStructure_64f15c16a11c93.64f15c17ad4181.21877373.pdf", tb:"TB_Chapter01Part1AtomicStructure_64f15c0fee1a42.64f15c110b35c0.92397144.pdf"},
+    {name:"Periodic Table & Trends", sg:"SG_Chapter01Part2ThePeriodicTableandTrends_64f15c355d8878.64f15c3770e888.03066673.pdf", tb:"TB_Chapter01Part2ThePeriodicTableandTrends_64f15c2da8fcc2.64f15c2fbb5962.72792124.pdf"}
+  ]},
+  { ch:2, title:"Chemical Bonding & Molecular Structure", parts: [
+    {name:"Chemical Bonding",       sg:"SG_Chapter02Part1ChemicalBonding_64f15c481315a2.64f15c49213e38.10134571.pdf", tb:"TB_Chapter02Part1ChemicalBonding_64f15c42835ec0.64f15c43aff4b6.41166602.pdf"},
+    {name:"Molecular Structures",    sg:"SG_Chapter02Part2MolecularStructures_64f15c6476fac8.64f15c66843442.57832753.pdf", tb:"TB_Chapter02Part2MolecularStructures_64f15c5be8bc44.64f15c5d985157.58311717.pdf"}
+  ]},
+  { ch:3, title:"Intermolecular Forces & Properties", parts: [
+    {name:"States and Properties",   sg:"SG_Chapter03Part1StatesandProperties_64f15eda7fbbc5.64f15edc5cf1b4.00268119.pdf", tb:"TB_Chapter03Part1StatesandProperties_64f15ed2945ed5.64f15ed44b66b2.79579449.pdf"},
+    {name:"Intermolecular Forces",   sg:"SG_Chapter03Part2IntermolecularForces_64f15ca97f97f0.64f15cabd70491.16100278.pdf", tb:"TB_Chapter03Part2IntermolecularForces_64f15c912a7f28.64f15c93377300.46273270.pdf"},
+    {name:"Organic Structure",       sg:"SG_Chapter03Part3OrganicStructure_64f15efd7b5847.64f15efe344200.19211380.pdf", tb:"TB_Chapter03Part3OrganicStructure_64f15ef71ff314.64f15ef7cd0308.15398774.pdf"}
+  ]},
+  { ch:4, title:"Chemical Reactions", parts: [
+    {name:"Changes & Representations", sg:"SG_Chapter04Part1ChangesandRepresentations_64f15f2286cd19.64f15f272a7130.09101456.pdf", tb:"TB_Chapter04Part1ChangesandRepresentations_64f15f16e86c90.64f15f1a4fa5d2.20356116.pdf"},
+    {name:"Types of Reactions",      sg:"SG_Chapter04Part2TypesofReactions_64f15f4a036f93.64f15f4bec2b90.35998154.pdf", tb:"TB_Chapter04Part2TypesofReactions_64f15f437e2cd5.64f15f45568b13.16674746.pdf"}
+  ]},
+  { ch:5, title:"Stoichiometry", parts: [
+    {name:"Mass Spec & Moles",       sg:"SG_Chapter05Part1MassSpecandMoles_650a8faa63fba1.650a8fabca51f0.85438279.pdf", tb:"TB_Chapter05Part1MassSpecandMoles_650a8fa355ad36.650a8fa4944ab7.81828682.pdf"},
+    {name:"Stoichiometry",           sg:"SG_Chapter05Part2Stoichiometry_650a8fd97353f5.650a8fdc923dd5.81658172.pdf", tb:"TB_Chapter05Part2Stoichiometry_650a8fcf6ecd30.650a8fd2797484.78239270.pdf"},
+    {name:"Composition Analysis",    sg:"SG_Chapter05Part3CompositionAnalysis_650a9008738074.650a900d555331.91720590.pdf", tb:"TB_Chapter05Part3CompositionAnalysis_650a8ffdf0dfb4.650a9000b6ba96.11054758.pdf"}
+  ]},
+  { ch:6, title:"Gases", parts: [
+    {name:"Ideal Gas Law",           sg:"SG_Chapter06Part1IdealGasLaw_65249be0e0ea48.65249be422cb22.05322128.pdf", tb:"TB_Chapter06Part1IdealGasLaw_65249bc6c048c3.65249bc94d00f3.46421627.pdf"},
+    {name:"Real Gases",              sg:"SG_Chapter06Part2RealGases_65249bfee27f46.65249c00e81621.52604558.pdf", tb:"TB_Chapter06Part2RealGases_65249bf46bee12.65249bf5f27856.22387987.pdf"}
+  ]},
+  { ch:7, title:"Solutions & Spectroscopy", parts: [
+    {name:"Solutions",               sg:"SG_Chapter07Part1Solutions_65249c22b1a986.65249c264e7dd1.89605907.pdf", tb:"TB_Chapter07Part1Solutions_65249c12a21363.65249c15a3f224.56038049.pdf"},
+    {name:"Spectroscopy",            sg:"SG_Chapter07Part2Spectroscopy_65249c541243a1.65249c582347f0.87379171.pdf", tb:"TB_Chapter07Part2Spectroscopy_65249c433d0295.65249c46008574.05639727.pdf"}
+  ]},
+  { ch:8, title:"Thermochemistry", parts: [
+    {name:"Heat & Temperature",      sg:"SG_Chapter08Part1HeatandTemperature_65249c952338a9.65249c97950f74.41287696.pdf", tb:"TB_Chapter08Part1HeatandTemperature_65249c8a3d7db7.65249c8cc27308.37752868.pdf"},
+    {name:"Enthalpy Change",         sg:"SG_Chapter08Part2EnthalpyChange_65249cc3306bb2.65249cca4cab42.00002523.pdf", tb:"TB_Chapter08Part2EnthalpyChange_65249cb0c6ee24.65249cb71cbe22.87748703.pdf"},
+    {name:"Entropy & Gibbs",         sg:"SG_Chapter08Part3EntropyandGibbs_65249cec4bdfc8.65249cf1b225c7.58437833.pdf", tb:"TB_Chapter08Part3EntropyandGibbs_65249cdc8e5ed5.65249ce101f948.22919745.pdf"}
+  ]},
+  { ch:9, title:"Kinetics", parts: [
+    {name:"Reaction Rate",           sg:"SG_Chapter09Part1ReactionRate_65478ea73d39c4.65478eaabc2769.13722984.pdf", tb:"TB_Chapter09Part1ReactionRate_65478e9bc2ce70.65478e9edca570.70628608.pdf"},
+    {name:"Rate Law",                sg:"SG_Chapter09Part2RateLaw_65478ed08414d5.65478ed77002d3.57151248.pdf", tb:"TB_Chapter09Part2RateLaw_65478ee6517e59.65478eeb2f6ce7.01508846.pdf"},
+    {name:"Reaction Mechanism",      sg:"SG_Chapter09Part3ReactionMechanism_65478f3fe3d475.65478f705e1684.81307912.pdf", tb:"TB_Chapter09Part3ReactionMechanism_65478f138d2422.65478f1d048c33.02241562.pdf"}
+  ]},
+  { ch:10, title:"Chemical Equilibrium", parts: [
+    {name:"Equilibrium Constant",    sg:"SG_Chapter10Part1Keq_65478fba714a40.65478fc2d67c18.02959310.pdf", tb:"TB_Chapter10Part1Keq_65478f9aa83ba0.65478fa1312003.22026043.pdf"},
+    {name:"Le Chatelier FRQ",        sg:"SG_Chapter10Part2LeChateliersPrincipleFRQ_654855791a4f22.654855cb938a43.42703337.pdf", tb:"TB_Chapter10Part2LeChateliersPrincipleFRQ_6548554b91cf86.65485555e59521.53404371.pdf"},
+    {name:"Le Chatelier MCQ",        sg:"SG_Chapter10Part2LeChateliersPrincipleMCQ_65485606da82c5.6548560a12c414.66131405.pdf", tb:"TB_Chapter10Part2LeChateliersPrincipleMCQ_654855f8f30750.654855fc3168e4.93582435.pdf"},
+    {name:"Ksp",                     sg:"SG_Chapter10Part3Ksp_6547941f3b4413.654794541971e4.76660694.pdf", tb:"TB_Chapter10Part3Ksp_654793fd0b9bb2.65479407aab3b3.20905825.pdf"}
+  ]},
+  { ch:11, title:"Acids & Bases", parts: [
+    {name:"Acidity",                 sg:"SG_Chapter11Part1Acidity_654794885bba55.6547948f3e52c8.13976843.pdf", tb:"TB_Chapter11Part1Acidity_6547947092b4d5.654794761f45d2.38454545.pdf"},
+    {name:"Acidity & Thermo",        sg:"SG_Chapter11Part2AcidityandThermo_654794ad4cea97.654794af1e43f1.36670359.pdf", tb:"TB_Chapter11Part2AcidityandThermo_654794a2f07157.654794a4c3d976.71149249.pdf"},
+    {name:"pH & Buffers",            sg:"SG_Chapter11Part3pHCalculationsandBuffers_654794cd3a2e51.654794d58f91c9.73364708.pdf", tb:"TB_Chapter11Part3pHCalculationsandBuffers_654794bdeb4d07.654794c3c867b5.34739485.pdf"},
+    {name:"Titration",               sg:"SG_Chapter11Part4Titration_654795138b2302.65479544557789.77691265.pdf", tb:"TB_Chapter11Part4Titration_654794f3d5e471.654794fa222927.59892504.pdf"}
+  ]},
+  { ch:12, title:"Electrochemistry", parts: [
+    {name:"Galvanic Cell",           sg:"SG_Chapter12Part1GalvanicCell_65479571e001a8.65479579525069.19908001.pdf", tb:"TB_Chapter12Part1GalvanicCell_6547955da046b8.65479562c0dd58.35959061.pdf"},
+    {name:"Electrolysis",            sg:"SG_Chapter12Part2Electrolysis_654795aca79053.654795b0aa9364.84128256.pdf", tb:"TB_Chapter12Part2Electrolysis_6547959c7c4ee7.6547959f36a1e0.82796570.pdf"}
+  ]}
+];
+// ── Progress Check data ──
+var pcUnits = [
+  { unit:1, title:"Atomic Structure & Properties" },
+  { unit:2, title:"Molecular & Ionic Compound Structure & Properties" },
+  { unit:3, title:"Intermolecular Forces & Properties" },
+  { unit:4, title:"Chemical Reactions" },
+  { unit:5, title:"Kinetics" },
+  { unit:6, title:"Thermochemistry" },
+  { unit:7, title:"Equilibrium" },
+  { unit:8, title:"Acids & Bases" },
+  { unit:9, title:"Applications of Thermodynamics" }
+];
+
+function card(href, label, desc, icon) {
+  return '<div class="file-card"><div class="file-icon">'+(icon||'📄')+'</div><div class="file-info"><div class="file-name">'+label+'</div><div class="file-desc">'+desc+'</div></div><a class="file-btn" href="'+href+'" download>DL</a></div>';
+}
+
+(function() {
+  var html = '<div class="category"><div class="cat-title">Homework & Assignments</div>';
+  hwChapters.forEach(function(ch) {
+    html += '<div class="compact2">';
+    html += '<div class="pair-tag">Chapter '+ch.ch+' · '+ch.title+'</div>';
+    ch.parts.forEach(function(p) {
+      html += card('ap-homework/'+p.sg, p.name, 'Questions / Study Guide', '📝');
+      html += card('ap-homework/'+p.tb, p.name+' Answers', 'Answer Key', '✅');
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+
+  html += '<div class="category"><div class="cat-title">Unit Progress Checks</div>';
+  pcUnits.forEach(function(u) {
+    html += '<div class="compact2">';
+    html += '<div class="pair-tag">Unit '+u.unit+' · '+u.title+'</div>';
+    html += card('ap-progress-check/SG_Unit'+u.unit+'ProgressCheckFRQ.pdf', 'FRQ Questions', 'Free Response', '📝');
+    html += card('ap-progress-check/TB_Unit'+u.unit+'ProgressCheckFRQ.pdf', 'FRQ Answers', 'Answer Key', '✅');
+    html += card('ap-progress-check/SG_Unit'+u.unit+'ProgressCheckMCQ.pdf', 'MCQ Questions', 'Multiple Choice', '📋');
+    html += card('ap-progress-check/TB_Unit'+u.unit+'ProgressCheckMCQ.pdf', 'MCQ Answers', 'Answer Key', '✅');
+    html += '</div>';
+  });
+  html += '</div>';
+
+  document.querySelector('.page').insertAdjacentHTML('beforeend', html);
+})();
+</script>
