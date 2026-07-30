@@ -35,9 +35,20 @@
     var papersLabel = document.getElementById('papersCardLabel');
     if (papersLabel) papersLabel.textContent = mode === 'ap' ? 'AP Past Papers' : 'Past Papers';
   }
-  // Run swap after DOM is ready (script is loaded in <head>, so the body is
-  // empty at IIFE run time).
-  function initSwap() { swapAssets(get()); }
+  // Preload AP images so they're already in the browser cache when the user
+  // toggles — switching then becomes instant instead of waiting on network.
+  function preloadAPImages() {
+    document.querySelectorAll('img[data-ap-src]').forEach(function (img) {
+      var ap = img.dataset.apSrc;
+      if (!ap || preloaded[ap]) return;
+      preloaded[ap] = true;
+      var p = new Image();
+      p.src = ap.split('?')[0] + '?v=ap';
+    });
+  }
+  var preloaded = {};
+  // Run swap & preload AP images after DOM is ready.
+  function initSwap() { swapAssets(get()); preloadAPImages(); }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initSwap);
   } else {
