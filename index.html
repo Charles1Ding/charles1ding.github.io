@@ -244,6 +244,12 @@
       transition: box-shadow 0.28s;
       display: block;
     }
+    /* CSS-only dual-image swapper — toggle is instant, zero JavaScript image load */
+    .swapper { display: block; width: 100%; max-width: 260px; margin: 0 auto; }
+    .swapper img { width: 100%; border-radius: 18px; box-shadow: 0 8px 32px rgba(37,99,199,0.14); }
+    .swapper .ap-img { display: none; }
+    html[data-curriculum="ap"] .swapper .al-img { display: none; }
+    html[data-curriculum="ap"] .swapper .ap-img { display: block; }
     .res-img-card:hover img {
       box-shadow: 0 14px 44px rgba(37,99,199,0.22);
     }
@@ -668,37 +674,37 @@
 
     <!-- Past Paper / AP Past Papers -->
     <a class="res-img-card" id="papersCardLink" href="past-papers.html" data-al-href="past-papers.html" data-ap-href="ap-past-papers.html">
-      <img src="img-pastpaper.jpg" data-al-src="img-pastpaper.jpg" data-ap-src="img-ap-pastpaper.jpg" alt="Past Papers" />
+      <span class="swapper"><img class="al-img" src="img-pastpaper.jpg" alt="Past Papers" /><img class="ap-img" src="img-ap-pastpaper.jpg" alt="AP Past Papers" /></span>
       <span class="res-img-label" id="papersCardLabel">Past Papers</span>
     </a>
 
     <!-- Simulation Models -->
     <a class="res-img-card" href="simulation-models.html">
-      <img src="img-simulation.jpg" data-al-src="img-simulation.jpg" data-ap-src="img-ap-simulation.jpg" alt="Simulation Models" />
+      <span class="swapper"><img class="al-img" src="img-simulation.jpg" alt="Simulation Models" /><img class="ap-img" src="img-ap-simulation.jpg" alt="AP Chem Simulations" /></span>
       <span class="res-img-label" id="simCardLabel">Simulation Models</span>
     </a>
 
     <!-- Music -->
     <a class="res-img-card" href="music.html">
-      <img src="img-music.jpg" data-al-src="img-music.jpg" data-ap-src="img-ap-music.jpg" alt="Vibing Music" />
+      <span class="swapper"><img class="al-img" src="img-music.jpg" alt="Vibing Music" /><img class="ap-img" src="img-ap-music.jpg" alt="Vibing Music" /></span>
       <span class="res-img-label">Vibing Music</span>
     </a>
 
     <!-- Review Notes / AP Revision -->
     <a class="res-img-card" id="notesCardLink" href="review-notes.html" data-al-href="review-notes.html" data-ap-href="ap-revision.html">
-      <img src="img-review-notes.jpg" data-al-src="img-review-notes.jpg" data-ap-src="img-ap-notes.jpg" alt="Review Notes" />
+      <span class="swapper"><img class="al-img" src="img-review-notes.jpg" alt="Review Notes" /><img class="ap-img" src="img-ap-notes.jpg" alt="AP Revision" /></span>
       <span class="res-img-label" id="notesCardLabel">Review Notes</span>
     </a>
 
     <!-- Gaming Time -->
     <a class="res-img-card" href="gaming.html">
-      <img src="img-gaming.jpg" data-al-src="img-gaming.jpg" data-ap-src="img-ap-gaming.jpg" alt="Gaming Time" />
+      <span class="swapper"><img class="al-img" src="img-gaming.jpg" alt="Gaming Time" /><img class="ap-img" src="img-ap-gaming.jpg" alt="Gaming Time" /></span>
       <span class="res-img-label">Gaming Time</span>
     </a>
 
     <!-- Private Space -->
     <a class="res-img-card" href="private-space.html">
-      <img src="img-private.jpg" data-al-src="img-private.jpg" data-ap-src="img-ap-private.jpg" alt="Private Space" />
+      <span class="swapper"><img class="al-img" src="img-private.jpg" alt="Private Space" /><img class="ap-img" src="img-ap-private.jpg" alt="Private Space" /></span>
       <span class="res-img-label">Private Space</span>
     </a>
 

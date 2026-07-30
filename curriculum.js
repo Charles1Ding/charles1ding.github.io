@@ -21,12 +21,8 @@
   // Reflect current state on <html> as early as possible (no layout shift).
   document.documentElement.setAttribute('data-curriculum', get());
 
-  /* ---- Card image & link swap (data-ap-* / data-al-*) ---- */
-  function swapAssets(mode) {
-    document.querySelectorAll('img[data-ap-src]').forEach(function (img) {
-      var target = mode === 'ap' ? (img.dataset.apSrc || img.dataset.alSrc) : (img.dataset.alSrc || img.src);
-      img.src = target.split('?')[0] + '?v=' + mode;
-    });
+  /* ---- Card link & label swap (images handled by CSS .swapper) ---- */
+  function applyMode(mode) {
     document.querySelectorAll('a[data-ap-href]').forEach(function (a) {
       a.href = mode === 'ap' ? (a.dataset.apHref || a.dataset.alHref) : (a.dataset.alHref || a.href);
     });
@@ -35,26 +31,13 @@
     var papersLabel = document.getElementById('papersCardLabel');
     if (papersLabel) papersLabel.textContent = mode === 'ap' ? 'AP Past Papers' : 'Past Papers';
   }
-  // Preload AP images so they're already in the browser cache when the user
-  // toggles — switching then becomes instant instead of waiting on network.
-  function preloadAPImages() {
-    document.querySelectorAll('img[data-ap-src]').forEach(function (img) {
-      var ap = img.dataset.apSrc;
-      if (!ap || preloaded[ap]) return;
-      preloaded[ap] = true;
-      var p = new Image();
-      p.src = ap.split('?')[0] + '?v=ap';
-    });
-  }
-  var preloaded = {};
-  // Run swap & preload AP images after DOM is ready.
-  function initSwap() { swapAssets(get()); preloadAPImages(); }
+  function initMode() { applyMode(get()); }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSwap);
+    document.addEventListener('DOMContentLoaded', initMode);
   } else {
-    initSwap();
+    initMode();
   }
-  window.addEventListener(EVT, function (e) { swapAssets(e.detail.curriculum); });
+  window.addEventListener(EVT, function (e) { applyMode(e.detail.curriculum); });
 
   /* ---- AP copy accessors (safe fallback to AL/IG) ---- */
 
