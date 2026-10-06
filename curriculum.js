@@ -5,18 +5,38 @@
    ============================================================ */
 (function () {
   var EVT = 'curriculumchange';
+  var STORE_KEY = 'curriculum'; // same convention as dark-mode.js (key: 'theme')
 
-  // Hard default = AL on every page load. No session persistence: every
-  // visit reverts to AL; users click AP to switch on that page.
+  // The chosen curriculum is remembered (localStorage), so it survives page
+  // navigation: a sub-page opened from an AP home page stays AP, and going
+  // back home returns to AP too. AL/IG stays the default for first-time
+  // visitors.
+  function readStore() {
+    try {
+      var v = window.localStorage.getItem(STORE_KEY);
+      if (v === 'ap' || v === 'alig') return v;
+    } catch (e) { /* storage disabled / private mode -> fall back to default */ }
+    return null;
+  }
+
   function get() {
-    return 'alig';
+    return readStore() || 'alig';
   }
 
   function set(v) {
     v = v === 'ap' ? 'ap' : 'alig';
+    try { window.localStorage.setItem(STORE_KEY, v); } catch (e) { /* ignore */ }
     document.documentElement.setAttribute('data-curriculum', v);
     window.dispatchEvent(new CustomEvent(EVT, { detail: { curriculum: v } }));
   }
+
+  // Keep other open tabs / windows in sync with the saved choice.
+  window.addEventListener('storage', function (e) {
+    if (e.key !== STORE_KEY) return;
+    var v = get();
+    document.documentElement.setAttribute('data-curriculum', v);
+    window.dispatchEvent(new CustomEvent(EVT, { detail: { curriculum: v } }));
+  });
 
   // Reflect current state on <html> as early as possible (no layout shift).
   document.documentElement.setAttribute('data-curriculum', get());

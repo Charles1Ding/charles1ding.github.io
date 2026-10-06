@@ -13,7 +13,7 @@
   <title>Charles · Chem Teacher & More</title>
   <link rel="stylesheet" href="curriculum.css">
   <script src="ap-models.js"></script>
-  <script src="curriculum.js?v=5"></script>
+  <script src="curriculum.js?v=6"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap');
 
@@ -62,7 +62,8 @@
       gap: 36px;
     }
     .nav-logo {
-      font-family: 'Caveat', cursive;
+      font-family: 'Nunito', sans-serif;
+      font-style: italic;
       font-size: 1.7rem;
       font-weight: 700;
       color: #2d5fa3;
@@ -621,7 +622,7 @@
 
   <!-- Nav -->
   <nav>
-    <div class="nav-logo">Charles.chem ⚗️</div>
+    <div class="nav-logo">Charles.chem</div>
     <ul class="nav-links">
       <li><a href="#resources">Resources</a></li>
       <li><a href="#about">About</a></li>
@@ -631,9 +632,9 @@
       <span style="color:#3a5a8c;">Search</span>
       <span class="search-kbd">⌘K</span>
     </button>
-    <span id="currToggleHost" style="margin-left:14px;display:inline-flex;gap:6px;align-items:center;">
-      <button class="curr-btn" onclick="window.Curriculum&&window.Curriculum.set('alig')" style="padding:4px 10px;border-radius:14px;border:1.5px solid rgba(37,99,199,0.3);background:rgba(37,99,199,0.08);color:#2563c7;font-size:0.8rem;font-weight:700;cursor:pointer;">📘 AL / IG</button>
-      <button class="curr-btn" onclick="window.Curriculum&&window.Curriculum.set('ap')" style="padding:4px 10px;border-radius:14px;border:1.5px solid rgba(180,40,80,0.3);background:rgba(180,40,80,0.06);color:#a04068;font-size:0.8rem;font-weight:700;cursor:pointer;">📗 AP</button>
+    <span id="currToggleHost" style="margin-left:14px;display:inline-flex;gap:8px;align-items:center;">
+      <button class="curr-btn" onclick="window.Curriculum&&window.Curriculum.set('alig')" style="padding:8px 16px;border-radius:18px;border:2px solid rgba(37,99,199,0.55);background:rgba(255,255,255,0.92);color:#2563c7;font-size:0.92rem;font-weight:800;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 2px 10px rgba(37,99,199,0.22);letter-spacing:0.3px;font-family:inherit;">📘 AL / IG</button>
+      <button class="curr-btn" onclick="window.Curriculum&&window.Curriculum.set('ap')" style="padding:8px 16px;border-radius:18px;border:2px solid rgba(180,40,80,0.55);background:rgba(255,255,255,0.92);color:#a02058;font-size:0.92rem;font-weight:800;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 2px 10px rgba(180,40,80,0.22);letter-spacing:0.3px;font-family:inherit;">📗 AP</button>
     </span>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme" id="themeBtn">🌙</button>
     <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">

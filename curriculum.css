@@ -86,3 +86,19 @@ html.dark .curr-toggle button.active {
   font-weight: 700;
   color: #64748b;
 }
+
+/* ------------------------------------------------------------
+   Active-state paint for the hardcoded toggle buttons.
+   index.html ships its buttons with inline colours, so the
+   selected one is marked with opacity + lift (properties the
+   inline styles don't set) instead of a colour override.
+   ------------------------------------------------------------ */
+.curr-btn {
+  opacity: 0.55;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.curr-btn:hover { opacity: 1; }
+.curr-btn.active {
+  opacity: 1;
+  transform: translateY(-1px);
+}

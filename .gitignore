@@ -1,0 +1,5 @@
+# Local backup / scratch files (never publish)
+*.bak
+*.bak.*
+*.tmp
+_*_bak/

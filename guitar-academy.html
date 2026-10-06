@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>吉他弹唱学院 - Guitar Academy</title>
+<script src="curriculum.js?v=6"></script>
 <style>
 :root {
   --bg: #1a1a2e;
@@ -593,6 +594,25 @@ h1 {
 @media (max-width:768px) {
   .tab-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
 }
+
+/* ============================================================
+   AP theme (curriculum.js writes html[data-curriculum="ap"])
+   This page is a dark, self-contained app, so the light AP
+   surface from ap-theme.css would break it -> only the site
+   chrome (top bar) and the accent colour follow the AP palette.
+   ============================================================ */
+html[data-curriculum="ap"] {
+  --primary: #c0285a;                       /* accent -> AP rose */
+  --accent: #f0b45a;
+}
+html[data-curriculum="ap"] .site-bar {
+  background: linear-gradient(135deg, #3d0f1e, #8B1A4A 58%, #b02850);
+}
+html[data-curriculum="ap"] .nav-item.active {
+  background: rgba(176,40,80,0.22);
+  color: #f6c9d8;
+}
+html[data-curriculum="ap"] .nav-item.active .nav-icon { color: #f6c9d8; }
 </style>
 
 <link rel="canonical" href="https://charles1ding.github.io/guitar-academy.html" />
@@ -600,7 +620,7 @@ h1 {
 <body>
 
 <div class="site-bar">
-  <a href="index.html">← Back to Charles.chem ⚗️</a>
+  <a href="index.html">← Back to Charles.chem</a>
   <button onclick="openSearch()" style="margin-left:auto;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:16px;padding:4px 12px;cursor:pointer;color:rgba(255,255,255,0.85);font-size:0.8rem;font-weight:600;">🔍 Search</button>
 </div>
 

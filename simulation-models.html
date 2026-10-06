@@ -15,7 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;1,700;1,800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="curriculum.css">
   <script src="ap-models.js"></script>
-  <script src="curriculum.js"></script>
+  <script src="curriculum.js?v=6"></script>
   <style>
     :root {
       --bg: #f0f4f8;
@@ -229,6 +229,41 @@
     @media (max-width: 600px) {
       header h1 { font-size: 1.4rem; }
       .grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── AP curriculum theme ──────────────────────────────────
+       Mirrors index.html's AP palette (maroon / rose) so this
+       page follows the toggle instead of staying IG blue-teal.  */
+    html[data-curriculum="ap"] {
+      --bg: #fdf7f4;
+      --accent: #a02048;
+      --accent-light: #fbe9ef;
+      --accent2: #8B1A4A;
+      --accent2-light: #fbeaf0;
+      --border: #f2dde3;
+      --tag-en: #fbe4ec;
+      --tag-en-text: #a02048;
+      --tag-cn: #f7e5ea;
+      --tag-cn-text: #8B1A4A;
+    }
+    html[data-curriculum="ap"] header {
+      background: linear-gradient(135deg, #3d0f1e 0%, #8B1A4A 58%, #b02850 100%);
+    }
+    html[data-curriculum="ap"] .card:hover {
+      box-shadow: 0 8px 24px rgba(160,32,72,0.16);
+    }
+    html[data-curriculum="ap"] .tag-topic {
+      background: #fdeef2;
+      color: #a02048;
+    }
+    html[data-curriculum="ap"] .card-observe {
+      color: #8B1A4A;
+      background: rgba(176,40,80,0.07);
+    }
+    html[data-curriculum="ap"] .back-link a { color: #8B1A4A !important; }
+    html[data-curriculum="ap"] .curr-toggle button.active {
+      background: #b02850;
+      box-shadow: 0 2px 10px rgba(176,40,80,0.45);
     }
   </style>
 <link rel="stylesheet" href="dark-mode.css">

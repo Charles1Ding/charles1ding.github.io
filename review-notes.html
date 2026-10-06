@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="favicon.png" />
   <meta property="og:title" content="Review Notes · Charles" />
-  <meta property="og:description" content="37 review materials — chapter summaries, handouts, P2 practice, definitions & more" />
+  <meta property="og:description" content="53 review materials — chapter summaries, handouts, P2 practice, definitions & more" />
   <meta property="og:image" content="https://charles1ding.github.io/favicon.png" />
   <meta property="og:url" content="https://charles1ding.github.io" />
   <meta property="og:type" content="website" />
@@ -55,7 +55,8 @@
       padding: 24px 0 0;
     }
     .nav-logo {
-      font-family: 'Caveat', cursive;
+      font-family: 'Nunito', sans-serif;
+      font-style: italic;
       font-size: 1.7rem;
       font-weight: 700;
       color: #2d5fa3;
@@ -237,7 +238,7 @@
 <div class="page">
 
   <nav>
-    <a href="index.html" class="nav-logo">Charles.chem ⚗️</a>
+    <a href="index.html" class="nav-logo">Charles.chem</a>
     <ul class="nav-links">
       <li><a href="index.html" class="back-link">← Home</a></li>
     </ul>
@@ -247,7 +248,7 @@
   <div class="header">
     <h1>📝 Review Notes</h1>
     <div class="header-line"></div>
-    <p>37 份复习资料 — 点击 Open 预览 / Download 下载</p>
+    <p>53 份复习资料 — 点击 Open 预览 / Download 下载</p>
   </div>
 
   <!-- Category: 期末复习试题&清单 (C1-C15) -->
@@ -330,7 +331,23 @@ var subtitles = {
   "定义考核答案": "Definitions Quiz — Answers",
   "考察定义题": "Definitions Practice Questions",
   "颜色表格": "Colour Reference Table",
-  "小马的问题与解析": "Student Q&A — Problems & Solutions"
+  "小马的问题与解析": "Student Q&A — Problems & Solutions",
+  "C01 期末复习清单": "Ch1 States of Matter — Checklist",
+  "C01 期末复习清单答案": "Ch1 States of Matter — Checklist Answers",
+  "C1 期末复习试题答案": "Ch1 States of Matter — Review Qs Answers",
+  "C2 期末复习试题答案": "Ch2 Atoms, Elements & Compounds — Review Qs Answers",
+  "C3期末复习试题答案": "Ch3 Stoichiometry — Review Qs Answers",
+  "C4 期末复习试题答案": "Ch4 Electrochemistry — Review Qs Answers",
+  "C5 期末复习试题答案": "Ch5 Chemical Energetics — Review Qs Answers",
+  "C6期末复习试题答案": "Ch6 Chemical Reactions — Review Qs Answers",
+  "C7 期末复习清单答案": "Ch7 Acids, Bases & Salts — Checklist Answers",
+  "C8期末复习试题答案": "Ch8 The Periodic Table — Review Qs Answers",
+  "C9期末复习试题答案": "Ch9 Metals — Review Qs Answers",
+  "C10期末复习试题答案": "Ch10 Chemistry of the Environment — Review Qs Answers",
+  "C12 期末复习清单答案": "Ch12 Experimental Techniques — Checklist Answers",
+  "C13 期末复习清单答案": "Ch13 Chemical Analysis — Checklist Answers",
+  "C15期末复习清单答案": "Ch15 Polymers — Checklist Answers",
+  "盐的溶解度规则 ": "Solubility Rules of Salts"
 };
 
 function card(file, encFile) {
@@ -345,28 +362,43 @@ function card(file, encFile) {
       (sub ? '<div class="file-meta">' + sub + '</div>' : '<div class="file-meta">.' + ext + '</div>') +
     '</div>' +
     '<div class="file-actions">' +
-      '<a class="file-btn" href="review-notes/' + encFile + '" target="_blank" title="Open">↗</a>' +
-      '<a class="file-btn dl" href="review-notes/' + encFile + '" download title="Download">↓</a>' +
+      '<a class="file-btn" href="review-notes/2026/' + encFile + '" target="_blank" title="Open">↗</a>' +
+      '<a class="file-btn dl" href="review-notes/2026/' + encFile + '" download title="Download">↓</a>' +
     '</div>' +
   '</div>';
 }
 
 var rawFiles = [
+  "C01 期末复习清单.docx",
+  "C01 期末复习清单答案.docx",
   "C1 期末复习试题.docx",
+  "C1 期末复习试题答案.docx",
   "C2 期末复习试题.docx",
+  "C2 期末复习试题答案.docx",
   "C3期末复习试题.docx",
+  "C3期末复习试题答案.docx",
   "C4 期末复习试题.docx",
+  "C4 期末复习试题答案.docx",
   "C5 期末复习试题.docx",
+  "C5 期末复习试题答案.docx",
   "C6期末复习试题.docx",
+  "C6期末复习试题答案.docx",
   "C7 期末复习清单.docx",
+  "C7 期末复习清单答案.docx",
   "C8期末复习试题.docx",
+  "C8期末复习试题答案.docx",
   "C9期末复习试题.docx",
+  "C9期末复习试题答案.docx",
   "C10期末复习试题.docx",
+  "C10期末复习试题答案.docx",
   "C11 期末复习清单.docx",
   "C11 期末复习清单答案.docx",
   "C12 期末复习清单.docx",
+  "C12 期末复习清单答案.docx",
   "C13 期末复习清单.docx",
+  "C13 期末复习清单答案.docx",
   "C15期末复习清单 .docx",
+  "C15期末复习清单答案.docx",
   "期末key point list答案.docx"
 ];
 
@@ -399,7 +431,8 @@ var defFiles = [
   "定义考核.docx",
   "定义考核答案.docx",
   "考察定义题.docx",
-  "颜色表格.docx"
+  "颜色表格.docx",
+  "盐的溶解度规则 .docx"
 ];
 
 var otherFiles = [
