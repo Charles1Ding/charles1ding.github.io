@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>奶茶中的冰 — 物态变化</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Segoe UI', -apple-system, sans-serif;
+  background: linear-gradient(180deg, #dceefb 0%, #b8d9f0 35%, #95c4e8 65%, #7eb5d9 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  user-select: none;
+  -webkit-user-select: none;
+}
+canvas { display: block; cursor: default; }
+</style>
+</head>
+<body>
+<canvas id="simCanvas"></canvas>
+
+<script>
+(function() {
+  // ============ CANVAS SETUP ============
+  const canvas = document.getElementById('simCanvas');
+  const ctx = canvas.getContext('2d');
+  const W = 940, H = 700;
+  canvas.width = W; canvas.height = H;
+
+  // ============ SUBSTANCE DATA ============
+  const substances = {
+    neon:   { name: '氖 Neon',   melt: -248.6, boil: -246.0, epsilon: 0.5, sigma: 0.8, mass: 20 },
+    argon:  { name: '氩 Argon',  melt: -189.4, boil: -185.9, epsilon: 0.8, sigma: 0.9, mass: 40 },
+    oxygen: { name: '氧 Oxygen', melt: -218.8, boil: -182.9, epsilon: 0.7, sigma: 0.85, mass: 32 },
+    water:  { name: '奶茶中的冰 Ice',  melt: 0,      boil: 100,    epsilon: 1.2, sigma: 1.0, mass: 18 }
+  };
+
+  // ============ MOLECULE STRUCTURES ============
+  const moleculeConfigs = {
+    neon:   { atoms: [{ relX:0, relY:0, radius:17, color:'#FF6B6B', label:'Ne' }], bonds: [] },
+    argon:  { atoms: [{ relX:0, relY:0, radius:17, color:'#4ECDC4', label:'Ar' }], bonds: [] },
+    oxygen: { atoms: [{ relX:-10, relY:0, radius:14, color:'#EF4444', label:'' }, { relX:10, relY:0, radius:14, color:'#EF4444', label:'' }], bonds:[{from:0,to:1}] },
+    water:  { atoms: [{ relX:0, relY:-2, radius:16, color:'#b8def5', label:'O' }, { relX:-12, relY:12, radius:9, color:'#e8f4fc', label:'H' }, { relX:12, relY:12, radius:9, color:'#e8f4fc', label:'H' }], bonds:[{from:0,to:1},{from:0,to:2}] }
+  };
+
+  // ============ CONTAINER (cylindrical) ============
+  const cyl = {
+    cx: W / 2, cy: 320,
+    w: 540, h: 410,
+    wallThick: 30,
+    lidY: 155,
+    lidH: 20,
+    minLidY: 130,
+    maxLidY: 395,
+    get x() { return this.cx - this.w / 2; },
+    get y() { return this.cy - this.h / 2; }
+  };
+
+  // ============ SIMULATION STATE ============
+  let substanceKey = 'water';
+  let substance = substances[substanceKey];
+  let moleculeConfig = moleculeConfigs[substanceKey];
+  let temperature = -100;
+  let targetTemperature = -100;
+  let state = 'solid';
+  let prevState = 'solid';
+  let transitionProgress = 1.0;
+  let paused = false;
+  let particles = [];
+  let draggedParticle = null;
+  let dragOffsetX = 0, dragOffsetY = 0;
+  let mouseX = 0, mouseY = 0;
+  let isDraggingLid = false;
+  let lidDragStartY = 0, lidStartY = 0;
+  let isDraggingHeat = false;
+  let heatHandleVal = 0; // -1=cold(bottom) to +1=hot(top)
+  let showSubstanceMenu = false;
+  let lastTime = 0;
+  const BASE_RADIUS = 17;
+  let PARTICLE_COUNT = (substanceKey === 'water') ? 15 : 20;
+
+  // ============ PARTICLE CLASS ============
+  class Particle {
+    constructor(x, y, lx, ly) {
+      this.x = x; this.y = y;
+      this.vx = 0; this.vy = 0;
+      this.latticeX = lx; this.latticeY = ly;
+      this.isDragged = false; this.isEvaporated = false;
+      this.atoms = moleculeConfig.atoms.map(a => ({...a}));
+      this.bonds = moleculeConfig.bonds.map(b => ({...b}));
+      this.rotation = Math.random() * Math.PI * 2;
+      this.targetRotation = this.rotation; this.rotSpeed = 0;
+      this.molRadius = this._calcMolRadius();
+    }
+    _calcMolRadius() {
+      let maxDist = 0;
+      for (const a of this.atoms) {
+        const d = Math.sqrt(a.relX*a.relX + a.relY*a.relY) + a.radius;
+        if (d > maxDist) maxDist = d;
+      }
+      return maxDist + 4;
+    }
+    get mass() { return substance.mass; }
+  }
+
+  // ============ LATTICE GENERATION ============
+  function generateLattice() {
+    const sampleMolRadius = moleculeConfig.atoms.reduce((max, a) => {
+      return Math.max(max, Math.sqrt(a.relX*a.relX + a.relY*a.relY) + a.radius);
+    }, 0) + 4;
+    const isWater = substanceKey === 'water';
+    const spacing = sampleMolRadius * (isWater ? 1.85 : 1.7);
+
+    let positions = [];
+    if (isWater) {
+      const cols = Math.floor(cyl.w / spacing) - 2;
+      const rows = Math.floor((cyl.h * 0.55) / spacing) - 1;
+      const startX = cyl.cx - cols * spacing / 2 + spacing / 2;
+      const startY = cyl.y + cyl.h - rows * spacing - spacing / 2 - 10;
+      for (let row = 0; row < rows; row++)
+        for (let col = 0; col < cols; col++)
+          positions.push({ x: startX + col * spacing, y: startY + row * spacing });
+    } else {
+      const cols = Math.floor(cyl.w / spacing) - 1;
+      const rows = Math.floor((cyl.h * 0.5) / (spacing * 0.866)) - 1;
+      const startX = cyl.cx - cols * spacing / 2 + spacing / 2;
+      const startY = cyl.y + cyl.h - rows * spacing * 0.866 + spacing * 0.866 - 15;
+      for (let row = 0; row < rows; row++) {
+        const offsetX = (row % 2 === 0) ? 0 : spacing / 2;
+        const y = startY + row * spacing * 0.866;
+        const rowCols = (row % 2 === 0) ? cols : cols - 1;
+        for (let col = 0; col < rowCols; col++)
+          positions.push({ x: startX + offsetX + col * spacing, y: y });
+      }
+    }
+    return positions.slice(0, PARTICLE_COUNT);
+  }
+
+  function initParticles() {
+    particles = [];
+    for (const pos of generateLattice())
+      particles.push(new Particle(pos.x, pos.y, pos.x, pos.y));
+    while (particles.length < PARTICLE_COUNT) {
+      const last = particles[particles.length - 1] || { x: cyl.cx, y: cyl.y + cyl.h - 40 };
+      particles.push(new Particle(last.x + Math.random()*20, last.y + Math.random()*10, last.x, last.y));
+    }
+    draggedParticle = null; transitionProgress = 1.0; updateState();
+  }
+
+  function resetAll() {
+    temperature = targetTemperature = -100;
+    heatHandleVal = 0;
+    substanceKey = 'water'; substance = substances.water;
+    moleculeConfig = moleculeConfigs.water;
+    PARTICLE_COUNT = 15;
+    initParticles();
+    cyl.lidY = cyl.minLidY;
+  }
+
+  function updateState() {
+    prevState = state;
+    state = temperature < substance.melt ? 'solid' : temperature < substance.boil ? 'liquid' : 'gas';
+    if (state !== prevState) transitionProgress = 0;
+  }
+
+  function findNearestLatticePosition(particle) {
+    let bestDist = Infinity, best = { x: particle.latticeX, y: particle.latticeY };
+    for (const p of particles) {
+      if (p === particle || p.isEvaporated) continue;
+      const d = (p.latticeX - particle.x)**2 + (p.latticeY - particle.y)**2;
+      if (d < bestDist) { bestDist = d; best = { x: p.latticeX, y: p.latticeY }; }
+    }
+    return best;
+  }
+
+  // ============ PHYSICS ============
+  function getLJForce(p1, p2) {
+    const dx = p2.x - p1.x, dy = p2.y - p1.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 0.001 || dist > BASE_RADIUS * 6) return { fx: 0, fy: 0 };
+    const sigma = substance.sigma * BASE_RADIUS * 1.8;
+    const epsilon = substance.epsilon * 0.3, sr = sigma/dist;
+    const sr6 = sr**6, sr12 = sr6**6;
+    const forceMag = 24 * epsilon / dist * (2 * sr12 - sr6);
+    return { fx: forceMag * (dx/dist), fy: forceMag * (dy/dist) };
+  }
+
+  function getClusterCenter() {
+    let cx=0,cy=0,count=0;
+    for (const p of particles)
+      if (!p.isEvaporated && !p.isDragged) { cx+=p.x; cy+=p.y; count++; }
+    return count ? {x:cx/count,y:cy/count} : {x:cyl.cx,y:cyl.y+cyl.h-80};
+  }
+
+  function getLiquidTetherTarget(particle) {
+    let bestDist = Infinity, best = null;
+    for (const p of particles) {
+      if (p===particle||p.isDragged||p.isEvaporated) continue;
+      const d = (p.x-particle.x)**2+(p.y-particle.y)**2;
+      if (d<bestDist){bestDist=d;best=p;}
+    }
+    return best ? {x:best.x,y:best.y} : getClusterCenter();
+  }
+
+  function updatePhysics(dt) {
+    const maxT = substance.boil + 80;
+    if (heatHandleVal > 0) targetTemperature = substance.melt + heatHandleVal*(maxT-substance.melt);
+    else if (heatHandleVal < 0) targetTemperature = -273 + (1+heatHandleVal)*(substance.melt+273);
+    else targetTemperature = temperature;
+
+    const tempSpeed = 30;
+    if (Math.abs(targetTemperature - temperature) < 0.1) temperature = targetTemperature;
+    else temperature += Math.sign(targetTemperature-temperature)*tempSpeed*dt;
+    updateState();
+
+    if (transitionProgress < 1.0) transitionProgress = Math.min(1.0, transitionProgress+dt*0.5);
+
+    const effTop = cyl.lidY + cyl.lidH, effBottom = cyl.y + cyl.h;
+    const thermalScale = Math.sqrt(Math.max((temperature + 273) / (substance.melt + 273), 0.1)) * 5.5;
+
+    for (let i = 0; i < particles.length; i++) {
+      const p = particles[i];
+      if (p.isDragged) continue;
+
+      // ===== SOLID: vibrate at fixed lattice position =====
+      if (state === 'solid' && transitionProgress > 0.3) {
+        // Fast position spring to lattice — particle snaps toward lattice each frame
+        const springRate = 15 * transitionProgress;
+        const alpha = Math.min(1, springRate * dt);
+        p.x += (p.latticeX - p.x) * alpha;
+        p.y += (p.latticeY - p.y) * alpha;
+
+        // Direct thermal jitter on position (visible Brownian vibration)
+        const jitterAmp = thermalScale * 0.30 * transitionProgress * dt * 60;
+        p.x += (Math.random() - 0.5) * jitterAmp * 2.0;
+        p.y += (Math.random() - 0.5) * jitterAmp * 2.0;
+
+        // Zero velocity — position is set directly, LJ will rebuild vx/vy for rotation
+        p.vx = 0;
+        p.vy = 0;
+
+      // ===== LIQUID: slide over each other =====
+      } else if (state === 'liquid' && transitionProgress > 0.3 && !p.isEvaporated) {
+        // Gravity pools liquid at bottom
+        p.vy += 1.5 * dt * 60;
+
+        // Thermal agitation
+        const thermKick = thermalScale * 1.2 * transitionProgress * dt * 60;
+        p.vx += (Math.random() - 0.5) * thermKick;
+        p.vy += (Math.random() - 0.5) * thermKick;
+
+        // Attractive force toward nearest neighbor (cohesion)
+        // This pulls particles back when dragged away from the liquid
+        let nearestDist = Infinity, nearestDX = 0, nearestDY = 0;
+        for (const p2 of particles) {
+          if (p2 === p || p2.isDragged || p2.isEvaporated) continue;
+          const dx = p.x - p2.x, dy = p.y - p2.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < nearestDist && dist > 0.01) {
+            nearestDist = dist;
+            nearestDX = -dx / dist;
+            nearestDY = -dy / dist;
+          }
+        }
+        if (nearestDist < Infinity) {
+          // Gentle attraction toward nearest neighbor
+          const attractStrength = 0.5 * Math.min(1, nearestDist / (BASE_RADIUS * 4));
+          p.vx += nearestDX * attractStrength * dt * 60;
+          p.vy += nearestDY * attractStrength * dt * 60;
+        }
+
+        // Local neighbor repulsion: maintain liquid density, enable sliding
+        let pushX = 0, pushY = 0, pushCount = 0;
+        for (const p2 of particles) {
+          if (p2 === p || p2.isDragged || p2.isEvaporated) continue;
+          const dx = p.x - p2.x, dy = p.y - p2.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const desSep = (p.molRadius + p2.molRadius) * 0.85;
+          if (dist < desSep && dist > 0.01) {
+            pushCount++;
+            const strength = (desSep - dist) / desSep;
+            pushX += (dx / dist) * strength;
+            pushY += (dy / dist) * strength;
+          }
+        }
+        if (pushCount > 0) {
+          p.vx += pushX * 0.6 * dt * 60;
+          p.vy += pushY * 0.6 * dt * 60;
+        }
+
+        // Light damping for smooth flow
+        p.vx *= Math.pow(0.96, dt * 60);
+        p.vy *= Math.pow(0.96, dt * 60);
+
+      // ===== GAS: move randomly, fill container =====
+      } else if (state === 'gas') {
+        // No gravity — gas fills entire volume
+
+        // Strong thermal motion drives rapid random movement
+        const thermKick = thermalScale * 3.0 * dt * 60;
+        p.vx += (Math.random() - 0.5) * thermKick;
+        p.vy += (Math.random() - 0.5) * thermKick;
+
+        // Very slight stochastic upward bias (gas expands upward)
+        p.vy -= 0.3 * dt * 60;
+
+        // Near-zero damping — gas kinetic energy is conserved
+        p.vx *= Math.pow(0.997, dt * 60);
+        p.vy *= Math.pow(0.997, dt * 60);
+
+      // ===== Phase transition in progress =====
+      } else {
+        p.vy += 0.5 * dt * 60;
+        const thermKick = thermalScale * 0.6 * dt * 60;
+        p.vx += (Math.random() - 0.5) * thermKick;
+        p.vy += (Math.random() - 0.5) * thermKick;
+        p.vx *= Math.pow(0.94, dt * 60);
+        p.vy *= Math.pow(0.94, dt * 60);
+      }
+
+      // Velocity cap — higher ceiling for gas
+      const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+      const maxSpd = state === 'gas' ? 500 : 260;
+      if (spd > maxSpd) { p.vx = p.vx / spd * maxSpd; p.vy = p.vy / spd * maxSpd; }
+    }
+
+    // ---- LJ forces (applied separately for all phases) ----
+    for (let i = 0; i < particles.length; i++) {
+      const p1 = particles[i];
+      if (p1.isDragged) continue;
+      for (let j = i + 1; j < particles.length; j++) {
+        const p2 = particles[j];
+        if (p2.isDragged) continue;
+        if (p1.isEvaporated || p2.isEvaporated) continue;
+        const f = getLJForce(p1, p2);
+        const scale = state === 'gas' ? 0.3 : 1.0;
+        p1.vx += f.fx * dt * 60 * scale;
+        p1.vy += f.fy * dt * 60 * scale;
+        p2.vx -= f.fx * dt * 60 * scale;
+        p2.vy -= f.fy * dt * 60 * scale;
+      }
+    }
+
+    for (const p of particles) {
+      if (p.isDragged) { if(Math.abs(p.vx)>0.5||Math.abs(p.vy)>0.5) p.targetRotation=Math.atan2(p.vy,p.vx); continue; }
+
+      // Solid: position already set by spring in phase loop, skip velocity integration
+      if (!(state === 'solid' && transitionProgress > 0.3)) {
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+      }
+
+      if(Math.abs(p.vx)>0.5||Math.abs(p.vy)>0.5) p.targetRotation=Math.atan2(p.vy,p.vx);
+      let ad=p.targetRotation-p.rotation;
+      while(ad>Math.PI) ad-=Math.PI*2; while(ad<-Math.PI) ad+=Math.PI*2;
+      p.rotSpeed+=ad*3*dt; p.rotSpeed*=Math.pow(0.9,dt*60); p.rotation+=p.rotSpeed*dt*60;
+      const mr=p.molRadius;
+      const lft=cyl.x+mr, rgt=cyl.x+cyl.w-mr, tp=effTop+mr, bt=effBottom-mr;
+      if(p.x<lft){p.x=lft;p.vx=Math.abs(p.vx)*0.8;}if(p.x>rgt){p.x=rgt;p.vx=-Math.abs(p.vx)*0.8;}
+      if(p.y<tp){p.y=tp;p.vy=Math.abs(p.vy)*0.8;}if(p.y>bt){p.y=bt;p.vy=-Math.abs(p.vy)*0.8;}
+    }
+
+    for(let i=0;i<particles.length;i++)for(let j=i+1;j<particles.length;j++){
+      const p1=particles[i],p2=particles[j];
+      if(p1.isDragged&&p2.isDragged)continue;
+      const dx=p2.x-p1.x, dy=p2.y-p1.y, dist=Math.sqrt(dx*dx+dy*dy), minDist=p1.molRadius+p2.molRadius-4;
+      if(dist<minDist&&dist>0.001){
+        const overlap=minDist-dist, nx=dx/dist, ny=dy/dist;
+        if(!p1.isDragged){p1.x-=nx*overlap/2;p1.y-=ny*overlap/2;}
+        if(!p2.isDragged){p2.x+=nx*overlap/2;p2.y+=ny*overlap/2;}
+        const dvx=p1.vx-p2.vx, dvy=p1.vy-p2.vy, dvDotN=dvx*nx+dvy*ny;
+        if(dvDotN>0){const imp=dvDotN*0.9;if(!p1.isDragged){p1.vx-=imp*nx;p1.vy-=imp*ny;}if(!p2.isDragged){p2.vx+=imp*nx;p2.vy+=imp*ny;}}
+      }
+    }
+
+    if(state==='liquid'){
+      // Check evaporation: particle is isolated (far from all others)
+      for(const p of particles){
+        if(p.isDragged||p.isEvaporated) continue;
+        let hasNeighbor=false;
+        for(const p2 of particles){
+          if(p2===p||p2.isDragged||p2.isEvaporated) continue;
+          if(Math.sqrt((p.x-p2.x)**2+(p.y-p2.y)**2) < BASE_RADIUS*5) {hasNeighbor=true;break;}
+        }
+        if(!hasNeighbor) p.isEvaporated=true;
+      }
+      // Check condensation: isolated particle has a neighbor again
+      for(const p of particles){
+        if(!p.isEvaporated) continue;
+        for(const p2 of particles){
+          if(p2===p||p2.isDragged||p2.isEvaporated) continue;
+          if(Math.sqrt((p.x-p2.x)**2+(p.y-p2.y)**2) < BASE_RADIUS*4) {p.isEvaporated=false;break;}
+        }
+      }
+    }else{for(const p of particles)p.isEvaporated=false;}
+
+    if(prevState==='liquid'&&state==='solid'&&transitionProgress>0.7){
+      for(const p of particles){if(p.isDragged)continue;const n=findNearestLatticePosition(p);p.latticeX=n.x;p.latticeY=n.y;}
+    }
+  }
+
+  // ============ RENDER ============
+  function render() {
+    ctx.clearRect(0,0,W,H);
+
+    // Soft light blue background
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#e8f4fc');
+    bgGrad.addColorStop(0.35, '#d2e8f6');
+    bgGrad.addColorStop(0.7, '#bcd8ed');
+    bgGrad.addColorStop(1, '#a3c8e0');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle decorative circles (like reflections on a clean surface)
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(W * 0.82, 120, 140, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(W * 0.15, 500, 100, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(W * 0.7, 620, 80, 0, Math.PI * 2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    drawContainer3D();
+    drawThermometer();
+    drawTempDisplay();
+
+    // Tethers behind particles
+    if(draggedParticle && state!=='gas') drawTether(draggedParticle);
+    // Liquid surface line
+    if(state==='liquid') drawLiquidSurface();
+    // Intermolecular bonds (solid & liquid)
+    if(state==='solid'||state==='liquid') drawIntermolecularBonds();
+
+    drawParticles();
+    drawBurnerControl();
+    drawPlayPauseButtons();
+    drawSubstanceSelector();
+  }
+
+  // ---- Glass Cup Container (bubble tea style) ----
+  function drawContainer3D() {
+    const x = cyl.x, y = cyl.y, w = cyl.w, h = cyl.h;
+    const cx = cyl.cx;
+    const cupTop = cyl.lidY + cyl.lidH;
+    const cupBot = y + h;
+    const radius = 32;
+
+    // === Cup shadow on table ===
+    ctx.fillStyle = 'rgba(60,100,140,0.12)';
+    ctx.beginPath();
+    ctx.ellipse(cx + 8, cupBot + 8, w/2 + 6, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(40,70,110,0.08)';
+    ctx.beginPath();
+    ctx.ellipse(cx + 5, cupBot + 5, w/2 + 2, 10, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // === Milk Tea liquid fill ===
+    const teaTop = cupBot - h * 0.52;
+    const teaGrad = ctx.createLinearGradient(0, teaTop, 0, cupBot);
+    teaGrad.addColorStop(0, '#d4a574');
+    teaGrad.addColorStop(0.25, '#c89565');
+    teaGrad.addColorStop(0.6, '#a87048');
+    teaGrad.addColorStop(1, '#784830');
+
+    ctx.fillStyle = teaGrad;
+    ctx.beginPath();
+    ctx.moveTo(x + 3, teaTop);
+    ctx.lineTo(x + w - 3, teaTop);
+    ctx.lineTo(x + w - 3, cupBot - radius);
+    ctx.quadraticCurveTo(x + w - 3, cupBot, x + w - 3 - radius, cupBot);
+    ctx.lineTo(x + 3 + radius, cupBot);
+    ctx.quadraticCurveTo(x + 3, cupBot, x + 3, cupBot - radius);
+    ctx.closePath();
+    ctx.fill();
+
+    // Tea surface shimmer line
+    ctx.strokeStyle = 'rgba(255,230,200,0.30)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(x + 15, teaTop - 1);
+    ctx.lineTo(x + w - 15, teaTop - 1);
+    ctx.stroke();
+
+    // Boba pearls in the tea (visible through glass)
+    ctx.globalAlpha = 0.10;
+    const bobaPositions = [
+      [0.25, 0.65], [0.55, 0.75], [0.40, 0.88], [0.68, 0.82],
+      [0.32, 0.78], [0.75, 0.68], [0.15, 0.85], [0.85, 0.78],
+      [0.48, 0.70], [0.62, 0.90]
+    ];
+    for (const [bxR, byR] of bobaPositions) {
+      const bpx = x + bxR * w;
+      const bpy = teaTop + byR * (cupBot - teaTop);
+      ctx.fillStyle = '#2a1508';
+      ctx.beginPath();
+      ctx.arc(bpx, bpy, 7 + (bxR * 13 % 5), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // === Glass highlights (clipped to cup interior) ===
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x, cupTop);
+    ctx.lineTo(x + w, cupTop);
+    ctx.lineTo(x + w, cupBot - radius);
+    ctx.quadraticCurveTo(x + w, cupBot, x + w - radius, cupBot);
+    ctx.lineTo(x + radius, cupBot);
+    ctx.quadraticCurveTo(x, cupBot, x, cupBot - radius);
+    ctx.lineTo(x, cupTop);
+    ctx.closePath();
+    ctx.clip();
+
+    // Left highlight stripe — crisp vertical reflection
+    const hlL = ctx.createLinearGradient(x - 2, 0, x + 28, 0);
+    hlL.addColorStop(0, 'rgba(255,255,255,0.28)');
+    hlL.addColorStop(0.25, 'rgba(255,255,255,0.18)');
+    hlL.addColorStop(0.6, 'rgba(255,255,255,0.04)');
+    hlL.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = hlL;
+    ctx.fillRect(x - 2, cupTop, 32, cupBot - cupTop);
+
+    // Right edge highlight — softer
+    const hlR = ctx.createLinearGradient(x + w - 30, 0, x + w + 3, 0);
+    hlR.addColorStop(0, 'rgba(255,255,255,0)');
+    hlR.addColorStop(0.4, 'rgba(255,255,255,0.04)');
+    hlR.addColorStop(1, 'rgba(255,255,255,0.15)');
+    ctx.fillStyle = hlR;
+    ctx.fillRect(x + w - 30, cupTop, 35, cupBot - cupTop);
+
+    ctx.restore();
+
+    // === Glass outline ===
+    ctx.strokeStyle = 'rgba(120,160,200,0.35)';
+    ctx.lineWidth = 2.8;
+    ctx.beginPath();
+    ctx.moveTo(x, cupTop);
+    ctx.lineTo(x + w, cupTop);
+    ctx.lineTo(x + w, cupBot - radius);
+    ctx.quadraticCurveTo(x + w, cupBot, x + w - radius, cupBot);
+    ctx.lineTo(x + radius, cupBot);
+    ctx.quadraticCurveTo(x, cupBot, x, cupBot - radius);
+    ctx.lineTo(x, cupTop);
+    ctx.stroke();
+
+    // Inner rim line
+    ctx.strokeStyle = 'rgba(180,210,235,0.15)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(x + 4, cupTop);
+    ctx.lineTo(x + w - 4, cupTop);
+    ctx.stroke();
+
+    // === Cup rim at top ===
+    ctx.strokeStyle = 'rgba(140,180,210,0.45)';
+    ctx.lineWidth = 5.5;
+    ctx.beginPath();
+    ctx.ellipse(cx, cupTop, w/2 + 3, 9, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cupTop, w/2 - 6, 5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // === Corner arc highlights ===
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.arc(x + 12, cupBot - 12, 20, Math.PI * 0.85, Math.PI * 1.25);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + w - 12, cupBot - 12, 20, Math.PI * -0.25, Math.PI * 0.15);
+    ctx.stroke();
+
+    // Base line
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(x + 10, cupBot - 1.5);
+    ctx.lineTo(x + w - 10, cupBot - 1.5);
+    ctx.stroke();
+  }
+
+  // ---- Thermometer (left side) ----
+  function drawThermometer() {
+    const tx = cyl.x - 58, ty = cyl.y + 35;
+    const tw = 17, th = cyl.h - 50;
+    const bulbR = 15;
+
+    // Tube
+    ctx.fillStyle = '#e8e8e8';
+    roundRect(ctx, tx, ty, tw, th, 8); ctx.fill();
+    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1.5;
+    roundRect(ctx, tx, ty, tw, th, 8); ctx.stroke();
+
+    // Scale marks (°C)
+    ctx.fillStyle = '#888';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'right';
+    const scaleMarks = [-270, -200, -150, -100, -50, 0, 50, 100, 150, 200, 250];
+    const scaleMin = -273, scaleMax = substance.boil + 80;
+    for (const mark of scaleMarks) {
+      if (mark < scaleMin || mark > scaleMax) continue;
+      const ratio = (mark - scaleMin) / (scaleMax - scaleMin);
+      const sy = ty + th - 10 - (th - 30) * ratio;
+      ctx.fillRect(tx - 5, sy, 4, mark % 100 === 0 ? 8 : 4);
+      ctx.fillText('' + mark, tx - 7, sy + 3);
+    }
+    ctx.textAlign = 'start';
+
+    // Melting & boiling point indicators on thermometer
+    const meltRatio = Math.max(0, Math.min(1, (substance.melt - scaleMin) / (scaleMax - scaleMin)));
+    const boilRatio = Math.max(0, Math.min(1, (substance.boil - scaleMin) / (scaleMax - scaleMin)));
+    const meltMarkY = ty + th - 10 - (th - 30) * meltRatio;
+    const boilMarkY = ty + th - 10 - (th - 30) * boilRatio;
+
+    // Melting point line (blue)
+    ctx.strokeStyle = 'rgba(59,130,246,0.8)'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([3, 2]);
+    ctx.beginPath(); ctx.moveTo(tx - 5, meltMarkY); ctx.lineTo(tx + tw + 5, meltMarkY); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#3b82f6';
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('熔点', tx + tw + 8, meltMarkY + 3);
+
+    // Boiling point line (red)
+    if (substance.boil <= scaleMax) {
+      ctx.strokeStyle = 'rgba(239,68,68,0.8)'; ctx.lineWidth = 1.5;
+      ctx.setLineDash([3, 2]);
+      ctx.beginPath(); ctx.moveTo(tx - 5, boilMarkY); ctx.lineTo(tx + tw + 5, boilMarkY); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('沸点', tx + tw + 8, boilMarkY + 3);
+    }
+    ctx.textAlign = 'start';
+
+    // Bulb
+    const bulbCX = tx + tw / 2, bulbCY = ty + th + bulbR - 2;
+    const bulbGrad = ctx.createRadialGradient(bulbCX - 3, bulbCY - 3, 2, bulbCX, bulbCY, bulbR);
+    bulbGrad.addColorStop(0, '#ff6b6b'); bulbGrad.addColorStop(0.6, '#cc3333'); bulbGrad.addColorStop(1, '#991111');
+    ctx.fillStyle = bulbGrad;
+    ctx.beginPath(); ctx.arc(bulbCX, bulbCY, bulbR, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = '#999'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(bulbCX, bulbCY, bulbR, 0, Math.PI*2); ctx.stroke();
+
+    // Mercury fill
+    const fillRatio = Math.max(0, Math.min(1, (temperature - scaleMin) / (scaleMax - scaleMin)));
+    const fillH = (th - 30) * fillRatio;
+    const mercuryTop = ty + th - 10 - fillH;
+    const mGrad = ctx.createLinearGradient(tx, mercuryTop, tx, ty + th);
+    mGrad.addColorStop(0, '#ff4444'); mGrad.addColorStop(1, '#cc2222');
+    ctx.fillStyle = mGrad;
+    roundRect(ctx, tx + 3, mercuryTop, tw - 6, fillH + bulbR - 4, 4); ctx.fill();
+    // Bulb fill
+    ctx.beginPath(); ctx.arc(bulbCX, bulbCY, bulbR - 3, 0, Math.PI*2); ctx.fill();
+  }
+
+  // ---- Temp Display Box (top-left) ----
+  function drawTempDisplay() {
+    const bx = 30, by = 30, bw = 100, bh = 36;
+    // White rounded rect like PhET
+    ctx.fillStyle = '#f0f0f5';
+    ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=6; ctx.shadowOffsetX=1; ctx.shadowOffsetY=2;
+    roundRect(ctx, bx, by, bw, bh, 6); ctx.fill();
+    ctx.shadowColor='transparent'; ctx.shadowBlur=0;
+    ctx.strokeStyle='#bbb'; ctx.lineWidth=1;
+    roundRect(ctx, bx, by, bw, bh, 6); ctx.stroke();
+
+    // Text
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 18px "Segoe UI", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(Math.round(temperature) + ' °C ▼', bx + bw/2, by + bh/2);
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+
+    // Substance name below
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px "Segoe UI", sans-serif';
+    ctx.fillText(substance.name, bx, by + bh + 16);
+  }
+
+  // ---- Burner/Cup Control (bottom center) ----
+  function drawBurnerControl() {
+    const cupW = 150, cupH = 125, cupX = cyl.cx - cupW/2, cupY = H - cupH - 50;
+
+    // Cup body (white/beige, tapered)
+    const cupGrad = ctx.createLinearGradient(cupX, 0, cupX + cupW, 0);
+    cupGrad.addColorStop(0, '#dddde5'); cupGrad.addColorStop(0.3, '#eeeef4');
+    cupGrad.addColorStop(0.5, '#f5f5fa'); cupGrad.addColorStop(0.7, '#eeeef4');
+    cupGrad.addColorStop(1, '#ccdce5');
+    ctx.fillStyle = cupGrad;
+    ctx.beginPath();
+    ctx.moveTo(cupX + 12, cupY);
+    ctx.lineTo(cupX + cupW - 12, cupY);
+    ctx.lineTo(cupX + cupW, cupY + cupH);
+    ctx.lineTo(cupX, cupY + cupH);
+    ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = '#aab0bc'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Inner slider area
+    const slX = cupX + cupW - 38, slY = cupY + 18, slW = 26, slH = cupH - 36;
+    const slCX = slX + slW/2;
+
+    // Slider track
+    const trkGrad = ctx.createLinearGradient(0, slY, 0, slY + slH);
+    trkGrad.addColorStop(0, '#fee2e2'); trkGrad.addColorStop(0.4, '#fef3c7');
+    trkGrad.addColorStop(0.6, '#f1f5f9'); trkGrad.addColorStop(1, '#dbeafe');
+    roundRect(ctx, slX, slY, slW, slH, 5); ctx.fillStyle = trkGrad; ctx.fill();
+    ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1;
+    roundRect(ctx, slX, slY, slW, slH, 5); ctx.stroke();
+
+    // Fill indicator (purple-blue based on heat value)
+    if (heatHandleVal !== 0) {
+      const fillH = Math.abs(heatHandleVal) * (slH / 2 - 10);
+      const fillY = slY + slH/2 - (heatHandleVal > 0 ? fillH : 0);
+      const actualFillH = Math.abs(fillH);
+      const fillGrad = ctx.createLinearGradient(0, fillY, 0, fillY + actualFillH);
+      fillGrad.addColorStop(0, heatHandleVal > 0 ? '#ef4444' : '#3b82f6');
+      fillGrad.addColorStop(1, heatHandleVal > 0 ? '#f97316' : '#60a5fa');
+      ctx.fillStyle = fillGrad;
+      roundRect(ctx, slX + 4, fillY, slW - 8, actualFillH, 3); ctx.fill();
+    }
+
+    // Handle
+    const handleY = slY + slH/2 - heatHandleVal * (slH/2 - 12);
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.beginPath(); ctx.arc(slCX + 1, handleY + 1, 12, 0, Math.PI*2); ctx.fill();
+    const hGrad = ctx.createRadialGradient(slCX - 2, handleY - 2, 2, slCX, handleY, 12);
+    hGrad.addColorStop(0, '#fff'); hGrad.addColorStop(0.6, '#8890a0'); hGrad.addColorStop(1, '#4a5060');
+    ctx.fillStyle = hGrad;
+    ctx.beginPath(); ctx.arc(slCX, handleY, 12, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(slCX - 2, handleY - 3, 6, 0, Math.PI*2); ctx.stroke();
+
+    // Labels
+    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 13px "Segoe UI",sans-serif';
+    ctx.textAlign = 'center'; ctx.fillText('热', slCX, slY - 8);
+    ctx.fillStyle = '#3b82f6'; ctx.fillText('冷', slCX, slY + slH + 14);
+    ctx.textAlign = 'start';
+
+    // Fire animation above cup when heating
+    if (heatHandleVal > 0.05) {
+      const intensity = heatHandleVal;
+      const fireBaseY = cupY - 5;
+      // Main flame
+      for (let i = 0; i < intensity * 18; i++) {
+        const fx = cupX + cupW * 0.25 + Math.random() * cupW * 0.5;
+        const fy = fireBaseY - Math.random() * 50 * intensity;
+        const fr = 3 + Math.random() * 8 * intensity;
+        const colors = ['#ff2200','#ff5500','#ff8800','#ffbb00','#ffee44'];
+        ctx.globalAlpha = 0.5 + Math.random() * 0.4 * intensity;
+        ctx.fillStyle = colors[Math.floor(Math.random()*colors.length)];
+        ctx.beginPath(); ctx.arc(fx, fy, fr, 0, Math.PI*2); ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      // Glow
+      const glowR = ctx.createRadialGradient(cupX + cupW/2, fireBaseY - 10, 0, cupX + cupW/2, fireBaseY - 10, 80 * intensity);
+      glowR.addColorStop(0, `rgba(255,100,0,${0.3 * intensity})`);
+      glowR.addColorStop(1, 'rgba(255,100,0,0)');
+      ctx.fillStyle = glowR;
+      ctx.beginPath(); ctx.ellipse(cupX + cupW/2, fireBaseY - 10, 90*intensity, 50*intensity, 0, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Frost when cooling
+    if (heatHandleVal < -0.05) {
+      const intensity = -heatHandleVal;
+      for (let i = 0; i < intensity * 12; i++) {
+        const fx = cupX + cupW * 0.3 + Math.random() * cupW * 0.4;
+        const fy = cupY + Math.random() * 20 * intensity;
+        const fr = 1 + Math.random() * 3 * intensity;
+        ctx.fillStyle = `rgba(160,200,255,${0.4 + Math.random()*0.4*intensity})`;
+        ctx.beginPath(); ctx.arc(fx, fy, fr, 0, Math.PI*2); ctx.fill();
+      }
+      // Cold mist
+      const mistR = ctx.createRadialGradient(cupX+cupW/2, cupY+cupH/2, 0, cupX+cupW/2, cupY+cupH/2, 60*intensity);
+      mistR.addColorStop(0, `rgba(150,190,255,${0.15*intensity})`); mistR.addColorStop(1,'rgba(150,190,255,0)');
+      ctx.fillStyle=mistR; ctx.fillRect(cupX-30,cupY-30,cupW+60,cupH+60);
+    }
+  }
+
+  // ---- Play/Pause Buttons (bottom left) ----
+  function drawPlayPauseButtons() {
+    const btnR = 26, btnX = 60, btnY1 = H - 90, btnY2 = H - 42;
+
+    // Pause button
+    drawCircularBtn(btnX, btnY1, btnR, paused ? '#4a90d9' : '#5a6a84', paused ? '▶' : '⏸');
+    // Play button (step forward)
+    drawCircularBtn(btnX, btnY2, btnR, '#5a6a84', '▶');
+
+    // Reset button
+    drawCircularBtn(btnX + 64, btnY1 + 24, btnR - 4, '#6a7a94', '↺');
+  }
+
+  function drawCircularBtn(cx, cy, r, bgCol, symbol) {
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.arc(cx + 1.5, cy + 1.5, r, 0, Math.PI*2); ctx.fill();
+    // Body grad
+    const bg = ctx.createRadialGradient(cx - r*0.3, cy - r*0.3, r*0.1, cx, cy, r);
+    bg.addColorStop(0, lighten(bgCol, 0.3)); bg.addColorStop(1, bgCol);
+    ctx.fillStyle = bg;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
+    // Border
+    ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+    // Symbol
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${r * 0.9}px sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(symbol, cx, cy + 1);
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+  }
+
+  // ---- Substance Selector (top right area) ----
+  function drawSubstanceSelector() {
+    const sx = W - 140, sy = 30, sw = 120, sh = 34;
+    // Dropdown button
+    const btnGrad = ctx.createLinearGradient(0, sy, 0, sy + sh);
+    btnGrad.addColorStop(0, '#f0f0f6'); btnGrad.addColorStop(1, '#d8d8e4');
+    ctx.fillStyle = btnGrad;
+    ctx.shadowColor='rgba(0,0,0,0.3)'; ctx.shadowBlur=5; ctx.shadowOffsetX=1; ctx.shadowOffsetY=2;
+    roundRect(ctx, sx, sy, sw, sh, 6); ctx.fill();
+    ctx.shadowColor='transparent';
+    ctx.strokeStyle = '#aab'; ctx.lineWidth = 1;
+    roundRect(ctx, sx, sy, sw, sh, 6); ctx.stroke();
+
+    // ▶ arrow
+    ctx.fillStyle = '#556';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('▼', sx + sw - 10, sy + sh/2 + 1);
+
+    // Current substance
+    const names = { neon:'氖 Neon', argon:'氩 Argon', oxygen:'氧 Oxygen', water:'🧊 冰 Ice' };
+    ctx.fillStyle = '#222'; ctx.font = 'bold 13px "Segoe UI",sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(names[substanceKey], sx + sw/2 - 6, sy + sh/2);
+    ctx.textAlign = 'start'; ctx.textBaseline = 'alphabetic';
+
+    // Dropdown menu
+    if (showSubstanceMenu) {
+      const menuW = 160, menuH = 140;
+      const mx = sx + sw - menuW;
+      const my = sy + sh + 6;
+
+      // Menu bg
+      ctx.fillStyle = '#f5f5fa';
+      ctx.shadowColor='rgba(0,0,0,0.35)'; ctx.shadowBlur=10; ctx.shadowOffsetX=2; ctx.shadowOffsetY=4;
+      roundRect(ctx, mx, my, menuW, menuH, 8); ctx.fill();
+      ctx.shadowColor='transparent';
+      ctx.strokeStyle = '#ccd'; ctx.lineWidth = 1;
+      roundRect(ctx, mx, my, menuW, menuH, 8); ctx.stroke();
+
+      const items = [
+        { key: 'neon',   label: '氖 Neon',   desc: 'Ne — 熔点 -248.6°C' },
+        { key: 'argon',  label: '氩 Argon',  desc: 'Ar — 熔点 -189.4°C' },
+        { key: 'oxygen', label: '氧 Oxygen', desc: 'O₂ — 熔点 -218.8°C' },
+        { key: 'water',  label: '🧊 冰 Ice',  desc: 'H₂O — 熔点 0°C, 沸点 100°C' }
+      ];
+
+      for (let i = 0; i < items.length; i++) {
+        const iy = my + 10 + i * 32;
+        // Highlight current selection
+        if (items[i].key === substanceKey) {
+          ctx.fillStyle = 'rgba(59,130,246,0.12)';
+          roundRect(ctx, mx + 4, iy - 5, menuW - 8, 30, 4); ctx.fill();
+        }
+        // Hover check
+        if (mouseX >= mx && mouseX <= mx + menuW && mouseY >= iy - 5 && mouseY <= iy + 25) {
+          ctx.fillStyle = 'rgba(100,100,120,0.08)';
+          roundRect(ctx, mx + 4, iy - 5, menuW - 8, 30, 4); ctx.fill();
+        }
+        // Item text
+        ctx.fillStyle = items[i].key === substanceKey ? '#1d4ed8' : '#333';
+        ctx.font = 'bold 13px "Segoe UI",sans-serif';
+        ctx.fillText(items[i].label, mx + 14, iy + 6);
+        ctx.fillStyle = '#888';
+        ctx.font = '10px "Segoe UI",sans-serif';
+        ctx.fillText(items[i].desc, mx + 14, iy + 20);
+      }
+    }
+  }
+
+  // ---- Helper: rounded rectangle ----
+  function roundRect(c, x, y, w, h, r) {
+    c.beginPath(); c.moveTo(x+r, y); c.lineTo(x+w-r, y); c.quadraticCurveTo(x+w, y, x+w, y+r);
+    c.lineTo(x+w, y+h-r); c.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    c.lineTo(x+r, y+h); c.quadraticCurveTo(x, y+h, x, y+h-r);
+    c.lineTo(x, y+r); c.quadraticCurveTo(x, y, x+r, y); c.closePath();
+  }
+
+  function lighten(hex, amt) {
+    const r=parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
+    return `rgb(${Math.min(255,r+amt*255)},${Math.min(255,g+amt*255)},${Math.min(255,b+amt*255)})`;
+  }
+
+  // ---- Tether drawing ----
+  function drawTether(p) {
+    let targetX, targetY, isSolid = (state==='solid');
+    if(isSolid){targetX=p.latticeX;targetY=p.latticeY}
+    else{const t=getLiquidTetherTarget(p);targetX=t.x;targetY=t.y;}
+    if(targetX===undefined)return;
+
+    const dx=p.x-targetX, dy=p.y-targetY, dist=Math.sqrt(dx*dx+dy*dy);
+    const maxDist=isSolid?50:150;
+    const proximity = 1 - Math.min(dist/maxDist, 1);
+
+    if(isSolid){
+      // Solid tether: frosty white-blue toward lattice
+      const op=Math.min(dist/maxDist*0.7+0.3,1), lw=1.5+(dist/maxDist)*2.5;
+      // Glow
+      ctx.strokeStyle=`rgba(180,220,255,${op*0.20})`;ctx.lineWidth=lw+5;
+      ctx.beginPath();ctx.moveTo(targetX,targetY);ctx.lineTo(p.x,p.y);ctx.stroke();
+      // Main line
+      ctx.strokeStyle=`rgba(200,235,255,${op})`;ctx.lineWidth=lw;ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(targetX,targetY);ctx.lineTo(p.x,p.y);ctx.stroke();
+      // Anchor circle
+      ctx.fillStyle=`rgba(200,235,255,${op})`;ctx.beginPath();ctx.arc(targetX,targetY,5,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=`rgba(200,235,255,${op*0.5})`;ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.arc(targetX,targetY,8,0,Math.PI*2);ctx.stroke();
+    }else{
+      // Liquid tether: pink lightning toward nearest neighbor
+      const ux=dx/dist, uy=dy/dist;
+      const px=-uy, py=ux;
+      const alpha=0.15+proximity*0.45;
+      const lwB=1.0+proximity*2.0;
+
+      if(dist>=maxDist){
+        // Broken tether (snapped)
+        const mx=(targetX+p.x)/2, my=(targetY+p.y)/2;
+        ctx.strokeStyle=`rgba(245,158,11,${0.4})`;ctx.lineWidth=0.8;ctx.setLineDash([3,8]);
+        ctx.beginPath();ctx.moveTo(targetX,targetY);ctx.lineTo(mx-10,my-5);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(mx+10,my+5);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle=`rgba(255,200,100,0.5)`;ctx.beginPath();ctx.arc(mx,my,5,0,Math.PI*2);ctx.fill();
+      }else{
+        // Active tether with zigzag lightning style
+        const usableLen=dist;
+        const segCount=Math.max(3,Math.min(9,Math.floor(usableLen/15)));
+        const zigAmp=4.0*(0.3+proximity*0.7);
+
+        // Glow
+        ctx.strokeStyle=`rgba(239,120,150,${alpha*0.18})`;ctx.lineWidth=lwB+4;
+        ctx.lineCap='round';ctx.lineJoin='round';
+        ctx.beginPath();ctx.moveTo(targetX,targetY);ctx.lineTo(p.x,p.y);ctx.stroke();
+
+        // Inner glow
+        ctx.strokeStyle=`rgba(255,140,170,${alpha*0.25})`;ctx.lineWidth=lwB+2;
+        ctx.beginPath();ctx.moveTo(targetX,targetY);ctx.lineTo(p.x,p.y);ctx.stroke();
+
+        // Main pink lightning
+        const grad=ctx.createLinearGradient(targetX,targetY,p.x,p.y);
+        grad.addColorStop(0,`rgba(255,120,155,${alpha})`);
+        grad.addColorStop(0.5,`rgba(255,80,130,${alpha})`);
+        grad.addColorStop(1,`rgba(255,130,160,${alpha})`);
+        ctx.strokeStyle=grad;ctx.lineWidth=lwB;
+
+        ctx.beginPath();ctx.moveTo(targetX,targetY);
+        const seed=(p.latticeX|0)+(p.latticeY|0)*37;
+        const pr=(n)=>{const x=Math.sin(seed*n)*10000;return x-Math.floor(x);};
+        for(let s=1;s<segCount;s++){
+          const t=s/segCount;
+          const mx=targetX+(p.x-targetX)*t;
+          const my=targetY+(p.y-targetY)*t;
+          const side=((s%2)===0?1:-1);
+          const r=0.5+pr(s*13+7)*1.0;
+          ctx.lineTo(mx+px*zigAmp*side*r,my+py*zigAmp*side*r);
+        }
+        ctx.lineTo(p.x,p.y);ctx.stroke();
+        ctx.lineCap='butt';ctx.lineJoin='miter';
+
+        // Anchor dot at target
+        ctx.fillStyle=`rgba(255,140,170,${alpha*0.7})`;
+        ctx.beginPath();ctx.arc(targetX,targetY,3,0,Math.PI*2);ctx.fill();
+      }
+    }
+  }
+
+  function drawLiquidSurface() {
+    const cp = particles.filter(p=>!p.isEvaporated);
+    if(cp.length<3)return;
+    const sortedY = cp.map(p=>p.y).sort((a,b)=>a-b);
+    const surfaceY = sortedY[Math.floor(sortedY.length*0.15)];
+    if(surfaceY>cyl.y+30){
+      ctx.strokeStyle='rgba(245,158,11,0.3)';ctx.lineWidth=1.5;ctx.setLineDash([4,6]);
+      ctx.beginPath();ctx.moveTo(cyl.x+20,surfaceY);
+      for(let wx=cyl.x+20;wx<cyl.x+cyl.w-20;wx+=15)ctx.lineTo(wx+7.5,surfaceY-3+Math.sin(wx*0.15)*3);
+      ctx.stroke();ctx.setLineDash([]);
+    }
+  }
+
+  function drawIntermolecularBonds() {
+    const isSolid = state === 'solid';
+    const bondCutoff = isSolid ? BASE_RADIUS * 3.8 : BASE_RADIUS * 3.4;
+    const drawn = new Set();
+
+    // Collect and sort bonds by proximity (draw closest first, on top)
+    const bonds = [];
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const p1 = particles[i], p2 = particles[j];
+        if (p1.isDragged || p2.isDragged) continue;
+        if (p1.isEvaporated || p2.isEvaporated) continue;
+        const dx = p2.x - p1.x, dy = p2.y - p1.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < bondCutoff && dist > 0.1) {
+          const key = `${i}-${j}`;
+          if (drawn.has(key)) continue;
+          drawn.add(key);
+          bonds.push({ p1, p2, dist });
+        }
+      }
+    }
+
+    // For liquid, only show the closest bonds per particle
+    if (!isSolid && bonds.length > 0) {
+      // Keep only the shortest bonds (liquid should show fewer)
+      bonds.sort((a, b) => a.dist - b.dist);
+      const maxBonds = Math.floor(particles.length * 2.5); // ~37 for 15 particles
+      bonds.length = Math.min(bonds.length, maxBonds);
+    }
+
+    for (const b of bonds) {
+      const { p1, p2, dist } = b;
+      const dx = p2.x - p1.x, dy = p2.y - p1.y;
+
+      // Closer = more visible
+      const proximity = 1 - dist / bondCutoff;
+
+      // Gap at each end so it doesn't overlap atoms
+      // Solid: smaller gap so bonds reach closer to atoms (dense lattice)
+      // Liquid: larger gap (fewer visible bonds)
+      const gapFactor = isSolid ? 0.32 : 0.58;
+      const gapStart = p1.molRadius * gapFactor;
+      const gapEnd = p2.molRadius * gapFactor;
+      const usableLen = dist - gapStart - gapEnd;
+      if (usableLen < 6) continue;
+
+      // Start/end points (offset from atom centers)
+      const ux = dx / dist, uy = dy / dist;
+      let sx = p1.x + ux * gapStart, sy = p1.y + uy * gapStart;
+      let ex = p2.x - ux * gapEnd, ey = p2.y - uy * gapEnd;
+
+      // Perpendicular direction for zigzag offset
+      const px = -uy, py = ux;
+
+      // Lightning zigzag parameters
+      const segCount = Math.max(3, Math.min(7, Math.floor(usableLen / 12)));
+      const zigAmpBase = isSolid ? 3.2 : 4.0; // base zigzag width
+      const zigAmp = zigAmpBase * (0.35 + proximity * 0.65); // closer = wider
+
+      // Color & alpha
+      if (isSolid) {
+        // Solid (ice): frosty white-blue zigzag — ice crystal attraction
+        const alpha = 0.15 + proximity * 0.40;
+        const lineW = 1.4 + proximity * 1.8;
+
+        // Outer glow
+        ctx.strokeStyle = `rgba(180,220,255,${alpha * 0.20})`;
+        ctx.lineWidth = lineW + 5;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+
+        // Inner glow
+        ctx.strokeStyle = `rgba(200,235,255,${alpha * 0.30})`;
+        ctx.lineWidth = lineW + 2;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+
+        // Main frosty white zigzag
+        const grad = ctx.createLinearGradient(sx, sy, ex, ey);
+        grad.addColorStop(0, `rgba(220,245,255,${alpha})`);
+        grad.addColorStop(0.5, `rgba(200,230,255,${alpha})`);
+        grad.addColorStop(1, `rgba(230,250,255,${alpha})`);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = lineW;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+
+        const seed = (p1.latticeX | 0) + (p1.latticeY | 0) * 37 + ((Date.now() >> 9) & 15);
+        const pseudoRand = (n) => { const x = Math.sin(seed * n) * 10000; return x - Math.floor(x); };
+
+        for (let s = 1; s < segCount; s++) {
+          const t = s / segCount;
+          const mx = sx + (ex - sx) * t;
+          const my = sy + (ey - sy) * t;
+          const side = ((s % 2) === 0 ? 1 : -1);
+          const r = 0.55 + pseudoRand(s * 13 + 7) * 0.9;
+          ctx.lineTo(mx + px * zigAmp * side * r,
+                     my + py * zigAmp * side * r);
+        }
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'miter';
+
+        // Small sparkle dots at peaks for closer pairs
+        if (proximity > 0.3) {
+          ctx.fillStyle = `rgba(230,250,255,${proximity * 0.4})`;
+          for (let s = 1; s < segCount; s++) {
+            if (pseudoRand(s * 31 + 17) > 0.5) {
+              const t = s / segCount;
+              const mx = sx + (ex - sx) * t;
+              const my = sy + (ey - sy) * t;
+              const side = ((s % 2) === 0 ? 1 : -1);
+              const r = 0.55 + pseudoRand(s * 13 + 7) * 0.9;
+              const dotX = mx + px * zigAmp * side * r;
+              const dotY = my + py * zigAmp * side * r;
+              const sparkR = 1 + pseudoRand(s * 19) * 1.8;
+              ctx.beginPath(); ctx.arc(dotX, dotY, sparkR, 0, Math.PI * 2); ctx.fill();
+            }
+          }
+        }
+
+      } else {
+        // Liquid: subtler pink lightning — fewer bonds shown
+        const alpha = 0.12 + proximity * 0.28;
+        const lineW = 0.8 + proximity * 1.2;
+
+        // Warm glow behind
+        ctx.strokeStyle = `rgba(239,120,150,${alpha * 0.18})`;
+        ctx.lineWidth = lineW + 4;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+
+        // Inner warm core glow
+        ctx.strokeStyle = `rgba(255,140,170,${alpha * 0.25})`;
+        ctx.lineWidth = lineW + 1.5;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+
+        // Main pink lightning zigzag
+        const grad = ctx.createLinearGradient(sx, sy, ex, ey);
+        grad.addColorStop(0, `rgba(255,120,155,${alpha})`);
+        grad.addColorStop(0.3, `rgba(255,100,145,${alpha})`);
+        grad.addColorStop(0.55, `rgba(240,80,130,${alpha})`);
+        grad.addColorStop(0.75, `rgba(255,110,150,${alpha})`);
+        grad.addColorStop(1, `rgba(255,130,160,${alpha})`);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = lineW;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+
+        const seed = (p1.latticeX | 0) + (p1.latticeY | 0) * 37 + ((Date.now() >> 9) & 15);
+        const pseudoRand = (n) => { const x = Math.sin(seed * n) * 10000; return x - Math.floor(x); };
+
+        for (let s = 1; s < segCount; s++) {
+          const t = s / segCount;
+          const mx = sx + (ex - sx) * t;
+          const my = sy + (ey - sy) * t;
+          const side = ((s % 2) === 0 ? 1 : -1);
+          const r = 0.50 + pseudoRand(s * 13 + 7) * 1.0;
+          ctx.lineTo(mx + px * zigAmp * side * r,
+                     my + py * zigAmp * side * r);
+        }
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        ctx.lineCap = 'butt';
+        ctx.lineJoin = 'miter';
+
+        // Sparkle dots — only for closest pairs
+        if (proximity > 0.55) {
+          ctx.fillStyle = `rgba(255,200,220,${proximity * 0.3})`;
+          for (let s = 1; s < segCount; s++) {
+            if (pseudoRand(s * 31 + 17) > 0.6) {
+              const t = s / segCount;
+              const mx = sx + (ex - sx) * t;
+              const my = sy + (ey - sy) * t;
+              const side = ((s % 2) === 0 ? 1 : -1);
+              const r = 0.50 + pseudoRand(s * 13 + 7) * 1.0;
+              const dotX = mx + px * zigAmp * side * r;
+              const dotY = my + py * zigAmp * side * r;
+              const sparkR = 1 + pseudoRand(s * 19) * 1.5;
+              ctx.beginPath(); ctx.arc(dotX, dotY, sparkR, 0, Math.PI * 2); ctx.fill();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  function drawParticles() {
+    for(const p of particles){
+      const cos=Math.cos(p.rotation),sin=Math.sin(p.rotation);
+      // Bonds
+      ctx.strokeStyle='rgba(100,100,120,0.5)';ctx.lineWidth=5;ctx.lineCap='round';
+      for(const b of p.bonds){
+        const a1=p.atoms[b.from],a2=p.atoms[b.to];
+        const x1=p.x+a1.relX*cos-a1.relY*sin,y1=p.y+a1.relX*sin+a1.relY*cos;
+        const x2=p.x+a2.relX*cos-a2.relY*sin,y2=p.y+a2.relX*sin+a2.relY*cos;
+        ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+      }ctx.lineCap='butt';
+      // Atoms
+      for(const a of p.atoms){
+        const ax=p.x+a.relX*cos-a.relY*sin, ay=p.y+a.relX*sin+a.relY*cos;
+        ctx.fillStyle='rgba(0,0,0,0.15)';ctx.beginPath();ctx.arc(ax+1.5,ay+1.5,a.radius,0,Math.PI*2);ctx.fill();
+        const g=ctx.createRadialGradient(ax-a.radius*0.3,ay-a.radius*0.3,a.radius*0.1,ax,ay,a.radius);
+        g.addColorStop(0,'#fff');g.addColorStop(0.35,a.color);g.addColorStop(1,darkenColor(a.color,0.4));
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(ax,ay,a.radius,0,Math.PI*2);ctx.fill();
+        if(a.color==='#E8E8E8'||a.color==='#FFFFFF'||a.color==='#f0f8ff'||a.color==='#e8f4fc'){ctx.strokeStyle='rgba(140,180,210,0.35)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(ax,ay,a.radius,0,Math.PI*2);ctx.stroke();}
+        if(a.radius>=8&&a.label){ctx.fillStyle='rgba(255,255,255,0.85)';ctx.font=`bold ${Math.max(a.radius*0.9,7)}px "Segoe UI",sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(a.label,ax,ay+1);ctx.textAlign='start';ctx.textBaseline='alphabetic';}
+      }
+      // Highlight
+      if(p.isDragged){
+        ctx.strokeStyle='rgba(255,255,255,0.8)';ctx.lineWidth=2.5;ctx.setLineDash([]);
+        ctx.beginPath();ctx.arc(p.x,p.y,p.molRadius+3,0,Math.PI*2);ctx.stroke();
+        ctx.strokeStyle='rgba(100,180,255,0.5)';ctx.lineWidth=5;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.molRadius+7,0,Math.PI*2);ctx.stroke();
+      }else if(p===hoveredParticle){
+        ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=2;ctx.setLineDash([]);
+        ctx.beginPath();ctx.arc(p.x,p.y,p.molRadius+2,0,Math.PI*2);ctx.stroke();
+      }
+      if(p.isEvaporated){
+        ctx.strokeStyle='rgba(255,255,255,0.4)';ctx.lineWidth=1;ctx.setLineDash([2,3]);
+        ctx.beginPath();ctx.arc(p.x,p.y,p.molRadius+4,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
+      }
+    }
+  }
+
+  function darkenColor(hex,factor){
+    const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+    return `rgb(${Math.round(r*(1-factor))},${Math.round(g*(1-factor))},${Math.round(b*(1-factor))})`;
+  }
+
+  // ============ HIT TESTING ============
+  let hoveredParticle=null;
+  function isInsideContainer(mx, my) {
+    // Check inside the cylindrical opening (simplified to rect)
+    const effTop = cyl.lidY + cyl.lidH;
+    return mx >= cyl.x && mx <= cyl.x + cyl.w && my >= effTop && my <= cyl.y + cyl.h;
+  }
+
+  function isNearLid(mx, my) {
+    return Math.abs(mx - cyl.cx) < cyl.w/2 + 15 && my >= cyl.lidY - 8 && my <= cyl.lidY + cyl.lidH + 8;
+  }
+
+  function isNearBurner(mx, my) {
+    const cupW=150, cupH=125, cupX=cyl.cx-cupW/2, cupY=H-cupH-50;
+    return mx >= cupX - 10 && mx <= cupX + cupW + 10 && my >= cupY - 30 && my <= cupY + cupH + 10;
+  }
+
+  function getCanvasPos(e) {
+    const r=canvas.getBoundingClientRect();
+    return { x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height) };
+  }
+
+  function findParticleAt(mx, my) {
+    let best=null, bestDist=Infinity;
+    for(const p of particles){
+      const cos=Math.cos(p.rotation), sin=Math.sin(p.rotation);
+      for(const a of p.atoms){
+        const ax=p.x+a.relX*cos-a.relY*sin, ay=p.y+a.relX*sin+a.relY*cos;
+        const d=Math.sqrt((ax-mx)**2+(ay-my)**2);
+        if(d<a.radius+4&&d<bestDist){bestDist=d;best=p;}
+      }
+    }
+    return best;
+  }
+
+  // ============ INPUT HANDLING ============
+  canvas.addEventListener('mousedown', e=>{
+    const pos=getCanvasPos(e); mouseX=pos.x; mouseY=pos.y;
+    if(isNearLid(pos.x,pos.y)){isDraggingLid=true;lidDragStartY=pos.y;lidStartY=cyl.lidY;canvas.style.cursor='ns-resize';return;}
+    if(isNearBurner(pos.x,pos.y)){
+      isDraggingHeat=true;
+      const slY=H-125-50+18, slH=125-36;
+      heatHandleVal=-(((pos.y-slY)/slH-0.5)*2.1);
+      heatHandleVal=Math.max(-1,Math.min(1,heatHandleVal));canvas.style.cursor='ns-resize';return;
+    }
+    const p=findParticleAt(pos.x,pos.y);
+    if(p){draggedParticle=p;p.isDragged=true;dragOffsetX=p.x-pos.x;dragOffsetY=p.y-pos.y;canvas.style.cursor='grabbing';}
+  });
+
+  canvas.addEventListener('mousemove', e=>{
+    const pos=getCanvasPos(e); mouseX=pos.x; mouseY=pos.y;
+    if(isDraggingLid){cyl.lidY=Math.max(cyl.minLidY,Math.min(cyl.maxLidY,lidStartY+(pos.y-lidDragStartY)));}
+    else if(isDraggingHeat){
+      const slY=H-125-50+18,slH=125-36;
+      heatHandleVal=-(((pos.y-slY)/slH-0.5)*2.1);
+      heatHandleVal=Math.max(-1,Math.min(1,heatHandleVal));
+    }else if(draggedParticle){
+      const px=draggedParticle.x,py=draggedParticle.y;
+      draggedParticle.x=pos.x+dragOffsetX;draggedParticle.y=pos.y+dragOffsetY;
+      draggedParticle.vx=(draggedParticle.x-px)/0.016;draggedParticle.vy=(draggedParticle.y-py)/0.016;
+      const s=draggedParticle.molRadius;
+      draggedParticle.x=Math.max(cyl.x-s,Math.min(cyl.x+cyl.w+s,draggedParticle.x));
+      draggedParticle.y=Math.max(cyl.y+s,Math.min(cyl.y+cyl.h+s,draggedParticle.y));
+    }else{
+      const hp=findParticleAt(pos.x,pos.y);
+      if(hp!==hoveredParticle){hoveredParticle=hp;canvas.style.cursor=hp?'grab':(isNearLid(pos.x,pos.y)?'ns-resize':isNearBurner(pos.x,pos.y)?'ns-resize':'default');}
+    }
+  });
+
+  canvas.addEventListener('mouseup',()=>{
+    if(draggedParticle){draggedParticle.isDragged=false;draggedParticle=null;canvas.style.cursor=hoveredParticle?'grab':'default';}
+    isDraggingLid=false;isDraggingHeat=false;
+    canvas.style.cursor=hoveredParticle?'grab':'default';
+  });
+
+  canvas.addEventListener('mouseleave',()=>{
+    if(draggedParticle){draggedParticle.isDragged=false;draggedParticle=null;}
+    isDraggingLid=false;isDraggingHeat=false;hoveredParticle=null;canvas.style.cursor='default';
+  });
+
+  // Touch
+  canvas.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0],pos=getCanvasPos(t);mouseX=pos.x;mouseY=pos.y;
+    if(isNearLid(pos.x,pos.y)){isDraggingLid=true;lidDragStartY=pos.y;lidStartY=cyl.lidY;return;}
+    if(isNearBurner(pos.x,pos.y)){isDraggingHeat=true;const sly=H-125-50+18,sh=125-36;heatHandleVal=-(((pos.y-sly)/sh-0.5)*2.1);heatHandleVal=Math.max(-1,Math.min(1,heatHandleVal));return;}
+    const p=findParticleAt(pos.x,pos.y);if(p){draggedParticle=p;p.isDragged=true;dragOffsetX=p.x-pos.x;dragOffsetY=p.y-pos.y;}
+  },{passive:false});
+
+  canvas.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0],pos=getCanvasPos(t);mouseX=pos.x;mouseY=pos.y;
+    if(isDraggingLid)cyl.lidY=Math.max(cyl.minLidY,Math.min(cyl.maxLidY,lidStartY+(pos.y-lidDragStartY)));
+    else if(isDraggingHeat){const sly=H-125-50+18,sh=125-36;heatHandleVal=-(((pos.y-sly)/sh-0.5)*2.1);heatHandleVal=Math.max(-1,Math.min(1,heatHandleVal));}
+    else if(draggedParticle){const px=draggedParticle.x,py=draggedParticle.y;draggedParticle.x=pos.x+dragOffsetX;draggedParticle.y=pos.y+dragOffsetY;draggedParticle.vx=(draggedParticle.x-px)/0.016;draggedParticle.vy=(draggedParticle.y-py)/0.016;const s=draggedParticle.molRadius;draggedParticle.x=Math.max(cyl.x-s,Math.min(cyl.x+cyl.w+s,draggedParticle.x));draggedParticle.y=Math.max(cyl.y+s,Math.min(cyl.y+cyl.h+s,draggedParticle.y));}
+  },{passive:false});
+
+  canvas.addEventListener('touchend',()=>{if(draggedParticle){draggedParticle.isDragged=false;draggedParticle=null;}isDraggingLid=false;isDraggingHeat=false;});
+
+  // Click handlers for buttons (simple hit testing in game loop would be better but we use event delegation here)
+  canvas.addEventListener('click', e=>{
+    const pos=getCanvasPos(e);
+    // Play/Pause
+    if(Math.hypot(pos.x-60, pos.y-(H-90)) < 26) { paused=!paused; showSubstanceMenu=false; return; }
+    // Reset
+    if(Math.hypot(pos.x-(60+64), pos.y-(H-64)) < 22) { resetAll(); showSubstanceMenu=false; return; }
+
+    // Substance dropdown button
+    const sx = W - 140, sy = 30, sw = 120, sh = 34;
+    if(pos.x >= sx && pos.x <= sx + sw && pos.y >= sy && pos.y <= sy + sh) {
+      showSubstanceMenu = !showSubstanceMenu; return;
+    }
+
+    // Dropdown menu items
+    if (showSubstanceMenu) {
+      const menuW = 160, menuH = 140;
+      const mx = sx + sw - menuW, my = sy + sh + 6;
+      const items = ['neon','argon','oxygen','water'];
+      for (let i = 0; i < items.length; i++) {
+        const iy = my + 10 + i * 32;
+        if (pos.x >= mx && pos.x <= mx + menuW && pos.y >= iy - 5 && pos.y <= iy + 25) {
+          substanceKey = items[i];
+          substance = substances[substanceKey];
+          moleculeConfig = moleculeConfigs[substanceKey];
+          PARTICLE_COUNT = (substanceKey==='water')?15:20;
+          heatHandleVal=0; showSubstanceMenu=false;
+          initParticles(); cyl.lidY=cyl.minLidY;
+          return;
+        }
+      }
+    }
+
+    // Close menu when clicking elsewhere
+    showSubstanceMenu = false;
+  });
+
+  // ============ GAME LOOP ============
+  function gameLoop(ts){
+    if(!lastTime)lastTime=ts; let dt=(ts-lastTime)/1000; lastTime=ts;
+    if(dt>0.1)dt=0.016;
+    if(!paused){const subDt=dt/2;updatePhysics(subDt);updatePhysics(subDt);}
+    render();
+    requestAnimationFrame(gameLoop);
+  }
+
+  resetAll();
+  requestAnimationFrame(gameLoop);
+})();
+</script>
+</body>
+</html>

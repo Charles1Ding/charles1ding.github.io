@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relative Atomic Mass — Balance &amp; Ruler</title>
+<style>
+  :root{ --ink:#1F3A5F; --sub:#334455; --line:#C5D2DE; --panel:#E9EEF3; }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Segoe UI',system-ui,sans-serif; background:#F4F7FA; color:var(--sub);
+       display:flex; flex-direction:column; align-items:center; min-height:100vh; padding:14px;}
+  header{width:100%; max-width:1000px; display:flex; align-items:baseline; gap:14px; margin-bottom:8px; flex-wrap:wrap;}
+  h1{font-size:21px; color:var(--ink); letter-spacing:.2px;}
+  .tabs{display:flex; gap:8px; margin-left:auto;}
+  .tab{border:1.5px solid var(--line); background:#fff; color:var(--sub); padding:6px 14px;
+       border-radius:18px; cursor:pointer; font-size:13.5px; font-weight:600;}
+  .tab.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  #wrap{width:100%; max-width:1000px;}
+  canvas{width:100%; border-radius:12px; border:1.5px solid var(--line); background:#FFFFFF; display:block;
+         touch-action:none; cursor:default;}
+  .pickbar{display:flex; align-items:center; gap:8px; margin:10px 0 4px; flex-wrap:wrap;}
+  .pickbar .lbl{font-size:13px; font-weight:700; color:var(--ink);}
+  .pick{border:1.5px solid var(--line); background:#fff; border-radius:16px; padding:5px 13px;
+        font-size:13px; font-weight:700; cursor:pointer; color:var(--sub);}
+  .pick.active{background:#1769AA; color:#fff; border-color:#1769AA;}
+  .bar{display:flex; align-items:center; gap:10px; margin-top:8px; flex-wrap:wrap;}
+  .btn{border:none; border-radius:18px; padding:7px 16px; font-size:13px; font-weight:700; cursor:pointer;
+       background:var(--ink); color:#fff;}
+  .btn.ghost{background:#fff; color:var(--ink); border:1.5px solid var(--line);}
+  #cap{margin-top:8px; background:var(--panel); border:1.5px solid var(--line); border-radius:10px;
+       padding:10px 14px; font-size:14.5px; line-height:1.5; min-height:44px;}
+  #cap b{color:var(--ink);}
+</style>
+</head>
+<body>
+<header>
+  <h1>Relative Atomic Mass (Aᵣ) &amp; Relative Molecular Mass (Mᵣ)</h1>
+  <div class="tabs">
+    <button class="tab active" id="tab0">1 · Balance</button>
+    <button class="tab" id="tab1">2 · Ruler</button>
+    <button class="tab" id="tab2">3 · Build Mᵣ</button>
+  </div>
+</header>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div class="pickbar" id="atomBar"><span class="lbl">Choose an atom:</span></div>
+  <div class="pickbar" id="molBar" style="display:none"><span class="lbl">Choose a molecule:</span></div>
+  <div class="bar">
+    <button class="btn ghost" id="resetBtn">↻ Reset</button>
+    <button class="btn ghost" id="revealBtn" style="display:none">👁 Reveal Aᵣ</button>
+  </div>
+  <div id="cap"></div>
+</div>
+<script>
+'use strict';
+/* ================= data ================= */
+const ATOMS={
+  H :{ar:1.0 , mn:1 , p:1 , n:0 , col:'#E8B04B', dark:'#9A6B1B'},
+  C :{ar:12.0, mn:12, p:6 , n:6 , col:'#5A6378', dark:'#39404F'},
+  N :{ar:14.0, mn:14, p:7 , n:7 , col:'#3B6FD1', dark:'#274A8F'},
+  O :{ar:16.0, mn:16, p:8 , n:8 , col:'#D64545', dark:'#8F2A2A'},
+  Na:{ar:23.0, mn:23, p:11, n:12, col:'#8B5CF6', dark:'#5B30AC'},
+  Mg:{ar:24.0, mn:24, p:12, n:12, col:'#2FA36B', dark:'#1C6B45'},
+  S :{ar:32.0, mn:32, p:16, n:16, col:'#D9A514', dark:'#916D05'},
+  Cl:{ar:35.5, mn:35, p:17, n:18, col:'#3AA88F', dark:'#22705C'}
+};
+const KEYS=Object.keys(ATOMS);
+const fmt=v=>v.toFixed(1);
+const PER=6;   // weights per row on the pan
+
+const MOLS3=[
+  {k:'H2O' , f:'H\u2082O' , geo:[{e:'O',x:0,y:0},{e:'H',x:-48,y:-32},{e:'H',x:48,y:-32}], bonds:[[0,1],[0,2]]},
+  {k:'CO2' , f:'CO\u2082' , geo:[{e:'O',x:-66,y:0},{e:'C',x:0,y:0},{e:'O',x:66,y:0}], bonds:[[0,1],[1,2]]},
+  {k:'CH4' , f:'CH\u2084' , geo:[{e:'C',x:0,y:0},{e:'H',x:-42,y:-36},{e:'H',x:42,y:-36},{e:'H',x:-42,y:36},{e:'H',x:42,y:36}], bonds:[[0,1],[0,2],[0,3],[0,4]]},
+  {k:'HCl' , f:'HCl'      , geo:[{e:'H',x:-42,y:0},{e:'Cl',x:42,y:0}], bonds:[[0,1]]},
+  {k:'MgO' , f:'MgO'      , geo:[{e:'Mg',x:-42,y:0},{e:'O',x:42,y:0}], bonds:[[0,1]]},
+  {k:'NaCl', f:'NaCl'     , geo:[{e:'Na',x:-42,y:0},{e:'Cl',x:42,y:0}], bonds:[[0,1]]},
+  {k:'O2'  , f:'O\u2082'  , geo:[{e:'O',x:-40,y:0},{e:'O',x:40,y:0}], bonds:[[0,1]]},
+  {k:'NH3' , f:'NH\u2083' , geo:[{e:'N',x:0,y:-14},{e:'H',x:-44,y:22},{e:'H',x:0,y:34},{e:'H',x:44,y:22}], bonds:[[0,1],[0,2],[0,3]]}
+];
+
+const TITLES=['Scene 1 · Weigh an atom against 1/12 of a C-12 atom',
+              'Scene 2 · The 1/12-C ruler — drag the atom to its A\u1D63',
+              'Scene 3 · Build M\u1D63 — click atoms to add their A\u1D63'];
+const CAPS=[
+ '<b>How to work the balance:</b> click the <b>weight pile</b> (bottom-left) to drop one 1/12-C weight onto the right pan. Click a weight <b>on the pan</b> to take it back. For Cl there is also a <b>½ weight</b>. Level the beam — <b>A\u1D63 = mass of one atom \u00F7 (1/12 \u00D7 mass of one C-12 atom)</b>, a ratio with <b>no units</b>.',
+ '<b>Drag the atom</b> along the ruler. The number of squares it covers is its <b>relative atomic mass</b>. Every square = 1/12 of a C-12 atom. Get close and the answer glows — or press <b>Reveal</b>. Remember: <b>mass number = protons + neutrons</b> (whole number), A\u1D63 compares masses and may be like 35.5.',
+ '<b>Click each atom</b> of the molecule — it slides into the molecule and its A\u1D63 is added to the running sum. When every atom is in, the total is the <b>M\u1D63 (relative molecular mass)</b> — again <b>no units</b>.'
+];
+
+/* ================= state ================= */
+const S={view:0, atom:'C', mol:'H2O',
+  nW:0, half:false, th:0,           // balance: full weights, half on?, beam angle
+  rx:0, drag:false, revealed:false, // ruler
+  added:[]                          // molecule: per-atom added flags
+};
+const W=960, H=560;
+let T=0;
+const pops={};
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+
+function fitCanvas(){
+  const DPR=window.devicePixelRatio||1;
+  const w=cv.parentElement.clientWidth-2;
+  const k=Math.min(1.05, w/W);
+  cv.style.height=Math.round(H*k)+'px';
+  cv.width=Math.round(W*k*DPR); cv.height=Math.round(H*k*DPR);
+  ctx.setTransform(k*DPR,0,0,k*DPR,0,0);
+}
+window.addEventListener('resize',fitCanvas);
+
+/* ================= helpers ================= */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function pill(c,txt,x,y,fg,bg,fs,alpha){
+  c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  c.font='bold '+(fs||12.5)+'px "Segoe UI",system-ui,sans-serif';
+  const w=c.measureText(txt).width+18, h=(fs||12.5)+12;
+  c.fillStyle=bg; c.strokeStyle=fg; c.lineWidth=1.3;
+  c.beginPath(); c.roundRect(x-w/2,y-h/2,w,h,h/2); c.fill(); c.stroke();
+  c.fillStyle=fg; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(txt,x,y+0.5); c.restore();
+}
+function chip(c,txt,x,y,fg,bg){ pill(c,txt,x,y,fg,bg,13); }
+function ball(c,x,y,r,col,dark,label,fs,alpha){
+  c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  const g=c.createRadialGradient(x-r*0.35,y-r*0.35,r*0.15,x,y,r);
+  g.addColorStop(0,'#FFFFFF'); g.addColorStop(0.35,col); g.addColorStop(1,dark);
+  c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  c.strokeStyle=dark; c.lineWidth=1.4; c.stroke();
+  if(label){
+    c.fillStyle='#FFFFFF'; c.font='bold '+(fs||Math.max(10,r*0.72))+'px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle'; c.fillText(label,x,y+0.5);
+  }
+  c.restore();
+}
+function weightDot(c,x,y,r,scale){
+  c.save(); c.translate(x,y); if(scale&&scale!==1)c.scale(scale,scale);
+  c.fillStyle='#7C8CA5'; c.strokeStyle='#4B5B70'; c.lineWidth=1.2;
+  c.beginPath(); c.arc(0,0,r,0,7); c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(-r*0.5,-r-2); c.lineTo(r*0.5,-r-2); c.stroke();
+  c.restore();
+}
+function decayPop(key){
+  pops[key]=Math.max(0,(pops[key]||0)-0.05);
+  return pops[key]||0;
+}
+
+/* ================= view 1 : balance ================= */
+function balLayout(){
+  const a=ATOMS[S.atom];
+  const cx=480, pivY=196, armL=228, hang=118;
+  const cth=Math.cos(S.th), sth=Math.sin(S.th);
+  const exL={x:cx-armL*cth, y:pivY-armL*sth}, exR={x:cx+armL*cth, y:pivY+armL*sth};
+  return {a,Ar:a.ar,total:Math.ceil(a.ar),isHalf:a.ar%1!==0,
+    cx,pivY,exL,exR,
+    L:{sx:exL.x,py:exL.y+hang}, R:{sx:exR.x,py:exR.y+hang}};
+}
+function sceneBalance(){
+  const c=ctx, {a,Ar,total,isHalf,cx,pivY,exL,exR,L,R}=balLayout();
+  const massOn=S.nW+(S.half?0.5:0);
+  // beam physics
+  const target=clamp((massOn-Ar)*0.0045,-0.13,0.13);
+  S.th+=(target-S.th)*0.12;
+  const balanced=Math.abs(massOn-Ar)<0.25&&(S.nW>0||S.half);
+
+  // stand
+  c.strokeStyle='#94A3B8'; c.lineWidth=5;
+  c.beginPath(); c.moveTo(cx,pivY); c.lineTo(cx-46,508); c.moveTo(cx,pivY); c.lineTo(cx+46,508); c.stroke();
+  c.fillStyle='#64748B'; c.beginPath(); c.roundRect(cx-40,504,80,10,4); c.fill();
+  // pivot + needle
+  c.fillStyle='#475569'; c.beginPath(); c.arc(cx,pivY,10,0,7); c.fill();
+  c.save(); c.translate(cx,pivY); c.rotate(S.th);
+  c.strokeStyle=balanced?'#16A34A':'#BE123C'; c.lineWidth=2.4;
+  c.beginPath(); c.moveTo(0,-14); c.lineTo(0,-34); c.stroke(); c.restore();
+  c.strokeStyle='#E2E8F0'; c.lineWidth=2;
+  c.beginPath(); c.arc(cx,pivY-30,24,Math.PI*1.15,Math.PI*1.85); c.stroke();
+  // beam
+  c.strokeStyle='#334155'; c.lineWidth=7; c.lineCap='round';
+  c.beginPath(); c.moveTo(exL.x,exL.y); c.lineTo(exR.x,exR.y); c.stroke(); c.lineCap='butt';
+  // hangers + pans
+  [[exL,L],[exR,R]].forEach(([ex,P])=>{
+    c.strokeStyle='#94A3B8'; c.lineWidth=2;
+    c.beginPath(); c.moveTo(ex.x,ex.y); c.lineTo(P.sx-58,P.py); c.moveTo(ex.x,ex.y); c.lineTo(P.sx+58,P.py); c.stroke();
+    c.fillStyle='#CBD5E1'; c.strokeStyle='#94A3B8'; c.lineWidth=2;
+    c.beginPath(); c.ellipse(P.sx,P.py,62,12,0,0,7); c.fill(); c.stroke();
+  });
+
+  // atom on left pan
+  const ar=13+a.ar*0.32;
+  ball(c,L.sx,L.py-ar+3,ar*(1+decayPop('atom')*0.12),a.col,a.dark,S.atom,Math.max(11,ar*0.62));
+  pill(c,'one '+S.atom+' atom',L.sx,L.py+30,'#475569','#EEF2F6',11);
+
+  // weights on right pan (grid PER per row)
+  const wr=7.5;
+  for(let i=0;i<S.nW;i++){
+    const row=(i/PER)|0, colI=i%PER;
+    const wx=R.sx-((PER-1)/2)*17+colI*17+(row%2?4:0);
+    const wy=R.py-10-wr-row*15.5;
+    weightDot(c,wx,wy,wr,1+decayPop('w'+i)*0.35);
+  }
+  if(S.half){
+    const idx=S.nW, row=(idx/PER)|0, colI=idx%PER;
+    const wx=R.sx-((PER-1)/2)*17+colI*17, wy=R.py-10-wr-row*15.5;
+    const sc=1+decayPop('half')*0.35;
+    c.save(); c.translate(wx,wy); c.scale(sc,sc);
+    c.fillStyle='#7C8CA5'; c.strokeStyle='#4B5B70'; c.lineWidth=1.2;
+    c.beginPath(); c.arc(0,0,wr,Math.PI,0); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle='#4B5B70'; c.font='bold 8.5px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle'; c.fillText('½',0,-wr*0.55); c.restore();
+  }
+  // live counter
+  if(S.nW>0||S.half){
+    c.fillStyle='#334155'; c.font='bold 15px "Segoe UI",sans-serif'; c.textAlign='center';
+    c.fillText('on pan: '+S.nW+(S.half?' + ½':''),R.sx,R.py-88-Math.ceil((S.nW+1)/PER)*15.5-8);
+  }
+
+  // tray (bottom-left): pile + half chip
+  c.fillStyle='#F1F5F9'; c.strokeStyle='#C5D2DE'; c.lineWidth=1.5;
+  c.beginPath(); c.roundRect(56,458,330,74,10); c.fill(); c.stroke();
+  for(let i=0;i<3;i++) weightDot(c,92+i*30,512,10);
+  c.fillStyle='#475569'; c.font='bold 12.5px "Segoe UI",sans-serif'; c.textAlign='left'; c.textBaseline='middle';
+  c.fillText('weight pile — CLICK to add one (1/12 of C-12)',150,506);
+  c.fillStyle='#94A3B8'; c.font='11px "Segoe UI",sans-serif';
+  c.fillText('(click a weight on the pan to remove it)',150,522);
+  if(isHalf){
+    const hx=348;
+    c.fillStyle=S.half?'#FDE68A':'#7C8CA5'; c.strokeStyle='#4B5B70'; c.lineWidth=1.4;
+    c.beginPath(); c.arc(hx,512,12,Math.PI,0); c.closePath(); c.fill(); c.stroke();
+    c.fillStyle='#4B5B70'; c.font='bold 10px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle'; c.fillText('½',hx,506);
+    c.fillStyle=S.half?'#B45309':'#475569'; c.font='bold 11.5px "Segoe UI",sans-serif'; c.textAlign='left';
+    c.fillText(S.half?'½ on pan — click it to remove':'½ weight — click to add',hx+18,512);
+  }
+
+  // readout
+  if(balanced){
+    pill(c,'BALANCED!  A\u1D63 ('+S.atom+') = '+fmt(Ar),480,118,'#0A455D','#EAF3F8',19);
+    pill(c,'no units — it is a ratio',480,152,'#B45309','#FEF6E7',12);
+  }else if(massOn>Ar+0.25){
+    pill(c,'too heavy — remove a weight',480,130,'#B91C1C','#FDE8E8',13);
+  }
+  chip(c,'A\u1D63 = the count of weights when the beam is level',480,538,'#0A455D','#EAF3F8');
+}
+function balClick(x,y){
+  const {Ar,total,isHalf,L,R}=balLayout();
+  // tray zone
+  if(x>56&&x<386&&y>458&&y<532){
+    if(isHalf&&x>330&&x<366&&y>492&&y<532){ S.half=!S.half; pops['half']=1; return; }
+    if(S.nW<total){ S.nW++; pops['w'+(S.nW-1)]=1; }
+    return;
+  }
+  // remove half (sits after the last full weight)
+  if(S.half){
+    const idx=S.nW, row=(idx/PER)|0, colI=idx%PER;
+    const wx=R.sx-((PER-1)/2)*17+colI*17, wy=R.py-10-7.5-row*15.5;
+    if(Math.hypot(x-wx,y-wy)<16){ S.half=false; return; }
+  }
+  // remove a full weight (click anywhere on the stack)
+  if(S.nW>0&&y<R.py+8&&y>R.py-34-Math.ceil(S.nW/PER)*15.5&&Math.abs(x-R.sx)<64){ S.nW--; return; }
+}
+
+/* ================= view 2 : ruler ================= */
+function rulerGeom(){ return {x0:86,u:22.6,y:392,maxU:36}; }
+function sceneRuler(){
+  const c=ctx, a=ATOMS[S.atom], {x0,u,y,maxU}=rulerGeom();
+  const xs=x0+S.rx*u;
+  const near=Math.abs(S.rx-a.ar)<0.4;
+
+  // ruler base
+  c.fillStyle='#EEF2F6'; c.strokeStyle='#C5D2DE'; c.lineWidth=1.5;
+  c.beginPath(); c.roundRect(x0-18,y-26,maxU*u+36,64,8); c.fill(); c.stroke();
+  for(let i=0;i<=maxU;i++){
+    const x=x0+i*u, maj=i%5===0;
+    c.strokeStyle=maj?'#64748B':'#B6C2CE'; c.lineWidth=maj?1.8:1.1;
+    c.beginPath(); c.moveTo(x,y+14); c.lineTo(x,y+(maj?26:21)); c.stroke();
+    if(maj){ c.fillStyle='#64748B'; c.font='11px "Segoe UI",sans-serif'; c.textAlign='center'; c.textBaseline='alphabetic'; c.fillText(String(i),x,y+40); }
+  }
+  c.strokeStyle='#475569'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(x0,y+14); c.lineTo(x0+maxU*u,y+14); c.stroke();
+  // unit bracket
+  c.strokeStyle='#1769AA'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(x0,y-8); c.lineTo(x0,y-14); c.lineTo(x0+u,y-14); c.lineTo(x0+u,y-8); c.stroke();
+  c.fillStyle='#1769AA'; c.font='bold 11.5px "Segoe UI",sans-serif'; c.textAlign='center'; c.textBaseline='alphabetic';
+  c.fillText('1 unit = 1/12 of a C-12 atom',x0+u/2,y-22);
+  // reference C-12
+  const c12x=x0+12*u;
+  ball(c,c12x,y-58,17,ATOMS.C.col,ATOMS.C.dark,'C',12,0.95);
+  c.setLineDash([3,4]); c.strokeStyle='#94A3B8'; c.lineWidth=1.2;
+  c.beginPath(); c.moveTo(c12x,y-40); c.lineTo(c12x,y+2); c.stroke(); c.setLineDash([]);
+  pill(c,'12 units = one whole C-12 atom',c12x+118,y-58,'#39404F','#EEF2F6',11,0.95);
+
+  // reveal marker
+  if(S.revealed){
+    const xr=x0+a.ar*u;
+    c.save(); c.globalAlpha=0.9;
+    c.setLineDash([5,4]); c.strokeStyle='#BE123C'; c.lineWidth=2;
+    c.beginPath(); c.moveTo(xr,y-52); c.lineTo(xr,y+14); c.stroke(); c.setLineDash([]);
+    c.restore();
+    pill(c,'A\u1D63 = '+fmt(a.ar),xr,y-72,'#BE123C','#FCE7EE',13);
+  }
+
+  // the draggable atom
+  const ar=13+a.ar*0.32;
+  if(near){
+    c.save(); c.globalAlpha=0.35+0.12*Math.sin(T*5);
+    c.fillStyle='#FDE047'; c.beginPath(); c.arc(xs,y-6,ar+9,0,7); c.fill(); c.restore();
+  }
+  ball(c,xs,y-6,ar,a.col,a.dark,S.atom,Math.max(11,ar*0.62));
+  c.fillStyle='#1F3A5F'; c.font='bold 15px "Segoe UI",sans-serif'; c.textAlign='center'; c.textBaseline='alphabetic';
+  c.fillText('squares: '+S.rx.toFixed(1),xs,y-ar-18);
+
+  // info card
+  const cy2=150;
+  c.fillStyle='#F8FAFC'; c.strokeStyle='#C5D2DE'; c.lineWidth=1.5;
+  c.beginPath(); c.roundRect(300,cy2-42,360,86,12); c.fill(); c.stroke();
+  c.fillStyle='#1F3A5F'; c.font='bold 16px "Segoe UI",sans-serif'; c.textAlign='center'; c.textBaseline='alphabetic';
+  c.fillText(S.atom+' — where does it stop?',480,cy2-18);
+  c.font='bold 15px "Segoe UI",sans-serif'; c.fillStyle=near?'#16A34A':'#BE123C';
+  c.fillText('A\u1D63 = '+fmt(a.ar)+' squares  (periodic table)',480,cy2+6);
+  c.font='13px "Segoe UI",sans-serif'; c.fillStyle='#334455';
+  c.fillText('mass number = '+a.p+' + '+a.n+' = '+a.mn+'  (a whole number)',480,cy2+28);
+  if(near) pill(c,'that\u2019s it — '+fmt(a.ar)+'!',480,cy2+66,'#16A34A','#E8F5EE',12.5);
+  else pill(c,'A\u1D63 compares masses — mass number counts particles',480,cy2+66,'#B45309','#FEF6E7',12);
+  chip(c,'drag the atom · squares covered = A\u1D63',480,538,'#0A455D','#EAF3F8');
+}
+function rulerHit(x,py){
+  const a=ATOMS[S.atom], {x0,u,y}=rulerGeom();
+  const xs=x0+S.rx*u, r=13+a.ar*0.32;
+  return Math.hypot(x-xs,py-(y-6))<r+14;
+}
+function rulerMove(x){
+  const {x0,u,maxU}=rulerGeom();
+  S.rx=Math.round(clamp((x-x0)/u,0,maxU)*10)/10;
+}
+
+/* ================= view 3 : build Mr ================= */
+function sceneMr(){
+  const c=ctx, m=MOLS3.find(m=>m.k===S.mol);
+  const cx=480, cy=280;
+  m.geo.forEach((g,i)=>{
+    const ang=i*2.1;
+    g.sx=cx+Math.cos(ang)*215; g.sy=cy+Math.sin(ang)*125;
+    g.fx=cx+g.x*1.35; g.fy=cy+g.y*1.35+30;
+    if(g.at===undefined) g.at=-1;
+  });
+  const nAdded=S.added.filter(Boolean).length, all=nAdded===m.geo.length;
+
+  // bonds when complete
+  if(all){
+    c.save(); c.globalAlpha=0.9; c.strokeStyle='#94A3B8'; c.lineWidth=5; c.lineCap='round';
+    m.bonds.forEach(([i,j])=>{
+      c.beginPath(); c.moveTo(m.geo[i].fx,m.geo[i].fy); c.lineTo(m.geo[j].fx,m.geo[j].fy); c.stroke();
+    });
+    c.lineCap='butt'; c.restore();
+  }
+  // atoms
+  m.geo.forEach((g,i)=>{
+    const t=S.added[i]?ease(clamp((T-g.at)*1.8,0,1)):0;
+    const x=g.sx+(g.fx-g.sx)*t, y=g.sy+(g.fy-g.sy)*t;
+    g.cx=x; g.cy=y;
+    const a=ATOMS[g.e], r=13+a.ar*0.30;
+    ball(c,x,y,r,a.col,a.dark,g.e,Math.max(11,r*0.6));
+    pill(c,'A\u1D63 '+fmt(a.ar),x,y+r+16,'#475569','#EEF2F6',11);
+    if(!S.added[i]){
+      c.save(); c.globalAlpha=0.55+0.2*Math.sin(T*3+i);
+      c.strokeStyle='#1769AA'; c.lineWidth=2; c.setLineDash([4,4]);
+      c.beginPath(); c.arc(x,y,r+8,0,7); c.stroke(); c.setLineDash([]); c.restore();
+    }
+  });
+
+  pill(c,m.f,796,120,'#0A455D','#EAF3F8',20);
+
+  // running sum
+  c.fillStyle='#334455'; c.font='bold 14px "Segoe UI",sans-serif'; c.textAlign='left'; c.textBaseline='middle';
+  c.fillText('running sum:',66,424);
+  let tx=190;
+  S.added.forEach((ad,i)=>{
+    if(!ad)return;
+    pill(c,fmt(ATOMS[m.geo[i].e].ar),tx,424,'#1F3A5F','#EAF2FC',14);
+    tx+=62;
+    c.fillStyle='#475569'; c.font='bold 17px "Segoe UI",sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('+',tx-31,424);
+  });
+  if(all){
+    let total=0; m.geo.forEach(g=>total+=ATOMS[g.e].ar);
+    c.fillStyle='#BE123C'; c.font='bold 20px "Segoe UI",sans-serif'; c.textAlign='left'; c.textBaseline='middle';
+    c.fillText('= '+fmt(total),tx-20,424);
+    pill(c,'M\u1D63 ('+m.f+') = '+fmt(total)+'   —   no units',480,470,'#BE123C','#FCE7EE',16);
+  }else{
+    pill(c,nAdded+' of '+m.geo.length+' atoms added — keep clicking',480,470,'#475569','#EEF2F6',13);
+  }
+  chip(c,'click every atom — its A\u1D63 joins the sum',480,538,'#0A455D','#EAF3F8');
+}
+function mrClick(x,y){
+  const m=MOLS3.find(m=>m.k===S.mol);
+  for(let i=0;i<m.geo.length;i++){
+    const g=m.geo[i];
+    if(!S.added[i]&&Math.hypot(x-g.sx,y-g.sy)<36){
+      S.added[i]=true; g.at=T; return;
+    }
+  }
+}
+
+/* ================= dispatch ================= */
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#1F3A5F'; ctx.font='bold 17px "Segoe UI",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillText(TITLES[S.view],480,34);
+  ctx.strokeStyle='#C5D2DE'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(60,46); ctx.lineTo(900,46); ctx.stroke();
+  if(S.view===0) sceneBalance();
+  else if(S.view===1) sceneRuler();
+  else sceneMr();
+}
+function reset(){
+  if(S.view===0){ S.nW=0; S.half=false; S.th=0; Object.keys(pops).forEach(k=>delete pops[k]); }
+  else if(S.view===1){ S.rx=0; S.revealed=false; S.drag=false; }
+  else { S.added=[]; MOLS3.forEach(m=>m.geo.forEach(g=>{g.at=-1;})); }
+}
+
+/* ================= pointer ================= */
+function toLogical(e){
+  const r=cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left)*W/r.width, y:(e.clientY-r.top)*H/r.height};
+}
+cv.addEventListener('pointerdown',e=>{
+  const p=toLogical(e);
+  if(S.view===0) balClick(p.x,p.y);
+  else if(S.view===1){ if(rulerHit(p.x,p.y)) S.drag=true; }
+  else mrClick(p.x,p.y);
+  try{ cv.setPointerCapture(e.pointerId); }catch(_){}
+});
+cv.addEventListener('pointermove',e=>{
+  if(S.view===1&&S.drag){ rulerMove(toLogical(e).x); }
+});
+window.addEventListener('pointerup',()=>{ S.drag=false; });
+
+/* ================= UI ================= */
+function setView(v){
+  S.view=v; reset();
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===v));
+  document.getElementById('atomBar').style.display=(v<1)?'flex':'none';
+  document.getElementById('molBar').style.display=(v===2)?'flex':'none';
+  document.getElementById('revealBtn').style.display=(v===1)?'inline-block':'none';
+  document.getElementById('cap').innerHTML=CAPS[v];
+}
+document.getElementById('tab0').onclick=()=>setView(0);
+document.getElementById('tab1').onclick=()=>setView(1);
+document.getElementById('tab2').onclick=()=>setView(2);
+document.getElementById('resetBtn').onclick=reset;
+document.getElementById('revealBtn').onclick=()=>{ S.revealed=true; };
+
+const atomBar=document.getElementById('atomBar');
+KEYS.forEach(key=>{
+  const b=document.createElement('button');
+  b.className='pick'+(key===S.atom?' active':'');
+  b.textContent=key+'  ('+fmt(ATOMS[key].ar)+')';
+  b.onclick=()=>{
+    S.atom=key; reset();
+    [...atomBar.querySelectorAll('.pick')].forEach(x=>x.classList.toggle('active',x.textContent.startsWith(key+' ')));
+  };
+  atomBar.appendChild(b);
+});
+const molBar=document.getElementById('molBar');
+MOLS3.forEach(m=>{
+  const b=document.createElement('button');
+  b.className='pick'+(m.k===S.mol?' active':'');
+  b.textContent=m.f;
+  b.onclick=()=>{
+    S.mol=m.k; reset();
+    [...molBar.querySelectorAll('.pick')].forEach(x=>x.classList.toggle('active',x===b));
+  };
+  molBar.appendChild(b);
+});
+
+function loop(){
+  T+=1/60;
+  draw();
+  requestAnimationFrame(loop);
+}
+fitCanvas(); setView(0);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

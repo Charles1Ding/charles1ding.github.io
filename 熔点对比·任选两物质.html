@@ -1,0 +1,1687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Melting Point Lab — Pick Any Two Substances</title>
+<style>
+  :root{
+    --teal:#0A455D; --teal-light:#4699AA; --bg:#EEF3F5;
+    --card:rgba(255,255,255,.95); --text:#1E293B; --text2:#475569;
+    --hot:#E25822; --cold:#3E7CB1; --ok:#22C55E; --err:#DC2626;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter','Segoe UI',system-ui,-apple-system,'PingFang SC',sans-serif;background:var(--bg);color:var(--text);padding:14px;min-height:100vh;}
+  .wrap{max-width:1180px;margin:0 auto;}
+  header{background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;border-radius:16px;padding:14px 22px;box-shadow:0 4px 16px rgba(10,69,93,.18);display:flex;align-items:center;gap:12px;}
+  header h1{font-size:22px;font-weight:800;letter-spacing:.3px;}
+  header .sub{font-size:13px;opacity:.85;margin-left:auto;font-weight:500;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0;padding:12px 16px;background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);}
+  button.btn{border:none;cursor:pointer;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;background:#e7eef2;color:var(--teal);transition:all .15s;font-family:inherit;}
+  button.btn:hover{background:#dbe7ec;}
+  button.btn.active{background:var(--teal);color:#fff;}
+  button.btn.primary{background:var(--teal);color:#fff;}
+  button.btn.primary:hover{background:#0d5a7a;}
+  .selgrp{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+  .selgrp .lb{font-size:11px;font-weight:800;color:#64748B;letter-spacing:.4px;}
+  .selgrp.left .lb{color:var(--teal);}
+  #selWarn{font-size:12px;font-weight:700;color:#B91C1C;opacity:0;transition:opacity .2s;}
+  .tempbox{display:flex;align-items:baseline;gap:6px;margin-left:auto;}
+  .tempbox .num{font-size:26px;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums;min-width:120px;text-align:right;}
+  .tempbox .unit{font-size:14px;color:var(--text2);font-weight:600;}
+  .rail-wrap{width:100%;padding:4px 2px 0;}
+  .rail{position:relative;width:100%;height:14px;border-radius:8px;background:linear-gradient(90deg,#7FB3D5 0%,#BFE3F0 15%,#F2E9C9 38%,#E8A94B 62%,#D4552A 82%,#7A1F10 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,.15);}
+  .rail input{position:absolute;inset:-8px 0;width:100%;height:30px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;margin:0;}
+  .rail input::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:30px;border-radius:6px;background:#fff;border:3px solid var(--teal);box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:grab;}
+  .mark{position:absolute;top:16px;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap;text-align:center;line-height:1.25;}
+  .mark::before{content:'';display:block;width:2px;height:8px;background:var(--text2);margin:0 auto 1px;}
+  .stage-card{background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);padding:10px;}
+  canvas{display:block;width:100%;border-radius:12px;background:linear-gradient(180deg,#FDFEFF 0%,#F4F8FA 100%);}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+  @media(max-width:820px){.cards{grid-template-columns:1fr;}}
+  .card{background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:0 4px 16px rgba(10,69,93,.08);border-top:4px solid var(--teal-light);}
+  .card h2{font-size:15px;font-weight:800;color:var(--teal);margin-bottom:6px;letter-spacing:.2px;}
+  .card .state{font-size:14px;font-weight:800;margin-bottom:6px;}
+  .card p{font-size:13px;line-height:1.55;color:var(--text2);}
+  .card b{color:var(--text);}
+  .verdict{margin-top:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;border-radius:14px;padding:12px 18px;font-size:14px;font-weight:700;line-height:1.5;box-shadow:0 4px 16px rgba(10,69,93,.15);}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--text2);}
+  .legend .it{display:flex;align-items:center;gap:6px;}
+  .legend .sw{width:22px;height:0;border-top:3px solid;}
+  .legend .sw.dash{border-top-style:dashed;}
+  .legend .dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:inset 0 -2px 3px rgba(0,0,0,.25);}
+  .legend .dot.glow{box-shadow:0 0 6px 2px rgba(34,211,238,.65);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🔥 Melting Point Lab — pick any TWO, compare their fate</h1>
+    <div class="sub">molecular · giant covalent · giant metallic — structure decides the melting point</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="selgrp left" id="selL"><span class="lb">LEFT ▸</span></div>
+    <button class="btn primary" id="playBtn">▶ Heat up</button>
+    <button class="btn" id="resetBtn">↺ Reset</button>
+    <div class="selgrp" id="selR"><span class="lb">RIGHT ▸</span></div>
+    <div id="presets" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    <span id="selWarn">left and right must be different!</span>
+    <div class="tempbox"><span class="num" id="tRead">25</span><span class="unit">°C</span></div>
+  </div>
+
+  <div class="toolbar rail-wrap" style="padding-bottom:56px;display:block;">
+    <div class="rail">
+      <input type="range" id="tSlider" min="0" max="1000" value="0" />
+      <div id="marks"></div>
+    </div>
+  </div>
+
+  <div class="stage-card">
+    <canvas id="cv"></canvas>
+    <div class="legend" id="legend"></div>
+  </div>
+
+  <div class="cards">
+    <div class="card" id="cardL"></div>
+    <div class="card" id="cardR"></div>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+</div>
+
+<script>
+'use strict';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const smooth=(a,b,x)=>{ const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
+const fmtT=t=>(t<0?'\u2212':'')+Math.abs(Math.round(t));
+
+// ================= state =================
+const state={ T:25, target:25, s:0, playing:false, t:0,
+              yaw:0.35, pitch:0.46,
+              forceMode:false, grabX:0, grabY:0, fx:0,
+              selL:'co2', selR:'diamond' };
+
+// ================= canvas =================
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+let CW=0,CH=0,DPR=1;
+const GGAP=186;   // graphite inter-layer distance (kept from the standalone model, ×3)
+function fitCanvas(){
+  DPR=window.devicePixelRatio||1;
+  const w=cv.parentElement.clientWidth-0;
+  const needGra=60+74+(4-1)*32.9*0.58+(3-1)*GGAP+84;
+  const sel=isMetalSel();
+  const needH=(state.selL==='graphite'||state.selR==='graphite')
+    ? Math.max(430, Math.min(760, Math.max(Math.round(w*0.55), needGra)))
+    : sel
+    ? Math.max(430, Math.min(620, Math.round(w*0.50)))
+    : Math.max(430, Math.min(560, Math.round(w*0.46)));
+  cv.style.height=needH+'px';
+  cv.width=Math.round(w*DPR); cv.height=Math.round(needH*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CW=w; CH=needH;
+}
+const isMetalSel=()=> state.selL==='na'||state.selL==='mg'||state.selR==='na'||state.selR==='mg';
+const isNetSel=()=> ['diamond','sio2','na','mg'].some(k=>state.selL===k||state.selR===k);
+window.addEventListener('resize',fitCanvas);
+
+// ================= drawing helpers =================
+function pill(c,txt,x,y,fg,bg,fs,align){
+  c.font='700 '+fs+'px Inter,Segoe UI,sans-serif';
+  const w=c.measureText(txt).width+16, h=fs+10;
+  const px=align==='center'?x-w/2:align==='right'?x-w:x;
+  c.fillStyle=bg; c.strokeStyle='rgba(10,69,93,.15)'; c.lineWidth=1;
+  c.beginPath(); c.roundRect(px,y-h/2,w,h,h/2); c.fill(); c.stroke();
+  c.fillStyle=fg; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(txt,px+w/2,y+0.5);
+}
+function hex2rgb(h){ const n=parseInt(h.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function shade(hex,f){
+  const c=hex2rgb(hex);
+  const mix=v=> f>0 ? v+(255-v)*f : v*(1+f);
+  return 'rgb('+(mix(c[0])|0)+','+(mix(c[1])|0)+','+(mix(c[2])|0)+')';
+}
+function mixHex(a,b,t){
+  const A=hex2rgb(a), B=hex2rgb(b);
+  return 'rgb('+((A[0]+(B[0]-A[0])*t)|0)+','+((A[1]+(B[1]-A[1])*t)|0)+','+((A[2]+(B[2]-A[2])*t)|0)+')';
+}
+function sphere(c,x,y,r,color,opt){
+  opt=opt||{};
+  const glow=opt.glow||0;
+  if(opt.shadow!==false){
+    c.save(); c.globalAlpha=0.20; c.fillStyle='#43556A';
+    c.beginPath(); c.ellipse(x,y+r*0.98,r*0.94,r*0.29,0,0,7); c.fill();
+    c.restore();
+  }
+  if(glow>0.02){
+    const gg=c.createRadialGradient(x,y,r*0.55,x,y,r*1.75);
+    gg.addColorStop(0,'rgba(255,126,44,'+(0.50*glow)+')');
+    gg.addColorStop(1,'rgba(255,90,0,0)');
+    c.fillStyle=gg; c.beginPath(); c.arc(x,y,r*1.75,0,7); c.fill();
+  }
+  const g=c.createRadialGradient(x-r*0.36,y-r*0.42,r*0.08,x,y,r*1.06);
+  g.addColorStop(0,shade(color,0.62));
+  g.addColorStop(0.45,shade(color,0.10));
+  g.addColorStop(1,shade(color,-0.45));
+  c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  c.strokeStyle='rgba(12,22,32,.22)'; c.lineWidth=Math.max(0.8,r*0.085);
+  c.beginPath(); c.arc(x,y,r-0.4,0,7); c.stroke();
+  if(opt.label){
+    c.font='800 '+Math.max(9,Math.round(r*1.02))+'px Inter,Segoe UI,sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillStyle='rgba(0,0,0,.26)'; c.fillText(opt.label,x+0.7,y+r*0.15+0.7);
+    c.fillStyle='#fff'; c.fillText(opt.label,x,y+r*0.15);
+  }
+  c.save();
+  c.globalAlpha=0.88; c.fillStyle='#fff';
+  c.beginPath(); c.ellipse(x-r*0.33,y-r*0.40,r*0.31,r*0.20,-0.6,0,7); c.fill();
+  c.globalAlpha=0.24;
+  c.beginPath(); c.ellipse(x+r*0.32,y+r*0.36,r*0.15,r*0.09,-0.6,0,7); c.fill();
+  c.restore();
+}
+function stick(c,x1,y1,x2,y2,w,color,alpha){
+  alpha=(alpha==null)?1:alpha;
+  if(alpha<0.03) return;
+  const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+  const nx=-dy/L, ny=dx/L;
+  c.save(); c.globalAlpha=alpha; c.lineCap='round';
+  c.strokeStyle=shade(color,-0.42); c.lineWidth=w;
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  c.strokeStyle=color; c.lineWidth=w*0.70;
+  c.beginPath(); c.moveTo(x1+nx*w*0.10,y1+ny*w*0.10); c.lineTo(x2+nx*w*0.10,y2+ny*w*0.10); c.stroke();
+  c.strokeStyle=shade(color,0.42); c.lineWidth=w*0.24;
+  c.beginPath(); c.moveTo(x1+nx*w*0.24,y1+ny*w*0.24); c.lineTo(x2+nx*w*0.24,y2+ny*w*0.24); c.stroke();
+  c.restore();
+}
+function tag(c,txt,ax,ay,lx,ly,col,align){
+  c.save();
+  c.strokeStyle=col; c.lineWidth=1.1; c.setLineDash([]);
+  c.beginPath(); c.moveTo(ax,ay); c.lineTo(lx,ly); c.stroke();
+  c.fillStyle='#fff'; c.beginPath(); c.arc(ax,ay,2.2,0,7); c.fill();
+  c.strokeStyle=col; c.beginPath(); c.arc(ax,ay,2.2,0,7); c.stroke();
+  c.font='700 11.5px Inter,Segoe UI,sans-serif'; c.textBaseline='middle';
+  c.textAlign=(align==='right')?'right':'left';
+  const tw=c.measureText(txt).width;
+  lx = (align==='right') ? Math.max(lx, tw+10) : Math.min(lx, CW-tw-8);
+  const tx=(align==='right')? lx-5 : lx+5;
+  c.fillStyle='rgba(255,255,255,.88)';
+  c.fillRect((align==='right'?tx-tw:tx)-3, ly-8.5, tw+6, 17);
+  c.fillStyle=col; c.fillText(txt,tx,ly);
+  c.restore();
+}
+function forceArrow(c,x,y,len,col){
+  if(Math.abs(len)<6) return;
+  const x2=x+len, dir=len>0?1:-1;
+  c.save();
+  c.strokeStyle=col; c.fillStyle=col; c.lineWidth=4.4; c.lineCap='round';
+  c.beginPath(); c.moveTo(x,y); c.lineTo(x2-dir*12,y); c.stroke();
+  c.beginPath(); c.moveTo(x2,y);
+  c.lineTo(x2-dir*15,y-8.5); c.lineTo(x2-dir*15,y+8.5);
+  c.closePath(); c.fill();
+  c.restore();
+}
+// 3-D → 2-D projector (rotation-invariant scale)
+// Metal panels use a 1:1 PIXEL projector, not the rMax-normalised one. Reason:
+// the lattice spacing and the cation radius must be in the same unit, and the
+// radius is a fixed pixel size (MET_ION_PX). A normalising projector would
+// rescale the spacing but leave the (now pixel-valued) radius alone, so the ions
+// would overlap or drift apart as the panel resized.
+function makeMetalProjector(nodes, cx, cy){
+  // centre on the BOUNDING BOX, not the centroid: staggered rows make the
+  // centroid sit half a lattice step off-centre
+  const xs=nodes.map(n=>n.x), ys=nodes.map(n=>n.y), zs=nodes.map(n=>n.z);
+  const mx=(Math.max(...xs)+Math.min(...xs))/2;
+  const my=(Math.max(...ys)+Math.min(...ys))/2;
+  const mz=(Math.max(...zs)+Math.min(...zs))/2;
+  return {
+    mx,my,mz,sc:1,cx,cy,
+    project(x,y,z,yaw,pitch){
+      const X0=x-mx, Y0=y-my, Z0=z-mz;
+      const cyw=Math.cos(yaw), syw=Math.sin(yaw), cyp=Math.cos(pitch), syp=Math.sin(pitch);
+      const X=X0*cyw - Z0*syw;
+      const Z=X0*syw + Z0*cyw;
+      const Y=Y0*cyp - Z*syp;
+      const Z2=Y0*syp + Z*cyp;
+      return { x: cx + X, y: cy + Y, z: Z2 };
+    }
+  };
+}
+function makeProjector(nodes, cx, cy, availW, availH){
+  let mx=0,my=0,mz=0; nodes.forEach(n=>{mx+=n.x;my+=n.y;mz+=n.z;}); mx/=nodes.length;my/=nodes.length;mz/=nodes.length;
+  let rMax=0; nodes.forEach(n=>{ rMax=Math.max(rMax, Math.hypot(n.x-mx,n.y-my,n.z-mz)); });
+  const sc=Math.min(availW, availH)/(rMax*2.25);
+  return {
+    mx,my,mz,sc,cx,cy,
+    project(x,y,z,yaw,pitch){
+      const X0=x-mx, Y0=y-my, Z0=z-mz;
+      const cyw=Math.cos(yaw), syw=Math.sin(yaw), cyp=Math.cos(pitch), syp=Math.sin(pitch);
+      const X=X0*cyw - Z0*syw;
+      const Z=X0*syw + Z0*cyw;
+      const Y=Y0*cyp - Z*syp;
+      const Z2=Y0*syp + Z*cyp;
+      return { x: cx + X*sc, y: cy + Y*sc, z: Z2*sc };
+    }
+  };
+}
+
+// ================= diamond-cubic topology (shared by Diamond & SiO₂) =================
+const COL_C='#EAB308', COL_SI='#1F2937', COL_O='#22D3EE';
+function diamondNodes(N){
+  const pts=new Map();
+  const add=(x,y,z)=>{ const k=x.toFixed(4)+','+y.toFixed(4)+','+z.toFixed(4); if(!pts.has(k)) pts.set(k,{x,y,z}); };
+  const fcc=[[0,0,0],[0,0.5,0.5],[0.5,0,0.5],[0.5,0.5,0]];
+  const fill=(ox,oy,oz)=>{ for(let i=0;i<N;i++)for(let j=0;j<N;j++)for(let k=0;k<N;k++) add(i+ox,j+oy,k+oz); };
+  fcc.forEach(o=>fill(o[0],o[1],o[2]));
+  fcc.forEach(o=>fill(o[0]+0.25,o[1]+0.25,o[2]+0.25));
+  return [...pts.values()];
+}
+function diamondEdges(nodes){
+  const d2=0.4330127, edges=[];
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, dz=nodes[i].z-nodes[j].z;
+    if(Math.abs(Math.sqrt(dx*dx+dy*dy+dz*dz)-d2)<1e-6) edges.push([i,j]);
+  }
+  return edges;
+}
+function prepNodes(nodes){
+  let mx=0,my=0,mz=0; nodes.forEach(n=>{mx+=n.x;my+=n.y;mz+=n.z;}); mx/=nodes.length;my/=nodes.length;mz/=nodes.length;
+  const dist=nodes.map(n=>Math.hypot(n.x-mx,n.y-my,n.z-mz));
+  const dmax=Math.max(...dist);
+  return nodes.map((n,i)=>({x:n.x,y:n.y,z:n.z,surf:dist[i]/dmax}));
+}
+function projectPanel(p, proj){
+  p.atoms=[];
+  p.bonds=[];
+  p._nodes.forEach((n,i)=>{
+    const s=proj.project(n.x,n.y,n.z, state.yaw, state.pitch);
+    p.atoms.push({ax:n.x, ay:n.y, az:n.z, hx:s.x, hy:s.y, z:s.z, x:s.x, y:s.y, vx:0, vy:0, surf:n.surf, r:7.6, col:p._col, type:p._type});
+  });
+  p._edges.forEach((e)=>{
+    p.bonds.push({a:e[0], b:e[1], th:0, broken:false, ph:Math.random()*6.28, depth:0});
+  });
+}
+function projectSilica(p, proj){
+  p.atoms=[]; p.bonds=[];
+  p._nodes.forEach((n,i)=>{
+    const s=proj.project(n.x,n.y,n.z, state.yaw, state.pitch);
+    p.atoms.push({ax:n.x, ay:n.y, az:n.z, hx:s.x, hy:s.y, z:s.z, x:s.x, y:s.y, vx:0, vy:0, esc:false, surf:n.surf, r:7.6, col:COL_SI, type:'Si'});
+  });
+  p._edges.forEach((e)=>{
+    const a=p.atoms[e[0]], b=p.atoms[e[1]];
+    const ox3=(a.ax+b.ax)/2, oy3=(a.ay+b.ay)/2, oz3=(a.az+b.az)/2;
+    const s=proj.project(ox3,oy3,oz3, state.yaw, state.pitch);
+    const oi=p.atoms.length;
+    p.atoms.push({ax:ox3, ay:oy3, az:oz3, hx:s.x, hy:s.y, z:s.z, x:s.x, y:s.y, vx:0, vy:0, esc:false, surf:Math.max(a.surf,b.surf), r:5.4, col:COL_O, type:'O'});
+    p.bonds.push({a:e[0], b:oi, th:0, broken:false, ph:Math.random()*6.28, depth:0});
+    p.bonds.push({a:oi, b:e[1], th:0, broken:false, ph:Math.random()*6.28, depth:0});
+  });
+}
+function reprojectFrame(){
+  ['diamond','sio2','na','mg'].forEach(k=>{
+    if(!isShown(k)) return;
+    const p=OBJ[k], proj=p._proj;
+    if(!proj) return;
+    let zMin=1e9, zMax=-1e9;
+    p.atoms.forEach(a=>{
+      const s=proj.project(a.ax,a.ay,a.az, state.yaw, state.pitch);
+      a.hx=s.x; a.hy=s.y; a.z=s.z;
+      zMin=Math.min(zMin,s.z); zMax=Math.max(zMax,s.z);
+    });
+    p._zMin=zMin; p._zMax=zMax;
+    p.bonds.forEach(b=>{ b.depth=(p.atoms[b.a].z + p.atoms[b.b].z)/2; });
+    if(p.key==='na'||p.key==='mg') projectElectrons(p);
+  });
+}
+// Thresholds are the temperature at which each cation's surface attraction is
+// FULLY overcome. The soften ramp is th-SOFT_WIN .. th, so the LAST threshold
+// must sit exactly at the melting point — otherwise the panel would show every
+// attraction broken while the readout still says "solid".
+const MET_SOFT_WIN=34;
+function assignMetalTh(p){
+  const floor=axis.Tmin+80;                                // never below the slider's cold end
+  const hi=p.mp;                                           // last break == melting point
+  const lo=Math.max(floor, p.mp-Math.max(34, 0.36*p.mp));  // first break
+  const span=Math.max(14, hi-lo);
+  const n=p.bonds.length;
+  // Normalise the weight to [0,1] across the whole lattice so the LAST bond
+  // reaches th == hi (== melting point) instead of stalling part-way.
+  const w=p.bonds.map((b,i)=>{
+    const surfK=(b.surf===undefined?0.5:b.surf);
+    return surfK*0.74 + (i/Math.max(1,n-1))*0.26;
+  });
+  const wMax=Math.max.apply(null,w), wMin=Math.min.apply(null,w);
+  const wSpan=Math.max(1e-6, wMax-wMin);
+  p.bonds.forEach((b,i)=>{
+    const u=(w[i]-wMin)/wSpan;                             // 0 = strongest, 1 = weakest
+    b.th = hi - u*span + (Math.random()-0.5)*2.2;
+    b.th = clamp(b.th, floor+MET_SOFT_WIN, hi);
+    b.soften=0; b.broken=false;
+  });
+  // guarantee at least one bond sits exactly on the melting point
+  p.bonds[Math.floor(Math.random()*n)].th = hi;
+  p._thLo=lo; p._thHi=hi;
+}
+function assignTh(p, mp, spread){
+  const surfB=b=>Math.max(p.atoms[b.a].surf, p.atoms[b.b].surf);
+  p.bonds.map((b,i)=>i).sort((x,y)=>surfB(p.bonds[y])-surfB(p.bonds[x]))
+    .forEach((bi,k)=>{
+      p.bonds[bi].th=(mp-spread)+(k/Math.max(1,p.bonds.length-1))*spread - Math.random()*3;
+    });
+}
+// shared 3-D network physics + drawing (Diamond & SiO₂)
+function stepNetwork(p, dt){
+  const mp=p.mp;
+  const heat=clamp((state.T-(mp-300))/300,0,1);
+  const jit=0.14+Math.pow(heat,1.6)*2.4;
+  p.bonds.forEach(b=>{ b.broken = state.T >= b.th; });
+  const reg=p._reg; if(!reg) return;
+  const molten = state.T >= mp;
+  p.atoms.forEach((a)=>{
+    if(molten){
+      a.vy += 0.12;
+      a.vx = (a.vx + (Math.random()-0.5)*0.4)*0.99;
+      a.x += a.vx; a.y += a.vy;
+      if(a.y > reg.y1-7){ a.y = reg.y1-7; a.vy *= -0.25; a.vx *= 0.88; }
+      a.x = clamp(a.x, reg.x0+7, reg.x1-7);
+      return;
+    }
+    a.vx=(a.vx+(a.hx-a.x)*0.13)*0.84+(Math.random()-0.5)*jit;
+    a.vy=(a.vy+(a.hy-a.y)*0.13)*0.84+(Math.random()-0.5)*jit;
+    a.x+=a.vx; a.y+=a.vy;
+  });
+}
+function drawNetworkPanel(p, reg){
+  const bondHot=smooth(p.mp-320,p.mp,state.T);
+  const fl=0.5+0.5*Math.sin(state.t*8);
+  const order=[...p.bonds.keys()].sort((x,y)=>p.bonds[x].depth-p.bonds[y].depth);
+  for(const bi of order){
+    const b=p.bonds[bi], a=p.atoms[b.a], q=p.atoms[b.b];
+    if(b.broken) continue;
+    const far=clamp((b.depth-(p._zMin||0))/((p._zMax||1)-(p._zMin||0)),0,1);
+    const hotK=bondHot*(0.30+0.70*(fl*0.5+0.5));
+    stick(ctx,a.x,a.y,q.x,q.y,3.2,hotK>0.04?mixHex(p._bondCol,'#FF5A2B',hotK):p._bondCol,0.55+0.45*(1-far));
+  }
+  const atoms=[...p.atoms].sort((x,y)=>x.z-y.z);
+  const molten = state.T >= p.mp;
+  const glow=clamp((state.T-p.glow0)/(p.mp-p.glow0),0,0.85);
+  for(const a of atoms){
+    if(molten){ sphere(ctx,a.x,a.y,a.r*0.86,a.col,{glow:0.85,shadow:false}); }
+    else{ sphere(ctx,a.x,a.y,a.r,a.col,{glow:glow*clamp(a.surf,0.35,1)}); }
+  }
+  const intact=[...p.bonds].filter(b=>!b.broken).sort((x,y)=>y.depth-x.depth)[0];
+  if(intact){
+    const a=p.atoms[intact.a], b=p.atoms[intact.b];
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    tag(ctx,p._tagTxt,mx,my,Math.min(reg.x1-6,mx+52),my-30,p._tagCol,'left');
+  }
+  // the same push applied to a rigid network: arrow, but nothing yields
+  if(state.forceMode && Math.abs(state.fx)>6 && (otherOf(p.key)==='graphite')){
+    const fx=state.fx*1.2;
+    const ax=reg.x0+(reg.x1-reg.x0)/2, ay=reg.y0+34;
+    forceArrow(ctx,ax-fx/2,ay,fx,'#7C5CBF');
+  }
+}
+function networkStatus(p){
+  const left=p.bonds.reduce((s,b)=>s+(b.broken?0:1),0);
+  if(left===p.bonds.length) return ['SOLID — bonds intact','#0A455D',0];
+  if(left>0) return [(p.key==='sio2'?'MELTING ▸':'BONDS BREAKING ▸'),'#E25822',p.bonds.length-left];
+  return [p.key==='sio2'?'LIQUID':'LIQUID','#B91C1C',p.bonds.length];
+}
+
+// ================= METAL (giant metallic structure) =================
+// Metallic bonding is NON-DIRECTIONAL: there are no pairwise bonds to draw.
+// So this panel gets its own pathway — a lattice of cations that vibrate about
+// fixed points in a sea of delocalised electrons, instead of a bond network.
+const MET_ION='#3E7CB1', MET_E='#EF9F27', MET_BOND='#0F766E';
+function metalLattice(cols,rows,dx,dy){
+  const pts=[];
+  for(let r=0;r<rows;r++)
+    for(let c=0;c<cols;c++)
+      pts.push({x:c*dx+(r%2?dx/2:0), y:r*dy, z:0, c, r});
+  // The projector centres on the CENTROID, not the bounding box. With staggered
+  // rows the centroid sits half a step left of the bbox centre, which pushed the
+  // whole lattice off-centre. Centre on the bounding box instead.
+  const xs=pts.map(p=>p.x), ys=pts.map(p=>p.y);
+  const bx=(Math.max(...xs)+Math.min(...xs))/2, by=(Math.max(...ys)+Math.min(...ys))/2;
+  pts.forEach(p=>{ p.x-=bx; p.y-=by; });
+  return prepNodes(pts);           // -> {x,y,z,surf}
+}
+function projectMetal(p, proj){
+  p.atoms=[]; p.electrons=[];
+  p._nodes.forEach(n=>{
+    const s=proj.project(n.x,n.y,n.z, state.yaw, state.pitch);
+    p.atoms.push({ax:n.x, ay:n.y, az:n.z, hx:s.x, hy:s.y, z:s.z, x:s.x, y:s.y,
+                  vx:0, vy:0, surf:n.surf, r:p.ionR, col:p.ionCol, type:p.ionLbl});
+  });
+  // Assign each cation EXACTLY zVal electrons. The pupil can then count them:
+  // Na has 1 per ion, Mg has 2 — the 1 : 2 ratio is the whole point of the panel.
+  p.atoms.forEach((a,ai)=>{
+    for(let z=0;z<p.zVal;z++){
+      const th=(z/p.zVal)*Math.PI*2 + ai*0.7;
+      const ph=Math.sin(th*2.3+ai), az=Math.sin(th*1.7+ai*0.9);
+      p.electrons.push({host:ai, z,
+        th0:th, ph, az,
+        sp:0.62+Math.random()*0.5, sp2:0.55+Math.random()*0.45, sp3:0.7+Math.random()*0.6,
+        x:a.hx, y:a.hy, z:a.z, surf:a.surf});
+    }
+  });
+}
+function projectElectrons(p){
+  const proj=p._proj; if(!proj||!p.electrons) return;
+  const molten=!!p.molten;
+  p.electrons.forEach(e=>{
+    const h=p.atoms[e.host]||p.atoms[0];
+    const r=p.orbR*(1+e.surf*0.20);
+    if(molten){
+      // in the liquid the electron sea must FOLLOW the cations, not stay on the
+      // old lattice sites — so orbit the ion's CURRENT screen position
+      const ox=Math.sin(state.t*e.sp+e.th0)*r, oy=Math.cos(state.t*e.sp2+e.th0*1.3)*r;
+      e.x=h.x+ox; e.y=h.y+oy; e.z=h.z;
+    }else{
+      const ox=Math.sin(state.t*e.sp+e.th0), oy=Math.cos(state.t*e.sp2+e.th0*1.3),
+            oz=Math.sin(state.t*e.sp3+e.th0*0.7);
+      const s=proj.project(h.ax+ox*r, h.ay+oy*r, h.az+oz*r, state.yaw, state.pitch);
+      e.x=s.x; e.y=s.y; e.z=s.z;
+    }
+  });
+}
+// continuous weakening — NOT the boolean snap used by the covalent networks,
+// because a 98 °C metal would otherwise flip its whole surface in one frame
+function stepMetal(p, dt){
+  const molten = state.T>=p.mp;
+  p.bonds.forEach(b=>{
+    b.soften = clamp(smooth(b.th-MET_SOFT_WIN, b.th, state.T), 0, 1);
+    b.broken = b.soften>=0.994;
+  });
+  const _thOk=p.bonds.every(b=>isFinite(b.th));
+  if(!_thOk && !p._thWarned){ p._thWarned=true; console.warn('metal thresholds not finite', p.key); }
+  const reg=p._reg; if(!reg) return;
+  const jit=0.10+Math.pow(clamp((state.T+80)/(p.mp+80),0,1),1.5)*2.6;
+  const heatK = smooth(p.mp-300, p.mp, state.T);
+  p.molten = molten;
+  const settle=(reg.x1-reg.x0-40);
+  if(molten){
+    // Liquid metal: cations are free to slide past each other but the sea of
+    // electrons still holds the whole thing together — so they wander within the
+    // container instead of flying apart (unlike CO2 molecules) or settling under
+    // gravity (which is not what melting looks like).
+    const pad=6;
+    p.atoms.forEach(a=>{
+      if(a._vx===undefined){ a._vx=0; a._vy=0; }
+      a._vx = (a._vx+(Math.random()-0.5)*0.55)*0.985;
+      a._vy = (a._vy+(Math.random()-0.5)*0.55)*0.985;
+      a._vx = clamp(a._vx,-1.5,1.5);
+      a._vy = clamp(a._vy,-1.5,1.5);
+      let nx=a.x+a._vx, ny=a.y+a._vy;
+      if(nx < reg.x0+a.r+pad){ nx=reg.x0+a.r+pad; a._vx=Math.abs(a._vx)*0.7; }
+      if(nx > reg.x1-a.r-pad){ nx=reg.x1-a.r-pad; a._vx=-Math.abs(a._vx)*0.7; }
+      if(ny < reg.y0+a.r+pad){ ny=reg.y0+a.r+pad; a._vy=Math.abs(a._vy)*0.7; }
+      if(ny > reg.y1-a.r-pad){ ny=reg.y1-a.r-pad; a._vy=-Math.abs(a._vy)*0.7; }
+      a.x=nx; a.y=ny;
+      a.sliding = Math.abs(a._vx)>0.45;
+    });
+    // short-range repulsion keeps a sensible liquid density (ions stay adjacent
+    // but are no longer locked to fixed lattice points)
+    const minD=p.ionR*2.15;
+    for(let i=0;i<p.atoms.length;i++){
+      for(let j=i+1;j<p.atoms.length;j++){
+        const A=p.atoms[i], B=p.atoms[j];
+        let dx=B.x-A.x, dy=B.y-A.y, d=Math.hypot(dx,dy)||0.001;
+        if(d<minD){
+          const push=(minD-d)/d*0.24;
+          A.x-=dx*push; A.y-=dy*push;
+          B.x+=dx*push; B.y+=dy*push;
+          A._vx-=dx*push*0.10; A._vy-=dy*push*0.10;
+          B._vx+=dx*push*0.10; B._vy+=dy*push*0.10;
+        }
+      }
+    }
+  }else{
+    p.atoms.forEach(a=>{
+      a._vx=0; a._vy=0; a.sliding=false;
+      a.vx=(a.vx+(a.hx-a.x)*0.14)*0.86+(Math.random()-0.5)*jit;
+      a.vy=(a.vy+(a.hy-a.y)*0.14)*0.86+(Math.random()-0.5)*jit;
+      a.x+=a.vx; a.y+=a.vy;
+    });
+  }
+  if(p.key==='mg' && !molten){
+    p.atoms.forEach(a=>{
+      const w=clamp((a.vx*a.vx+a.vy*a.vy)/26,0,1);
+      a.tight = 0.35+0.65*smooth(0.15,1.0,w);
+    });
+  }else{
+    p.atoms.forEach(a=>{ a.tight=1; });
+  }
+  projectElectrons(p);
+  p._heatK=heatK;
+}
+function drawMetalPanel(p, reg){
+  const molten = p.molten;
+  const heatK = p._heatK||0;
+  const fl=0.5+0.5*Math.sin(state.t*7);
+  // (1) electron-sea background — survives melting (this is why liquid metals still conduct)
+  {
+    const a=0.05+0.05*heatK;
+    ctx.save();
+    const g=ctx.createLinearGradient(0,reg.y0,0,reg.y1);
+    g.addColorStop(0,'rgba(239,159,39,'+a+')');
+    g.addColorStop(1,'rgba(239,159,39,'+a*0.35+')');
+    ctx.fillStyle=g;
+    ctx.beginPath(); ctx.roundRect(reg.x0+2,reg.y0+4,reg.x1-reg.x0-4,reg.y1-reg.y0-8,12); ctx.fill();
+    ctx.restore();
+  }
+  // (2) electrostatic-attraction spokes (short, radial — metallic bonding is non-directional)
+  p.atoms.forEach((a,ai)=>{
+    const bond=p.bonds[ai];
+    const sf=bond?bond.soften:0;
+    const n=Math.min(4, 1+(p.zVal||1));
+    for(let k=0;k<n;k++){
+      const ang=-Math.PI/2 + k*(Math.PI*2/n) + state.t*0.5;
+      const r0=a.r+3, r1=Math.min(a.r+13, r0+11);
+      const bright=(a.tight===undefined?1:a.tight)*(1-clamp(a.surf,0,1)*0.45);
+      const alive=(1-sf);
+      if(alive>0.06){
+        ctx.save();
+        ctx.globalAlpha=(molten?0.22:0.72)*bright*alive*(0.6+0.4*fl);
+        ctx.strokeStyle=MET_BOND; ctx.lineWidth=1.5; ctx.lineCap='round';
+        ctx.beginPath();
+        ctx.moveTo(a.x+Math.cos(ang)*r0, a.y+Math.sin(ang)*r0);
+        ctx.lineTo(a.x+Math.cos(ang)*r1, a.y+Math.sin(ang)*r1);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+    // a cation that has broken free gets one short red stub — the visual cue that
+    // THIS particular ion no longer holds its neighbours in place
+    if(sf>0.35 && !molten){
+      ctx.save();
+      ctx.globalAlpha=0.30+0.70*sf;
+      ctx.strokeStyle='#DC2626'; ctx.lineWidth=2.0; ctx.lineCap='round';
+      const ang=-Math.PI/2+state.t*0.5;
+      ctx.beginPath();
+      ctx.moveTo(a.x+Math.cos(ang)*(a.r+4), a.y+Math.sin(ang)*(a.r+4));
+      ctx.lineTo(a.x+Math.cos(ang)*(a.r+9), a.y+Math.sin(ang)*(a.r+9));
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+  // (3) delocalised electrons
+  const eSorted=[...p.electrons].sort((x,y)=>x.z-y.z);
+  eSorted.forEach(e=>{
+    const far=clamp((e.z-(p._zMin||0))/((p._zMax||1)-(p._zMin||0)),0,1);
+    const rr=4.2-0.9*far;
+    ctx.save();
+    ctx.globalAlpha=0.30+0.30*(1-far);
+    const gg=ctx.createRadialGradient(e.x,e.y,0.4,e.x,e.y,rr*2.6);
+    gg.addColorStop(0,'rgba(239,159,39,.75)');
+    gg.addColorStop(1,'rgba(239,159,39,0)');
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(e.x,e.y,rr*2.6,0,7); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle=MET_E;
+    ctx.beginPath(); ctx.arc(e.x,e.y,rr,0,7); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.9)';
+    ctx.beginPath(); ctx.arc(e.x-rr*0.3,e.y-rr*0.32,rr*0.32,0,7); ctx.fill();
+  });
+  // (4) cations — ordered lattice, vibrating about fixed points
+  const aSorted=[...p.atoms].sort((x,y)=>x.z-y.z);
+  const glow=clamp((state.T-(p.mp-260))/(p.mp+40-(p.mp-260)),0,0.8);
+  aSorted.forEach(a=>{
+    if(molten) sphere(ctx,a.x,a.y,a.r*0.92,a.col,{glow:0.7,shadow:false});
+    else       sphere(ctx,a.x,a.y,a.r,a.col,{glow:glow*clamp(1-a.surf*0.5,0.3,1)});
+    const fs=Math.max(10,Math.round(a.r*0.88));
+    ctx.font='800 '+fs+'px Inter,Segoe UI,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(0,0,0,.30)'; ctx.fillText(p.ionLbl,a.x+0.7,a.y+0.7);
+    ctx.fillStyle='#fff'; ctx.fillText(p.ionLbl,a.x,a.y);
+  });
+  // (5) annotations — callouts sit just outside the cation cloud's bounding box
+  // rather than at fixed panel-edge coordinates, so the leader lines stay short
+  // regardless of how large the lattice ends up being drawn.
+  const nearest=(tx,ty)=>{
+    let best=null, bd=1e9;
+    p.atoms.forEach(a=>{ const d=Math.hypot(a.x-tx,a.y-ty); if(d<bd){ bd=d; best=a; } });
+    return best;
+  };
+  let bx0=1e9,by0=1e9,bx1=-1e9,by1=-1e9;
+  p.atoms.forEach(a=>{ bx0=Math.min(bx0,a.x-a.r); by0=Math.min(by0,a.y-a.r);
+                       bx1=Math.max(bx1,a.x+a.r); by1=Math.max(by1,a.y+a.r); });
+  const pad=10;
+  if(!molten){
+    const lx=clamp(bx0-pad, reg.x0+6, reg.x1-190);
+    const ly=clamp(by0+14, reg.y0+96, reg.y1-8);
+    const aTop=nearest(bx0+6, by0+14);
+    if(aTop){
+      tag(ctx, p.zVal>1 ? 'Mg²⁺ has a bigger charge and is SMALLER — stronger attraction'
+                        : 'Na⁺ has a smaller charge and is BIGGER — weaker attraction',
+          aTop.x,aTop.y, lx, ly, p.zVal>1?MET_ION:'#B45309','left');
+    }
+  }
+  {
+    const lx=clamp(bx0-pad, reg.x0+6, reg.x1-190);
+    const ly=clamp(by1+6, reg.y0+8, reg.y1-30);
+    const hostAtom=nearest(bx0+6, by1+6);
+    if(hostAtom){
+      const hi=p.atoms.indexOf(hostAtom);
+      const eShow=p.electrons.find(e=>e.host===hi);
+      if(eShow){
+        tag(ctx, p.zVal>1 ? 'each Mg gives 2 e⁻ → denser, stronger' : 'each Na gives only 1 e⁻',
+            eShow.x,eShow.y, lx, ly, '#B45309','left');
+      }
+    }
+  }
+  if(molten){
+    const sl=p.atoms.filter(a=>a.sliding).length;
+    if(sl>0){
+      const mAtom=nearest((reg.x0+reg.x1)/2, reg.y0+190);
+      if(mAtom){
+        tag(ctx,'cations slide past each other — the electron sea stays',
+            mAtom.x,mAtom.y, reg.x0+16, reg.y0+215, MET_BOND,'left');
+      }
+    }
+  }
+}
+function metalCardState(p){
+  const n=p.bonds.length;
+  const broken=p.bonds.reduce((s,b)=>s+(b.broken?1:0),0);
+  const peak=p.bonds.reduce((m,b)=>Math.max(m,b.soften||0),0);
+  if(p.molten) return [p.zVal>1
+      ? 'LIQUID — layers of Mg²⁺ slide, the 2e⁻ sea is still there'
+      : 'LIQUID — layers of Na⁺ slide, the 1e⁻ sea is still there','#B91C1C'];
+  if(broken===0 && peak<0.30) return ['SOLID — cations vibrate about fixed lattice points','#0A455D'];
+  if(broken===0)             return ['SOLID but VIBRATING HARDER — the attraction is being stretched','#E25822'];
+  return ['PHASE CHANGE — the attractions on the surface are being overcome ('+broken+' of '+n+')','#E25822'];
+}
+function metalStatus(p){
+  const broken=p.bonds.reduce((s,b)=>s+(b.broken?1:0),0);
+  const peak=p.bonds.reduce((m,b)=>Math.max(m,b.soften||0),0);
+  if(p.molten) return [p.zVal>1?'LIQUID Mg':'LIQUID Na','#B91C1C',p.bonds.length];
+  if(broken>0) return ['BREAKING FREE ▸','#E25822',broken];
+  if(peak>=0.30) return ['VIBRATING HARDER ▸','#E25822',0];
+  return ['SOLID — lattice holding','#0A455D',0];
+}
+
+// ================= SODIUM & MAGNESIUM =================
+// Na: 1 e⁻ per atom, Na⁺ charge +1, larger ion  ->  98 °C
+// Mg: 2 e⁻ per atom, Mg²⁺ charge +2, smaller ion -> 650 °C
+// The lattice is a 2-D slice of the giant metallic structure; electron count is
+// scaled down from the real 10^23 but the RATIO 1 : 2 per cation is exact.
+// Na: 1 e⁻ per atom, Na⁺ charge +1, LARGER ion  (102 pm)  ->  98 °C
+// Mg: 2 e⁻ per atom, Mg²⁺ charge +2, SMALLER ion (72 pm)  -> 650 °C
+// The lattice is a 2-D slice of the giant metallic structure.
+// IMPORTANT: cation radius is expressed in SCREEN PIXELS, not world units. Left in
+// world units it would be multiplied by the projector's rMax-derived scale and
+// would silently change size whenever the panel resized. ionScale is the px
+// multiplier; ionR is the resulting px radius.
+// GRA_ATOM_PX lives in the GRAPHITE section further down, so it cannot be read
+// here (temporal dead zone) — the size relation is asserted after that declaration.
+const MET_ION_SCALE = 2;                  // cations drawn at 2x a graphite C atom
+const MET_ION_PX = 7.6 * MET_ION_SCALE;   // = 15.2 px
+function buildMetal(cfg){
+  const p={key:cfg.key, mp:cfg.mp, glow0:cfg.mp-360,
+           zVal:cfg.zVal, ionLbl:cfg.ionLbl, ionCol:cfg.ionCol,
+           ionR:MET_ION_PX*cfg.ionScale, orbR:cfg.orbR,
+           atoms:[], bonds:[], electrons:[], molten:false};
+  p._nodes=metalLattice(cfg.cols,cfg.rows,cfg.dx,cfg.dy);
+  p._edges=[];
+  p._nodes.forEach((n,i)=>{
+    p.bonds.push({a:i, b:i, surf:n.surf, th:0,
+                  broken:false, soften:0, depth:0, ph:Math.random()*6.28});
+  });
+  p.step=dt=>stepMetal(p,dt);
+  p.draw=reg=>drawMetalPanel(p,reg);
+  p.status=()=>metalStatus(p);
+  p.cardState=()=>metalCardState(p);
+  p.rebuild=()=>{ p.atoms.forEach(a=>{ a._vx=0; a._vy=0; a.sliding=false; }); };
+  return p;
+}
+// Cations are drawn at MET_ION_PX = 2x a graphite C atom (the ions are the subject
+// of this panel, so they carry more visual weight than the C atoms next door).
+// The physical 102 pm (Na⁺) : 72 pm (Mg²⁺) ratio rides on ionScale but COMPRESSED:
+// the raw 0.706 would make Mg²⁺ 29 % smaller and read as a different particle.
+// 0.98 keeps the ordering (Mg²⁺ is still the smaller ion) with both within ~2 %.
+// The charge badge and the 1e- / 2e- count carry that difference unambiguously;
+// 2 px of radius does not need to.
+// Lattice spacing is in PIXELS (the metal projector is 1:1), so dx/dy must be
+// re-tuned whenever ionR changes. At 2x the ions are ~30 px across and the old
+// 47/57 pitch left only a 9 px surface gap. The panel box is 540x460 with a 322 px
+// usable band, which takes the wider pitch below with ~130 px spare each side.
+// orbR must grow with ionR too, or the delocalised electrons end up INSIDE their
+// own cation. Target: the orbit clears its own ion by ~10 px and still cannot
+// reach a neighbour's ion (nearest neighbour is dx, so need
+// orbR < dx - ionR - electronDotRadius, roughly dx - 19).
+const NA = buildMetal({key:'na', mp:98, zVal:1, ionLbl:'Na⁺', ionCol:'#5FC6D8', ionScale:1.00,
+                       orbR:25, cols:5, rows:4, dx:58, dy:72});
+const MG = buildMetal({key:'mg', mp:650, zVal:2, ionLbl:'2+', ionCol:'#3B4E9B', ionScale:0.98,
+                       orbR:21, cols:6, rows:4, dx:54, dy:72});
+// NOTE: MET_ION_PX must equal GRA_ATOM_PX (declared below in the GRAPHITE
+// section), and the contract is re-asserted right after that declaration.
+NA.hint=()=>{
+  if(state.T>=40 && state.T<NA.mp+90){
+    const living=NA.bonds.reduce((s,b)=>s+(b.broken?0:1),0);
+    return living>0
+      ? ['the outermost Na⁺ are breaking free — only 98 °C, barely above a hot bath','#B45309','rgba(255,238,214,.94)']
+      : ['all attractions overcome → molten sodium, but the electron sea is still there','#B45309','rgba(255,238,214,.94)'];
+  }
+  return null;
+};
+MG.hint=()=>{
+  if(state.T>=560 && state.T<MG.mp+90){
+    const living=MG.bonds.reduce((s,b)=>s+(b.broken?0:1),0);
+    return living>0
+      ? ['Mg²⁺ has 2 e⁻, a +2 charge AND a smaller radius — these attractions hold to 650 °C','#185FA5','rgba(224,240,252,.94)']
+      : ['molten magnesium — the same thing needed 6.6× more heat than sodium','#185FA5','rgba(224,240,252,.94)'];
+  }
+  return null;
+};
+
+// ================= DIAMOND =================
+const DIA={key:'diamond', mp:3550, glow0:620, _col:COL_C, _type:'C', _bondCol:'#1F2937',
+           _tagTxt:'strong C–C covalent bonds', _tagCol:'#2C313A', atoms:[], bonds:[]};
+(function buildDiamond(){
+  const nodes=diamondNodes(2), edges=diamondEdges(nodes);
+  DIA._nodes=prepNodes(nodes);
+  DIA._edges=edges.slice();
+})();
+DIA.step=dt=>stepNetwork(DIA,dt);
+DIA.draw=reg=>drawNetworkPanel(DIA,reg);
+DIA.status=()=>networkStatus(DIA);
+DIA.hint=()=>{
+  if(state.T>=DIA.mp-430 && state.T<DIA.mp+140){
+    const left=DIA.bonds.reduce((s,b)=>s+(b.broken?0:1),0);
+    return left>0 ? ['strong C–C bonds snapping one by one — 3550 °C!','#B91C1C','rgba(255,224,214,.92)']
+                  : ['the C–C network has collapsed into liquid','#B91C1C','rgba(255,224,214,.92)'];
+  }
+  return null;
+};
+DIA.cardState=()=>{
+  const left=DIA.bonds.reduce((x,b)=>x+(b.broken?0:1),0);
+  if(left===DIA.bonds.length) return ['SOLID — covalent bonds fully intact (vibrating harder)','#0A455D'];
+  if(left>0) return ['PHASE CHANGE — the strong C–C bonds are finally breaking','#E25822'];
+  return ['MELTED — the C–C network has collapsed into liquid','#B91C1C'];
+};
+
+// ================= SiO₂ =================
+const SIL={key:'sio2', mp:1710, glow0:600, atoms:[], bonds:[]};
+(function buildSilica(){
+  const nodes=diamondNodes(2), edges=diamondEdges(nodes);
+  SIL._nodes=prepNodes(nodes);
+  SIL._edges=edges.slice();
+})();
+SIL.step=dt=>stepNetwork(SIL,dt);
+SIL.draw=reg=>drawNetworkPanel(SIL,reg);
+SIL.status=()=>networkStatus(SIL);
+SIL._tagTxt='Si–O covalent bond (O bridges two Si)';
+SIL._tagCol='#0E7490';
+SIL._bondCol='#1F2937';
+SIL.hint=()=>{
+  if(state.T>=SIL.mp-320 && state.T<SIL.mp+120){
+    const left=SIL.bonds.reduce((s,b)=>s+(b.broken?0:1),0);
+    return left>0 ? ['Si–O bonds snapping one by one → the network MELTS at 1710 °C','#B91C1C','rgba(255,224,214,.92)']
+                  : ['the Si–O network has collapsed into liquid','#B91C1C','rgba(255,224,214,.92)'];
+  }
+  return null;
+};
+SIL.cardState=()=>{
+  const left=SIL.bonds.reduce((x,b)=>x+(b.broken?0:1),0);
+  if(left===SIL.bonds.length) return ['SOLID — covalent bonds fully intact (vibrating harder)','#0A455D'];
+  if(left>0) return ['MELTING — the Si–O network is breaking apart','#E25822'];
+  return ['LIQUID — the giant network has collapsed','#B91C1C'];
+};
+
+// ================= GRAPHITE =================
+// GRA_ATOM_PX is the canonical on-screen radius of one graphite C atom. It is
+// deliberately a screen-pixel literal (graphite never goes through the 3-D
+// projector) and the metal panel reuses it, so Na+ / Mg2+ are provably the same
+// size as a C atom rather than merely close to it.
+const GRA_ATOM_PX   = 7.6;   // bound C atom in the sheet
+const GRA_GHOST_PX  = 6.4;   // edge atom drawn as a ghost (recedes)
+// Contract check: a cation is drawn at MET_ION_SCALE x a graphite C atom. This line
+// sits after both declarations, so neither read is in a temporal dead zone -- which
+// is exactly why it cannot live next to MET_ION_PX.
+if(Math.abs(MET_ION_PX - GRA_ATOM_PX*MET_ION_SCALE) > 0.01)
+  console.warn('metal ion px ('+MET_ION_PX+') != '+MET_ION_SCALE+'x graphite C atom ('+GRA_ATOM_PX+')');
+const GRA={key:'graphite', mp:3650, glow0:620, atoms:[], bonds:[], links:[], off:[0,0,0]};
+const GX=38, GY=32.9, GCOLS=9, GROWS=4, GLAYERS=3;
+const isGhost=a=>(a.c===0 || a.c===GCOLS-1);
+const gi=(L,r,c)=>L*GROWS*GCOLS + r*GCOLS + c;
+(function buildGraphite(){
+  for(let L=0;L<GLAYERS;L++)
+    for(let r=0;r<GROWS;r++)
+      for(let c=0;c<GCOLS;c++)
+        GRA.atoms.push({L,r,c, x:0,y:0, vx:0,vy:0, esc:false, gone:false,
+                        ePh1:Math.random()*6.28, ePh2:Math.random()*6.28,
+                        eW1:0.9+Math.random()*0.8, eW2:0.8+Math.random()*0.8});
+  for(let L=0;L<GLAYERS;L++){
+    for(let r=0;r<GROWS;r++){
+      for(let c=0;c<GCOLS;c++){
+        if(c<GCOLS-1) GRA.bonds.push({a:gi(L,r,c), b:gi(L,r,c+1), th:GRA.mp-40+Math.random()*300, ph:Math.random()*6.28});
+        if(r%2===0 && r<GROWS-1) GRA.bonds.push({a:gi(L,r,c), b:gi(L,r+1,c), th:GRA.mp-40+Math.random()*300, ph:Math.random()*6.28});
+      }
+    }
+  }
+  for(let L=0;L<GLAYERS-1;L++){
+    for(let c=1;c<GCOLS-1;c++){
+      GRA.links.push({L, a:gi(L,GROWS-1,c), b:gi(L+1,0,c), broken:false, flash:0, ph:Math.random()*6.28});
+    }
+  }
+})();
+function gHome(a){
+  const reg=GRA._reg;
+  const sheetW=(GCOLS-1)*GX + GX/2;
+  const x0=reg.x0 + ((reg.x1-reg.x0)-sheetW)/2;
+  const y0=reg.y1-74;
+  const squash=0.58, gap=GGAP, shear=0.05;
+  const rx=a.c*GX + (a.r%2? GX/2:0);
+  return { x: x0 + rx + shear*rx*a.L + a.L*10 + GRA.off[a.L],
+           y: y0 - a.r*GY*squash - a.L*gap };
+}
+function stepGraphite(dt){
+  const reg=GRA._reg; if(!reg) return;
+  const hNorm=clamp((state.T-(-100))/(GRA.mp-(-100)),0,1);
+  const gJit=0.18+Math.pow(hNorm,2.4)*2.6;
+  const escCount=GRA.atoms.reduce((s,p)=>s+(p.esc?1:0),0);
+  const escP=smooth(GRA.mp-20,GRA.mp+180,state.T)*0.0055;
+  GRA.atoms.forEach(p=>{
+    if(p.esc){
+      if(state.T<GRA.mp-100){ p.esc=false; p.gone=false; p.vx=0; p.vy=0; }
+      p.vy-=0.09; p.vx+=(Math.random()-0.5)*0.35;
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.y < reg.y0-14) p.gone=true;
+      return;
+    }
+    const hm=gHome(p);
+    p.vx=(p.vx+(hm.x-p.x)*0.13)*0.84+(Math.random()-0.5)*gJit;
+    p.vy=(p.vy+(hm.y-p.y)*0.13)*0.84+(Math.random()-0.5)*gJit;
+    p.x+=p.vx; p.y+=p.vy;
+    if(state.T>GRA.mp-10 && escCount<12 && p.L===GLAYERS-1 && Math.random()<escP){
+      p.esc=true; p.vx=(Math.random()-0.5)*1.4; p.vy=-0.9-Math.random();
+    }
+  });
+}
+const SHEAR_AT=18;
+function stepForce(dt){
+  const reg=GRA._reg; if(!reg) return;
+  const maxOff=Math.min(44, ((reg.x1-reg.x0)-((GCOLS-1)*GX+GX/2))/2 - 4);
+  if(state.forceMode && Math.abs(state.fx)>4){
+    for(let L=1;L<GLAYERS;L++){
+      GRA.off[L] = clamp(GRA.off[L] + state.fx*(L/(GLAYERS-1))*dt*2.6, -maxOff, maxOff);
+    }
+  }
+  GRA.links.forEach(l=>{
+    if(!l.broken && Math.abs(GRA.off[l.L+1]-GRA.off[l.L])>SHEAR_AT){ l.broken=true; l.flash=0.5; }
+    if(l.flash>0) l.flash=Math.max(0,l.flash-dt*1.9);
+  });
+}
+function drawGraphitePanel(reg){
+  const bondHot=smooth(GRA.mp-320,GRA.mp,state.T);
+  // (1) weak inter-layer forces
+  for(const l of GRA.links){
+    const a=GRA.atoms[l.a], b=GRA.atoms[l.b];
+    if(a.gone||b.gone) continue;
+    if(l.broken){
+      if(l.flash>0){
+        const mx=(a.x+b.x)/2, my=(a.y+b.y)/2, f=l.flash/0.5;
+        ctx.save();
+        ctx.globalAlpha=f*0.9;
+        ctx.strokeStyle='#FFB020'; ctx.lineWidth=2.2;
+        ctx.beginPath(); ctx.arc(mx,my,4+(1-f)*15,0,7); ctx.stroke();
+        ctx.restore();
+      }
+      continue;
+    }
+    const rel=GRA.off[l.L+1]-GRA.off[l.L];
+    const strain=clamp(Math.abs(rel)/SHEAR_AT,0,1);
+    ctx.save();
+    ctx.setLineDash([4,5]);
+    ctx.lineDashOffset=-state.t*(2+9*strain);
+    ctx.strokeStyle='rgba(146,168,184,'+(0.85*(1-0.5*strain))+')';
+    ctx.lineWidth=1.3+1.3*strain;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y-8); ctx.lineTo(b.x,b.y+8); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.setLineDash([]);
+  // (2) covalent bonds inside each sheet
+  GRA.bonds.forEach(bn=>{
+    const a=GRA.atoms[bn.a], b=GRA.atoms[bn.b];
+    if(a.gone||b.gone||a.esc||b.esc) return;
+    const brk=smooth(bn.th-110,bn.th,state.T);
+    let alpha=1-0.95*brk;
+    if(isGhost(a)||isGhost(b)) alpha*=0.32;
+    if(alpha<0.06) return;
+    const fl=0.5+0.5*Math.sin(state.t*8+bn.ph);
+    const hotK=bondHot*(0.30+0.70*fl);
+    const col=hotK>0.04 ? mixHex('#2C313A','#FF5A2B',hotK) : '#2C313A';
+    stick(ctx,a.x,a.y,b.x,b.y,3.4,col,alpha);
+  });
+  // (3) carbon atoms
+  // GRA_ATOM_PX is the single source of truth for the graphite C atom radius and
+  // is reused by the metal panel (MET_ION_PX), so the two structures stay the
+  // same size on screen without either one being tuned by hand.
+  const gGlow=clamp((state.T-620)/(GRA.mp-620),0,0.85);
+  GRA.atoms.filter(p=>!p.esc&&!p.gone).slice().sort((a,b)=>a.y-b.y)
+    .forEach(p=>{
+      if(isGhost(p)) sphere(ctx,p.x,p.y,GRA_ATOM_PX,'#B9C2CC',{glow:gGlow*0.25,shadow:false});
+      else sphere(ctx,p.x,p.y,GRA_ATOM_PX,'#49515E',{glow:gGlow});
+    });
+  GRA.atoms.filter(p=>p.esc&&!p.gone).forEach(p=>sphere(ctx,p.x,p.y,GRA_GHOST_PX,'#5C6472',{glow:0.8,shadow:false}));
+  // (4) delocalised electrons
+  ctx.save();
+  GRA.atoms.forEach(p=>{
+    if(p.esc||p.gone||isGhost(p)) return;
+    const ex=p.x + 15*Math.sin(state.t*p.eW1+p.ePh1);
+    const ey=p.y + 9*Math.cos(state.t*p.eW2+p.ePh2);
+    const gg=ctx.createRadialGradient(ex,ey,0.5,ex,ey,9);
+    gg.addColorStop(0,'rgba(34,211,238,.55)');
+    gg.addColorStop(1,'rgba(34,211,238,0)');
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(ex,ey,9,0,7); ctx.fill();
+    ctx.fillStyle='#22D3EE';
+    ctx.beginPath(); ctx.arc(ex,ey,2.9,0,7); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.arc(ex-0.9,ey-0.9,1.1,0,7); ctx.fill();
+  });
+  ctx.restore();
+  // (5) annotations
+  const Ltop=GLAYERS-1;
+  const intact=GRA.bonds
+    .filter(bn=>{ const a=GRA.atoms[bn.a], b=GRA.atoms[bn.b];
+      return a.L===Ltop && !a.esc && !b.esc && !isGhost(a) && !isGhost(b)
+        && (1-smooth(bn.th-110,bn.th,state.T))>0.55; })
+    .sort((p,q)=>GRA.atoms[q.b].x-GRA.atoms[p.b].x)[0];
+  if(intact){
+    const a=GRA.atoms[intact.a], b=GRA.atoms[intact.b];
+    tag(ctx,'each C bonded to 3 C — hexagonal layer',(a.x+b.x)/2,(a.y+b.y)/2,Math.min(reg.x1-8,b.x+52),(a.y+b.y)/2-34,'#2C313A','left');
+  }
+  const wL=GRA.links.find(l=>l.a===gi(0,GROWS-1,GCOLS-1)) || GRA.links.find(l=>l.L===0 && !l.broken);
+  if(wL && !wL.broken && !GRA.atoms[wL.a].esc && !GRA.atoms[wL.b].esc){
+    const mx=(GRA.atoms[wL.a].x+GRA.atoms[wL.b].x)/2, my=(GRA.atoms[wL.a].y+GRA.atoms[wL.b].y)/2;
+    tag(ctx,'weak forces BETWEEN layers',mx,my,Math.min(reg.x1-8,mx+56),my+6,'#7C94A6','left');
+  }
+  const eA=GRA.atoms[gi(Ltop,1,2)];
+  if(!eA.esc && !eA.gone){
+    const ex=eA.x + 15*Math.sin(state.t*eA.eW1+eA.ePh1);
+    const ey=eA.y + 9*Math.cos(state.t*eA.eW2+eA.ePh2);
+    tag(ctx,'delocalised electrons → conducts',ex,ey,reg.x0+8,reg.y0+26,'#0E7490','left');
+  }
+  if(state.forceMode && Math.abs(state.fx)>6){
+    const fx=state.fx*1.4;
+    const ay=clamp(state.grabY, reg.y0+40, reg.y1-24);
+    forceArrow(ctx,clamp(state.grabX-fx/2,reg.x0+30,reg.x1-30-fx),ay,fx,'#7C5CBF');
+  }
+}
+GRA.step=dt=>{ stepGraphite(dt); stepForce(dt); };
+GRA.draw=drawGraphitePanel;
+GRA.status=()=>{
+  const linksBroken=GRA.links.reduce((s,l)=>s+(l.broken?1:0),0);
+  const graBrokenB=GRA.bonds.reduce((s,b)=>s+(smooth(b.th-110,b.th,state.T)>0.92?1:0),0);
+  if(state.T<GRA.mp-60) return linksBroken>0?['SOLID but SLIDING','#7C5CBF',linksBroken]:['SOLID — bonds intact','#0A455D',0];
+  if(state.T<GRA.mp+50) return ['BONDS BREAKING ▸','#E25822',graBrokenB];
+  return ['SUBLIMING','#B91C1C',graBrokenB];
+};
+GRA.hint=()=>{
+  if(state.T>=GRA.mp-140 && state.T<GRA.mp+120)
+    return ['now the STRONG C–C bonds in graphite finally break — 3650 °C!','#B91C1C','rgba(255,224,214,.92)'];
+  return null;
+};
+GRA.cardState=()=>{
+  const linksBroken=GRA.links.reduce((s,l)=>s+(l.broken?1:0),0);
+  const g=GRA.cardEl;
+  if(state.T<GRA.mp-60){ if(linksBroken>0) return ['SOLID but SLIDING — '+linksBroken+' inter-layer links sheared off','#7C5CBF']; return ['SOLID — covalent bonds fully intact (vibrating harder)','#0A455D']; }
+  if(state.T<GRA.mp+50) return ['PHASE CHANGE — the strong C–C bonds are finally breaking','#E25822'];
+  return ['SUBLIMING — the network tears apart into single C atoms','#B91C1C'];
+};
+
+// ================= CO₂ =================
+const CO2S={key:'co2', mp:-78, glow0:600, mols:[], atoms:[], bonds:[], links:[]};
+const CO2_COLS=4, CO2_ROWS=3;
+const CO2_L=17, CO2_RO=9.6, CO2_RC=7.6, CO2_SCALE=1.8;
+const CO2_MOLW=(2*CO2_L+2*CO2_RO)*CO2_SCALE;
+(function buildCO2(){
+  for(let r=0;r<CO2_ROWS;r++)for(let c=0;c<CO2_COLS;c++){
+    CO2S.mols.push({hx:c,hy:r, x:0,y:0, vx:0,vy:0, ang:(c+r)%2? 0.32:-0.24, va:0,
+              free:false, esc:0, gdir:null, links:[], restrain:1});
+  }
+  const cr=(CO2_COLS-1)/2, rr=(CO2_ROWS-1)/2;
+  const add=(a,b,surf)=>CO2S.links.push({a,b,surf,th:0,broken:false,flash:0,ph:Math.random()*6.28});
+  for(let r=0;r<CO2_ROWS;r++)for(let c=0;c<CO2_COLS;c++){
+    if(c<CO2_COLS-1) add(r*CO2_COLS+c, r*CO2_COLS+c+1, Math.hypot(c+0.5-cr, r-rr));
+    if(r<CO2_ROWS-1) add(r*CO2_COLS+c, (r+1)*CO2_COLS+c, Math.hypot(c-cr, r+0.5-rr));
+  }
+  CO2S.links.forEach((L,i)=>{ CO2S.mols[L.a].links.push(i); CO2S.mols[L.b].links.push(i); });
+  CO2S.links.map((L,i)=>i)
+    .sort((x,y)=>CO2S.links[y].surf-CO2S.links[x].surf)
+    .forEach((li,k)=>{
+      CO2S.links[li].th = (CO2S.mp-20) + (k/Math.max(1,CO2S.links.length-1))*25 + (Math.random()-0.5)*1.0;
+    });
+})();
+const linkBetween=(a,b)=>CO2S.links.find(L=>(L.a===a&&L.b===b)||(L.a===b&&L.b===a));
+function co2Cell(){
+  const reg=CO2S._reg;
+  const cx=(reg.x0+reg.x1)/2, cy=(reg.y0+reg.y1)/2-4;
+  const cellX=Math.min(CO2_MOLW+30, Math.max(70,(reg.x1-reg.x0-84)/(CO2_COLS-1)));
+  const cellY=Math.min(CO2_MOLW*1.06, Math.max(62,(reg.y1-reg.y0-102)/CO2_ROWS));
+  return {cx, cy, cellX, cellY};
+}
+function W2X(p){ const c=co2Cell(); return c.cx+(p.hx-(CO2_COLS-1)/2)*c.cellX; }
+function W2Y(p){ const c=co2Cell(); return c.cy+(p.hy-(CO2_ROWS-1)/2)*c.cellY; }
+function stepCO2(dt){
+  const reg=CO2S._reg; if(!reg) return;
+  CO2S.links.forEach(L=>{
+    const nowBroken = state.T > L.th;
+    if(nowBroken && !L.broken) L.flash=0.52;
+    L.broken=nowBroken;
+    if(L.flash>0) L.flash=Math.max(0,L.flash-dt*1.9);
+  });
+  const solidK=1-smooth(CO2S.mp-14,CO2S.mp+10,state.T);
+  const cell=co2Cell();
+  const half=CO2_MOLW*0.52;
+  const edgeL=reg.x0+Math.max(10,half*0.72), edgeR=reg.x1-Math.max(10,half*0.72);
+  const edgeT=reg.y0+16, edgeB=reg.y1-half-12;
+  CO2S.mols.forEach(p=>{
+    let broken=0; p.links.forEach(i=>{ if(CO2S.links[i].broken) broken++; });
+    p.restrain = p.links.length ? 1-broken/p.links.length : 1;
+  });
+  const hot=clamp((state.T-CO2S.mp)/(axis.Tmax-CO2S.mp),0,1);
+  CO2S.mols.forEach(p=>{
+    const hx=cell.cx+(p.hx-(CO2_COLS-1)/2)*cell.cellX;
+    const hy=cell.cy+(p.hy-(CO2_ROWS-1)/2)*cell.cellY;
+    if(p.restrain>0.02){
+      const loose=1-p.restrain;
+      const k=0.02+0.055*Math.pow(p.restrain,1.35)*(0.35+0.65*solidK);
+      const jit=(0.22+0.5*(1-solidK))*(1+2.4*loose)*(0.6+0.8*(1-p.restrain*solidK))+hot*1.2;
+      p.vx=(p.vx+(hx-p.x)*k)*0.90+(Math.random()-0.5)*jit;
+      p.vy=(p.vy+(hy-p.y)*k)*0.90+(Math.random()-0.5)*jit;
+      p.x+=p.vx; p.y+=p.vy;
+      p.free=false; p.esc=0; p.gdir=null;
+      p.ang+=p.va+(Math.random()-0.5)*(0.02+0.09*loose);
+    }else{
+      if(p.gdir===null){
+        p.gdir=Math.atan2(p.y-hy,p.x-hx)+((p.hx+p.hy)%2?0.38:-0.38)+(Math.random()-0.5)*0.5;
+        if(!isFinite(p.gdir)) p.gdir=Math.random()*Math.PI*2;
+      }
+      p.esc+=dt; p.free=true;
+      const t=Math.min(1,Math.max(0,p.esc-0.35)/2.6);
+      const sp=0.30+1.45*t*t;
+      p.vx=Math.cos(p.gdir)*sp; p.vy=Math.sin(p.gdir)*sp;
+      p.x+=p.vx+(Math.random()-0.5)*0.25;
+      p.y+=p.vy+(Math.random()-0.5)*0.25;
+      if(p.x<edgeL){p.x=edgeL;p.gdir=Math.PI-p.gdir;}
+      if(p.x>edgeR){p.x=edgeR;p.gdir=Math.PI-p.gdir;}
+      if(p.y<edgeT){p.y=edgeT;p.gdir=-p.gdir;}
+      if(p.y>edgeB){p.y=edgeB;p.gdir=-p.gdir;}
+      p.ang+=(Math.random()-0.5)*0.035;
+    }
+  });
+  const sep=CO2_MOLW*0.68;
+  for(let i=0;i<CO2S.mols.length;i++){
+    const a=CO2S.mols[i]; if(!a.free) continue;
+    for(let j=i+1;j<CO2S.mols.length;j++){
+      const b=CO2S.mols[j]; if(!b.free) continue;
+      let dx=b.x-a.x, dy=b.y-a.y, d=Math.hypot(dx,dy)||1;
+      if(d<sep){
+        const push=((sep-d)/sep)*0.5; dx/=d; dy/=d;
+        a.x-=dx*push; a.y-=dy*push;
+        b.x+=dx*push; b.y+=dy*push;
+        if(Math.random()<0.25){ a.gdir+=(Math.random()-0.5)*0.22; b.gdir+=(Math.random()-0.5)*0.22; }
+      }
+    }
+  }
+}
+const CO2_COL_O='#FF3B30', CO2_COL_C='#3D5A6C', CO2_COL_BOND='#8496A8';
+function drawCO2Mol(x,y,ang,scale,opts){
+  opts=opts||{};
+  const glow=opts.glow||0;
+  const L=CO2_L*scale, rO=CO2_RO*scale, rC=CO2_RC*scale;
+  const ca=Math.cos(ang), sa=Math.sin(ang), nx=-sa, ny=ca;
+  const ax=x-ca*L, ay=y-sa*L, bx=x+ca*L, by=y+sa*L;
+  const bw=3.3*Math.pow(scale,0.85);
+  for(const s of [-2.6*scale,2.6*scale]){
+    stick(ctx,
+      ax+nx*s+ca*rO*0.5, ay+ny*s+sa*rO*0.5,
+      bx+nx*s-ca*rO*0.5, by+ny*s-sa*rO*0.5,
+      bw,CO2_COL_BOND);
+  }
+  sphere(ctx,ax,ay,rO,CO2_COL_O,{glow:glow*0.55});
+  sphere(ctx,bx,by,rO,CO2_COL_O,{glow:glow*0.55});
+  sphere(ctx,x,y,rC,CO2_COL_C);
+}
+function drawCO2Panel(reg){
+  const solidK=1-smooth(CO2S.mp-14,CO2S.mp+10,state.T);
+  const linksLeft=CO2S.links.reduce((s,L)=>s+(L.broken?0:1),0);
+  const linksBroken=CO2S.links.length-linksLeft;
+  // weak intermolecular links
+  {
+    const Rm=19;
+    for(const L of CO2S.links){
+      const p=CO2S.mols[L.a], q=CO2S.mols[L.b];
+      const dx=q.x-p.x, dy=q.y-p.y, d=Math.hypot(dx,dy)||1;
+      const R= Math.abs(dx)>Math.abs(dy) ? CO2_MOLW*0.46 : Rm;
+      const x1=p.x+dx/d*R, y1=p.y+dy/d*R, x2=q.x-dx/d*R, y2=q.y-dy/d*R;
+      const mx=(x1+x2)/2, my=(y1+y2)/2;
+      if(L.broken){
+        if(L.flash>0){
+          const f=L.flash/0.52;
+          ctx.save();
+          ctx.globalAlpha=f*0.9;
+          ctx.strokeStyle='#FFB020'; ctx.lineWidth=2.2;
+          ctx.beginPath(); ctx.arc(mx,my,5+(1-f)*17,0,7); ctx.stroke();
+          ctx.lineWidth=1.8;
+          for(let k=0;k<4;k++){
+            const a=k*Math.PI/2+0.6;
+            ctx.beginPath();
+            ctx.moveTo(mx+Math.cos(a)*(6+(1-f)*11), my+Math.sin(a)*(6+(1-f)*11));
+            ctx.lineTo(mx+Math.cos(a)*(12+(1-f)*16), my+Math.sin(a)*(12+(1-f)*16));
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        continue;
+      }
+      const strain=clamp((state.T-(L.th-17))/17,0,1);
+      const warn=clamp((state.T-(L.th-7))/7,0,1);
+      const flick=0.55+0.45*Math.sin(state.t*11+L.ph);
+      const col=warn>0.02 ? mixHex('#96ACBC','#E8A94B',warn) : '#96ACBC';
+      ctx.save();
+      ctx.setLineDash([4.5,4.5]);
+      ctx.lineDashOffset=-state.t*(2+9*strain);
+      ctx.strokeStyle=col;
+      ctx.globalAlpha=(0.88-0.22*strain)*(1-0.5*warn*flick);
+      ctx.lineWidth=1.4+1.4*strain;
+      const jx=Math.sin(state.t*9+L.ph)*2.4*strain, jy=Math.cos(state.t*8.3+L.ph)*2.4*strain;
+      ctx.beginPath(); ctx.moveTo(x1+jx,y1+jy); ctx.lineTo(x2-jx,y2-jy); ctx.stroke();
+      ctx.restore();
+      if(warn>0.45){
+        const u=(state.t*0.85+L.ph*0.15)%1;
+        ctx.fillStyle='rgba(232,169,75,'+(0.9*(warn-0.45)/0.55)+')';
+        ctx.beginPath(); ctx.arc(x1+(x2-x1)*u, y1+(y2-y1)*u, 2.0+1.2*warn, 0, 7); ctx.fill();
+      }
+    }
+    ctx.setLineDash([]);
+  }
+  const co2Glow=clamp((state.T-(CO2S.mp-140))/300,0,1)*0.45;
+  CO2S.mols.forEach(p=>drawCO2Mol(p.x,p.y,p.ang,CO2_SCALE,{glow:co2Glow}));
+  // annotations on the CALM lattice positions
+  if(solidK>0.35 && linksLeft>CO2S.links.length*0.55){
+    const ci=Math.floor((CO2_COLS-1)/2);
+    const homes=CO2S.mols.map(o=>({x:W2X(o),y:W2Y(o)}));
+    const mx=homes[ci].x;
+    const rowTopY=Math.min(...homes.map(o=>o.y));
+    const rowBotY=Math.max(...homes.map(o=>o.y));
+    const pa=(CO2_ROWS-2)*CO2_COLS+ci, pb=(CO2_ROWS-1)*CO2_COLS+ci;
+    const wl=linkBetween(pa,pb);
+    if(wl && !wl.broken){
+      const p=homes[pa], q=homes[pb];
+      tag(ctx,'weak forces between molecules',(p.x+q.x)/2,(p.y+q.y)/2,mx-110,Math.min(reg.y1-20,rowBotY+CO2_MOLW*0.46),'#7C94A6','left');
+    }
+    const a=CO2S.mols[ci], ha=homes[ci];
+    const bi=CO2_L*CO2_SCALE*Math.cos(a.ang), bj=CO2_L*CO2_SCALE*Math.sin(a.ang);
+    tag(ctx,'strong C=O bond',ha.x+bi*0.5,ha.y+bj*0.5,mx-78,Math.max(reg.y0+28,rowTopY-CO2_MOLW*0.62),'#3B4450','left');
+  }
+}
+CO2S.step=stepCO2;
+CO2S.draw=drawCO2Panel;
+CO2S.status=()=>{
+  const linksLeft=CO2S.links.reduce((s,L)=>s+(L.broken?0:1),0);
+  const linksBroken=CO2S.links.length-linksLeft;
+  if(linksLeft===CO2S.links.length) return ['SOLID','#0A455D',0];
+  if(linksLeft>0) return ['BREAKING UP ▸','#E25822',linksBroken];
+  return ['GAS','#B91C1C',linksBroken];
+};
+CO2S.hint=()=>{
+  if(state.T>=CO2S.mp-38 && state.T<CO2S.mp+70){
+    const linksLeft=CO2S.links.reduce((s,L)=>s+(L.broken?0:1),0);
+    return linksLeft>0
+      ? ['weak intermolecular forces snapping one by one — '+linksLeft+' of '+CO2S.links.length+' still holding','#0A455D','rgba(202,233,244,.9)']
+      : ['all weak forces broken → molecules fly free, but every C=O bond is STILL intact','#0A455D','rgba(202,233,244,.9)'];
+  }
+  if(state.T<CO2S.mp-8) return ['still solid — nothing happens yet','#64748B','rgba(238,242,245,.92)'];
+  return null;
+};
+CO2S.cardState=()=>{
+  const linksLeft=CO2S.links.reduce((s,L)=>s+(L.broken?0:1),0);
+  if(linksLeft===CO2S.links.length) return ['SOLID — molecules vibrate about fixed lattice points','#0A455D'];
+  if(linksLeft>0) return ['PHASE CHANGE — weak links snapping one by one ('+linksLeft+' of '+CO2S.links.length+' still holding)','#E25822'];
+  return ['GAS — free molecules, each C=O still perfectly intact','#B91C1C'];
+};
+
+// ================= registry & meta =================
+const OBJ={co2:CO2S, diamond:DIA, graphite:GRA, sio2:SIL, na:NA, mg:MG};
+const META={
+  na:{ label:'Na', header:'SODIUM — GIANT METALLIC STRUCTURE', sub:'Na⁺ lattice in a sea of 1 delocalised e⁻ per atom',
+        cls:'giant metallic structure', word:'melts', trans:98,
+        mark:'Na melts · 98 °C',
+        why:'only a weak attraction between Na⁺ and one delocalised electron per atom has to be overcome.',
+        cardTitle:'🔩 Sodium — Giant Metallic Structure',
+        cardHTML:'<p>A <b>giant metallic structure</b>: a regular lattice of <b>Na⁺ ions</b> sitting in a <b>sea of delocalised electrons</b>. Each Na atom contributes just <b>one</b> electron, and Na⁺ carries only a <b>+1 charge</b> — so the electrostatic attraction is <b>weak</b>. Melting therefore needs very little energy → <b>98 °C</b>, just above a hot bath.</p><p style="margin-top:6px;">Metallic bonding is <b>non-directional</b> (no fixed pairwise bonds like C–C), so the ions are held in place but are <b>free to slide</b> — that is why metals are malleable, and why molten sodium <b>still conducts</b>: the electron sea never goes away.</p>',
+        legend:'<div class="it"><span class="dot" style="background:#5FC6D8"></span> Na⁺ ion (+) — larger</div><div class="it"><span class="dot glow" style="background:#EF9F27"></span> Delocalised electron · 1 per atom</div>',
+        hintTxt:'1 electron per atom · +1 charge · large ion → weak attraction' },
+  mg:{ label:'Mg', header:'MAGNESIUM — GIANT METALLIC STRUCTURE', sub:'Mg²⁺ lattice in a sea of 2 delocalised e⁻ per atom',
+        cls:'giant metallic structure', word:'melts', trans:650,
+        mark:'Mg melts · 650 °C',
+        why:'three things at once make the attraction much stronger than in sodium.',
+        cardTitle:'🔩 Magnesium — Giant Metallic Structure',
+        cardHTML:'<p>Same <b>giant metallic structure</b>, but three factors all push the other way at once: each Mg atom donates <b>two</b> electrons (not one), the ion is <b>Mg²⁺</b> with a <b>+2 charge</b> (not +1), and Mg²⁺ is <b>smaller</b> than Na⁺. More electrons + bigger charge + shorter distance = <b>much stronger electrostatic attraction</b> → melting point jumps to <b>650 °C</b>, about <b>6.6× that of sodium</b>.</p><p style="margin-top:6px;">Compare the two panels: count the free electrons around each ion and compare the ion sizes — the melting point difference is the <b>direct consequence</b>. Same structure type, different bond strength.</p>',
+        legend:'<div class="it"><span class="dot" style="background:#3B4E9B"></span> Mg²⁺ ion (2+) — smaller</div><div class="it"><span class="dot glow" style="background:#EF9F27"></span> Delocalised electron · 2 per atom</div>',
+        hintTxt:'2 electrons per atom · +2 charge · smaller ion → strong attraction' },
+  co2:{ label:'CO₂', header:'CO₂ — MOLECULAR', sub:'discrete molecules · weak forces between them',
+        cls:'molecular structure', word:'sublimes', trans:-78,
+        mark:'CO₂ sublimes · −78 °C',
+        why:'overcoming the weak forces BETWEEN its molecules takes almost no energy.',
+        cardTitle:'CO₂ — Molecular Structure',
+        cardHTML:'<p>Small, discrete O=C=O molecules. Heating only needs to overcome the <b>weak intermolecular forces BETWEEN molecules</b> — very little energy required → phase change at just <b>−78 °C</b> (sublimes at 1 atm; melts at −56 °C only under pressure).</p><p style="margin-top:6px;"><b>The covalent C=O bonds INSIDE each molecule never break</b> — each molecule stays intact as it melts, then boils.</p>',
+        legend:'<div class="it"><span class="dot" style="background:#FF3B30"></span> O</div><div class="it"><span class="dot" style="background:#3D5A6C"></span> C</div>',
+        hintTxt:'watch the dashed weak links snap — the C=O bonds never do' },
+  diamond:{ label:'Diamond', header:'DIAMOND — GIANT COVALENT NETWORK', sub:'every C bonded to 4 C · rigid 3-D tetrahedral',
+        cls:'giant covalent network', word:'melts', trans:3550,
+        mark:'Diamond melts · 3550 °C',
+        why:'melting means breaking millions of strong C–C covalent bonds.',
+        cardTitle:'💎 Diamond — Giant Covalent Network',
+        cardHTML:'<p>One <b>giant molecule</b>: every C atom is covalently bonded to <b>4 other C atoms</b> in a rigid 3-D tetrahedral network. <b>All 4 valence electrons are locked in bonds</b> — none are free to move, so diamond does not conduct. Melting means breaking <b>millions of strong C–C bonds</b> → only at <b>3550 °C</b>. The hardest natural substance.</p>',
+        legend:'<div class="it"><span class="dot" style="background:#EAB308"></span> C (diamond)</div>',
+        hintTxt:'↻ drag its panel to rotate the 3-D tetrahedral network' },
+  graphite:{ label:'Graphite', header:'GRAPHITE — GIANT COVALENT NETWORK', sub:'each C bonded to 3 C · delocalised electrons · weak BETWEEN layers',
+        cls:'giant covalent network (layered)', word:'sublimes', trans:3650,
+        mark:'Graphite sublimes · 3650 °C',
+        why:'its strong in-layer covalent bonds must break first.',
+        cardTitle:'✏️ Graphite — Giant Covalent Network in Layers',
+        cardHTML:'<p>Every C atom is covalently bonded to <b>3 other C atoms</b> in flat hexagonal layers. The <b>4th electron is delocalised</b> — free to move along the layers → <b>graphite conducts electricity</b>. Melting still needs breaking millions of strong C–C bonds → <b>~3650 °C</b>.</p><p style="margin-top:6px;">But layers are held to each other only by <b>weak forces</b> — a <b>tiny sideways force makes them slide</b> (and stay slid). That is why graphite is <b>soft, slippery, and writes</b>.</p>',
+        legend:'<div class="it"><span class="dot" style="background:#49515E"></span> C (graphite)</div><div class="it"><span class="dot glow" style="background:#22D3EE"></span> Delocalised electron</div>',
+        hintTxt:'⇄ drag its panel sideways — a tiny force makes the layers glide' },
+  sio2:{ label:'SiO₂', header:'SiO₂ — GIANT COVALENT NETWORK', sub:'every Si bonded to 4 O · each O bridges 2 Si',
+        cls:'giant covalent network', word:'melts', trans:1710,
+        mark:'SiO₂ melts · 1710 °C',
+        why:'the whole Si–O covalent network must be torn apart.',
+        cardTitle:'🏜️ Silicon Dioxide (SiO₂) — Giant Covalent Network',
+        cardHTML:'<p>Also a <b>giant covalent network</b>: every Si atom bonds to <b>4 O atoms</b>, and every O atom <b>bridges 2 Si atoms</b> (so the ratio is Si : O = 1 : 2 → formula SiO₂, not SiO₄). Breaking the whole Si–O network needs <b>~1710 °C</b>. Quartz and sand are both SiO₂.</p>',
+        legend:'<div class="it"><span class="dot" style="background:#1F2937"></span> Si</div><div class="it"><span class="dot" style="background:#22D3EE"></span> O (bridges two Si)</div>',
+        hintTxt:'↻ drag its panel to rotate the Si–O network' }
+};
+const KEYS=['co2','diamond','graphite','sio2','na','mg'];
+const isShown=k=> state.selL===k || state.selR===k;
+const otherOf=k=> state.selL===k ? state.selR : state.selL;
+
+// ================= dynamic temperature axis =================
+const axis={ segs:[], knots:[], Tmin:-100, Tmax:4000 };
+function buildAxis(){
+  const trans=[];
+  [state.selL,state.selR].forEach(k=>{
+    const m=META[k];
+    if(!trans.some(t=>t.T===m.trans)) trans.push({T:m.trans, mark:m.mark});
+  });
+  trans.sort((a,b)=>a.T-b.T);
+  axis.Tmin=Math.min(-100, trans[0].T-40);
+  axis.Tmax=trans[trans.length-1].T+450;
+  // knots: Tmin, transitions..., Tmax
+  const knots=[axis.Tmin, ...trans.map(t=>t.T), axis.Tmax];
+  // segment weights — small gaps (transition windows) get generous slider travel
+  const N=knots.length-1, raw=[];
+  for(let i=0;i<N;i++) raw.push(Math.pow(knots[i+1]-knots[i],0.55));
+  for(let i=0;i<N-1;i++) raw[i]=Math.max(raw[i], Math.pow((axis.Tmax-axis.Tmin)*0.12,0.55));
+  const tot=raw.reduce((a,b)=>a+b,0);
+  axis.segs=[]; axis.knots=trans;
+  let f=0;
+  for(let i=0;i<N;i++){
+    const f1=f+raw[i]/tot;
+    axis.segs.push({T0:knots[i], T1:knots[i+1], f0:f, f1:f1});
+    f=f1;
+  }
+  // rail marks
+  const marks=document.getElementById('marks');
+  marks.innerHTML='';
+  trans.forEach(t=>{
+    const s=tToSlider(t.T);
+    const d=document.createElement('div');
+    d.className='mark';
+    d.textContent=t.mark;
+    d.style.left=(s*100)+'%';
+    if(s>0.62){ d.style.transform='translateX(-100%)'; d.style.textAlign='right'; d.style.top='44px'; }
+    marks.appendChild(d);
+  });
+  // preset buttons
+  const pr=document.getElementById('presets');
+  pr.innerHTML='';
+  const mkPreset=(t,label)=>{
+    const b=document.createElement('button');
+    b.className='btn preset'; b.dataset.t=t; b.textContent=label;
+    b.onclick=()=>{
+      state.playing=false; playBtn.textContent='▶ Heat up';
+      state.target=t; state.T=t; state.s=tToSlider(t);
+      document.querySelectorAll('.preset').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+    };
+    pr.appendChild(b);
+  };
+  mkPreset(25,'Room temp · 25 °C');
+  trans.forEach(t=>mkPreset(t.T, t.mark));
+}
+function sliderToT(s){
+  s=clamp(s,0,1);
+  for(const g of axis.segs){
+    if(s<=g.f1 || g===axis.segs[axis.segs.length-1])
+      return g.T0 + clamp((s-g.f0)/(g.f1-g.f0),0,1)*(g.T1-g.T0);
+  }
+  return axis.Tmax;
+}
+function tToSlider(T){
+  T=clamp(T,axis.Tmin,axis.Tmax);
+  for(const g of axis.segs){
+    if(T<=g.T1) return g.f0 + (T-g.T0)/(g.T1-g.T0)*(g.f1-g.f0);
+  }
+  return 1;
+}
+
+// ================= physics root =================
+function step(dt){
+  state.t+=dt;
+  // ease T toward target, crawling near each selected transition so breaks are watchable
+  const near=axis.knots.some(t=>Math.abs(state.T-t.T)<40);
+  state.T += (state.target-state.T)*Math.min(1,dt*(near?0.50:2.4));
+  if(Math.abs(state.target-state.T)<0.35) state.T=state.target;
+  if(isShown('co2')) stepCO2(dt);
+  if(isShown('diamond')) stepNetwork(DIA,dt);
+  if(isShown('sio2')) stepNetwork(SIL,dt);
+  if(isShown('na')) stepMetal(NA,dt);
+  if(isShown('mg')) stepMetal(MG,dt);
+  if(isShown('graphite')){ stepGraphite(dt); stepForce(dt); }
+}
+
+// ================= draw =================
+function draw(){
+  const W=CW,H=CH;
+  ctx.clearRect(0,0,W,H);
+  const midX=W/2;
+  const heat=clamp((state.T-160)/(axis.Tmax-160),0,1);
+  if(heat>0.01){
+    const bg=ctx.createLinearGradient(0,H,0,H*0.28);
+    bg.addColorStop(0,'rgba(255,116,34,'+(0.22*heat)+')');
+    bg.addColorStop(0.5,'rgba(255,146,58,'+(0.10*heat)+')');
+    bg.addColorStop(1,'rgba(255,160,70,0)');
+    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  }
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,.60)';
+  ctx.strokeStyle='rgba(198,212,224,.85)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(18,56,midX-38,H-112,14); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(midX+20,56,midX-38,H-112,14); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // panel headers (per selected substance)
+  const mL=META[state.selL], mR=META[state.selR];
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.font='800 15px Inter,Segoe UI,sans-serif'; ctx.fillStyle='#0A455D';
+  ctx.fillText(mL.header,24,30);
+  ctx.font='500 12px Inter,Segoe UI,sans-serif'; ctx.fillStyle='#64748B';
+  ctx.fillText(mL.sub,24,47);
+  ctx.font='800 15px Inter,Segoe UI,sans-serif'; ctx.fillStyle='#0A455D';
+  ctx.fillText(mR.header,midX+24,30);
+  ctx.font='500 12px Inter,Segoe UI,sans-serif'; ctx.fillStyle='#64748B';
+  ctx.fillText(mR.sub,midX+24,47);
+
+  ctx.strokeStyle='#C5D2DE'; ctx.lineWidth=1; ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.moveTo(midX,16); ctx.lineTo(midX,H-14); ctx.stroke(); ctx.setLineDash([]);
+
+  const L={x0:30,x1:midX-20,y0:70,y1:H-60};
+  const R={x0:midX+20,x1:W-30,y0:70,y1:H-60};
+  OBJ[state.selL]._reg=L; OBJ[state.selR]._reg=R;
+  OBJ[state.selL].draw(L);
+  OBJ[state.selR].draw(R);
+
+  // status pills per panel
+  [[L,state.selL],[R,state.selR]].forEach(([reg,k])=>{
+    const st=OBJ[k].status();
+    let txt=st[0];
+    if(st[2]>0) txt+='  ·  '+st[2]+' '+(k==='co2'?'links snapped':k==='graphite'?(st[0].indexOf('SLIDING')>=0?'layer links sheared off':'C–C broken'):'bonds broken');
+    pill(ctx,txt,reg.x0+4,H-24,st[1],'rgba(255,255,255,.92)',13,'left');
+  });
+  // teachable-moment hints per panel
+  [[midX/2,state.selL],[midX+(W-midX)/2,state.selR]].forEach(([cx,k])=>{
+    const h=OBJ[k].hint();
+    if(h) pill(ctx,h[0],cx,76,h[1],h[2],12,'center');
+  });
+  // pushing hint pair
+  if(state.forceMode && Math.abs(state.fx)>6){
+    const gSide = state.selL==='graphite'?'L':state.selR==='graphite'?'R':null;
+    if(gSide){
+      const gx=gSide==='L'?midX/2:midX+(W-midX)/2;
+      pill(ctx,'a TINY force → the layers glide past each other (weak forces between layers)',gx,104,'#7C5CBF','rgba(240,235,252,.93)',12,'center');
+      const oK=otherOf('graphite');
+      if(oK==='diamond'||oK==='sio2'){
+        const ox=gSide==='L'?midX+(W-midX)/2:midX/2;
+        pill(ctx,'same force, rigid 3-D network — nothing moves',ox,104,'#0A455D','rgba(224,236,244,.93)',12,'center');
+      }
+    }
+  }
+}
+
+// ================= layout =================
+function reproject(){
+  const midX=CW/2;
+  const regs={L:{x0:30,x1:midX-20,y0:70,y1:CH-60}, R:{x0:midX+20,x1:CW-30,y0:70,y1:CH-60}};
+  [['L',state.selL],['R',state.selR]].forEach(([side,k])=>{
+    const o=OBJ[k];
+    o._reg=regs[side];
+    if(k==='diamond'||k==='sio2'||k==='na'||k==='mg'){
+      // draw() puts a teachable-moment pill at y=76 (centre) and the status pill
+      // at H-24 (bottom). So the metal lattice must be centred between those two
+      // bands, not in the raw panel rectangle, or it reads as top-heavy.
+      const metal=(k==='na'||k==='mg');
+      const TOP_BAND=94, BOT_BAND=44;
+      const cyM=(o._reg.y0+TOP_BAND+o._reg.y1-BOT_BAND)/2;
+      o._proj=metal
+        ? makeMetalProjector(o._nodes,(o._reg.x0+o._reg.x1)/2, cyM)
+        : makeProjector(o._nodes,(o._reg.x0+o._reg.x1)/2,(o._reg.y0+o._reg.y1)/2,(o._reg.x1-o._reg.x0),(o._reg.y1-o._reg.y0));
+      if(k==='diamond') projectPanel(o,o._proj);
+      else if(k==='sio2') projectSilica(o,o._proj);
+      else projectMetal(o,o._proj);
+      if(k==='na'||k==='mg') assignMetalTh(o);
+      else assignTh(o,o.mp, k==='diamond'?400:300);
+      o._placed=true;
+    }else if(!o._placed){
+      if(k==='co2') CO2S.mols.forEach(p=>{ p.x=W2X(p); p.y=W2Y(p); });
+      if(k==='graphite'){ GRA.off=[0,0,0]; GRA.links.forEach(l=>{l.broken=false;l.flash=0;});
+        GRA.atoms.forEach(a=>{ a.esc=false; a.gone=false; a.vx=0; a.vy=0; const hm=gHome(a); a.x=hm.x; a.y=hm.y; }); }
+      o._placed=true;
+    }
+  });
+  reprojectFrame();
+}
+
+// ================= cards / legend / verdict =================
+const cardEls={L:null,R:null};
+function rebuildCards(){
+  [['L',state.selL],['R',state.selR]].forEach(([side,k])=>{
+    const m=META[k];
+    const el=document.getElementById(side==='L'?'cardL':'cardR');
+    el.innerHTML='<h2>'+m.cardTitle+'</h2><div class="state" id="state_'+side+'">SOLID</div>'+m.cardHTML;
+    cardEls[side]=document.getElementById('state_'+side);
+  });
+}
+function refreshCards(){
+  [['L',state.selL],['R',state.selR]].forEach(([side,k])=>{
+    const st=OBJ[k].cardState();
+    if(cardEls[side]){ cardEls[side].textContent=st[0]; cardEls[side].style.color=st[1]; }
+  });
+  document.getElementById('verdict').textContent=verdictText();
+}
+function verdictText(){
+  const a=META[state.selL], b=META[state.selR];
+  const lo=a.trans<=b.trans?a:b, hi=a.trans<=b.trans?b:a;
+  const gap=Math.round(hi.trans-lo.trans);
+  const base='A '+gap.toLocaleString()+' °C gap: '+lo.label+' ('+lo.cls+') '+lo.word+' at '+fmtT(lo.trans)+' °C — '+lo.why+' '
+        +hi.label+' ('+hi.cls+') holds until '+fmtT(hi.trans)+' °C — '+hi.why+' Structure — not formula — decides the property.';
+  const bothMetal=(lo.label==='Na'||lo.label==='Mg')&&(hi.label==='Na'||hi.label==='Mg');
+  const oneMetal=(lo.label==='Na'||lo.label==='Mg')||(hi.label==='Na'||hi.label==='Mg');
+  if(bothMetal){
+    return 'SAME structure type, DIFFERENT bond strength: Na melts at 98 °C, Mg at 650 °C — a 552 °C gap inside one '
+      +'structure type. Mg wins on all three counts at once: 2 delocalised electrons per atom instead of 1, a +2 instead of a '
+      +'+1 ion charge, and a SMALLER ion. More electrons + higher charge + shorter distance = stronger electrostatic attraction '
+      +'= more heat needed. Count the free electrons around each ion in the two panels — the melting point gap is exactly that.';
+  }
+  if(oneMetal){
+    const met=lo.label==='Na'||lo.label==='Mg'?lo:hi;
+    const other=met===lo?hi:lo;
+    const n=met.label==='Na'?'one':'two';
+    return 'Two DIFFERENT structure types: '+met.label+' ('+met.cls+') melts at '+fmtT(met.trans)+' °C because only the '
+      +'attraction between its ions and '+n+' delocalised electron'+(n==='one'?'':'s')+' per atom must be overcome — '
+      +'metallic bonding is non-directional and not very strong here. '+other.label+' ('+other.cls+') needs '+fmtT(other.trans)
+      +' °C because '+other.why+' A '+gap.toLocaleString()+' °C gap, and it comes from the TYPE of structure, not the formula.';
+  }
+  return base;
+}
+function rebuildLegend(){
+  const mL=META[state.selL], mR=META[state.selR];
+  const met=isMetalSel();
+  const net=isNetSel();
+  let first='';
+  if(met) first+='<div class="it"><span class="sw" style="border-color:#0F766E;"></span> Metallic bond = ion ↔ electron attraction (STRONG, non-directional)</div>';
+  if(net) first+='<div class="it"><span class="sw" style="border-color:#1F2937;"></span> Covalent bond (STRONG)</div>';
+  if(met&&net) first+='<div class="it"><span class="sw dash" style="border-color:#8FA6B5;"></span> Weak force / no fixed bond direction</div>';
+  if(!met) first+='<div class="it"><span class="sw dash" style="border-color:#8FA6B5;"></span> Weak force (BETWEEN molecules / layers)</div>';
+  document.getElementById('legend').innerHTML=
+    first+mL.legend+mR.legend
+    +'<div class="it" style="margin-left:auto;color:#64748B;">'+mL.hintTxt+'  ·  '+mR.hintTxt+'</div>';
+}
+
+// ================= selection UI =================
+function rebuildSelectors(){
+  [['L','selL'],['R','selR']].forEach(([side,id])=>{
+    const box=document.getElementById(id);
+    box.querySelectorAll('button').forEach(b=>b.remove());
+    KEYS.forEach(k=>{
+      const b=document.createElement('button');
+      b.className='btn'; b.textContent=META[k].label; b.dataset.k=k;
+      b.classList.toggle('active', state[id]===k);
+      b.onclick=()=>setSel(side,k);
+      box.appendChild(b);
+    });
+  });
+}
+let warnTimer=null;
+function setSel(side,k){
+  const other=side==='L'?state.selR:state.selL;
+  if(k===other){
+    const w=document.getElementById('selWarn');
+    w.style.opacity=1;
+    clearTimeout(warnTimer);
+    warnTimer=setTimeout(()=>{ w.style.opacity=0; },1600);
+    return;
+  }
+  if(state[side==='L'?'selL':'selR']===k) return;
+  if(side==='L') state.selL=k; else state.selR=k;
+  OBJ[k]._placed=false;              // re-place the substance entering a panel
+  const wasGra=false;
+  rebuildSelectors();
+  buildAxis();
+  fitCanvas();
+  reproject();
+  rebuildCards(); rebuildLegend();
+  refreshCards(); syncUI();
+}
+
+// ================= UI wiring =================
+const slider=document.getElementById('tSlider');
+const tRead=document.getElementById('tRead');
+const playBtn=document.getElementById('playBtn');
+let sliderHeld=false;
+slider.addEventListener('pointerdown',()=>sliderHeld=true);
+window.addEventListener('pointerup',()=>sliderHeld=false);
+function syncUI(){
+  tRead.textContent=fmtT(state.T);
+  if(!sliderHeld) slider.value=Math.round(tToSlider(state.T)*1000);
+  const cur=Math.round(state.T);
+  document.querySelectorAll('.preset').forEach(b=>{
+    b.classList.toggle('active', Math.round(+b.dataset.t)===cur);
+  });
+}
+slider.addEventListener('input',()=>{
+  state.playing=false; playBtn.textContent='▶ Heat up';
+  state.s=+slider.value/1000;
+  state.target=sliderToT(state.s);
+  state.T=state.target;
+});
+playBtn.onclick=()=>{
+  if(state.playing){ state.playing=false; playBtn.textContent='▶ Heat up'; return; }
+  state.playing=true;
+  playBtn.textContent='⏸ Pause';
+  if(state.s>=0.999){ state.s=0; state.target=axis.Tmin; state.T=axis.Tmin; }
+};
+document.getElementById('resetBtn').onclick=()=>{
+  state.playing=false; playBtn.textContent='▶ Heat up';
+  state.target=25; state.T=25; state.s=tToSlider(25);
+  state.forceMode=false; state.fx=0;
+  GRA.off=[0,0,0];
+  GRA.links.forEach(l=>{ l.broken=false; l.flash=0; });
+  GRA.atoms.forEach(a=>{ a.esc=false; a.gone=false; a.vx=0; a.vy=0; });
+  CO2S.mols.forEach(p=>{ p.free=false; p.esc=0; p.gdir=null; p.vx=0; p.vy=0; p.x=W2X(p); p.y=W2Y(p); p.restrain=1; });
+  [DIA,SIL].forEach(p=>{
+    if(!isShown(p.key)) return;
+    p.atoms.forEach(a=>{ a.vx=0; a.vy=0; a.x=a.hx; a.y=a.hy; });
+    p.bonds.forEach(b=>{ b.broken=false; });
+  });
+  [NA,MG].forEach(p=>{
+    if(!isShown(p.key)) return;
+    p.molten=false;
+    p.atoms.forEach(a=>{ a.vx=0; a.vy=0; a.x=a.hx; a.y=a.hy; a._vx=0; a._vy=0; a.sliding=false; a.tight=1; });
+    p.bonds.forEach(b=>{ b.broken=false; b.soften=0; });
+    assignMetalTh(p);
+    projectElectrons(p);
+  });
+  refreshCards(); syncUI();
+};
+
+// ================= pointer: interactions follow the substance =================
+let dragging=false, lastPX=0, lastPY=0;
+cv.addEventListener('pointerdown',e=>{
+  const rect=cv.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  const k = x<CW/2 ? state.selL : state.selR;
+  if(k==='graphite'){
+    state.forceMode=true; state.grabX=e.clientX; state.grabY=y;
+  }else if(k==='diamond'||k==='sio2'||k==='na'||k==='mg'){
+    dragging=true; lastPX=e.clientX; lastPY=e.clientY;
+  }
+  if(cv.setPointerCapture) cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove',e=>{
+  if(state.forceMode){ state.fx=clamp(e.clientX-state.grabX,-70,70); return; }
+  if(!dragging) return;
+  state.yaw += (e.clientX-lastPX)*0.007;
+  state.pitch = clamp(state.pitch + (e.clientY-lastPY)*0.005, 0.12, 1.25);
+  lastPX=e.clientX; lastPY=e.clientY;
+});
+function endPointer(){ state.forceMode=false; state.fx=0; dragging=false; }
+cv.addEventListener('pointerup',endPointer);
+cv.addEventListener('pointercancel',endPointer);
+
+// ================= main loop =================
+let last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(!dragging && isNetSel()) state.yaw += dt*0.22;
+  if(state.playing){
+    state.s=Math.min(1,state.s+dt/32);
+    state.target=sliderToT(state.s);
+    if(state.s>=1){ state.playing=false; document.getElementById('playBtn').textContent='▶ Heat up'; }
+  }
+  reprojectFrame();
+  step(dt);
+  draw();
+  refreshCards();
+  syncUI();
+  requestAnimationFrame(loop);
+}
+
+// ================= boot =================
+fitCanvas();
+rebuildSelectors();
+buildAxis();
+reproject();
+rebuildCards();
+rebuildLegend();
+refreshCards();
+GRA.atoms.forEach(a=>{ if(isShown('graphite')){ const hm=gHome(a); a.x=hm.x; a.y=hm.y; } });
+[NA,MG].forEach(p=>{ if(isShown(p.key)){ p.atoms.forEach(a=>{ a.x=a.hx; a.y=a.hy; a.vx=0; a.vy=0; }); projectElectrons(p); } });
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

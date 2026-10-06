@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ionic Crystal Brittleness</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .ion { transition: cx 0.12s linear, cy 0.12s linear, opacity 0.2s; }
+        .iontext { transition: x 0.12s linear, y 0.12s linear, opacity 0.2s; }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: #bfdbfe; border-radius: 8px; height: 12px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 24px; width: 24px;
+            background: #0A455D; border-radius: 50%; cursor: pointer; margin-top: -6px;
+        }
+        .stage-label { transition: opacity 0.3s; }
+        .repulse-pulse { animation: pulseRed 0.5s ease-in-out infinite; }
+        @keyframes pulseRed {
+            0%, 100% { stroke-opacity: 1; stroke-width: 2.5; }
+            50% { stroke-opacity: 0.5; stroke-width: 4; }
+        }
+        .crack-line { stroke-dasharray: 10 5; animation: crackDraw 0.4s ease-out forwards; }
+        @keyframes crackDraw { from { stroke-dashoffset: 220; } to { stroke-dashoffset: 0; } }
+        .bond { transition: opacity 0.2s; }
+    </style>
+</head>
+<body class="bg-slate-50 p-4 md:p-8 min-h-screen font-sans">
+
+<div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-6 md:p-10 border border-slate-200">
+
+    <!-- Header -->
+    <header class="text-center mb-8">
+        <h1 class="text-2xl md:text-3xl font-black text-[#0A455D] mb-1">Ionic Crystal Brittleness</h1>
+        <p class="text-slate-400 text-sm">Why ionic compounds shatter rather than bend under stress</p>
+    </header>
+
+    <!-- Force Slider -->
+    <div class="mb-8 w-full max-w-md mx-auto bg-[#F0F7FA] p-5 rounded-xl border border-[#C5D2DE] shadow-sm">
+        <label class="block text-[#0A455D] font-bold mb-3 text-center text-base">
+            Shear Force: <span id="forceValue" class="text-[#4699AA]">0%</span>
+        </label>
+        <input id="forceSlider" type="range" min="0" max="1" step="0.005" value="0"
+               class="w-full h-3 bg-transparent appearance-none cursor-pointer">
+        <div class="flex justify-between text-xs font-semibold text-[#7FA9B7] mt-2 px-1">
+            <span>Rest</span>
+            <span>Max Force</span>
+        </div>
+    </div>
+
+    <!-- Main Visualization -->
+    <div class="flex justify-center mb-6">
+        <div class="relative bg-white border-2 border-dashed border-[#C5D2DE] rounded-xl p-3 w-full max-w-3xl">
+            <div class="flex justify-around text-xs font-bold text-[#7FA9B7] mb-2 px-4">
+                <span id="label1" class="stage-label opacity-100">Intact Crystal</span>
+                <span id="label2" class="stage-label opacity-40">Ions Displaced</span>
+                <span id="label3" class="stage-label opacity-40">Crystal Shatters</span>
+            </div>
+
+            <svg id="ionSvg" width="100%" height="360" viewBox="0 0 620 360"
+                 class="overflow-visible" style="background:#FAFCFD;border-radius:8px;">
+                <defs>
+                    <radialGradient id="catGrad" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#4A5568"/>
+                        <stop offset="100%" stop-color="#1A202C"/>
+                    </radialGradient>
+                    <radialGradient id="anGrad" cx="35%" cy="35%" r="65%">
+                        <stop offset="0%" stop-color="#FFFFFF"/>
+                        <stop offset="100%" stop-color="#CBD5E0"/>
+                    </radialGradient>
+                    <marker id="arrowHead" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                        <path d="M0,0 L8,4 L0,8 Z" fill="#D85A30"/>
+                    </marker>
+                </defs>
+
+                <!-- Slip plane -->
+                <line id="slipPlane" x1="30" y1="180" x2="590" y2="180"
+                      stroke="#E8A87C" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.6"/>
+                <text x="34" y="173" fill="#D4915A" font-size="10" font-weight="600" font-family="Segoe UI,sans-serif">Slip Plane</text>
+
+                <!-- Bond layer (attraction, blue) -->
+                <g id="bondGroup"></g>
+
+                <!-- Force arrows -->
+                <g id="forceArrows" style="display:none;opacity:0;transition:opacity 0.3s;">
+                    <line x1="30" y1="135" x2="92" y2="135" stroke="#D85A30" stroke-width="2.5" marker-end="url(#arrowHead)"/>
+                    <line x1="30" y1="150" x2="86" y2="150" stroke="#D85A30" stroke-width="2.5" marker-end="url(#arrowHead)"/>
+                    <line x1="30" y1="160" x2="80" y2="160" stroke="#D85A30" stroke-width="2.5" marker-end="url(#arrowHead)"/>
+                    <text x="98" y="139" fill="#D85A30" font-size="11" font-weight="bold" font-family="Segoe UI,sans-serif">Shear</text>
+                </g>
+
+                <!-- Ions + charge labels -->
+                <g id="ionsGroup"></g>
+
+                <!-- Repulsion indicators -->
+                <g id="repulseGroup"></g>
+
+                <!-- Cleavage crack -->
+                <g id="crackGroup"></g>
+            </svg>
+
+            <p id="descText" class="text-center text-sm text-[#5B7684] mt-3 min-h-[40px] leading-relaxed px-4">
+                A regular ionic lattice: every <strong class="text-slate-700">cation (+)</strong> is surrounded by
+                <strong class="text-slate-700">anions (&minus;)</strong>. Opposite charges attract &mdash; the crystal is stable.
+            </p>
+        </div>
+    </div>
+
+    <!-- Legend -->
+    <div class="flex justify-center gap-8 mb-8 text-sm">
+        <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full inline-block relative" style="background:linear-gradient(135deg,#4A5568,#1A202C);border:1.5px solid #2D3748;">
+                <span class="absolute inset-0 flex items-center justify-center text-white text-xs font-bold">+</span>
+            </span>
+            <span class="text-[#5B7684] font-medium">Cation (+)</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-full inline-block border-2 border-[#A0AEC0] relative" style="background:#fff;">
+                <span class="absolute inset-0 flex items-center justify-center text-slate-700 text-xs font-bold">&minus;</span>
+            </span>
+            <span class="text-[#5B7684] font-medium">Anion (&minus;)</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="w-5 h-0.5 inline-block bg-blue-400"></span>
+            <span class="text-[#5B7684] font-medium">Attraction</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <svg width="22" height="10" viewBox="0 0 22 10">
+                <line x1="2" y1="5" x2="20" y2="5" stroke="#DC2626" stroke-width="2" stroke-linecap="round"/>
+                <polygon points="2,5 7,2 7,8" fill="#DC2626"/>
+                <polygon points="20,5 15,2 15,8" fill="#DC2626"/>
+            </svg>
+            <span class="text-[#5B7684] font-medium">Repulsion (like charges)</span>
+        </div>
+    </div>
+
+    <!-- Explanation Cards -->
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <div id="card1" class="bg-[#F0F7FA] rounded-xl p-4 border border-[#C5D2DE] transition-all duration-300">
+            <h4 class="font-bold text-[#0A455D] text-sm mb-2 flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-[#0A455D] text-white text-xs flex items-center justify-center">1</span>
+                Intact Lattice
+            </h4>
+            <p class="text-xs text-[#5B7684] leading-relaxed">
+                Cations (+) and anions (&minus;) alternate. Every ion is surrounded by oppositely charged neighbors &mdash;
+                strong electrostatic <strong class="text-blue-600">attraction</strong> holds the crystal together.
+            </p>
+        </div>
+        <div id="card2" class="bg-white rounded-xl p-4 border border-slate-200 transition-all duration-300">
+            <h4 class="font-bold text-[#0A455D] text-sm mb-2 flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-slate-300 text-white text-xs flex items-center justify-center">2</span>
+                Ions Displaced
+            </h4>
+            <p class="text-xs text-[#5B7684] leading-relaxed">
+                Shear slides ion rows. At half a lattice spacing, <strong class="text-red-600">like-charged ions line up</strong>.
+                Repulsion now overcomes attraction.
+            </p>
+        </div>
+        <div id="card3" class="bg-white rounded-xl p-4 border border-slate-200 transition-all duration-300">
+            <h4 class="font-bold text-[#0A455D] text-sm mb-2 flex items-center gap-2">
+                <span class="w-6 h-6 rounded-full bg-slate-300 text-white text-xs flex items-center justify-center">3</span>
+                Crystal Shatters
+            </h4>
+            <p class="text-xs text-[#5B7684] leading-relaxed">
+                The violent repulsion <strong class="text-red-600">cleaves the lattice</strong> along the slip plane.
+                Ionic crystals fracture instead of deforming &mdash; they are <strong>brittle</strong>.
+            </p>
+        </div>
+    </div>
+
+    <!-- Key Concept -->
+    <div class="bg-[#0A455D] rounded-xl p-5 text-white">
+        <h4 class="font-bold text-[#7FD4E8] text-sm mb-2">Key Concept: "Hard but Brittle"</h4>
+        <p class="text-xs leading-relaxed opacity-90">
+            <strong>Brittleness</strong> does not mean "weak." Ionic crystals are hard and strong (high melting point).
+            "Brittle" means they <strong>fracture without plastic deformation</strong>. A small shear displaces the lattice
+            only a tiny amount; once like charges meet, the repulsive force is so violent that the crystal
+            <strong>snaps</strong> along the plane rather than bending.
+        </p>
+    </div>
+
+</div>
+
+<script>
+const slider = document.getElementById('forceSlider');
+const forceValueEl = document.getElementById('forceValue');
+const ionsGroup = document.getElementById('ionsGroup');
+const bondGroup = document.getElementById('bondGroup');
+const repulseGroup = document.getElementById('repulseGroup');
+const crackGroup = document.getElementById('crackGroup');
+const forceArrows = document.getElementById('forceArrows');
+const descText = document.getElementById('descText');
+
+const ROWS = 6;
+const COLS = 10;
+const SPACING = 42;
+const R_CAT = 14;
+const R_AN = 14;
+const OX = 60;
+const OY = 50;
+const SLIP_ROW = 3;          // rows 0..2 = top block; 3..5 = bottom block
+const HALF = SPACING / 2;    // displacement needed for like charges to align
+
+// Store ion elements + charge label
+const ionEls = [];
+
+function initLattice() {
+    ionsGroup.innerHTML = '';
+    bondGroup.innerHTML = '';
+    ionEls.length = 0;
+    for (let r = 0; r < ROWS; r++) {
+        ionEls[r] = [];
+        for (let c = 0; c < COLS; c++) {
+            const isCation = (r + c) % 2 === 0;
+            const cx = OX + c * SPACING;
+            const cy = OY + r * SPACING;
+
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', cx);
+            circle.setAttribute('cy', cy);
+            circle.setAttribute('r', isCation ? R_CAT : R_AN);
+            circle.setAttribute('fill', isCation ? 'url(#catGrad)' : 'url(#anGrad)');
+            if (!isCation) {
+                circle.setAttribute('stroke', '#A0AEC0');
+                circle.setAttribute('stroke-width', '1.2');
+            }
+            circle.setAttribute('class', 'ion');
+            ionsGroup.appendChild(circle);
+
+            // charge label
+            const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            label.setAttribute('x', cx);
+            label.setAttribute('y', cy + 0.5);
+            label.setAttribute('text-anchor', 'middle');
+            label.setAttribute('dominant-baseline', 'middle');
+            label.setAttribute('font-size', '15');
+            label.setAttribute('font-weight', 'bold');
+            label.setAttribute('font-family', 'Segoe UI, sans-serif');
+            label.setAttribute('fill', isCation ? '#FFFFFF' : '#2D3748');
+            label.textContent = isCation ? '+' : '−';
+            label.setAttribute('class', 'iontext');
+            ionsGroup.appendChild(label);
+
+            ionEls[r][c] = { el: circle, text: label, isCation, baseCx: cx, baseCy: cy };
+        }
+    }
+}
+
+// --- bonds (attraction) between top block bottom row and bottom block top row ---
+function drawBonds(slideX, opacity) {
+    bondGroup.innerHTML = '';
+    if (opacity <= 0.02) return;
+    const rTop = SLIP_ROW - 1;   // row 2
+    const rBot = SLIP_ROW;        // row 3
+    for (let c = 0; c < COLS; c++) {
+        const top = ionEls[rTop][c];
+        const tx = top.baseCx + slideX;
+        const ty = top.baseCy;
+        // nearest bottom ion by x
+        let best = null, bestD = 1e9;
+        for (let bc = 0; bc < COLS; bc++) {
+            const b = ionEls[rBot][bc];
+            const d = Math.abs(b.baseCx - tx);
+            if (d < bestD) { bestD = d; best = b; }
+        }
+        if (!best) continue;
+        // only draw if opposite charge (attraction)
+        if (top.isCation !== best.isCation) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', tx);
+            line.setAttribute('y1', ty);
+            line.setAttribute('x2', best.baseCx);
+            line.setAttribute('y2', best.baseCy);
+            line.setAttribute('stroke', '#60A5FA');
+            line.setAttribute('stroke-width', '1.2');
+            line.setAttribute('opacity', opacity * 0.6);
+            line.setAttribute('class', 'bond');
+            bondGroup.appendChild(line);
+        }
+    }
+}
+
+// --- repulsion arrows between aligned like charges across slip boundary ---
+const SVGNS = 'http://www.w3.org/2000/svg';
+function arrowHead(x, y, ang, size, color) {
+    // ang = direction the tip points (radians); tip sits at (x,y)
+    const a1 = ang + Math.PI * 0.82, a2 = ang - Math.PI * 0.82;
+    const p1 = `${(x + size*Math.cos(a1)).toFixed(1)},${(y + size*Math.sin(a1)).toFixed(1)}`;
+    const p2 = `${(x + size*Math.cos(a2)).toFixed(1)},${(y + size*Math.sin(a2)).toFixed(1)}`;
+    const poly = document.createElementNS(SVGNS, 'polygon');
+    poly.setAttribute('points', `${x.toFixed(1)},${y.toFixed(1)} ${p1} ${p2}`);
+    poly.setAttribute('fill', color);
+    return poly;
+}
+function drawRepulsion(slideX, intensity) {
+    repulseGroup.innerHTML = '';
+    if (intensity <= 0.02) return;
+    const rTop = SLIP_ROW - 1;
+    const rBot = SLIP_ROW;
+    const col = '#DC2626';
+    const w = 2 + intensity * 1.6;
+    const pad = R_CAT + 6;        // keep arrow outside the ion circles
+    const MAXD = SPACING * 1.2;    // like charges are diagonal neighbours; only draw when slide brings them close
+    for (let c = 0; c < COLS; c++) {
+        const top = ionEls[rTop][c];
+        const tx = top.baseCx + slideX, ty = top.baseCy;
+        // find the NEAREST like-charged ion in the bottom block
+        let best = null, bestD = 1e9;
+        for (let bc = 0; bc < COLS; bc++) {
+            const b = ionEls[rBot][bc];
+            if (top.isCation !== b.isCation) continue;        // only like charges repel
+            const d = Math.hypot(b.baseCx - tx, b.baseCy - ty);
+            if (d < bestD) { bestD = d; best = b; }
+        }
+        if (!best || bestD < 1 || bestD > MAXD) continue;
+        const bx = best.baseCx, by = best.baseCy;
+        const dx = bx - tx, dy = by - ty;
+        const dist = bestD;
+        const ux = dx / dist, uy = dy / dist;
+        // arrow endpoints pulled in just outside each ion
+        const x1 = tx + ux * pad, y1 = ty + uy * pad;         // upper end (by top ion)
+        const x2 = bx - ux * pad, y2 = by - uy * pad;         // lower end (by bottom ion)
+        // shaft
+        const line = document.createElementNS(SVGNS, 'line');
+        line.setAttribute('x1', x1.toFixed(1));
+        line.setAttribute('y1', y1.toFixed(1));
+        line.setAttribute('x2', x2.toFixed(1));
+        line.setAttribute('y2', y2.toFixed(1));
+        line.setAttribute('stroke', col);
+        line.setAttribute('stroke-width', w.toFixed(1));
+        line.setAttribute('stroke-linecap', 'round');
+        line.setAttribute('opacity', (0.5 + 0.5 * intensity).toFixed(2));
+        repulseGroup.appendChild(line);
+        // two heads pointing OUTWARD (repulsion pushes the pair apart)
+        repulseGroup.appendChild(arrowHead(x1, y1, Math.atan2(-uy, -ux), 7 + intensity*2, col));
+        repulseGroup.appendChild(arrowHead(x2, y2, Math.atan2(uy, ux), 7 + intensity*2, col));
+    }
+    // label (appears once repulsion is significant)
+    if (intensity > 0.4) {
+        const lab = document.createElementNS(SVGNS, 'text');
+        lab.setAttribute('x', OX + 4.5 * SPACING);
+        lab.setAttribute('y', 200);
+        lab.setAttribute('text-anchor', 'middle');
+        lab.setAttribute('fill', '#DC2626');
+        lab.setAttribute('font-size', '11');
+        lab.setAttribute('font-weight', 'bold');
+        lab.setAttribute('font-family', 'Segoe UI, sans-serif');
+        lab.setAttribute('opacity', Math.min(1, (intensity - 0.4) * 3).toFixed(2));
+        lab.textContent = 'repulsive force between like charges';
+        repulseGroup.appendChild(lab);
+    }
+}
+
+// --- cleavage crack along slip plane ---
+function drawCrack(gap) {
+    crackGroup.innerHTML = '';
+    if (gap < 4) return;
+    const op = Math.min(1, gap / 30);
+    const cracks = [
+        [[150, 180], [168, 172], [185, 183], [205, 171], [225, 184], [248, 173], [268, 182]],
+        [[330, 182], [350, 172], [370, 185], [392, 173], [412, 186], [435, 174], [455, 183]],
+        [[120, 184], [135, 174], [150, 185]]
+    ];
+    cracks.forEach(pts => {
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        const d = pts.map((p, i) => (i === 0 ? 'M' : 'L') + `${p[0]},${p[1]}`).join(' ');
+        path.setAttribute('d', d);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', '#374151');
+        path.setAttribute('stroke-width', '1.8');
+        path.setAttribute('opacity', op);
+        path.classList.add('crack-line');
+        crackGroup.appendChild(path);
+    });
+    // gap shadow band
+    const band = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    band.setAttribute('x', 30);
+    band.setAttribute('y', 180 - gap/2);
+    band.setAttribute('width', 560);
+    band.setAttribute('height', gap);
+    band.setAttribute('fill', '#E2E8F0');
+    band.setAttribute('opacity', op * 0.5);
+    crackGroup.appendChild(band);
+}
+
+function updateDescription(force) {
+    let html = '';
+    if (force < 0.05) {
+        html = 'A regular ionic lattice: every <strong class="text-slate-700">cation (+)</strong> is surrounded by <strong class="text-slate-700">anions (&minus;)</strong>. Opposite charges attract &mdash; the crystal is stable.';
+    } else if (force < 0.40) {
+        html = '<span class="text-[#D85A30] font-semibold">Shear force</span> is applied. The top block slides slightly (elastic). Each ion still sits near oppositely charged neighbors &mdash; <span class="text-blue-600 font-semibold">attraction</span> still dominates.';
+    } else if (force < 0.50) {
+        html = 'The top block has shifted by half a spacing. <span class="text-red-600 font-semibold">Like-charged ions now line up</span> across the slip plane. Repulsion grows rapidly.';
+    } else if (force < 0.70) {
+        html = 'At the critical point, <span class="text-red-700 font-bold">repulsion overcomes attraction</span>. The lattice <span class="text-[#0A455D] font-semibold">cleaves</span> &mdash; a gap opens along the slip plane and the crystal breaks.';
+    } else {
+        html = '<span class="text-red-700 font-bold">The crystal has shattered.</span> Ionic compounds fracture instead of bending. This is <span class="font-semibold">brittleness</span>: hard, but unable to deform plastically.';
+    }
+    descText.innerHTML = html;
+}
+
+function updateStageLabels(force) {
+    const l1 = document.getElementById('label1');
+    const l2 = document.getElementById('label2');
+    const l3 = document.getElementById('label3');
+    const setL = (el, on, col) => {
+        el.style.opacity = on ? '1' : '0.4';
+        el.style.fontWeight = on ? '700' : '400';
+        el.style.color = on ? col : '#A0AEC0';
+    };
+    setL(l1, force < 0.40, '#0A455D');
+    setL(l2, force >= 0.40 && force < 0.55, '#D85A30');
+    setL(l3, force >= 0.55, '#DC2626');
+}
+
+function updateCards(force) {
+    const c1 = document.getElementById('card1');
+    const c2 = document.getElementById('card2');
+    const c3 = document.getElementById('card3');
+    const base = 'rounded-xl p-4 border transition-all duration-300 ';
+    if (force < 0.40) {
+        c1.className = base + 'bg-[#F0F7FA] border-[#C5D2DE]';
+        c2.className = base + 'bg-white border-slate-200';
+        c3.className = base + 'bg-white border-slate-200';
+    } else if (force < 0.55) {
+        c1.className = base + 'bg-white border-slate-200';
+        c2.className = base + 'bg-[#FFF8F0] border-[#E8A87C]';
+        c3.className = base + 'bg-white border-slate-200';
+    } else {
+        c1.className = base + 'bg-white border-slate-200';
+        c2.className = base + 'bg-white border-slate-200';
+        c3.className = base + 'bg-[#FEF2F2] border-[#FCA5A5]';
+    }
+}
+
+function update(force) {
+    forceValueEl.textContent = Math.round(force * 100) + '%';
+
+    // --- displacement profile (realistic) ---
+    // 0..0.5: elastic slide up to HALF spacing (like charges align at 0.5)
+    // 0.5..1: cleavage — top block lifts up (gap opens perpendicular to plane)
+    let slideX, gapY;
+    if (force <= 0.5) {
+        slideX = (force / 0.5) * HALF;
+        gapY = 0;
+    } else {
+        slideX = HALF;                       // stays at aligned position
+        gapY = ((force - 0.5) / 0.5) * 38;  // top block separates upward
+    }
+
+    // force arrows
+    if (force > 0.03) {
+        forceArrows.style.display = 'block';
+        forceArrows.style.opacity = Math.min(1, force * 2);
+    } else {
+        forceArrows.style.display = 'none';
+    }
+
+    // position ions
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            const ion = ionEls[r][c];
+            const dx = (r < SLIP_ROW) ? slideX : 0;
+            const dy = (r < SLIP_ROW) ? -gapY : (gapY * 0.15); // bottom slight, top lifts
+            ion.el.setAttribute('cx', ion.baseCx + dx);
+            ion.el.setAttribute('cy', ion.baseCy + dy);
+            ion.text.setAttribute('x', ion.baseCx + dx);
+            ion.text.setAttribute('y', ion.baseCy + dy + 0.5);
+        }
+    }
+
+    // --- attraction bonds (blue), fade as slide grows ---
+    const bondOp = force < 0.5 ? Math.max(0, 1 - slideX / HALF * 1.1) : 0;
+    drawBonds(slideX, bondOp);
+
+    // --- repulsion (red): peaks at alignment (force~0.5), fades as cleavage opens ---
+    let rep;
+    if (force < 0.42) rep = 0;
+    else if (force < 0.5) rep = (force - 0.42) / 0.08;
+    else rep = Math.max(0, 1 - (force - 0.5) / 0.22);
+    drawRepulsion(slideX, rep);
+
+    // --- cleavage crack ---
+    drawCrack(gapY);
+
+    // UI
+    updateDescription(force);
+    updateStageLabels(force);
+    updateCards(force);
+}
+
+initLattice();
+slider.addEventListener('input', e => update(parseFloat(e.target.value)));
+update(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Caramelisation — Particle-Level Mechanism</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body{margin:0;overflow:hidden;background:#ECEFF1;font-family:'Segoe UI',Tahoma,sans-serif;user-select:none;}
+        #canvas-container{position:absolute;inset:0;z-index:1;}
+        #ui-layer{position:absolute;top:10px;left:10px;z-index:10;background:rgba(255,255,255,.96);
+            padding:14px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.12);width:352px;
+            border:1px solid #e2e8f0;max-height:96vh;overflow-y:auto;}
+        .btn{transition:all .15s;cursor:pointer;}
+        .btn:active{transform:scale(.98);}
+        .eqbtn{padding:5px 10px;border-radius:14px;border:1.5px solid #cbd5e1;background:#fff;
+            font-size:11.5px;font-weight:700;cursor:pointer;color:#475569;}
+        .eqbtn.active{background:#0A455D;color:#fff;border-color:#0A455D;}
+        .legend-item{display:flex;align-items:center;margin-bottom:3px;font-size:12px;color:#334155;}
+        .dot{width:13px;height:13px;border-radius:50%;margin-right:7px;display:inline-block;
+            border:1px solid rgba(0,0,0,.15);flex:none;}
+        .swatch{width:22px;height:13px;border-radius:3px;margin-right:7px;display:inline-block;
+            border:1px solid rgba(0,0,0,.15);flex:none;}
+        input[type=range]{-webkit-appearance:none;width:100%;background:transparent;}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:16px;width:16px;
+            border-radius:50%;background:#B45309;cursor:pointer;margin-top:-6px;}
+        input[type=range]::-webkit-slider-runnable-track{height:4px;background:#cbd5e1;border-radius:2px;cursor:pointer;}
+    </style>
+</head>
+<body>
+<div id="canvas-container"><canvas id="cv"></canvas></div>
+
+<div id="ui-layer">
+    <h2 class="text-base font-bold text-slate-800 mb-1">Caramelisation — particle level</h2>
+    <div class="text-[11px] text-slate-500 mb-3 bg-slate-50 p-2 rounded border border-slate-200 leading-snug">
+        Heat the sugar on the pudding. Two things break — and they are <b>not the same thing</b>.<br>
+        <span class="text-sky-700 font-bold">- - - dashed</span> = forces <b>between</b> molecules<br>
+        <span class="text-amber-800 font-bold">&mdash; solid</span> = bonds <b>inside</b> a molecule
+    </div>
+
+    <div class="mb-3">
+        <div class="text-[11px] font-bold text-slate-500 uppercase mb-1">Temperature</div>
+        <input type="range" id="temp" min="20" max="200" value="20" step="1">
+        <div class="flex justify-between text-[10px] text-slate-500 mt-0.5">
+            <span>20 °C</span><span id="tempTxt" class="font-bold text-slate-700">20 °C</span><span>200 °C</span>
+        </div>
+        <div id="phaseNote" class="text-[11px] mt-2 p-2 rounded border leading-snug bg-slate-50 border-slate-200 text-slate-600">
+            Solid sugar. The molecules are locked in a lattice.
+        </div>
+    </div>
+
+    <div class="mb-3 flex gap-1.5">
+        <button class="eqbtn" id="btnPlay">&#9654; Auto-heat</button>
+        <button class="eqbtn" id="btnReset">Reset</button>
+        <button class="eqbtn active" id="btnPud">Pudding view</button>
+    </div>
+
+    <div class="mb-3">
+        <div class="text-[11px] font-bold text-slate-500 uppercase mb-1">Legend</div>
+        <div id="legend" class="bg-slate-50 p-2 rounded border border-slate-200"></div>
+    </div>
+
+    <div class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded border border-slate-200 leading-snug">
+        <b class="text-slate-700">Melting — physical change.</b> The dashed links give way. The molecules drift apart and
+        the sugar flows, but every molecule is still intact: it is <b>still sugar</b>.<br><br>
+        <b class="text-slate-700">Caramelisation — chemical change.</b> Now the solid bonds inside each molecule break.
+        The molecules fall apart, water is driven off, and new brown compounds form. It is <b>no longer sugar</b>.
+    </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- geometry ---------- */
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+let pud={}, dish={};
+
+/* ---------- helpers ---------- */
+/* Accepts BOTH '#RRGGBB' and 'rgb(r,g,b)'. This matters: sugarCol()/sugarDark() return rgb()
+   strings (they are built with mixHex), and they are then handed to shade() for the beads and
+   the slab. A hex-only parser silently read "rgb(253,251,243)" as parseInt('gb(253,251,243)')
+   -> NaN -> 0, so every sugar surface rendered as near-black rgb(16,16,16) while the colour
+   maths itself was correct. Anything that reaches a canvas colour must go through here. */
+function hex2rgb(h){
+  if(h.charAt(0)==='#'){
+    const n=parseInt(h.slice(1),16);
+    return [(n>>16)&255,(n>>8)&255,n&255];
+  }
+  const m=String(h).match(/-?\d+(\.\d+)?/g);
+  if(!m||m.length<3) return [0,0,0];
+  return [Math.round(+m[0]),Math.round(+m[1]),Math.round(+m[2])];
+}
+function shade(hex,f){const c=hex2rgb(hex);const mix=v=> f>0 ? v+(255-v)*f : v*(1+f);
+  return 'rgb('+(mix(c[0])|0)+','+(mix(c[1])|0)+','+(mix(c[2])|0)+')';}
+function clampX(v,a,b){return v<a?a:(v>b?b:v);}
+function mixHex(a,b,t){const A=hex2rgb(a),B=hex2rgb(b);
+  return 'rgb('+((A[0]+(B[0]-A[0])*t)|0)+','+((A[1]+(B[1]-A[1])*t)|0)+','+((A[2]+(B[2]-A[2])*t)|0)+')';}
+/* Sugar white is close enough to paper white that a pure white ball washes out. A hint of
+   warmth (255,247,228) keeps the sugar reading as sugar while staying clearly LIGHT — the
+   first build started from the template's dark slate and rendered sucrose as a black bead,
+   which is both chemically wrong and visually swallows the bonds drawn on top. */
+const C_LIGHT='#FFF7E4', C_SLATE='#8A94A4', C_SHADOW='#39414F';
+
+/* ===================== ball rendering =====================
+   Ported from the Three.js reference model (Day6 "化学键的断裂与重组"), which is pure WebGL:
+   its polish comes from real lights and materials, not from drawing code. What CAN be carried
+   across is the visual language, so this reproduces the three systems that actually produce
+   the reference's look:
+
+     1. THREE-POINT LIGHTING. The reference scene is AmbientLight(0.7) + a warm-white
+        DirectionalLight(1.05) from (5,12,8) casting the shadow + a COOL fill DirectionalLight
+        (0x93c5fd, 0.35) from (-6,-5,-4). So: the key highlight sits UP-RIGHT, the core of the
+        ball is the lit mid-tone, and the shadow side picks up a COOL blue bounce. An earlier
+        build only had the key light, which is why the shadow side collapsed to neutral grey.
+     2. INNER OUTLINE (ball-and-stick textbook edge). The reference adds OUTLINE_MAT —
+        MeshBasicMaterial(0x334155, BackSide) on a sphere scaled 1.07, i.e. a dark shell behind
+        the ball so a sliver of it shows as a rim. Scaled to Canvas that is simply: paint a
+        slightly larger dark disc first, then the lit body on top. Note this is NOT the same as
+        the old "stroke at r-0.4" ring, which at ATOM_R=7.5 was a 0.5 px line that antialiased
+        into a grey smudge instead of an edge.
+     3. CONTACT SHADOW. The reference floor uses ShadowMaterial(opacity 0.10) under PCFSoft
+        shadows. Here it stays an ellipse, but it is split into a wide soft penumbra plus a
+        tighter dark core so the ball looks like it rests on the slab rather than floating.
+
+   `glossy` keeps the ORIGINAL colour-maths contract intact: light beads (sugar while it is
+   still sugar) use a converged range so near-white does not shade down into dirty grey, dark
+   beads (caramel, fragments) use the full range because they need the deep shadow to read as
+   round. Anything reaching a canvas colour still goes through shade()/hex2rgb(). */
+const C_FILL='#93C5FD';   // cool bounce light, matching the reference's blue fill
+const C_EDGE='#334155';   // reference outline colour
+
+function sphere(c,x,y,r,col,dark,lbl,fs){
+  sphereLike(c,x,y,r,col,lbl,fs,false,0);
+}
+function bead(ctx,x,y,r,col,dark,lbl,fs,glossy){
+  sphereLike(ctx,x,y,r,col,lbl,fs,!!glossy,0);
+}
+/* `rim` = extra emissive rim weight 0..1, used by the break-flash so a shattering molecule's
+   atoms catch the same light as its bonds. */
+function sphereLike(c,x,y,r,col,lbl,fs,glossy,rim){
+  /* 3. contact shadow — soft penumbra, then a tight dark core */
+  c.save();
+  c.globalAlpha=0.13; c.fillStyle='#43556A';
+  c.beginPath(); c.ellipse(x,y+r*1.00,r*1.10,r*0.36,0,0,7); c.fill();
+  c.globalAlpha=0.20;
+  c.beginPath(); c.ellipse(x,y+r*0.98,r*0.86,r*0.25,0,0,7); c.fill();
+  c.restore();
+
+  /* 2. inner outline — dark disc one step larger than the body, so a rim shows all round */
+  const ow=Math.max(1.1,r*0.115);
+  c.fillStyle=C_EDGE;
+  c.beginPath(); c.arc(x,y,r+ow,0,7); c.fill();
+
+  /* 1. lit body — key highlight upper-right-of-centre, cool bounce lower-left.
+     Gradients are radial and offset from centre, so the "light direction" is baked in. */
+  const g=c.createRadialGradient(x-r*0.34,y-r*0.40,r*0.06, x,y,r*1.02);
+  if(glossy){
+    g.addColorStop(0,    shade(col,  0.34));
+    g.addColorStop(0.34, shade(col,  0.06));
+    g.addColorStop(0.72, shade(col, -0.10));
+    g.addColorStop(1,    shade(mixHex(col,C_FILL,0.30),-0.18));
+  }else{
+    g.addColorStop(0,    shade(col,  0.66));
+    g.addColorStop(0.30, shade(col,  0.16));
+    g.addColorStop(0.70, shade(col, -0.24));
+    g.addColorStop(1,    shade(mixHex(col,C_FILL,0.26),-0.48));
+  }
+  c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+
+  /* cool bounce on the shadow side — a low-alpha wash, the Canvas stand-in for the fill light.
+     Kept to the lower-left quadrant so it never touches the key highlight. */
+  c.save();
+  const bg=c.createRadialGradient(x+r*0.46,y+r*0.52,r*0.04, x+r*0.46,y+r*0.52,r*0.82);
+  bg.addColorStop(0,'rgba(147,197,253,'+(glossy?0.34:0.26)+')');
+  bg.addColorStop(1,'rgba(147,197,253,0)');
+  c.beginPath(); c.arc(x,y,r,0,7); c.clip();
+  c.fillStyle=bg; c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  c.restore();
+
+  if(lbl){
+    c.font='800 '+(fs||Math.max(9,Math.round(r*1.02)))+'px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillStyle='rgba(0,0,0,.30)'; c.fillText(lbl,x+0.7,y+r*0.15+0.7);
+    c.fillStyle='#fff'; c.fillText(lbl,x,y+r*0.15);
+  }
+
+  /* specular pair — a broad soft sheen plus a small hot spot (the roughness 0.3 / metalness
+     0.05 material of the reference reads as a wide lobe, not a mirror point).
+     These are painted INSIDE a re-applied clip: they are deliberately wide (r*0.34 across) and
+     a translucent ellipse that overhangs the rim shows up as a pale crescent floating just
+     outside the ball. Clipping them to the body circle keeps the sheen on the sphere. */
+  c.save();
+  c.beginPath(); c.arc(x,y,r,0,7); c.clip();
+  c.globalAlpha=0.72; c.fillStyle='#fff';
+  c.beginPath(); c.ellipse(x-r*0.32,y-r*0.38,r*0.34,r*0.22,-0.62,0,7); c.fill();
+  c.globalAlpha=0.92;
+  c.beginPath(); c.ellipse(x-r*0.40,y-r*0.46,r*0.13,r*0.09,-0.62,0,7); c.fill();
+  if(glossy){ c.globalAlpha=0.30;
+    c.beginPath(); c.ellipse(x+r*0.30,y+r*0.34,r*0.14,r*0.08,-0.62,0,7); c.fill(); }
+  else { c.globalAlpha=0.20;
+    c.beginPath(); c.ellipse(x+r*0.30,y+r*0.34,r*0.17,r*0.10,-0.62,0,7); c.fill(); }
+  c.restore();
+
+  /* emissive rim — only lit while the molecule around it is shattering */
+  if(rim>0){
+    c.save();
+    c.globalAlpha=rim*0.85;
+    c.strokeStyle='#FDE68A'; c.lineWidth=Math.max(1.2,r*0.16);
+    c.beginPath(); c.arc(x,y,r-0.2,0,7); c.stroke();
+    c.restore();
+  }
+  c.restore();
+}
+
+/* ---------- chemistry/temperature model ---------- */
+const T_MELT=105;   // 蔗糖实测熔点 ~186 °C 分解——本模型按用户要求单点简化：105 °C 熔化
+const T_CARAM=150;  // 焦糖化起始
+const CARAM_SPAN=45;// 150 → 195 完成焦糖化
+let temp=20, heatOn=false;
+
+function meltP(){ return Math.max(0,Math.min(1,(temp-T_MELT)/14)); }        // 0→1 melting progress
+function caramelP(){ return Math.max(0,Math.min(1,(temp-T_CARAM)/CARAM_SPAN)); } // 0→1 caramelisation
+
+/* sugar colour sweeps white → gold → deep brown */
+const C_WHITE='#FDFBF3', C_GOLD='#D2962E', C_BROWN='#4A210C';
+function sugarCol(){ const t=caramelP(); return t<0.5 ? mixHex(C_WHITE,C_GOLD,t*2) : mixHex(C_GOLD,C_BROWN,(t-0.5)*2); }
+function sugarDark(){ const t=caramelP(); return t<0.5 ? mixHex('#C9BFA6','#8A5A12',t*2) : mixHex('#8A5A12','#240E04',(t-0.5)*2); }
+
+/* Polished shading uses the full ±0.45 range. On a near-white base the -0.45 term lands
+   around rgb(140,138,134) — a mid grey that reads as "dirty" rather than "glossy". Sugar
+   therefore carries a scaled-down shading range (the `glossy` flag in sphereLike) so the
+   highlight stays bright and the shadow stays within the warm family instead of going grey. */
+
+const NBOND=5;
+
+/* Molecule screen size. These are the BASE values; buildSugar() may scale them up (never
+   below 1.0) so the lattice fills the slab instead of clustering in the middle of it.
+   BOND_LEN / ATOM_R / CORE_R are mutated by applyScale().
+   The bond MUST stay much longer than CORE_R, because the core ball is painted OVER the inner
+   end of every bond: at base scale 46 - 13 = 33 px of bond stays visible. The first version
+   used a 17 px bond inside a 20 px ball — the molecule rendered as a plain black dot, while
+   the headless test still passed because stroke() was genuinely called. applyScale() preserves
+   the ratio, so this holds at every scale. */
+let BOND_LEN=46, ATOM_R=7.5, CORE_R=13;
+const BOND_LEN0=46, ATOM_R0=7.5, CORE_R0=13;
+
+/* Grow the molecule so a cols x rows lattice actually fills the slab it sits on.
+   Without this the model drew 107 px molecules inside a ~600 x 350 px slab and left wide dead
+   margins on every side — technically correct, but it read as a small diagram floating in a big
+   empty box. The scale is capped so the star's points still cannot collide (see the geometry
+   assertion in the test suite) and is never allowed to shrink below the base size. */
+function applyScale(cols,rows,bw,bh){
+  const need=2*(BOND_LEN0+ATOM_R0);                 // one molecule's footprint at base scale
+  const pitch=Math.min(bw/cols, bh/rows);           // space actually available per molecule
+  const k=Math.max(1, Math.min(1.55, pitch/(need*1.22)));
+  BOND_LEN=BOND_LEN0*k; ATOM_R=ATOM_R0*k; CORE_R=CORE_R0*k;
+}
+let MOL=[];      // molecules
+let FRAG=[];     // fragments after caramelisation
+let WATERS=[];   // split-off water leaving
+let BONDED=[];   // crystal lattice bonds (intermolecular)
+let DEHYD=0;     // how many waters have been driven off so far
+let SHEDT=0;     // frames until the next water is released (paces the dehydration)
+
+function makeMolecule(i,j,cx,cy,sp){
+  const m={x:cx,y:cy,hx:cx,hy:cy,vx:0,vy:0,r:CORE_R,bonds:[],bondDel:[],
+           frag:false,idx:i+'/'+j,ang:Math.random()*6.28,rot:0};
+  for(let k=0;k<NBOND;k++){
+    // flash starts at 0: the emissive flare is an EVENT marker set the frame a bond snaps,
+    // not a property of a healthy bond — see the flash-tick loop in simStep().
+    m.bonds.push({ang:k*(6.283/NBOND)+sp, len:BOND_LEN, alpha:1, gone:false, flash:0});
+    m.bondDel.push(-1);
+  }
+  m.rot=(Math.random()-0.5)*0.006;
+  return m;
+}
+
+function buildSugar(){
+  MOL=[]; FRAG=[]; WATERS=[]; BONDED=[]; DEHYD=0; SHEDT=0;
+  /* Lattice layout.
+     A single molecule now spans 2*(BOND_LEN+ATOM_R) = 107 px across, so the old 5x3 grid
+     (pitch ~97 px) made neighbouring molecules overlap and their radiating bonds collide.
+     Pitch is computed FROM the molecule size rather than assumed, and the molecule is then
+     scaled UP to the pitch the chosen grid enjoys (applyScale) so the lattice fills the slab
+     instead of huddling in the middle of it. The grid count is clamped so it never overflows
+     the slab on a small window. */
+  const span=2*(BOND_LEN+ATOM_R);
+  const gx=span*1.22, gy=span*1.12;
+  /* The lattice owns most of the slab, not 66% of it.
+     The old band was bh = h*0.66 starting at y0 = pud.y + h*0.24, i.e. it stopped at 0.90h and
+     began at 0.24h — so a third of the slab was permanently empty and the molecules read as a
+     small diagram floating in a big box. The band is now 0.80h tall starting at 0.10h, which
+     still leaves a margin at the top for the sugar's surface sheen and at the bottom for the
+     molecules to drift into once they melt. */
+  const bw=pud.w-2*pud.pad, bh=pud.h*0.80;
+  /* Pick the grid from the slab, then GROW the molecules to fill it. Order matters: the count
+     is chosen at base scale (so it stays a sensible 3x3 / 4x3), and only then is the molecule
+     scaled up to the pitch that grid actually enjoys. Scaling first and counting second would
+     let a large molecule force the count down to 2x2, which reads as "hardly any sugar". */
+  let cols=Math.max(2,Math.min(5,Math.floor(bw/gx)));
+  let rows=Math.max(2,Math.min(3,Math.floor(bh/gy)));
+  applyScale(cols,rows,bw,bh);
+  const sx=bw/cols, sy=bh/rows;
+  const x0=pud.x+pud.pad, y0=pud.y+pud.h*0.10;
+  for(let c=0;c<cols;c++)for(let rw=0;rw<rows;rw++){
+    const cx=x0+sx*(c+0.5)+(rw%2?sx*0.06:0);
+    const cy=y0+sy*(rw+0.5);
+    MOL.push(makeMolecule(c,rw,cx,cy,(c+rw)*0.7));
+  }
+  // lattice links between neighbours (intermolecular forces) — dashed when drawn
+  for(let i=0;i<MOL.length;i++)for(let j=i+1;j<MOL.length;j++){
+    const d=Math.hypot(MOL[i].hx-MOL[j].hx, MOL[i].hy-MOL[j].hy);
+    if(d<Math.max(sx,sy)*1.12) BONDED.push({a:i,b:j,alpha:1,cut:false,
+      cutAt:0.16+Math.random()*0.72,      // staggered so the lattice visibly comes apart
+      flash:0,                            // emissive flare, set to 1 the frame this link snaps
+      pitch:Math.min(sx,sy)});            // real pitch, so drawLattice() can cull by distance
+  }
+}
+
+/* fragments: split the molecule into 3 blobs that fly apart */
+const FRAG_COL=['#B45309','#92400E','#78350F'];
+function shatter(m){
+  m.frag=true;
+  const n=3;
+  /* Fragment radius is derived from the molecule's own core so the debris is visibly the
+     same material, just broken up: CORE_R 13 -> ~11 px chunks. The first version used 7 px
+     specks, which read as dust at 200 C and buried the "it came apart" message.
+     Expressed as a RATIO of CORE_R, not a constant, so the debris keeps its proportion when
+     applyScale() grows the molecule to fill a wide slab. */
+  const fr=CORE_R*0.80;
+  for(let k=0;k<n;k++){
+    const a=m.ang+k*(6.283/n)+Math.random()*0.5;
+    FRAG.push({x:m.x+Math.cos(a)*m.r*0.6, y:m.y+Math.sin(a)*m.r*0.6,
+      vx:Math.cos(a)*(0.7+Math.random()*0.7), vy:Math.sin(a)*(0.7+Math.random()*0.7)-0.25,
+      r:fr+Math.random()*fr*0.26, k:k, life:0});
+  }
+  // dehydration: water is squeezed out of the sugar as it breaks down
+  shedWater(m.x,m.y);
+}
+function shedWater(x,y){
+  WATERS.push({x:x+(Math.random()-0.5)*10, y:y-6, vx:(Math.random()-0.5)*0.5,
+    vy:-0.6-Math.random()*0.4, r:CORE_R*0.85, wob:Math.random()*6, fade:1, age:0});
+}
+
+/* ---------- resize ---------- */
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);
+  // clientWidth/clientHeight are READ-ONLY on a real element — assigning to them throws
+  // and aborts the whole script. Size the backing store via width/height and let CSS
+  // (#canvas-container{position:absolute;inset:0}) drive the on-screen size instead.
+  W=window.innerWidth; H=window.innerHeight;
+  cv.width=W*DPR; cv.height=H*DPR;
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  if(ctx.setTransform) ctx.setTransform(DPR,0,0,DPR,0,0);
+  const cx0=W*0.5+170;             // centre of the free area (UI panel is on the left)
+  const availW=W-cx0-40;
+  const pw=Math.max(520,Math.min(availW,880));
+  const ph=Math.min(H-60,620);
+  pud={x:cx0-pw/2, y:(H-ph)/2, w:pw, h:ph, pad:20};
+  dish={x:pud.x-70, y:pud.y+pud.h*0.58, w:pud.w+140, h:pud.h*0.44, lip:14};
+  buildSugar();
+}
+
+/* ---------- simulation ---------- */
+function simStep(){
+  const mp=meltP(), cp=caramelP();
+
+  // melting: intermolecular lattice links give way one after another as temperature rises.
+  // Using a gradient rather than a single threshold — if the cut band were narrower than one
+  // heat step, an unlucky frame could skip past it and leave links behind.
+  if(mp>0){
+    for(const b of BONDED){
+      if(b.cut)continue;
+      if(mp>=b.cutAt){ b.cut=true; b.flash=1; }
+    }
+  }
+
+  // caramelisation: intramolecular bonds break one by one, molecule shatters
+  for(const m of MOL){
+    if(m.frag)continue;
+    for(let k=0;k<m.bonds.length;k++){
+      const b=m.bonds[k];
+      if(b.gone)continue;
+      if(cp>0.18 && m.bondDel[k]<0){
+        // deterministic-ish stagger so bonds snap one after another, not all at once
+        m.bondDel[k]=Math.random();
+      }
+      if(m.bondDel[k]>=0 && cp>m.bondDel[k]*0.72+0.2){ b.gone=true; b.alpha=0; b.flash=1; }
+    }
+    if(cp>=0.98 || (cp>0.45 && m.bonds.every(b=>b.gone))) shatter(m);
+  }
+
+  /* Tick the break-flash down. This is the ONLY thing in the model that glows, and it glows
+     for ~0.4 s on a bond that has just snapped, then never again. The reference model lights
+     every bond with an emissive pulse while it is breaking (emissiveIntensity oscillating
+     1 -> 1.5); here the glow is deliberately confined to the EVENT rather than the state, so
+     the solid bonds do not become permanently louder than the dashed lattice links they are
+     meant to be in visual parity with. Decrement per frame, and scale by dt-independence
+     implicitly (the sim runs a fixed step per frame). */
+  for(const m of MOL) for(const b of m.bonds){
+    if(b.flash>0) b.flash=Math.max(0,b.flash-0.035);
+  }
+  for(const b of BONDED){
+    if(b.flash>0) b.flash=Math.max(0,b.flash-0.035);
+  }
+
+  // hydration water keeps being driven off while the sugar breaks down, so the "water
+  // leaves" story reads as continuous rather than one puff at the start.
+  // Pace it by a frame interval as well as by cp: if the slider jumps straight to 200 C,
+  // cp hits 1.0 on the first frame and every water would be dumped at once and be gone
+  // before the student looks up. The timer spaces the dehydration out over ~3 seconds.
+  if(cp>0.20 && MOL.length){
+    if(SHEDT>0) SHEDT--;
+    const want=Math.floor((cp-0.20)/0.105);      // ~8 waters across the whole run
+    if(DEHYD<want && SHEDT<=0){
+      DEHYD++; SHEDT=26;                          // ≈0.43 s between each water at 60 fps
+      const m=MOL[Math.floor(Math.random()*MOL.length)];
+      shedWater(m.x,m.y);
+    }
+  }
+
+  // molecule wandering — free once melted, faster as it breaks down
+  for(const m of MOL){
+    if(m.frag)continue;
+    if(mp>0.3){
+      const free=(mp-0.3)/0.7;
+      m.vx=m.vx*0.94+(Math.random()-0.5)*0.42*free;
+      m.vy=m.vy*0.94+(Math.random()-0.5)*0.42*free-0.02*cp;
+      m.x+=m.vx; m.y+=m.vy;
+      m.ang+=m.rot;
+      // keep inside the pudding slab
+      const x0=pud.x+pud.pad+m.r, x1=pud.x+pud.w-pud.pad-m.r;
+      const y0=pud.y+pud.h*0.22+m.r, y1=pud.y+pud.h*0.80-m.r;
+      if(m.x<x0){m.x=x0;m.vx=Math.abs(m.vx)*0.5;}
+      if(m.x>x1){m.x=x1;m.vx=-Math.abs(m.vx)*0.5;}
+      if(m.y<y0){m.y=y0;m.vy=Math.abs(m.vy)*0.5;}
+      if(m.y>y1){m.y=y1;m.vy=-Math.abs(m.vy)*0.5;}
+    }else{
+      // solid: tiny thermal vibration only
+      m.x=m.hx+Math.sin(performance.now()*0.002+m.hx)*0.5*mp;
+      m.y=m.hy+Math.cos(performance.now()*0.0023+m.hy)*0.5*mp;
+    }
+  }
+
+  for(const f of FRAG){
+    f.life++;
+    f.vx*=0.985; f.vy=f.vy*0.985;
+    f.x+=f.vx+Math.sin((f.x+f.y)*0.05)*0.12; f.y+=f.vy;
+    // gentle jostle in the melt so fragments look suspended, not frozen
+    const jitter=0.10;
+    f.vx+=(Math.random()-0.5)*jitter; f.vy+=(Math.random()-0.5)*jitter;
+    // speed cap: without this the stochastic kicks compound and fragments rocket around
+    const sp=Math.hypot(f.vx,f.vy);
+    if(sp>1.35){ f.vx=f.vx/sp*1.35; f.vy=f.vy/sp*1.35; }
+    const x0=pud.x+pud.pad+f.r, x1=pud.x+pud.w-pud.pad-f.r;
+    const y0=pud.y+pud.h*0.18+f.r, y1=pud.y+pud.h*0.86-f.r;
+    if(f.x<x0){f.x=x0;f.vx=Math.abs(f.vx)*0.4;} if(f.x>x1){f.x=x1;f.vx=-Math.abs(f.vx)*0.4;}
+    if(f.y<y0){f.y=y0;f.vy=Math.abs(f.vy)*0.4;} if(f.y>y1){f.y=y1;f.vy=-Math.abs(f.vy)*0.4;}
+  }
+
+  for(const w of WATERS){
+    w.age=(w.age||0)+1;
+    w.wob+=0.11;
+    w.vy-=0.012;                        // steam accelerates upward once it is free
+    w.vy=Math.max(-1.7,w.vy);
+    w.x+=w.vx+Math.sin(w.wob)*0.5; w.y+=w.vy;
+    // fade by AGE, not by height — a tall pudding would otherwise extinguish the steam
+    // before it has climbed clear, and the student would never see the water leave.
+    if(w.age>150) w.fade-=0.016;
+    if(w.y<pud.y-14||w.fade<=0) w.del=true;
+  }
+  WATERS=WATERS.filter(w=>!w.del);
+
+  // separate molecules so they never sit on top of each other
+  for(let i=0;i<MOL.length;i++){
+    if(MOL[i].frag)continue;
+    for(let j=i+1;j<MOL.length;j++){
+      if(MOL[j].frag)continue;
+      const A=MOL[i],B=MOL[j],min=(A.r+B.r)*0.98;
+      let dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy)||1;
+      if(d<min){
+        const push=(min-d)*0.06;
+        A.x-=dx/d*push; A.y-=dy/d*push; B.x+=dx/d*push; B.y+=dy/d*push;
+      }
+    }
+  }
+
+  // auto-heat sweep
+  if(heatOn){
+    temp=Math.min(200,temp+0.42);
+    if(temp>=200) heatOn=false;
+  }
+  syncUI();
+}
+
+/* ---------- drawing ---------- */
+function drawBackdrop(){
+  // warm oven glow rising from the bottom
+  const cp=caramelP();
+  const g=ctx.createLinearGradient(0,H,0,0);
+  g.addColorStop(0,'rgba(120,53,15,'+(0.10+0.16*(temp-20)/180)+')');
+  g.addColorStop(0.45,'rgba(245,158,11,'+(0.05+0.10*(temp-20)/180)+')');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#ECEFF1'; ctx.fillRect(0,0,W,0);
+}
+
+function drawTorch(){
+  if(temp<=60)return;
+  const p=Math.min(1,(temp-60)/100);
+  const cx=pud.x+pud.w*0.5, tip=pud.y-6;
+  ctx.save();
+  ctx.globalAlpha=0.25+0.5*p;
+  // flame cone
+  const g=ctx.createLinearGradient(cx,tip-90,cx,tip+20);
+  g.addColorStop(0,'rgba(253,224,71,0)');
+  g.addColorStop(0.35,'rgba(251,191,36,.75)');
+  g.addColorStop(0.75,'rgba(249,115,22,.85)');
+  g.addColorStop(1,'rgba(120,53,15,.25)');
+  ctx.fillStyle=g;
+  const wob=Math.sin(performance.now()*0.006)*5;
+  ctx.beginPath();
+  ctx.moveTo(cx-34+wob*0.4,tip-86);
+  ctx.quadraticCurveTo(cx-16,tip-30,cx-52,tip+6);
+  ctx.quadraticCurveTo(cx,tip+34,cx+52,tip+6);
+  ctx.quadraticCurveTo(cx+16,tip-30,cx+34+wob*0.4,tip-86);
+  ctx.closePath(); ctx.fill();
+  // burner body
+  ctx.globalAlpha=1;
+  ctx.fillStyle='#94A3B8'; ctx.beginPath(); ctx.roundRect(cx-20,tip-118,40,34,6); ctx.fill();
+  ctx.fillStyle='#64748B'; ctx.beginPath(); ctx.roundRect(cx-13,tip-96,26,16,4); ctx.fill();
+  ctx.restore();
+}
+
+/* the pudding cross-section: a slab of sugar crystals sitting on a pale custard base */
+function drawPudding(){
+  const cp=caramelP();
+  ctx.save();
+  // dish
+  ctx.fillStyle='#F8FAFC'; ctx.strokeStyle='#CBD5E1'; ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(dish.x,dish.y);
+  ctx.lineTo(dish.x+dish.w,dish.y);
+  ctx.quadraticCurveTo(dish.x+dish.w-6,dish.y+dish.h,dish.x+dish.w*0.5,dish.y+dish.h);
+  ctx.quadraticCurveTo(dish.x+6,dish.y+dish.h,dish.x,dish.y);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  // custard body — stays cream, it is NOT what is caramelising
+  const cg=ctx.createLinearGradient(0,dish.y,0,dish.y+dish.h);
+  cg.addColorStop(0,'#FEF3C7'); cg.addColorStop(1,'#FDE68A');
+  ctx.fillStyle=cg;
+  ctx.beginPath();
+  ctx.moveTo(dish.x+8,dish.y+8);
+  ctx.lineTo(dish.x+dish.w-8,dish.y+8);
+  ctx.quadraticCurveTo(dish.x+dish.w-12,dish.y+dish.h-2,dish.x+dish.w*0.5,dish.y+dish.h-2);
+  ctx.quadraticCurveTo(dish.x+12,dish.y+dish.h-2,dish.x+8,dish.y+8);
+  ctx.closePath(); ctx.fill();
+
+  // sugar slab on the top surface.
+  // The slab must stay clearly LIGHTER than the molecules that sit on it, otherwise the
+  // white sugar beads vanish into their own background. Its shading is therefore driven
+  // separately from the molecule beads: a tight range while it is still sugar, opening up
+  // only as the caramel darkens and a glossy sheen becomes appropriate.
+  const sc=sugarCol();
+  const sg=ctx.createLinearGradient(0,pud.y,0,pud.y+pud.h);
+  sg.addColorStop(0,shade(mixHex(sc,'#FFFDF7',0.55),0.18));
+  sg.addColorStop(0.45,sc);
+  /* The slab bottoms out well ABOVE the molecules' own darkest tone. A previous revision let
+     this stop follow the caramel colour down to shade(sc,-0.40), which at 200 C produced a
+     near-black slab — and because the fragments are mid-browns (FRAG_COL) they then vanished
+     into their own background, destroying the one thing stage 2 has to show: that the molecule
+     came apart. The slab keeps a visibly lighter, warmer floor (-0.20 max) so the debris always
+     reads against it. */
+  sg.addColorStop(1,shade(mixHex(sc,'#B9743A',0.30),-0.20*cp));
+  ctx.beginPath(); ctx.roundRect(pud.x,pud.y,pud.w,pud.h,pud.pad);
+  ctx.fillStyle=sg; ctx.fill();
+  ctx.strokeStyle='rgba(120,53,15,'+(0.18+0.42*cp)+')'; ctx.lineWidth=1.6; ctx.stroke();
+
+  // glossy top sheen — caramel looks wet, but it must not read as a pale blob sitting on top.
+  // Keep it warm (tinted toward the sugar colour, not pure '#FFFBEB') and weak, and let it
+  // strengthen only once the surface is actually caramel.
+  if(cp>0.05){
+    ctx.save();
+    const sheen=ctx.createRadialGradient(
+      pud.x+pud.w*0.5, pud.y+pud.h*0.14, 6,
+      pud.x+pud.w*0.5, pud.y+pud.h*0.14, pud.w*0.42);
+    sheen.addColorStop(0,'rgba(255,248,225,'+(0.16+0.20*cp)+')');
+    sheen.addColorStop(1,'rgba(255,248,225,0)');
+    ctx.fillStyle=sheen;
+    ctx.beginPath(); ctx.ellipse(pud.x+pud.w*0.5,pud.y+pud.h*0.16,pud.w*0.42,pud.h*0.10,0,0,7); ctx.fill();
+    ctx.restore();
+  }
+  ctx.restore();
+}
+
+function drawLattice(){
+  const mp=meltP();
+  if(mp>=0.98)return;                 // fully melted → no intermolecular links left
+  ctx.save();
+  for(const b of BONDED){
+    if(b.cut)continue;
+    const A=MOL[b.a], B=MOL[b.b];
+    if(A.frag||B.frag)continue;
+    /* Cull links that have stretched absurdly far. This has to be measured against the LATTICE
+       PITCH, not the slab width. The previous rule — `d > pud.w*0.34` — was a hard-coded
+       fraction of the slab left over from a denser grid, and at a 3x3 lattice on a 520 px slab
+       it silently dropped 3 of the 7 links: the model claimed "the molecules are held in a
+       lattice" while a third of the lattice was not drawn. Storing realPitch per link keeps the
+       cull meaningful at every grid size and every scale. 3x the pitch means only links that
+       have genuinely been torn far apart by melting are hidden, which is the intended effect. */
+    const d=Math.hypot(A.x-B.x,A.y-B.y);
+    if(d>b.pitch*3)continue;
+    const a=Math.max(0,1-mp/0.98);
+    /* The dashed link gets the same just-snapped flash as a solid bond, so "a link gave way"
+       reads as an event in both systems rather than only the intramolecular one. Colour is the
+       SKY family here, not amber, keeping the two force types visually separable even mid-flash. */
+    if(b.flash>0){
+      ctx.save();
+      ctx.globalAlpha=b.flash*0.8*(0.72+0.28*Math.sin(performance.now()*0.02));
+      ctx.strokeStyle='#7DD3FC'; ctx.lineWidth=8*b.flash+2.1; ctx.lineCap='round';
+      ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.globalAlpha=a*0.85;
+    ctx.strokeStyle='#0EA5E9'; ctx.lineWidth=2.1;
+    ctx.setLineDash([6,5]); ctx.lineDashOffset=-(performance.now()*0.012)%11;
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y); ctx.stroke();
+  }
+  ctx.setLineDash([]); ctx.restore();
+}
+
+function drawMolecules(){
+  const cp=caramelP();
+  const sc=sugarCol(), sd=sugarDark();
+  /* At room temperature the molecule is sucrose: a LIGHT bead. Once caramelisation is under
+     way it must not stay light, so the core is darkened toward the caramel colour as cp rises
+     and its shading switches from the scaled-down gloss range to the full range — dark beads
+     need the deep shadow to look round, light beads go grey with it. */
+  const coreCol=mixHex(sc,'#5A2A0D',cp*0.72);
+  const coreDark=mixHex('#C9BFA6','#240E04',Math.min(1,cp*1.1));
+  const coreGlossy=cp<0.55;
+  for(const m of MOL){
+    if(m.frag)continue;
+    // Intramolecular bonds — SOLID lines radiating from the centre.
+    // They must be drawn BEFORE the core ball, and they must reach well outside its
+    // radius: a bond shorter than the ball that covers it is 100% invisible (this
+    // happened — a 17 px bond inside a 20 px sphere rendered as a plain black dot,
+    // while the pixel test still passed because stroke() was genuinely called).
+    for(const b of m.bonds){
+      if(b.gone)continue;
+      const x2=m.x+Math.cos(b.ang+m.ang)*b.len;
+      const y2=m.y+Math.sin(b.ang+m.ang)*b.len;
+      /* A bond that has just snapped gets a ~0.4 s emissive flare — amber washing to red, the
+         same amber->red the reference uses for BROKEN_COLOR/BROKEN_EMIT. It is drawn UNDER the
+         regular stroke and only while b.flash>0, so a bond at rest is still a plain line. */
+      if(b.flash>0){
+        ctx.save();
+        const pulse=b.flash*(0.72+0.28*Math.sin(performance.now()*0.02));
+        ctx.globalAlpha=pulse;
+        ctx.lineCap='round';
+        ctx.strokeStyle=mixHex('#F59E0B','#EF4444',1-b.flash);
+        ctx.lineWidth=9.5*b.flash+3.6;
+        ctx.beginPath(); ctx.moveTo(m.x,m.y); ctx.lineTo(x2,y2); ctx.stroke();
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.globalAlpha=0.95;
+      ctx.strokeStyle=mixHex('#B45309','#DC2626',cp);
+      ctx.lineWidth=3.6; ctx.setLineDash([]); ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(m.x,m.y); ctx.lineTo(x2,y2); ctx.stroke();
+      ctx.restore();
+      // the atom at the end of each bond — small, and sitting clear of the core ball.
+      // `m.flash` makes the whole molecule's atoms catch the same light as its bonds.
+      bead(ctx,x2,y2,ATOM_R,mixHex('#F3EAD2','#7C2D12',cp),mixHex('#B9A983','#3B1205',cp),'',0,cp<0.55);
+    }
+    // the sugar core — deliberately small so the bonds are the visible feature
+    // and so the molecule reads as a STRUCTURE rather than a solid bead
+    bead(ctx,m.x,m.y,CORE_R,coreCol,coreDark,'',0,coreGlossy);
+    // faint C12H22O11 marker only while it is still intact.
+    // Drawn ABOVE the molecule, on a plate, not below it: the 5 bonds radiate on a pentagon, so
+    // at least one point of the star is always near-vertical downward. A label at
+    // CORE_R+ATOM_R+11 therefore landed on top of whichever terminal atom pointed down, and the
+    // text and ball overprinted each other. The top is the only direction with guaranteed
+    // clearance. The plate guarantees legibility if a neighbouring molecule crowds it.
+    if(cp<0.35){
+      ctx.save();
+      ctx.globalAlpha=(1-cp/0.35)*0.95;
+      const ly=m.y-CORE_R-ATOM_R-12;
+      ctx.font='800 9.5px "Segoe UI",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      const tw=ctx.measureText('C₁₂H₂₂O₁₁').width;
+      ctx.fillStyle='rgba(255,255,255,.78)';
+      ctx.beginPath(); ctx.roundRect(m.x-tw/2-4,ly-7.5,tw+8,15,4); ctx.fill();
+      ctx.fillStyle='#6B4A22'; ctx.fillText('C₁₂H₂₂O₁₁',m.x,ly);
+      ctx.restore();
+    }
+  }
+}
+
+function drawFragments(){
+  const cp=caramelP();
+  for(const f of FRAG){
+    /* The fragments ARE the teaching point of stage 2 — "the molecule came apart" — so they
+       must read clearly at 200 C. Two fixes over the first version: they are sized large
+       enough to see (they inherit the molecule's scale rather than being 7 px specks), and
+       each one carries a caramel hue tinted from the fragment palette so the cluster looks
+       like caramel compounds rather than grey rubble. */
+    const col=FRAG_COL[f.k%3];
+    sphere(ctx,f.x,f.y,f.r,col,'#3B1A05','',0);
+    // faint warm rim so overlapping fragments stay distinguishable in a dark cluster
+    ctx.save(); ctx.globalAlpha=0.85;
+    ctx.strokeStyle='#FDE68A'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r-0.6,0,7); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawWaters(){
+  for(const w of WATERS){
+    ctx.save(); ctx.globalAlpha=Math.max(0,w.fade)*0.95;
+    /* The H2O label only appears once the droplet has climbed clear of the caramel mass.
+       At 200 C the fragments are dark and tightly packed, and a white label on every droplet
+       turned the middle of the slab into unreadable text soup. Age is the gate rather than
+       height so a tall slab behaves the same as a short one. */
+    const lbl=(w.age>36)?'H₂O':'';
+    sphere(ctx,w.x,w.y,w.r,'#7DD3FC','#0369A1',lbl,Math.round(CORE_R*0.78));
+    ctx.restore();
+  }
+}
+
+function drawPopups(){
+  for(const p of POPS){
+    p.life++;
+    p.y-=0.75; p.a=Math.max(0,1-p.life/70);
+    ctx.save(); ctx.globalAlpha=p.a;
+    ctx.font='800 13px "Segoe UI",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.85)';
+    ctx.strokeText(p.txt,p.x,p.y);
+    ctx.fillStyle=p.col; ctx.fillText(p.txt,p.x,p.y);
+    ctx.restore();
+  }
+  POPS=POPS.filter(p=>p.a>0);
+}
+let POPS=[];
+function pop(txt,x,y,col){ POPS.push({txt,x,y,col,life:0,a:1}); }
+
+let phaseFlag=null;
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  drawBackdrop();
+  drawPudding();
+  drawLattice();
+  drawMolecules();
+  drawFragments();
+  drawWaters();
+  drawTorch();
+  drawPopups();
+
+  // HUD readout, top-right of the free area
+  const mp=meltP(), cp=caramelP();
+  const rx=W-24, ry=28;
+  ctx.save();
+  ctx.textAlign='right'; ctx.textBaseline='top';
+  ctx.font='800 13px "Segoe UI",sans-serif'; ctx.fillStyle='#334155';
+  const phase = cp>0.02 ? 'CARAMELISING' : (mp>0.02 ? 'MELTING' : 'SOLID SUGAR');
+  ctx.fillText(phase,rx,ry);
+  // HUD readout, top-right of the free area.
+  // Row 1 tracks the dashed links, row 2 the solid bonds — labelled by line style, not by
+  // bond name, so the on-screen wording never introduces terminology the brief excluded.
+  ctx.font='600 11.5px "Segoe UI",sans-serif'; ctx.fillStyle='#0369A1';
+  ctx.fillText('- - -  between molecules: '+Math.round(mp*100)+'% broken',rx,ry+20);
+  ctx.fillStyle='#9A3412';
+  ctx.fillText('—  inside a molecule: '+Math.round(cp*100)+'% broken',rx,ry+36);
+  ctx.restore();
+}
+
+/* ---------- UI sync ---------- */
+const $=id=>document.getElementById(id);
+function syncUI(){
+  const t=$('temp'); if(t.value!=String(Math.round(temp))) t.value=Math.round(temp);
+  $('tempTxt').textContent=Math.round(temp)+' °C';
+  const mp=meltP(), cp=caramelP();
+  const n=$('phaseNote');
+  if(cp>0.02){
+    n.className='text-[11px] mt-2 p-2 rounded border leading-snug bg-amber-50 border-amber-300 text-amber-900';
+    n.innerHTML='<b>Caramelising — chemical change.</b> The <b>solid bonds inside each molecule</b> are breaking. '+
+      'The molecules fall apart, water is driven off, and brown caramel compounds form. '+
+      'It is no longer sugar.';
+  }else if(mp>0.02){
+    n.className='text-[11px] mt-2 p-2 rounded border leading-snug bg-sky-50 border-sky-300 text-sky-900';
+    n.innerHTML='<b>Melting — physical change.</b> The <b>dashed links between molecules</b> have given way. '+
+      'The molecules slide past each other so the sugar flows — but each molecule is untouched. '+
+      'Cool it down and you get sugar back.';
+  }else{
+    n.className='text-[11px] mt-2 p-2 rounded border leading-snug bg-slate-50 border-slate-200 text-slate-600';
+    n.innerHTML='Solid sugar. The molecules are locked in a lattice, held by dashed intermolecular links.';
+  }
+  // phase-change popups (fire once per crossing).
+  // Deliberately NO bond-type names here: the brief is that dashed vs solid carries the
+  // meaning by itself. The popups describe the CHANGE (state, not terminology).
+  const ph = cp>0.02?'car':(mp>0.02?'melt':'solid');
+  if(ph!==phaseFlag){
+    if(ph==='melt') pop('dashed links give way → it flows',pud.x+pud.w*0.5,pud.y+pud.h*0.08,'#0369A1');
+    if(ph==='car')  pop('solid bonds snap → it browns',pud.x+pud.w*0.5,pud.y+pud.h*0.08,'#9A3412');
+    phaseFlag=ph;
+  }
+}
+
+function buildLegend(){
+  $('legend').innerHTML=
+    '<div class="legend-item"><span class="swatch" style="background:#FDFBF3"></span>sucrose molecule (C₁₂H₂₂O₁₁)</div>'+
+    '<div class="legend-item"><span class="swatch" style="background:'+sugarCol()+'"></span>colour tracks the caramelisation</div>'+
+    '<div class="legend-item">'+
+      '<svg width="22" height="13" style="margin-right:7px;flex:none"><line x1="1" y1="6.5" x2="21" y2="6.5" stroke="#0EA5E9" stroke-width="2.4" stroke-dasharray="6,5"/></svg>'+
+      'dashed = between molecules</div>'+
+    '<div class="legend-item">'+
+      '<svg width="22" height="13" style="margin-right:7px;flex:none"><line x1="1" y1="6.5" x2="21" y2="6.5" stroke="#B45309" stroke-width="3.2"/></svg>'+
+      'solid = inside a molecule</div>'+
+    '<div class="legend-item"><span class="dot" style="background:#7DD3FC"></span>H₂O driven off</div>'+
+    '<div class="legend-item"><span class="dot" style="background:#92400E"></span>brown caramel fragments</div>';
+}
+
+/* ---------- controls ---------- */
+$('temp').addEventListener('input',e=>{ temp=+e.target.value; heatOn=false; $('btnPlay').classList.remove('active'); });
+$('btnPlay').addEventListener('click',function(){
+  heatOn=!heatOn; this.classList.toggle('active',heatOn);
+  /* Pressing Auto-heat at the end of the run restarts the demonstration from cold, because a
+     sweep that begins at 200 C has nothing left to show. Caramelisation is irreversible, so
+     the sugar must be rebuilt at the same time — rewinding only `temp` would leave a slab of
+     shattered fragments sitting at 20 C, claiming to be solid sugar. */
+  if(heatOn&&temp>=200){
+    temp=20; phaseFlag=null; POPS=[];
+    buildSugar();
+  }
+});
+$('btnReset').addEventListener('click',()=>{
+  temp=20; heatOn=false; phaseFlag=null; POPS=[];
+  $('btnPlay').classList.remove('active');
+  buildSugar(); syncUI();
+});
+$('btnPud').addEventListener('click',function(){
+  this.classList.toggle('active');
+  // cosmetic only — the pudding backdrop stays; toggles the dish outline emphasis
+  dish.show=!this.classList.contains('active');
+});
+
+/* The exact reset the Reset button performs, exposed so headless verification can return to
+   a pristine lattice. Caramelisation is irreversible, so every stage of a test needs this. */
+function reset(){
+  temp=20; heatOn=false; phaseFlag=null; POPS=[];
+  buildSugar(); syncUI();
+}
+
+let last=0;
+function loop(ts){
+  const dt=ts-last; last=ts;
+  // run the physics at ~60 fixed steps regardless of refresh rate
+  const steps=Math.max(1,Math.min(3,Math.round(dt/16.6)||1));
+  for(let i=0;i<steps;i++) simStep();
+  syncUI();
+  draw();
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('resize',()=>{ resize(); syncUI(); });
+resize(); buildLegend(); syncUI();
+requestAnimationFrame(loop);
+
+/* expose for headless verification */
+window.__caramel={ get temp(){return temp;}, set temp(v){temp=v;},
+  meltP, caramelP, simStep, sugarCol,
+  get MOL(){return MOL;}, get FRAG(){return FRAG;}, get WATERS(){return WATERS;},
+  get BONDED(){return BONDED;}, resize, get pud(){return pud;}, get W(){return W;}, get H(){return H;},
+  draw, reset, get DEHYD(){return DEHYD;},
+  // geometry, so verification can assert the bonds are actually visible rather than
+  // merely stroked (see the note in buildSugar: a covered bond is a silent failure)
+  BOND_LEN, CORE_R, ATOM_R, NBOND,
+  // the colour parser, so verification parses fills exactly the way the model does
+  hex2rgb, shade, mixHex };
+})();
+</script>
+</body>
+</html>

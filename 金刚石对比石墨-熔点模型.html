@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Diamond vs Graphite — Same Element, Different Structure</title>
+<style>
+  :root{
+    --teal:#0A455D; --teal-light:#4699AA; --bg:#EEF3F5;
+    --card:rgba(255,255,255,.95); --text:#1E293B; --text2:#475569;
+    --hot:#E25822; --cold:#3E7CB1; --ok:#22C55E; --err:#DC2626;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter','Segoe UI',system-ui,-apple-system,'PingFang SC',sans-serif;background:var(--bg);color:var(--text);padding:14px;min-height:100vh;}
+  .wrap{max-width:1180px;margin:0 auto;}
+  header{background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;border-radius:16px;padding:14px 22px;box-shadow:0 4px 16px rgba(10,69,93,.18);display:flex;align-items:center;gap:12px;}
+  header h1{font-size:22px;font-weight:800;letter-spacing:.3px;}
+  header .sub{font-size:13px;opacity:.85;margin-left:auto;font-weight:500;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0;padding:12px 16px;background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);}
+  button.btn{border:none;cursor:pointer;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;background:#e7eef2;color:var(--teal);transition:all .15s;font-family:inherit;}
+  button.btn:hover{background:#dbe7ec;}
+  button.btn.active{background:var(--teal);color:#fff;}
+  button.btn.primary{background:var(--teal);color:#fff;}
+  button.btn.primary:hover{background:#0d5a7a;}
+  .tempbox{display:flex;align-items:baseline;gap:6px;margin-left:auto;}
+  .tempbox .num{font-size:26px;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums;min-width:120px;text-align:right;}
+  .tempbox .unit{font-size:14px;color:var(--text2);font-weight:600;}
+  .rail-wrap{width:100%;padding:4px 2px 0;}
+  .rail{position:relative;width:100%;height:14px;border-radius:8px;background:linear-gradient(90deg,#7FB3D5 0%,#BFE3F0 15%,#F2E9C9 38%,#E8A94B 62%,#D4552A 82%,#7A1F10 100%);box-shadow:inset 0 1px 3px rgba(0,0,0,.15);}
+  .rail input{position:absolute;inset:-8px 0;width:100%;height:30px;-webkit-appearance:none;appearance:none;background:transparent;cursor:pointer;margin:0;}
+  .rail input::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:30px;border-radius:6px;background:#fff;border:3px solid var(--teal);box-shadow:0 2px 6px rgba(0,0,0,.25);cursor:grab;}
+  .mark{position:absolute;top:16px;transform:translateX(-50%);font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap;text-align:center;line-height:1.25;}
+  .mark::before{content:'';display:block;width:2px;height:8px;background:var(--text2);margin:0 auto 1px;}
+  .stage-card{background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);padding:10px;}
+  canvas{display:block;width:100%;border-radius:12px;background:linear-gradient(180deg,#FDFEFF 0%,#F4F8FA 100%);}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+  @media(max-width:820px){.cards{grid-template-columns:1fr;}}
+  .card{background:var(--card);border-radius:14px;padding:14px 16px;box-shadow:0 4px 16px rgba(10,69,93,.08);border-top:4px solid var(--teal-light);}
+  .card h2{font-size:15px;font-weight:800;color:var(--teal);margin-bottom:6px;letter-spacing:.2px;}
+  .card .state{font-size:14px;font-weight:800;margin-bottom:6px;}
+  .card p{font-size:13px;line-height:1.55;color:var(--text2);}
+  .card b{color:var(--text);}
+  .verdict{margin-top:12px;background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;border-radius:14px;padding:12px 18px;font-size:14px;font-weight:700;line-height:1.5;box-shadow:0 4px 16px rgba(10,69,93,.15);}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--text2);}
+  .legend .it{display:flex;align-items:center;gap:6px;}
+  .legend .sw{width:22px;height:0;border-top:3px solid;}
+  .legend .sw.dash{border-top-style:dashed;}
+  .legend .dot{width:12px;height:12px;border-radius:50%;display:inline-block;box-shadow:inset 0 -2px 3px rgba(0,0,0,.25);}
+  .legend .dot.glow{box-shadow:0 0 6px 2px rgba(34,211,238,.65);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>💎 Diamond vs ✏️ Graphite — Same Element, Different Structure</h1>
+    <div class="sub">both giant covalent networks · why one is the HARDEST and one is soft &amp; slippery</div>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn primary" id="playBtn">▶ Heat up</button>
+    <button class="btn" id="resetBtn">↺ Reset</button>
+    <button class="btn preset" data-t="25">Room temp · 25 °C</button>
+    <button class="btn preset" data-t="1000">Red heat · 1000 °C</button>
+    <button class="btn preset" data-t="3550">Diamond melts · 3550 °C</button>
+    <button class="btn preset" data-t="3650">Graphite sublimes · 3650 °C</button>
+    <div class="tempbox"><span class="num" id="tRead">25</span><span class="unit">°C</span></div>
+  </div>
+
+  <div class="toolbar rail-wrap" style="padding-bottom:56px;display:block;">
+    <div class="rail">
+      <input type="range" id="tSlider" min="0" max="1000" value="0" />
+      <div class="mark" style="left:88%;">Diamond melts · 3550 °C</div>
+      <div class="mark" style="left:96%;top:44px;transform:translateX(-100%);text-align:right;">Graphite sublimes · 3650 °C</div>
+    </div>
+  </div>
+
+  <div class="stage-card">
+    <canvas id="cv"></canvas>
+    <div class="legend">
+      <div class="it"><span class="sw" style="border-color:#1F2937;"></span> Covalent bond (STRONG, throughout each network)</div>
+      <div class="it"><span class="sw dash" style="border-color:#8FA6B5;"></span> Weak force BETWEEN graphite layers (tiny force → layers slide)</div>
+      <div class="it"><span class="dot" style="background:#EAB308;"></span> C (diamond)</div>
+      <div class="it"><span class="dot" style="background:#49515E;"></span> C (graphite)</div>
+      <div class="it"><span class="dot glow" style="background:#22D3EE;"></span> Delocalised electron (one per C → graphite conducts)</div>
+      <div class="it" style="margin-left:auto;color:#64748B;">↻ drag LEFT panel to rotate · ⇄ drag RIGHT panel to push the layers</div>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card" id="diaCard">
+      <h2>Diamond — Giant Covalent Network</h2>
+      <div class="state" id="diaState">SOLID — covalent bonds fully intact</div>
+      <p>One <b>giant molecule</b>: every C atom is covalently bonded to <b>4 other C atoms</b> in a rigid 3-D tetrahedral network. <b>All 4 valence electrons are locked in bonds</b> — none are free to move, so diamond does not conduct. Melting means breaking <b>millions of strong C–C bonds</b> → only at <b>3550 °C</b>. Push it sideways and <b>nothing moves</b> — the hardest natural substance.</p>
+    </div>
+    <div class="card" id="graCard">
+      <h2>Graphite — Giant Covalent Network in Layers</h2>
+      <div class="state" id="graState">SOLID — covalent bonds fully intact</div>
+      <p>Every C atom is covalently bonded to <b>3 other C atoms</b> in flat hexagonal layers. The <b>4th electron is delocalised</b> — free to move along the layers → <b>graphite conducts electricity</b>. Melting still needs breaking millions of strong C–C bonds → <b>~3650 °C</b>.</p>
+      <p style="margin-top:6px;">But layers are held to each other only by <b>weak forces</b> — a <b>tiny sideways force makes them slide</b> (and stay slid). That is why graphite is <b>soft, slippery, and writes</b> — pencil "lead" is sheared-off graphite layers.</p>
+    </div>
+  </div>
+
+  <div class="verdict" id="verdict">Both are giant covalent networks of the SAME element — both need extreme heat to break their strong covalent bonds. But the layered structure of graphite gives it properties diamond could never have.</div>
+</div>
+
+<script>
+'use strict';
+// ================= temperature axis =================
+const TMIN=0, TMAX=4000, T_DIA=3550, T_GRA=3650;
+function sliderToT(s){
+  if(s<0.88) return (s/0.88)*3550;                    // 0 → 3550 (diamond melts)
+  if(s<0.96) return 3550 + ((s-0.88)/0.08)*100;       // 3550 → 3650 (graphite sublimes)
+  return 3650 + ((s-0.96)/0.04)*350;                  // 3650 → 4000
+}
+function tToSlider(T){
+  if(T<=3550) return (T/3550)*0.88;
+  if(T<=3650) return 0.88 + ((T-3550)/100)*0.08;
+  return 0.96 + ((T-3650)/350)*0.04;
+}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const smooth=(a,b,x)=>{ const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
+
+// ================= state =================
+const state={ T:25, target:25, playing:false, t:0, yaw:0.35, pitch:0.46,
+              forceMode:false, grabX:0, grabY:0, fx:0 };
+
+// ================= canvas =================
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+let CW=0,CH=0,DPR=1;
+function fitCanvas(){
+  DPR=window.devicePixelRatio||1;
+  const w=cv.parentElement.clientWidth-0;
+  // canvas must be tall enough for the enlarged inter-layer gap (3 stacked sheets)
+  const needH=60+74+(GROWS-1)*GY*0.58+(GLAYERS-1)*GGAP+84;
+  const h=Math.max(430, Math.min(760, Math.max(Math.round(w*0.55), needH)));
+  cv.style.height=h+'px';
+  cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CW=w; CH=h;
+}
+window.addEventListener('resize',fitCanvas);
+
+// ================= drawing helpers =================
+function pill(c,txt,x,y,fg,bg,fs,align){
+  c.font='700 '+fs+'px Inter,Segoe UI,sans-serif';
+  const w=c.measureText(txt).width+16, h=fs+10;
+  const px=align==='center'?x-w/2:align==='right'?x-w:x;
+  c.fillStyle=bg; c.strokeStyle='rgba(10,69,93,.15)'; c.lineWidth=1;
+  c.beginPath(); c.roundRect(px,y-h/2,w,h,h/2); c.fill(); c.stroke();
+  c.fillStyle=fg; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(txt,px+w/2,y+0.5);
+}
+function hex2rgb(h){ const n=parseInt(h.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function shade(hex,f){
+  const c=hex2rgb(hex);
+  const mix=v=> f>0 ? v+(255-v)*f : v*(1+f);
+  return 'rgb('+(mix(c[0])|0)+','+(mix(c[1])|0)+','+(mix(c[2])|0)+')';
+}
+function mixHex(a,b,t){
+  const A=hex2rgb(a), B=hex2rgb(b);
+  return 'rgb('+((A[0]+(B[0]-A[0])*t)|0)+','+((A[1]+(B[1]-A[1])*t)|0)+','+((A[2]+(B[2]-A[2])*t)|0)+')';
+}
+// glossy 3-D ball: contact shadow + light shading + gloss (+ optional hot glow)
+function sphere(c,x,y,r,color,opt){
+  opt=opt||{};
+  const glow=opt.glow||0;
+  if(opt.shadow!==false){
+    c.save(); c.globalAlpha=0.20; c.fillStyle='#43556A';
+    c.beginPath(); c.ellipse(x,y+r*0.98,r*0.94,r*0.29,0,0,7); c.fill();
+    c.restore();
+  }
+  if(glow>0.02){
+    const gg=c.createRadialGradient(x,y,r*0.55,x,y,r*1.75);
+    gg.addColorStop(0,'rgba(255,126,44,'+(0.50*glow)+')');
+    gg.addColorStop(1,'rgba(255,90,0,0)');
+    c.fillStyle=gg; c.beginPath(); c.arc(x,y,r*1.75,0,7); c.fill();
+  }
+  const g=c.createRadialGradient(x-r*0.36,y-r*0.42,r*0.08,x,y,r*1.06);
+  g.addColorStop(0,shade(color,0.62));
+  g.addColorStop(0.45,shade(color,0.10));
+  g.addColorStop(1,shade(color,-0.45));
+  c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  c.strokeStyle='rgba(12,22,32,.22)'; c.lineWidth=Math.max(0.8,r*0.085);
+  c.beginPath(); c.arc(x,y,r-0.4,0,7); c.stroke();
+  c.save();
+  c.globalAlpha=0.88; c.fillStyle='#fff';
+  c.beginPath(); c.ellipse(x-r*0.33,y-r*0.40,r*0.31,r*0.20,-0.6,0,7); c.fill();
+  c.globalAlpha=0.24;
+  c.beginPath(); c.ellipse(x+r*0.32,y+r*0.36,r*0.15,r*0.09,-0.6,0,7); c.fill();
+  c.restore();
+}
+// cylindrical bond stick with a lit side
+function stick(c,x1,y1,x2,y2,w,color,alpha){
+  alpha=(alpha==null)?1:alpha;
+  if(alpha<0.03) return;
+  const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+  const nx=-dy/L, ny=dx/L;
+  c.save(); c.globalAlpha=alpha; c.lineCap='round';
+  c.strokeStyle=shade(color,-0.42); c.lineWidth=w;
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  c.strokeStyle=color; c.lineWidth=w*0.70;
+  c.beginPath(); c.moveTo(x1+nx*w*0.10,y1+ny*w*0.10); c.lineTo(x2+nx*w*0.10,y2+ny*w*0.10); c.stroke();
+  c.strokeStyle=shade(color,0.42); c.lineWidth=w*0.24;
+  c.beginPath(); c.moveTo(x1+nx*w*0.24,y1+ny*w*0.24); c.lineTo(x2+nx*w*0.24,y2+ny*w*0.24); c.stroke();
+  c.restore();
+}
+// annotation with a thin leader line (textbook style) — the label box always
+// stays inside the canvas, whatever anchor the caller picked
+function tag(c,txt,ax,ay,lx,ly,col,align){
+  c.save();
+  c.strokeStyle=col; c.lineWidth=1.1; c.setLineDash([]);
+  c.beginPath(); c.moveTo(ax,ay); c.lineTo(lx,ly); c.stroke();
+  c.fillStyle='#fff'; c.beginPath(); c.arc(ax,ay,2.2,0,7); c.fill();
+  c.strokeStyle=col; c.beginPath(); c.arc(ax,ay,2.2,0,7); c.stroke();
+  c.font='700 11.5px Inter,Segoe UI,sans-serif'; c.textBaseline='middle';
+  c.textAlign=(align==='right')?'right':'left';
+  const tw=c.measureText(txt).width;
+  lx = (align==='right') ? Math.max(lx, tw+10) : Math.min(lx, CW-tw-8);
+  const tx=(align==='right')? lx-5 : lx+5;
+  c.fillStyle='rgba(255,255,255,.88)';
+  c.fillRect((align==='right'?tx-tw:tx)-3, ly-8.5, tw+6, 17);
+  c.fillStyle=col; c.fillText(txt,tx,ly);
+  c.restore();
+}
+// bold horizontal force arrow
+function forceArrow(c,x,y,len,col){
+  if(Math.abs(len)<6) return;
+  const x2=x+len, dir=len>0?1:-1;
+  c.save();
+  c.strokeStyle=col; c.fillStyle=col; c.lineWidth=4.4; c.lineCap='round';
+  c.beginPath(); c.moveTo(x,y); c.lineTo(x2-dir*12,y); c.stroke();
+  c.beginPath(); c.moveTo(x2,y);
+  c.lineTo(x2-dir*15,y-8.5); c.lineTo(x2-dir*15,y+8.5);
+  c.closePath(); c.fill();
+  c.restore();
+}
+
+// ================= diamond-cubic lattice =================
+const COL_C='#EAB308', BOND_CC='#1F2937';
+function diamondNodes(N){
+  const pts=new Map();
+  const add=(x,y,z)=>{ const k=x.toFixed(4)+','+y.toFixed(4)+','+z.toFixed(4); if(!pts.has(k)) pts.set(k,{x,y,z}); };
+  const fcc=[[0,0,0],[0,0.5,0.5],[0.5,0,0.5],[0.5,0.5,0]];
+  const fill=(ox,oy,oz)=>{ for(let i=0;i<N;i++)for(let j=0;j<N;j++)for(let k=0;k<N;k++) add(i+ox,j+oy,k+oz); };
+  fcc.forEach(o=>fill(o[0],o[1],o[2]));
+  fcc.forEach(o=>fill(o[0]+0.25,o[1]+0.25,o[2]+0.25));
+  return [...pts.values()];
+}
+function diamondEdges(nodes){
+  const d2=0.4330127, edges=[];
+  for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){
+    const dx=nodes[i].x-nodes[j].x, dy=nodes[i].y-nodes[j].y, dz=nodes[i].z-nodes[j].z;
+    if(Math.abs(Math.sqrt(dx*dx+dy*dy+dz*dz)-d2)<1e-6) edges.push([i,j]);
+  }
+  return edges;
+}
+function makeProjector(nodes, cx, cy, availW, availH){
+  let mx=0,my=0,mz=0; nodes.forEach(n=>{mx+=n.x;my+=n.y;mz+=n.z;}); mx/=nodes.length;my/=nodes.length;mz/=nodes.length;
+  let rMax=0; nodes.forEach(n=>{ rMax=Math.max(rMax, Math.hypot(n.x-mx,n.y-my,n.z-mz)); });
+  const sc=Math.min(availW, availH)/(rMax*2.25);
+  return {
+    mx,my,mz,sc,cx,cy,
+    project(x,y,z,yaw,pitch){
+      const X0=x-mx, Y0=y-my, Z0=z-mz;
+      const cyw=Math.cos(yaw), syw=Math.sin(yaw), cyp=Math.cos(pitch), syp=Math.sin(pitch);
+      const X=X0*cyw - Z0*syw;
+      const Z=X0*syw + Z0*cyw;
+      const Y=Y0*cyp - Z*syp;
+      const Z2=Y0*syp + Z*cyp;
+      return { x: cx + X*sc, y: cy + Y*sc, z: Z2*sc };
+    }
+  };
+}
+
+// ================= diamond side =================
+const DIA={name:'DIAMOND', mp:T_DIA, glow0:620, atoms:[], bonds:[]};
+function buildDiamond(){
+  const nodes=diamondNodes(2), edges=diamondEdges(nodes);
+  let mx=0,my=0,mz=0; nodes.forEach(n=>{mx+=n.x;my+=n.y;mz+=n.z;}); mx/=nodes.length;my/=nodes.length;mz/=nodes.length;
+  const dist=nodes.map(n=>Math.hypot(n.x-mx,n.y-my,n.z-mz));
+  const dmax=Math.max(...dist);
+  DIA._nodes=nodes.map((n,i)=>({x:n.x,y:n.y,z:n.z,surf:dist[i]/dmax}));
+  DIA._edges=edges.slice();
+}
+buildDiamond();
+function projectPanel(p, proj){
+  p.atoms=[];
+  p.bonds=[];
+  p._nodes.forEach((n,i)=>{
+    const s=proj.project(n.x,n.y,n.z, state.yaw, state.pitch);
+    p.atoms.push({ax:n.x, ay:n.y, az:n.z, hx:s.x, hy:s.y, z:s.z, x:s.x, y:s.y, vx:0, vy:0, surf:n.surf, r:7.6, col:COL_C, type:'C'});
+  });
+  p._edges.forEach((e)=>{
+    p.bonds.push({a:e[0], b:e[1], th:0, broken:false, ph:Math.random()*6.28, depth:0});
+  });
+}
+function reprojectFrame(){
+  let zMin=1e9, zMax=-1e9;
+  DIA.atoms.forEach(a=>{
+    const s=DIA._proj.project(a.ax,a.ay,a.az, state.yaw, state.pitch);
+    a.hx=s.x; a.hy=s.y; a.z=s.z;
+    zMin=Math.min(zMin,s.z); zMax=Math.max(zMax,s.z);
+  });
+  DIA._zMin=zMin; DIA._zMax=zMax;
+  DIA.bonds.forEach(b=>{ b.depth=(DIA.atoms[b.a].z + DIA.atoms[b.b].z)/2; });
+}
+function assignTh(p, mp, spread){
+  const surfB=b=>Math.max(p.atoms[b.a].surf, p.atoms[b.b].surf);
+  p.bonds.map((b,i)=>i).sort((x,y)=>surfB(p.bonds[y])-surfB(p.bonds[x]))
+    .forEach((bi,k)=>{
+      p.bonds[bi].th=(mp-spread)+(k/Math.max(1,p.bonds.length-1))*spread - Math.random()*3;
+    });
+}
+
+// ================= graphite side (3 stacked honeycomb sheets, oblique projection) =================
+const GRA={name:'GRAPHITE', mp:T_GRA, glow0:620, atoms:[], bonds:[], links:[], off:[0,0,0]};
+const GX=38, GY=32.9, GCOLS=9, GROWS=4, GLAYERS=3;   // GY = GX·√3/2 → equal C–C bond lengths
+const GGAP=186;                                       // inter-layer distance (was 62, ×3 per request)
+const isGhost=a=>(a.c===0 || a.c===GCOLS-1);          // edge columns drawn faded: the layer continues beyond the view
+const gi=(L,r,c)=>L*GROWS*GCOLS + r*GCOLS + c;
+(function buildGraphite(){
+  for(let L=0;L<GLAYERS;L++)
+    for(let r=0;r<GROWS;r++)
+      for(let c=0;c<GCOLS;c++)
+        GRA.atoms.push({L,r,c, x:0,y:0, vx:0,vy:0, esc:false, gone:false,
+                        ePh1:Math.random()*6.28, ePh2:Math.random()*6.28,
+                        eW1:0.9+Math.random()*0.8, eW2:0.8+Math.random()*0.8});
+  // honeycomb bonding: 2 in-row neighbours + 1 diagonal → exactly 3 covalent bonds per carbon
+  for(let L=0;L<GLAYERS;L++){
+    for(let r=0;r<GROWS;r++){
+      for(let c=0;c<GCOLS;c++){
+        if(c<GCOLS-1) GRA.bonds.push({a:gi(L,r,c), b:gi(L,r,c+1), th:T_GRA-40+Math.random()*300, ph:Math.random()*6.28});
+        if(r%2===0 && r<GROWS-1) GRA.bonds.push({a:gi(L,r,c), b:gi(L,r+1,c), th:T_GRA-40+Math.random()*300, ph:Math.random()*6.28});
+      }
+    }
+  }
+  // weak inter-layer links (one per full column) — sheared apart by a tiny sideways force
+  for(let L=0;L<GLAYERS-1;L++){
+    for(let c=1;c<GCOLS-1;c++){
+      GRA.links.push({L, a:gi(L,GROWS-1,c), b:gi(L+1,0,c), broken:false, flash:0, ph:Math.random()*6.28});
+    }
+  }
+})();
+function gHome(a){
+  const reg=GRA._reg;
+  const sheetW=(GCOLS-1)*GX + GX/2;
+  const x0=reg.x0 + ((reg.x1-reg.x0)-sheetW)/2;
+  const y0=reg.y1-74;
+  const squash=0.58, gap=GGAP, shear=0.05;   // inter-layer gap ×3 (was 62): layers far apart → weak forces obvious
+  const rx=a.c*GX + (a.r%2? GX/2:0);
+  return { x: x0 + rx + shear*rx*a.L + a.L*10 + GRA.off[a.L],
+           y: y0 - a.r*GY*squash - a.L*gap };
+}
+
+// ================= physics =================
+const HEAT_RATE=200;
+function step(dt){
+  state.t+=dt;
+  if(state.T<state.target) state.T=Math.min(state.target,state.T+dt*HEAT_RATE);
+  else if(state.T>state.target) state.T=Math.max(state.target,state.T-dt*HEAT_RATE);
+
+  stepDiamond(dt);
+  stepGraphite(dt);
+  stepForce(dt);
+}
+function stepDiamond(dt){
+  const mp=DIA.mp;
+  const heat=clamp((state.T-(mp-300))/300,0,1);
+  const jit=0.14+Math.pow(heat,1.6)*2.4;
+  DIA.bonds.forEach(b=>{ b.broken = state.T >= b.th; });
+  const reg=DIA._reg;
+  const molten = state.T >= mp;
+  DIA.atoms.forEach((a)=>{
+    if(molten){
+      a.vy += 0.12;
+      a.vx = (a.vx + (Math.random()-0.5)*0.4)*0.99;
+      a.x += a.vx; a.y += a.vy;
+      if(a.y > reg.y1-7){ a.y = reg.y1-7; a.vy *= -0.25; a.vx *= 0.88; }
+      a.x = clamp(a.x, reg.x0+7, reg.x1-7);
+      return;
+    }
+    a.vx=(a.vx+(a.hx-a.x)*0.13)*0.84+(Math.random()-0.5)*jit;
+    a.vy=(a.vy+(a.hy-a.y)*0.13)*0.84+(Math.random()-0.5)*jit;
+    a.x+=a.vx; a.y+=a.vy;
+  });
+}
+function stepGraphite(dt){
+  const hNorm=clamp((state.T-TMIN)/(T_GRA-TMIN),0,1);
+  const gJit=0.18+Math.pow(hNorm,2.4)*2.6;
+  const escCount=GRA.atoms.reduce((s,p)=>s+(p.esc?1:0),0);
+  const escP=smooth(T_GRA-20,T_GRA+180,state.T)*0.0055;
+  GRA.atoms.forEach(p=>{
+    if(p.esc){
+      if(state.T<T_GRA-100){ p.esc=false; p.gone=false; p.vx=0; p.vy=0; }
+      p.vy-=0.09; p.vx+=(Math.random()-0.5)*0.35;
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.y < GRA._reg.y0-14) p.gone=true;    // risen clear of the panel → stop tracking
+      return;
+    }
+    const hm=gHome(p);
+    p.vx=(p.vx+(hm.x-p.x)*0.13)*0.84+(Math.random()-0.5)*gJit;
+    p.vy=(p.vy+(hm.y-p.y)*0.13)*0.84+(Math.random()-0.5)*gJit;
+    p.x+=p.vx; p.y+=p.vy;
+    if(state.T>T_GRA-10 && escCount<12 && p.L===GLAYERS-1 && Math.random()<escP){
+      p.esc=true; p.vx=(Math.random()-0.5)*1.4; p.vy=-0.9-Math.random();
+    }
+  });
+}
+// a tiny sideways force makes the layers glide: bottom layer anchored, upper layers
+// slide progressively more; the weak inter-layer links shear off once the offset
+// between neighbours exceeds a small threshold — and they STAY broken (nothing
+// pulls the layers back). Reset is the only way home.
+const SHEAR_AT=18;
+function stepForce(dt){
+  const reg=GRA._reg;
+  const maxOff=Math.min(44, ((reg.x1-reg.x0)-((GCOLS-1)*GX+GX/2))/2 - 4);
+  if(state.forceMode && Math.abs(state.fx)>4){
+    for(let L=1;L<GLAYERS;L++){
+      GRA.off[L] = clamp(GRA.off[L] + state.fx*(L/(GLAYERS-1))*dt*2.6, -maxOff, maxOff);
+    }
+  }
+  GRA.links.forEach(l=>{
+    if(!l.broken && Math.abs(GRA.off[l.L+1]-GRA.off[l.L])>SHEAR_AT){ l.broken=true; l.flash=0.5; }
+    if(l.flash>0) l.flash=Math.max(0,l.flash-dt*1.9);
+  });
+}
+
+// ================= draw =================
+function draw(){
+  const W=CW,H=CH;
+  ctx.clearRect(0,0,W,H);
+  const midX=W/2;
+
+  const heat=clamp((state.T-700)/(T_DIA-700),0,1);
+  if(heat>0.01){
+    const bg=ctx.createLinearGradient(0,H,0,H*0.28);
+    bg.addColorStop(0,'rgba(255,116,34,'+(0.22*heat)+')');
+    bg.addColorStop(0.5,'rgba(255,146,58,'+(0.10*heat)+')');
+    bg.addColorStop(1,'rgba(255,160,70,0)');
+    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  }
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,.60)';
+  ctx.strokeStyle='rgba(198,212,224,.85)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect(18,56,midX-38,H-112,14); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(midX+20,56,midX-38,H-112,14); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.font='800 15px Inter,Segoe UI,sans-serif';
+  ctx.fillStyle='#0A455D';
+  ctx.fillText('DIAMOND — GIANT COVALENT NETWORK',24,30);
+  ctx.font='500 12px Inter,Segoe UI,sans-serif';
+  ctx.fillStyle='#64748B';
+  ctx.fillText('every C bonded to 4 C · rigid 3-D tetrahedral · no free electrons',24,47);
+  ctx.font='800 15px Inter,Segoe UI,sans-serif';
+  ctx.fillStyle='#0A455D';
+  ctx.fillText('GRAPHITE — GIANT COVALENT NETWORK',midX+24,30);
+  ctx.font='500 12px Inter,Segoe UI,sans-serif';
+  ctx.fillStyle='#64748B';
+  ctx.fillText('each C bonded to 3 C · delocalised electrons · weak BETWEEN layers',midX+24,47);
+
+  ctx.strokeStyle='#C5D2DE'; ctx.lineWidth=1; ctx.setLineDash([6,6]);
+  ctx.beginPath(); ctx.moveTo(midX,16); ctx.lineTo(midX,H-14); ctx.stroke(); ctx.setLineDash([]);
+
+  const L={x0:30,x1:midX-20,y0:70,y1:H-60};
+  const R={x0:midX+20,x1:W-30,y0:70,y1:H-60};
+  drawDiamondPanel(L);
+  drawGraphitePanel(R);
+
+  // ---- status pills ----
+  const diaLeft=DIA.bonds.reduce((s,b)=>s+(b.broken?0:1),0);
+  const diaBroken=DIA.bonds.length-diaLeft;
+  const graBrokenB=GRA.bonds.reduce((s,b)=>s+(smooth(b.th-110,b.th,state.T)>0.92?1:0),0);
+  const linksBroken=GRA.links.reduce((s,l)=>s+(l.broken?1:0),0);
+  const diaState = diaLeft===DIA.bonds.length ? ['SOLID — bonds intact','#0A455D'] : diaLeft>0 ? ['BONDS BREAKING ▸','#E25822'] : ['LIQUID','#B91C1C'];
+  const graState = state.T<T_GRA-60?['SOLID — bonds intact','#0A455D']
+                 : state.T<T_GRA+50?['BONDS BREAKING ▸','#E25822']
+                 :['SUBLIMING','#B91C1C'];
+  pill(ctx,diaState[0]+(diaBroken?'  ·  '+diaBroken+'/'+DIA.bonds.length+' bonds broken':''),24,H-24,diaState[1],'rgba(255,255,255,.92)',13,'left');
+  pill(ctx,graState[0]+(linksBroken?'  ·  '+linksBroken+' layer links sheared off':'')+(graBrokenB?'  ·  '+graBrokenB+' C–C broken':''),midX+24,H-24,graState[1],'rgba(255,255,255,.92)',13,'left');
+
+  if(state.forceMode && Math.abs(state.fx)>6){
+    pill(ctx,'a TINY force → the layers glide past each other (weak forces between layers)',midX+(W-midX)/2,76,'#7C5CBF','rgba(240,235,252,.93)',12,'center');
+    pill(ctx,'same force, diamond: rigid 3-D network — nothing moves',midX/2,76,'#0A455D','rgba(224,236,244,.93)',12,'center');
+  }
+  if(state.T>=T_DIA-430 && state.T<T_DIA+140){
+    pill(ctx,diaLeft>0?'strong C–C bonds snapping one by one — 3550 °C!':'the C–C network has collapsed into liquid',midX/2,H-52,'#B91C1C','rgba(255,224,214,.92)',12,'center');
+  }
+  if(state.T>=T_GRA-140 && state.T<T_GRA+120){
+    pill(ctx,'now the STRONG C–C bonds in graphite finally break — 3650 °C!',midX+(W-midX)/2,H-52,'#B91C1C','rgba(255,224,214,.92)',12,'center');
+  }
+  if(state.T<700 && !(state.forceMode&&Math.abs(state.fx)>6)){
+    pill(ctx,'both giant covalent networks — heating has almost no effect yet',midX/2,76,'#64748B','rgba(238,242,245,.92)',12,'center');
+  }
+}
+
+function drawDiamondPanel(reg){
+  const bondHot=smooth(DIA.mp-320,DIA.mp,state.T);
+  const fl=0.5+0.5*Math.sin(state.t*8);
+  const order=[...DIA.bonds.keys()].sort((x,y)=>DIA.bonds[x].depth-DIA.bonds[y].depth);
+  for(const bi of order){
+    const b=DIA.bonds[bi], a=DIA.atoms[b.a], q=DIA.atoms[b.b];
+    if(b.broken) continue;
+    const far=clamp((b.depth-(DIA._zMin||0))/((DIA._zMax||1)-(DIA._zMin||0)),0,1);
+    const hotK=bondHot*(0.30+0.70*(fl*0.5+0.5));
+    stick(ctx,a.x,a.y,q.x,q.y,3.2,hotK>0.04?mixHex(BOND_CC,'#FF5A2B',hotK):BOND_CC,0.55+0.45*(1-far));
+  }
+  const atoms=[...DIA.atoms].sort((x,y)=>x.z-y.z);
+  const molten = state.T >= DIA.mp;
+  const glow=clamp((state.T-DIA.glow0)/(DIA.mp-DIA.glow0),0,0.85);
+  for(const a of atoms){
+    if(molten){ sphere(ctx,a.x,a.y,a.r*0.86,a.col,{glow:0.85,shadow:false}); }
+    else{ sphere(ctx,a.x,a.y,a.r,a.col,{glow:glow*clamp(a.surf,0.35,1)}); }
+  }
+  const intact=[...DIA.bonds].filter(b=>!b.broken)
+    .sort((x,y)=>y.depth-x.depth)[0];
+  if(intact){
+    const a=DIA.atoms[intact.a], b=DIA.atoms[intact.b];
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    tag(ctx,'strong C–C covalent bonds',mx,my,Math.min(reg.x1-6,mx+52),my-30,'#2C313A','left');
+  }
+  // the same push, applied to the rigid network: a force arrow, but nothing yields
+  if(state.forceMode && Math.abs(state.fx)>6){
+    const fx=state.fx*1.2;
+    const ax=reg.x0+(reg.x1-reg.x0)/2, ay=reg.y0+34;
+    forceArrow(ctx,ax-fx/2,ay,fx,'#7C5CBF');
+  }
+}
+
+function drawGraphitePanel(reg){
+  const bondHot=smooth(T_GRA-320,T_GRA,state.T);
+  // (1) weak inter-layer forces — dashed verticals; shear + snap when layers slide
+  for(const l of GRA.links){
+    const a=GRA.atoms[l.a], b=GRA.atoms[l.b];
+    if(a.gone||b.gone) continue;
+    if(l.broken){
+      if(l.flash>0){
+        const mx=(a.x+b.x)/2, my=(a.y+b.y)/2, f=l.flash/0.5;
+        ctx.save();
+        ctx.globalAlpha=f*0.9;
+        ctx.strokeStyle='#FFB020'; ctx.lineWidth=2.2;
+        ctx.beginPath(); ctx.arc(mx,my,4+(1-f)*15,0,7); ctx.stroke();
+        ctx.restore();
+      }
+      continue;
+    }
+    const rel=GRA.off[l.L+1]-GRA.off[l.L];
+    const strain=clamp(Math.abs(rel)/SHEAR_AT,0,1);
+    ctx.save();
+    ctx.setLineDash([4,5]);
+    ctx.lineDashOffset=-state.t*(2+9*strain);
+    ctx.strokeStyle='rgba(146,168,184,'+(0.85*(1-0.5*strain))+')';
+    ctx.lineWidth=1.3+1.3*strain;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y-8); ctx.lineTo(b.x,b.y+8); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.setLineDash([]);
+  // (2) covalent bonds inside each sheet — 3 per carbon, hold until ~3650 °C
+  GRA.bonds.forEach(bn=>{
+    const a=GRA.atoms[bn.a], b=GRA.atoms[bn.b];
+    if(a.gone||b.gone||a.esc||b.esc) return;
+    const brk=smooth(bn.th-110,bn.th,state.T);
+    let alpha=1-0.95*brk;
+    if(isGhost(a)||isGhost(b)) alpha*=0.32;      // edge columns fade: the layer continues
+    if(alpha<0.06) return;
+    const fl=0.5+0.5*Math.sin(state.t*8+bn.ph);
+    const hotK=bondHot*(0.30+0.70*fl);
+    const col=hotK>0.04 ? mixHex('#2C313A','#FF5A2B',hotK) : '#2C313A';
+    stick(ctx,a.x,a.y,b.x,b.y,3.4,col,alpha);
+  });
+  // (3) carbon atoms — edge columns drawn pale (the lattice extends beyond the view)
+  const gGlow=clamp((state.T-620)/(T_GRA-620),0,0.85);
+  GRA.atoms.filter(p=>!p.esc&&!p.gone).slice().sort((a,b)=>a.y-b.y)
+    .forEach(p=>{
+      if(isGhost(p)) sphere(ctx,p.x,p.y,7.6,'#B9C2CC',{glow:gGlow*0.25,shadow:false});
+      else sphere(ctx,p.x,p.y,7.6,'#49515E',{glow:gGlow});
+    });
+  GRA.atoms.filter(p=>p.esc&&!p.gone).forEach(p=>sphere(ctx,p.x,p.y,6.4,'#5C6472',{glow:0.8,shadow:false}));
+  // (4) delocalised electrons — one per carbon, drifting freely along its layer;
+  //     they ride with their own layer when it slides (never "torn" between layers)
+  ctx.save();
+  GRA.atoms.forEach(p=>{
+    if(p.esc||p.gone||isGhost(p)) return;
+    const ex=p.x + 15*Math.sin(state.t*p.eW1+p.ePh1);
+    const ey=p.y + 9*Math.cos(state.t*p.eW2+p.ePh2);
+    const gg=ctx.createRadialGradient(ex,ey,0.5,ex,ey,9);
+    gg.addColorStop(0,'rgba(34,211,238,.55)');
+    gg.addColorStop(1,'rgba(34,211,238,0)');
+    ctx.fillStyle=gg; ctx.beginPath(); ctx.arc(ex,ey,9,0,7); ctx.fill();
+    ctx.fillStyle='#22D3EE';
+    ctx.beginPath(); ctx.arc(ex,ey,2.9,0,7); ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.85)';
+    ctx.beginPath(); ctx.arc(ex-0.9,ey-0.9,1.1,0,7); ctx.fill();
+  });
+  ctx.restore();
+  // (5) textbook annotations
+  const Ltop=GLAYERS-1;
+  const intact=GRA.bonds
+    .filter(bn=>{ const a=GRA.atoms[bn.a], b=GRA.atoms[bn.b];
+      return a.L===Ltop && !a.esc && !b.esc && !isGhost(a) && !isGhost(b)
+        && (1-smooth(bn.th-110,bn.th,state.T))>0.55; })
+    .sort((p,q)=>GRA.atoms[q.b].x-GRA.atoms[p.b].x)[0];
+  if(intact){
+    const a=GRA.atoms[intact.a], b=GRA.atoms[intact.b];
+    tag(ctx,'each C bonded to 3 C — hexagonal layer',(a.x+b.x)/2,(a.y+b.y)/2,Math.min(reg.x1-8,b.x+52),(a.y+b.y)/2-34,'#2C313A','left');
+  }
+  const wL=GRA.links.find(l=>l.a===gi(0,GROWS-1,GCOLS-1)) || GRA.links.find(l=>l.L===0 && !l.broken);
+  if(wL && !wL.broken && !GRA.atoms[wL.a].esc && !GRA.atoms[wL.b].esc){
+    const mx=(GRA.atoms[wL.a].x+GRA.atoms[wL.b].x)/2, my=(GRA.atoms[wL.a].y+GRA.atoms[wL.b].y)/2;
+    tag(ctx,'weak forces BETWEEN layers',mx,my,Math.min(reg.x1-8,mx+56),my+6,'#7C94A6','left');
+  }
+  // delocalised electron callout — anchored on one drifting electron of the top layer
+  const eA=GRA.atoms[gi(Ltop,1,2)];
+  if(!eA.esc && !eA.gone){
+    const ex=eA.x + 15*Math.sin(state.t*eA.eW1+eA.ePh1);
+    const ey=eA.y + 9*Math.cos(state.t*eA.eW2+eA.ePh2);
+    tag(ctx,'delocalised electrons → conducts',ex,ey,reg.x0+8,reg.y0+26,'#0E7490','left');
+  }
+  // the push: arrow where the user is dragging — tiny force, huge displacement
+  if(state.forceMode && Math.abs(state.fx)>6){
+    const fx=state.fx*1.4;
+    const ay=clamp(state.grabY, reg.y0+40, reg.y1-24);
+    forceArrow(ctx,clamp(state.grabX-fx/2,reg.x0+30,reg.x1-30-fx),ay,fx,'#7C5CBF');
+  }
+}
+
+// ================= UI wiring =================
+const slider=document.getElementById('tSlider');
+const tRead=document.getElementById('tRead');
+const playBtn=document.getElementById('playBtn');
+let sliderHeld=false;
+slider.addEventListener('pointerdown',()=>sliderHeld=true);
+window.addEventListener('pointerup',()=>sliderHeld=false);
+function syncUI(){
+  tRead.textContent=Math.round(state.T);
+  if(!sliderHeld) slider.value=Math.round(tToSlider(state.T)*1000);
+  const cur=Math.round(state.T);
+  document.querySelectorAll('.preset').forEach(b=>{
+    b.classList.toggle('active', Math.round(+b.dataset.t)===cur);
+  });
+}
+slider.addEventListener('input',()=>{
+  state.playing=false; playBtn.textContent='▶ Heat up';
+  state.target=sliderToT(+slider.value/1000);
+  state.T=state.target;
+});
+document.querySelectorAll('.preset').forEach(b=>{
+  b.onclick=()=>{
+    state.playing=false; playBtn.textContent='▶ Heat up';
+    state.target=+b.dataset.t;
+    state.T=state.target;
+    document.querySelectorAll('.preset').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+  };
+});
+playBtn.onclick=()=>{
+  if(state.playing){ state.playing=false; playBtn.textContent='▶ Heat up'; return; }
+  state.playing=true;
+  playBtn.textContent='⏸ Pause';
+  if(state.target>=TMAX-2){ state.target=TMIN; state.T=TMIN; }
+};
+document.getElementById('resetBtn').onclick=()=>{
+  state.playing=false; playBtn.textContent='▶ Heat up';
+  state.target=25; state.T=25;
+  state.forceMode=false; state.fx=0;
+  GRA.off=[0,0,0];
+  GRA.links.forEach(l=>{ l.broken=false; l.flash=0; });
+  GRA.atoms.forEach(a=>{ a.esc=false; a.gone=false; a.vx=0; a.vy=0;
+                         const hm=gHome(a); a.x=hm.x; a.y=hm.y; });
+  DIA.atoms.forEach(a=>{ a.vx=0; a.vy=0; a.x=a.hx; a.y=a.hy; });
+  DIA.bonds.forEach(b=>{ b.broken=false; });
+};
+
+function refreshCards(){
+  const d=document.getElementById('diaState'), g=document.getElementById('graState');
+  const diaLeft=DIA.bonds.reduce((x,b)=>x+(b.broken?0:1),0);
+  const graBrk=GRA.bonds.reduce((x,b)=>x+(smooth(b.th-110,b.th,state.T)>0.92?1:0),0);
+  const linksBroken=GRA.links.reduce((s,l)=>s+(l.broken?1:0),0);
+  d.textContent = diaLeft===DIA.bonds.length ? 'SOLID — covalent bonds fully intact (vibrating harder)'
+    : diaLeft>0 ? 'PHASE CHANGE — the strong C–C bonds are finally breaking'
+    : 'MELTED — the C–C network has collapsed into liquid';
+  d.style.color = diaLeft===DIA.bonds.length ? '#0A455D' : diaLeft>0 ? '#E25822' : '#B91C1C';
+  if(state.T<T_GRA-60) { g.textContent = linksBroken>0 ? 'SOLID but SLIDING — '+linksBroken+' inter-layer links sheared off' : 'SOLID — covalent bonds fully intact (vibrating harder)'; g.style.color=linksBroken>0?'#7C5CBF':'#0A455D'; }
+  else if(state.T<T_GRA+50){ g.textContent='PHASE CHANGE — the strong C–C bonds are finally breaking'; g.style.color='#E25822'; }
+  else { g.textContent='SUBLIMING — the network tears apart into single C atoms'; g.style.color='#B91C1C'; }
+
+  const v=document.getElementById('verdict');
+  const pushing = state.forceMode && Math.abs(state.fx)>6;
+  if(pushing) v.textContent='Push! The layers of graphite glide apart under a tiny sideways force — the strong C–C bonds inside each layer never break. Diamond: the same force does nothing, because every atom is locked by 4 strong bonds in every direction.';
+  else if(state.T<700) v.textContent='Both are giant covalent networks of carbon. Now add heat… and watch how neither structure is bothered for a long, long time. Or drag the right panel to push the graphite layers.';
+  else if(state.T<T_DIA-80) v.textContent='1000 °C and both are glowing — yet both are still rigid solids. Their strong C–C covalent networks are far too expensive to break.';
+  else if(state.T<T_DIA+80) v.textContent='~3550 °C: diamond finally melts — its tetrahedral C–C network collapses. Graphite next door is barely affected… for another 100 °C.';
+  else if(state.T<T_GRA+80) v.textContent='~3650 °C: graphite gives up too — only now do its strong in-layer covalent bonds break. Note how much heat BOTH needed: structure beats everything.';
+  else v.textContent='Two giant covalent networks, two enormous transition temperatures — and yet one is the hardest mineral on Earth while the other writes on paper. Bonding INSIDE the layers vs weak forces BETWEEN them.';
+}
+
+// ================= main loop =================
+let last=performance.now();
+let dragging=false, lastPX=0, lastPY=0;
+cv.addEventListener('pointerdown',e=>{
+  const rect=cv.getBoundingClientRect();
+  const x=e.clientX-rect.left, y=e.clientY-rect.top;
+  if(x>CW/2){                                   // right panel → push the layers
+    state.forceMode=true; state.grabX=e.clientX; state.grabY=y;
+  }else{                                        // left panel → rotate the diamond
+    dragging=true; lastPX=e.clientX; lastPY=e.clientY;
+  }
+  if(cv.setPointerCapture) cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove',e=>{
+  if(state.forceMode){ state.fx=clamp(e.clientX-state.grabX,-70,70); return; }
+  if(!dragging) return;
+  state.yaw += (e.clientX-lastPX)*0.007;
+  state.pitch = clamp(state.pitch + (e.clientY-lastPY)*0.005, 0.12, 1.25);
+  lastPX=e.clientX; lastPY=e.clientY;
+});
+function endPointer(){ state.forceMode=false; state.fx=0; dragging=false; }
+cv.addEventListener('pointerup',endPointer);
+cv.addEventListener('pointercancel',endPointer);
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000); last=now;
+  if(!dragging) state.yaw += dt*0.22;
+  if(state.playing){
+    state.target=Math.min(TMAX,state.target+dt*HEAT_RATE);
+    if(state.target>=TMAX){ state.playing=false; document.getElementById('playBtn').textContent='▶ Heat up'; }
+  }
+  reprojectFrame();
+  step(dt);
+  draw();
+  refreshCards();
+  syncUI();
+  requestAnimationFrame(loop);
+}
+fitCanvas();
+function reproject(){
+  const midX=CW/2;
+  const Lc={x0:30,x1:midX-20,y0:70,y1:CH-60};
+  const Rc={x0:midX+20,x1:CW-30,y0:70,y1:CH-60};
+  DIA._proj=makeProjector(DIA._nodes,(Lc.x0+Lc.x1)/2,(Lc.y0+Lc.y1)/2,(Lc.x1-Lc.x0),(Lc.y1-Lc.y0));
+  projectPanel(DIA,DIA._proj);
+  DIA._reg=Lc; GRA._reg=Rc;
+  assignTh(DIA,T_DIA,400);
+  reprojectFrame();
+}
+reproject();
+window.addEventListener('resize',()=>{ fitCanvas(); reproject(); });
+GRA.atoms.forEach(p=>{ const hm=gHome(p); p.x=hm.x; p.y=hm.y; });
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

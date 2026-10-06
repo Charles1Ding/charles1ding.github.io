@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dipole & Molecular Polarity</title>
+<style>
+  :root{
+    --teal:#0A455D; --teal-light:#4699AA; --bg:#EEF3F5;
+    --card:rgba(255,255,255,.95); --text:#1E293B; --text2:#475569;
+    --bond:#AEB9C2; --dip:#2563EB; --net:#E11D48; --ok:#22C55E; --err:#DC2626;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter','Segoe UI',system-ui,-apple-system,'PingFang SC',sans-serif;
+    background:var(--bg); color:var(--text); padding:14px; min-height:100vh;}
+  .wrap{max-width:1180px;margin:0 auto;}
+  header{background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;border-radius:16px;
+    padding:14px 22px;box-shadow:0 4px 16px rgba(10,69,93,.18);display:flex;align-items:center;gap:12px;}
+  header h1{font-size:24px;font-weight:800;letter-spacing:.3px;}
+  header .sub{font-size:13px;opacity:.85;margin-left:auto;font-weight:500;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:14px 0;padding:12px 14px;
+    background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);}
+  .toolbar .grp{display:flex;gap:6px;align-items:center;}
+  .sep{width:1px;height:26px;background:#d6e0e6;margin:0 4px;}
+  button.btn{border:none;cursor:pointer;border-radius:10px;padding:8px 13px;font-size:13px;font-weight:600;
+    background:#e7eef2;color:var(--teal);transition:all .15s;font-family:inherit;}
+  button.btn:hover{background:#dbe7ec;}
+  button.btn.active{background:var(--teal);color:#fff;box-shadow:0 2px 8px rgba(10,69,93,.3);}
+  button.btn.primary{background:var(--teal-light);color:#fff;}
+  button.btn.warn{background:#E11D48;color:#fff;}
+  select{border:1px solid #cfdbe2;border-radius:10px;padding:7px 10px;font-size:13px;font-family:inherit;
+    color:var(--text);background:#fff;cursor:pointer;}
+  .toggle{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--text2);
+    cursor:pointer;user-select:none;}
+  .toggle input{width:16px;height:16px;accent-color:var(--teal);cursor:pointer;}
+  .stage{display:flex;gap:16px;align-items:stretch;}
+  .canvas-card{background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);
+    padding:14px;flex:1 1 72%;position:relative;min-width:560px;}
+  canvas{width:100%;display:block;border-radius:10px;}
+  .panel{flex:1 1 26%;display:flex;flex-direction:column;gap:14px;min-width:260px;}
+  .card{background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);padding:16px 18px;}
+  .card h2{font-size:15px;color:var(--text2);font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+  .legend{display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text2);}
+  .legend .it{display:flex;align-items:center;gap:9px;}
+  .sw{width:26px;height:8px;border-radius:4px;flex-shrink:0;}
+  .arrowkey{width:30px;height:0;position:relative;flex-shrink:0;}
+  .insight{font-size:14px;line-height:1.55;color:var(--text);background:#f3f8fa;border-left:4px solid var(--teal-light);
+    padding:11px 13px;border-radius:8px;}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dashed #e0e8ec;font-size:14px;}
+  .row:last-child{border-bottom:none;}
+  .row .k{color:var(--text2);} .row .v{font-weight:700;color:var(--text);}
+  .caption{background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);padding:14px 18px;
+    margin-top:16px;font-size:14px;color:var(--text2);line-height:1.55;}
+  .caption b{color:var(--teal);}
+  .chip{position:absolute;top:16px;right:16px;padding:7px 16px;border-radius:20px;font-size:14px;font-weight:800;
+    box-shadow:0 2px 8px rgba(10,69,93,.25);}
+  .hint{position:absolute;left:18px;bottom:14px;font-size:12px;color:var(--text2);
+    background:rgba(255,255,255,.82);padding:5px 11px;border-radius:10px;pointer-events:none;
+    box-shadow:0 2px 8px rgba(10,69,93,.12);font-weight:600;}
+  .chip.pol{background:var(--net);color:#fff;}
+  .chip.non{background:var(--ok);color:#fff;}
+  .mol-tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:6px;}
+  .mol-tab{border:1px solid #cfdbe2;background:#fff;color:var(--teal);border-radius:20px;padding:6px 13px;
+    font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit;}
+  .mol-tab:hover{background:#eef6f9;}
+  .mol-tab.active{background:var(--teal);color:#fff;border-color:var(--teal);box-shadow:0 2px 8px rgba(10,69,93,.3);}
+  .quiz-opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 14px;border-radius:10px;
+    border:1px solid #cfdbe2;background:#fff;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;font-family:inherit;}
+  .quiz-opt:hover{background:#f0f6f9;}
+  .quiz-opt.correct{background:#e7f9ee;border-color:var(--ok);color:#137a3a;}
+  .quiz-opt.wrong{background:#fdeaea;border-color:var(--err);color:#a11;}
+  .quiz-fb{margin-top:10px;font-size:13px;line-height:1.5;padding:10px 12px;border-radius:8px;}
+  .quiz-fb.ok{background:#e7f9ee;color:#137a3a;}
+  .quiz-fb.no{background:#fdeaea;color:#a11;}
+  .slider-row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px;color:var(--text2);}
+  .slider-row input[type=range]{flex:1;accent-color:var(--teal);}
+  .slider-row .val{font-weight:800;color:var(--teal);min-width:54px;text-align:right;}
+  .hidden{display:none !important;}
+  .small{font-size:12.5px;color:var(--text2);line-height:1.5;}
+  .formula{font-size:30px;font-weight:800;color:var(--teal);}
+  .tag{display:inline-block;background:#e7eef2;color:var(--teal);border-radius:8px;padding:2px 9px;font-size:12px;font-weight:700;margin:2px 3px 2px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span style="font-size:26px;">⚡</span>
+    <h1>Dipole &amp; Molecular Polarity</h1>
+    <span class="sub">Bond dipoles · electronegativity · vector cancellation</span>
+  </header>
+
+  <div class="toolbar">
+    <div class="grp">
+      <button class="btn active" id="mExplore">Explore</button>
+      <button class="btn" id="mDefine">What is a dipole?</button>
+      <button class="btn" id="mCancel">Vector cancellation</button>
+      <button class="btn" id="mQuiz">Quiz</button>
+    </div>
+    <div class="sep"></div>
+    <label class="toggle"><input type="checkbox" id="shiftToggle" checked> Show electron shift</label>
+    <div class="sep"></div>
+    <button class="btn primary" id="fitBtn">⌂ Ideal</button>
+    <button class="btn primary" id="resetBtn">↻ Reset</button>
+  </div>
+
+  <div class="stage">
+    <div class="canvas-card">
+      <div class="mol-tabs hidden" id="molTabs"></div>
+      <div class="chip non" id="stageChip">—</div>
+      <canvas id="cv" height="600"></canvas>
+      <div class="hint" id="hint">🖱 拖拽单个原子改变几何 → 净 dipole 方向随之变化 · 拖空白处旋转分子 · ⌂ Ideal 一键回到标准几何 + 最佳视角 · 紫色双点瓣 = 孤对电子 lone pair</div>
+    </div>
+    <div class="panel" id="panel"></div>
+  </div>
+
+  <div class="caption" id="caption"></div>
+</div>
+
+<script>
+/* ============ palette ============ */
+const TEAL='#0A455D', TEALL='#4699AA';
+const CPK={H:'#E6E9EC',C:'#4B4F54',N:'#2F6FCB',O:'#E03B2F',F:'#3FB950',
+  S:'#E8C21E',Cl:'#2EA043',B:'#9AA0A6',P:'#E8A33D'};
+const EN={H:2.20,B:2.04,C:2.55,N:3.04,O:3.44,F:3.98,Cl:3.16,S:2.58,P:2.19};
+const DIP='#2563EB', NET='#E11D48';
+
+/* ============ molecules (3D coords, central = index 0) ============
+   lone: atoms that carry LONE PAIRS — each dir is a 3D direction the lobe
+         points to (drawn as a shaded lobe + 2 dots). Central-atom lone pairs
+         (O in H₂O, N in NH₃) are the reason those shapes are bent/pyramidal.
+   view: the "best" viewing angle used by the ⌂ Ideal button.               */
+const MOLS=[
+ {key:'H2',name:'Hydrogen',formula:'H₂',shape:'diatomic',view:{ax:0,ay:0.4},
+  atoms:[{e:'H',c:[0,0,0]},{e:'H',c:[1.25,0,0]}],bonds:[[0,1]]},
+ {key:'CO',name:'Carbon monoxide',formula:'CO',shape:'diatomic',view:{ax:0,ay:0.4},
+  atoms:[{e:'C',c:[-0.6,0,0]},{e:'O',c:[0.6,0,0]}],bonds:[[0,1]],
+  lone:[{a:0,dirs:[[0,1,0]]},{a:1,dirs:[[0,1,0]]}]},
+ {key:'CO2',name:'Carbon dioxide',formula:'CO₂',shape:'linear (180°)',view:{ax:-0.12,ay:0.35},
+  atoms:[{e:'C',c:[0,0,0]},{e:'O',c:[-1.15,0,0]},{e:'O',c:[1.15,0,0]}],bonds:[[0,1],[0,2]],
+  lone:[{a:1,dirs:[[0,0.94,0.34],[0,-0.94,0.34]]},{a:2,dirs:[[0,0.94,0.34],[0,-0.94,0.34]]}]},
+ {key:'H2O',name:'Water',formula:'H₂O',shape:'bent (104.5°)',view:{ax:-0.12,ay:0.3},
+  atoms:[{e:'O',c:[0,0,0]},{e:'H',c:[-0.79,-0.61,0]},{e:'H',c:[0.79,-0.61,0]}],bonds:[[0,1],[0,2]],
+  lone:[{a:0,dirs:[[-0.52,0.85,0],[0.52,0.85,0]]}]},
+ {key:'NH3',name:'Ammonia',formula:'NH₃',shape:'trigonal pyramidal',view:{ax:-0.45,ay:0.5},
+  atoms:[{e:'N',c:[0,0,0]},{e:'H',c:[0.943,0,-0.333]},{e:'H',c:[-0.471,0.816,-0.333]},{e:'H',c:[-0.471,-0.816,-0.333]}],bonds:[[0,1],[0,2],[0,3]],
+  lone:[{a:0,dirs:[[0,0,1]]}]},
+ {key:'CH4',name:'Methane',formula:'CH₄',shape:'tetrahedral',view:{ax:-0.35,ay:0.5},
+  atoms:[{e:'C',c:[0,0,0]},{e:'H',c:[0,0,1]},{e:'H',c:[0.943,0,-0.333]},{e:'H',c:[-0.471,0.816,-0.333]},{e:'H',c:[-0.471,-0.816,-0.333]}],bonds:[[0,1],[0,2],[0,3],[0,4]]},
+ {key:'CCl4',name:'Carbon tetrachloride',formula:'CCl₄',shape:'tetrahedral',view:{ax:-0.35,ay:0.5},
+  atoms:[{e:'C',c:[0,0,0]},{e:'Cl',c:[0,0,1]},{e:'Cl',c:[0.943,0,-0.333]},{e:'Cl',c:[-0.471,0.816,-0.333]},{e:'Cl',c:[-0.471,-0.816,-0.333]}],bonds:[[0,1],[0,2],[0,3],[0,4]]},
+ {key:'CHCl3',name:'Chloroform',formula:'CHCl₃',shape:'tetrahedral (polar)',view:{ax:-0.35,ay:0.5},
+  atoms:[{e:'C',c:[0,0,0]},{e:'H',c:[0,0,1]},{e:'Cl',c:[0.943,0,-0.333]},{e:'Cl',c:[-0.471,0.816,-0.333]},{e:'Cl',c:[-0.471,-0.816,-0.333]}],bonds:[[0,1],[0,2],[0,3],[0,4]]},
+ {key:'BF3',name:'Boron trifluoride',formula:'BF₃',shape:'trigonal planar',view:{ax:-0.15,ay:0.35},
+  atoms:[{e:'B',c:[0,0,0]},{e:'F',c:[0,1,0]},{e:'F',c:[-0.87,-0.5,0]},{e:'F',c:[0.87,-0.5,0]}],bonds:[[0,1],[0,2],[0,3]]},
+ {key:'CH2O',name:'Formaldehyde',formula:'CH₂O',shape:'trigonal planar',view:{ax:-0.15,ay:0.35},
+  atoms:[{e:'C',c:[0,0,0]},{e:'O',c:[0,1,0]},{e:'H',c:[-0.87,-0.5,0]},{e:'H',c:[0.87,-0.5,0]}],bonds:[[0,1],[0,2],[0,3]],
+  lone:[{a:1,dirs:[[0.94,0,0.34],[-0.94,0,0.34]]}]},
+];
+const MOL_BY={}; MOLS.forEach(m=>MOL_BY[m.key]=m);
+
+/* ============ vector helpers ============ */
+function sub(a,b){return [a[0]-b[0],a[1]-b[1],a[2]-b[2]];}
+function add(a,b){return [a[0]+b[0],a[1]+b[1],a[2]+b[2]];}
+function len(a){return Math.hypot(a[0],a[1],a[2]);}
+function norm(a){const l=len(a)||1;return [a[0]/l,a[1]/l,a[2]/l];}
+// axonometric projection WITH rotation (x horizontal, z up, y = depth)
+function rotProj(p){
+  const ax=S.rot.ax, ay=S.rot.ay;
+  const cA=Math.cos(ax), sA=Math.sin(ax), cB=Math.cos(ay), sB=Math.sin(ay);
+  let x=p[0], y=p[1], z=p[2];
+  let y1=y*cA - z*sA, z1=y*sA + z*cA;        // pitch  (around X)
+  let x2=x*cB + z1*sB, z2=-x*sB + z1*cB;     // yaw    (around Y)
+  return {x:x2 + y1*0.28, y:-(z2*0.92) - y1*0.16};
+}
+function proj(p){ return rotProj(p); }
+function rotVec(v){ return rotProj(v); }       // free vector uses the same rotation
+function projFlat(p){ return {x:p[0]+p[1]*0.28, y:-(p[2]*0.92)-p[1]*0.16}; } // no rotation (vector board)
+function bondDipole(mol,i,j){
+  const a=mol.atoms[i], b=mol.atoms[j];
+  const ena=EN[a.e], enb=EN[b.e];
+  const dir = ena>=enb ? sub(a.c,b.c) : sub(b.c,a.c);  // from + to -
+  return norm(dir).map(v=>v*Math.abs(ena-enb));        // magnitude = |ΔEN|
+}
+function netDipole(mol){
+  let v=[0,0,0];
+  mol.bonds.forEach(([i,j])=>{ const d=bondDipole(mol,i,j); v=add(v,d); });
+  return v;
+}
+function atomCharge(mol,a){ // score>0 => electron-rich (δ−); <0 => electron-poor (δ+)
+  let s=0;
+  mol.bonds.forEach(([i,j])=>{
+    if(i===a) s+=EN[mol.atoms[i].e]-EN[mol.atoms[j].e];
+    else if(j===a) s+=EN[mol.atoms[j].e]-EN[mol.atoms[i].e];
+  });
+  return s;
+}
+
+/* ============ canvas setup ============ */
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    if(typeof r==='number')r={tl:r,tr:r,br:r,bl:r};else r=r||{tl:0,tr:0,br:0,bl:0};
+    this.beginPath();this.moveTo(x+r.tl,y);
+    this.lineTo(x+w-r.tr,y);this.arcTo(x+w,y,x+w,y+r.tr,r.tr);
+    this.lineTo(x+w,y+h-r.br);this.arcTo(x+w,y+h,x+w-r.br,y+h,r.br);
+    this.lineTo(x+r.bl,y+h);this.arcTo(x,y+h,x,y+h-r.bl,r.bl);
+    this.lineTo(x,y+r.tl);this.arcTo(x,y,x+r.tl,y,r.tl);this.closePath();return this;
+  };
+}
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let CW=0, CH=600;
+function fitCanvas(){
+  const card=cv.parentElement;
+  CW=card.clientWidth-28; if(CW<480)CW=480;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=CW*dpr; cv.height=CH*dpr; cv.style.height=CH+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+window.addEventListener('resize',()=>{fitCanvas();render();});
+
+/* ============ drawing helpers ============ */
+function lighten(hex,amt){const n=parseInt(hex.slice(1),16);
+  let r=Math.min(255,(n>>16)+amt),g=Math.min(255,((n>>8)&255)+amt),b=Math.min(255,(n&255)+amt);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
+function darken(hex,amt){const n=parseInt(hex.slice(1),16);
+  let r=Math.max(0,(n>>16)-amt),g=Math.max(0,((n>>8)&255)-amt),b=Math.max(0,(n&255)-amt);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);}
+function atom(c,x,y,r,col,label){
+  c.save();
+  c.beginPath(); c.ellipse(x,y+r*0.95,r*0.82,r*0.30,0,0,7);
+  c.fillStyle='rgba(15,40,55,.10)'; c.fill(); c.restore();
+  const g=c.createRadialGradient(x-r*0.36,y-r*0.42,r*0.08,x,y,r*1.02);
+  g.addColorStop(0,lighten(col,52)); g.addColorStop(0.45,col); g.addColorStop(1,darken(col,28));
+  c.beginPath(); c.arc(x,y,r,0,7); c.fillStyle=g; c.fill();
+  c.lineWidth=1; c.strokeStyle=darken(col,34); c.stroke();
+  c.beginPath(); c.ellipse(x-r*0.34,y-r*0.40,r*0.30,r*0.19,-0.6,0,7);
+  c.fillStyle='rgba(255,255,255,.6)'; c.fill();
+  if(label){
+    const light=(col==='#E6E9EC'||col==='#E8C21E'||col==='#2EA043'||col==='#3FB950'||col==='#9AA0A6');
+    c.fillStyle=light?'#1E2A33':'#fff';
+    c.font='bold '+Math.max(12,Math.round(r*0.62))+'px Segoe UI, sans-serif';
+    c.textAlign='center'; c.textBaseline='middle'; c.fillText(label,x,y);
+  }
+}
+function arrow(c,x1,y1,x2,y2,col,w,head){
+  head=head||9;
+  c.strokeStyle=col;c.fillStyle=col;c.lineWidth=w;c.lineCap='round';
+  c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();
+  const ang=Math.atan2(y2-y1,x2-x1);
+  c.beginPath();c.moveTo(x2,y2);
+  c.lineTo(x2-head*Math.cos(ang-0.42),y2-head*Math.sin(ang-0.42));
+  c.lineTo(x2-head*Math.cos(ang+0.42),y2-head*Math.sin(ang+0.42));
+  c.closePath();c.fill();c.lineCap='butt';
+}
+function plus(c,x,y,col,s){
+  c.strokeStyle=col;c.lineWidth=2;c.lineCap='round';
+  c.beginPath();c.moveTo(x-s,y);c.lineTo(x+s,y);c.moveTo(x,y-s);c.lineTo(x,y+s);c.stroke();
+}
+function pill(c,text,x,y,fg,bg){
+  c.font='bold 12px Segoe UI, sans-serif';
+  const w=c.measureText(text).width, padX=7, h=20, tw=w+padX*2;
+  c.fillStyle=bg;c.beginPath();c.roundRect(x-tw/2,y-h/2,tw,h,h/2);c.fill();
+  c.fillStyle=fg;c.textAlign='center';c.textBaseline='middle';c.fillText(text,x,y);
+}
+
+/* ============ state ============ */
+const S={mode:'explore', mol:'CO2', showShift:true, defA:'H', defB:'Cl',
+  cancelMol:'CO2', addProg:99, playing:false, t:0, rot:{ax:-0.5, ay:0.5},
+  off:{}};                 // per-molecule user atom offsets (screen px) for drag-to-reshape
+
+/* ============ layout for a molecule ============ */
+function layout(mol){
+  const cxs=[], cys=[];
+  mol.atoms.forEach(a=>{const p=proj(a.c);cxs.push(p.x);cys.push(p.y);});
+  const minX=Math.min(...cxs),maxX=Math.max(...cxs),minY=Math.min(...cys),maxY=Math.max(...cys);
+  const midX=(minX+maxX)/2, midY=(minY+maxY)/2;
+  const extX=Math.max(maxX-minX,0.6)/2, extY=Math.max(maxY-minY,0.6)/2;
+  const pad=150;
+  const sc=Math.min((CW/2-pad)/extX,(CH/2-pad)/extY);
+  const cx=CW/2, cy=CH/2+10;
+  const pos=mol.atoms.map(a=>{const p=proj(a.c);return {x:cx+(p.x-midX)*sc, y:cy+(p.y-midY)*sc};});
+  return {pos,sc,cx,cy};
+}
+// current on-screen positions = layout + any user drag offsets
+// Offsets are stored per scene so different modes do not interfere.
+function sceneKey(){
+  if(S.mode==='explore') return 'explore_'+S.mol;
+  if(S.mode==='define') return 'define';
+  if(S.mode==='cancel') return 'cancel_'+S.cancelMol;
+  if(S.mode==='quiz') return 'quiz';
+  return 'none';
+}
+function getOff(key){
+  if(S.off[key]) return S.off[key];
+  // backward compatibility: explore used to store offsets under the raw mol key
+  if(key.startsWith('explore_') && S.off[key.slice(8)]) return S.off[key.slice(8)];
+  return null;
+}
+function curPos(mol,L){
+  const off=getOff(sceneKey());
+  return L.pos.map((p,k)=> off && off[k] ? {x:p.x+off[k].x, y:p.y+off[k].y} : {x:p.x,y:p.y});
+}
+function sceneLayout(){
+  if(S.mode==='explore'){ const mol=MOL_BY[S.mol]; return {mol, L:layout(mol)}; }
+  if(S.mode==='cancel'){ const mol=MOL_BY[S.cancelMol]; return {mol, L:layout(mol)}; }
+  if(S.mode==='quiz'){ const mol=MOL_BY['H2O']; return {mol, L:layout(mol)}; }
+  if(S.mode==='define') return defineLayout();
+  return null;
+}
+function defineLayout(){
+  const cx=CW/2, cy=CH/2+30, dx=210;
+  return {
+    mol:{key:'define', atoms:[{e:S.defA},{e:S.defB}], bonds:[[0,1]]},
+    L:{pos:[{x:cx-dx/2, y:cy}, {x:cx+dx/2, y:cy}], sc:1, cx, cy}
+  };
+}
+
+/* ============ draw molecule (shared) ============ */
+function drawMolecule(mol,L,opts){
+  opts=opts||{};
+  const pos = opts.pos || curPos(mol,L);
+  // 1) faint bond axis (connectivity only)
+  mol.bonds.forEach(([i,j])=>{
+    const a=pos[i], b=pos[j];
+    ctx.strokeStyle='rgba(120,135,148,.30)';ctx.lineWidth=2;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  });
+  // 2) SHARED ELECTRON PAIR = the bond. The pair sits at the bond midpoint and shifts
+  //    toward the more-electronegative atom when EN differs — this IS the dipole cue.
+  mol.bonds.forEach(([i,j])=>{
+    if(opts.noShift) return;
+    const ena=EN[mol.atoms[i].e], enb=EN[mol.atoms[j].e];
+    const less = ena<=enb ? pos[i] : pos[j];
+    const more = ena<=enb ? pos[j] : pos[i];
+    const dx=more.x-less.x, dy=more.y-less.y, dl=Math.hypot(dx,dy)||1;
+    const ux=dx/dl, uy=dy/dl, px=-uy, py=ux;
+    const mid={x:(less.x+more.x)/2,y:(less.y+more.y)/2};
+    const frac = S.showShift ? Math.min(0.5, Math.abs(ena-enb)/2.2) : 0;
+    const ecx=mid.x+ux*frac*dl*0.5, ecy=mid.y+uy*frac*dl*0.5;
+    const pulse=1+0.06*Math.sin(S.t*2.2+(i+j));
+    const eR=6.5*pulse, sep=5.5;
+    ctx.save();
+    const g=ctx.createRadialGradient(ecx,ecy,1,ecx,ecy,eR*2.6);
+    g.addColorStop(0,'rgba(37,99,235,.5)');g.addColorStop(1,'rgba(37,99,235,0)');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(ecx,ecy,eR*2.6,0,7);ctx.fill();
+    const col = S.showShift ? '#1E3A8A' : '#64748B';
+    ctx.fillStyle=col;
+    ctx.beginPath();ctx.arc(ecx+px*sep,ecy+py*sep,eR*0.52,0,7);ctx.fill();
+    ctx.beginPath();ctx.arc(ecx-px*sep,ecy-py*sep,eR*0.52,0,7);ctx.fill();
+    ctx.restore();
+  });
+  // 2.5) LONE PAIRS — shaded lobes with a pair of dots, on atoms that carry
+  //      them (O in H₂O/CO₂/CH₂O/CO, N in NH₃). They explain WHY the shape is
+  //      bent/pyramidal and where the δ− electron density actually sits.
+  (mol.lone||[]).forEach(lp=>{
+    const p0=pos[lp.a];
+    const r=(mol.atoms[lp.a].e==='H')?20:27;
+    lp.dirs.forEach(d=>{
+      const q=rotProj(d), ql=Math.hypot(q.x,q.y)||1;
+      const ux=q.x/ql, uy=q.y/ql;
+      const cx2=p0.x+ux*(r+20), cy2=p0.y+uy*(r+20);
+      ctx.save();
+      ctx.translate(cx2,cy2); ctx.rotate(Math.atan2(uy,ux));
+      ctx.beginPath(); ctx.ellipse(0,0,12.5,8,0,0,7);
+      ctx.fillStyle='rgba(124,92,191,.18)'; ctx.fill();
+      ctx.strokeStyle='rgba(124,92,191,.62)'; ctx.lineWidth=1.4; ctx.stroke();
+      ctx.fillStyle='#6D28D9';
+      ctx.beginPath(); ctx.arc(2,4.5,3,0,7); ctx.fill();
+      ctx.beginPath(); ctx.arc(2,-4.5,3,0,7); ctx.fill();
+      ctx.restore();
+    });
+  });
+  // 3) atoms
+  mol.atoms.forEach((a,k)=>{
+    const r=(a.e==='H')?20:27;
+    atom(ctx,pos[k].x,pos[k].y,r,CPK[a.e]||'#9AA0A6',a.e);
+  });
+  // 4) partial charges δ+/δ−
+  mol.atoms.forEach((a,k)=>{
+    const sc=atomCharge(mol,k);
+    if(Math.abs(sc)<0.25) return;
+    const p=pos[k], ctr={x:L.cx,y:L.cy};
+    let dx=p.x-ctr.x, dy=p.y-ctr.y, dl=Math.hypot(dx,dy)||1;
+    let dist=(a.e==='H')?30:38;
+    // atom carrying lone pairs: place its δ label along the lone-pair bisector,
+    // just beyond the lobes — "δ− lives where the lone pairs are" stays true
+    const lps=(mol.lone||[]).filter(l=>l.a===k);
+    if(lps.length){
+      let sx=0, sy=0;
+      lps.forEach(l=>l.dirs.forEach(d=>{
+        const q=rotProj(d), ql=Math.hypot(q.x,q.y)||1; sx+=q.x/ql; sy+=q.y/ql;
+      }));
+      const sl=Math.hypot(sx,sy);
+      if(sl>0.05){
+        dx=sx/sl; dy=sy/sl; dl=1;
+        dist = lps[0].dirs.length>1 ? ((a.e==='H')?68:75)   // between the lobes
+                                    : ((a.e==='H')?74:81);  // beyond a single lobe
+      }
+    }
+    const ox=p.x+dx/dl*dist, oy=p.y+dy/dl*dist;
+    if(sc<-0.25) pill(ctx,'δ+',ox,oy,'#B91C1C','#FDE8E8');
+    else         pill(ctx,'δ−',ox,oy,'#1D4ED8','#E6EEFB');
+  });
+  // 5) bond dipoles (blue arrows, from δ+ to δ−) using CURRENT screen geometry, so
+  //    dragging an atom turns the arrows in real time. Kept clear of the atom spheres
+  //    — a dipole is a macroscopic vector, not an on-atom label.
+  mol.bonds.forEach(([i,j])=>{
+    const ena=EN[mol.atoms[i].e], enb=EN[mol.atoms[j].e];
+    if(Math.abs(ena-enb)<0.05) return;
+    const iLess=ena<=enb?i:j, iMore=ena<=enb?j:i;
+    const less=pos[iLess], more=pos[iMore];
+    const dx=more.x-less.x, dy=more.y-less.y, dl=Math.hypot(dx,dy)||1;
+    const ux=dx/dl, uy=dy/dl; let px=-uy, py=ux;
+    const off=30, gap=12;
+    const rLess=(mol.atoms[iLess].e==='H')?20:27, rMore=(mol.atoms[iMore].e==='H')?20:27;
+    const mag=Math.abs(ena-enb);
+    const sx=less.x+ux*(rLess+gap)+px*off, sy=less.y+uy*(rLess+gap)+py*off;
+    const ex=more.x-ux*(rMore+gap)+px*off, ey=more.y-uy*(rMore+gap)+py*off;
+    const w=5+3.2*Math.min(1,mag/1.6);
+    arrow(ctx,sx,sy,ex,ey,DIP,w,12);
+    plus(ctx,sx,sy,'#1D4ED8',6);
+  });
+}
+
+/* ============ EXPLORE ============ */
+function drawExplore(){
+  const mol=MOL_BY[S.mol];
+  const L=layout(mol);
+  const P=curPos(mol,L);
+  ctx.clearRect(0,0,CW,CH);
+  drawMolecule(mol,L);
+  // net dipole = vector sum of the individual bond dipoles, computed from the CURRENT
+  // on-screen geometry (projected 3D dipoles, no per-bond normalisation). Dragging an
+  // atom changes bond directions → the net arrow reacts in real time — e.g. bend a
+  // linear CO₂ and the cancellation breaks; leave CH₄ tetrahedral and it stays zero.
+  let nx=0, ny=0, cmx=0, cmy=0;
+  mol.atoms.forEach((a,k)=>{cmx+=P[k].x;cmy+=P[k].y;});
+  cmx/=mol.atoms.length; cmy/=mol.atoms.length;
+  const nv=screenNetVec(mol,P);
+  nx=nv.x; ny=nv.y;
+  const nmag=Math.hypot(nx,ny);
+  if(nmag<NET_EPS){
+    arrow(ctx,cmx-34,cmy,cmx+34,cmy,'#94A3B8',3,8);
+    arrow(ctx,cmx+34,cmy,cmx-34,cmy,'#94A3B8',3,8);
+    pill(ctx,'Σ = 0',cmx,cmy-26,'#475569','#EEF2F6');
+  }else{
+    const k=Math.min(1,150/nmag);
+    const ex=cmx+nx*k, ey=cmy+ny*k;
+    arrow(ctx,cmx,cmy,ex,ey,NET,4.5,12);
+    pill(ctx,'net dipole',(cmx+ex)/2,(cmy+ey)/2-14,'#BE123C','#FCE7EE');
+  }
+}
+
+/* ============ DEFINE (single A–B bond) ============ */
+function drawDefine(){
+  ctx.clearRect(0,0,CW,CH);
+  const A=S.defA,B=S.defB;
+  const ena=EN[A],enb=EN[B];
+  const d=Math.abs(ena-enb);
+  const {mol,L}=defineLayout();
+  const P=curPos(mol,L);
+  const pA=P[0], pB=P[1];
+  const cx=(pA.x+pB.x)/2, cy=(pA.y+pB.y)/2;
+  const bdx=pB.x-pA.x, bdy=pB.y-pA.y, bdl=Math.hypot(bdx,bdy)||1;
+  const ux=bdx/bdl, uy=bdy/bdl, px=-uy, py=ux;
+  // bond = faint axis + SHARED ELECTRON PAIR (shifted toward the more-EN atom)
+  ctx.strokeStyle='rgba(120,135,148,.30)';ctx.lineWidth=2;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(pA.x,pA.y);ctx.lineTo(pB.x,pB.y);ctx.stroke();
+  const frac=Math.min(0.5,d/2.2);
+  const pairC={x:cx+ux*(ena>=enb?-frac*bdl/2:frac*bdl/2), y:cy+uy*(ena>=enb?-frac*bdl/2:frac*bdl/2)};
+  const pulse=1+0.06*Math.sin(S.t*2.4);
+  const eR=9*pulse, sep=8;
+  ctx.save();
+  const g=ctx.createRadialGradient(pairC.x,pairC.y,1,pairC.x,pairC.y,eR*2.6);
+  g.addColorStop(0,'rgba(37,99,235,.5)');g.addColorStop(1,'rgba(37,99,235,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(pairC.x,pairC.y,eR*2.6,0,7);ctx.fill();
+  ctx.fillStyle='#1E3A8A';
+  ctx.beginPath();ctx.arc(pairC.x+px*sep,pairC.y+py*sep,eR*0.5,0,7);ctx.fill();
+  ctx.beginPath();ctx.arc(pairC.x-px*sep,pairC.y-py*sep,eR*0.5,0,7);ctx.fill();
+  ctx.restore();
+  // atoms
+  const rA=(A==='H')?22:30, rB=(B==='H')?22:30;
+  atom(ctx,pA.x,pA.y,rA,CPK[A]||'#9AA0A6',A);
+  atom(ctx,pB.x,pB.y,rB,CPK[B]||'#9AA0A6',B);
+  // partial charges
+  if(d>=0.05){
+    if(ena<enb){ pill(ctx,'δ+',pA.x-32,pA.y-46,'#B91C1C','#FDE8E8'); pill(ctx,'δ−',pB.x+32,pB.y-46,'#1D4ED8','#E6EEFB'); }
+    else       { pill(ctx,'δ−',pA.x-32,pA.y-46,'#1D4ED8','#E6EEFB'); pill(ctx,'δ+',pB.x+32,pB.y-46,'#B91C1C','#FDE8E8'); }
+    // bond dipole arrow (length ∝ ΔEN, from + to −), kept clear of atom spheres
+    const w=5+3.2*Math.min(1,d/1.6);
+    const off=42;
+    const gap=14;
+    const iLess=ena<=enb?0:1, iMore=ena<=enb?1:0;
+    const less=P[iLess], more=P[iMore];
+    const rLess=(mol.atoms[iLess].e==='H')?22:30, rMore=(mol.atoms[iMore].e==='H')?22:30;
+    const sx=less.x+ux*(rLess+gap)+px*off, sy=less.y+uy*(rLess+gap)+py*off;
+    const ex2=more.x-ux*(rMore+gap)+px*off, ey2=more.y-uy*(rMore+gap)+py*off;
+    arrow(ctx,sx,sy,ex2,ey2,DIP,w,12);
+    plus(ctx,sx,sy,'#1D4ED8',6);
+    // distance label d
+    pill(ctx,'d',cx+px*28,cy+py*28,'#475569','#EEF2F6');
+  }
+  // title under
+  ctx.fillStyle='#475569';ctx.font='13px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('μ = q × d   (dipole moment grows with ΔEN)',CW/2,L.cy+72);
+}
+
+/* ============ CANCEL (vector addition) ============ */
+function drawCancel(){
+  ctx.clearRect(0,0,CW,CH);
+  const mol=MOL_BY[S.cancelMol];
+  const L=layout(mol);
+  const P=curPos(mol,L);
+  // molecule at top
+  drawMolecule(mol,L,{pos:P.map(p=>({x:p.x,y:p.y-95}))});
+  // build vectors from the CURRENT on-screen geometry so dragging atoms changes the board.
+  // Same physics as everywhere else: projected bond dipole = screen bond × ΔEN/L3D,
+  // NO per-bond normalisation (that would break CH₄/CCl₄/BF₃/CO₂ cancellation).
+  const P0={x:L.cx-150, y:L.cy+165};
+  const vecs=mol.bonds.map(([i,j])=>{
+    const ena=EN[mol.atoms[i].e], enb=EN[mol.atoms[j].e];
+    const iLess=ena<=enb?i:j, iMore=ena<=enb?j:i;
+    const less=P[iLess], more=P[iMore];
+    const dx=more.x-less.x, dy=more.y-less.y;
+    const L3=len(sub(mol.atoms[i].c,mol.atoms[j].c))||1;
+    const w=Math.abs(ena-enb)/L3;
+    return {x:dx*w, y:dy*w};
+  });
+  // scale the board so the longest vector fits (they are proportional to the
+  // real projected dipoles now, which vary a lot between molecules)
+  const maxV=Math.max(1,...vecs.map(v=>Math.hypot(v.x,v.y)));
+  const boardScale=85/maxV;
+  // draw already-added vectors tip to tail
+  let cur={x:P0.x,y:P0.y};
+  const total=S.addProg; // how many vectors revealed (can be fractional)
+  let acc={x:0,y:0};
+  for(let k=0;k<vecs.length;k++){
+    const v=vecs[k];
+    const vx=v.x*boardScale, vy=v.y*boardScale;
+    if(k<total){
+      arrow(ctx,cur.x,cur.y,cur.x+vx,cur.y+vy,DIP,3.5,9);
+      plus(ctx,cur.x,cur.y,'#1D4ED8',4);
+      cur={x:cur.x+vx,y:cur.y+vy};
+      acc={x:acc.x+vx,y:acc.y+vy};
+    }else if(k===Math.floor(total) && total%1!==0){
+      const f=total-Math.floor(total);
+      arrow(ctx,cur.x,cur.y,cur.x+vx*f,cur.y+vy*f,'rgba(37,99,235,.45)',3,7);
+    }
+  }
+  // resultant
+  if(total>=vecs.length-0.001){
+    const rl=Math.hypot(acc.x,acc.y);
+    if(rl<6){
+      arrow(ctx,P0.x,P0.y,P0.x+40,P0.y,'#94A3B8',3,8);
+      arrow(ctx,P0.x+40,P0.y,P0.x,P0.y,'#94A3B8',3,8);
+      pill(ctx,'net = 0 → NONPOLAR',P0.x+30,P0.y-22,'#137A3A','#E7F9EE');
+    }else{
+      arrow(ctx,P0.x,P0.y,P0.x+acc.x,P0.y+acc.y,NET,4.5,12);
+      pill(ctx,'net → POLAR',(P0.x+P0.x+acc.x)/2,(P0.y+P0.y+acc.y)/2-14,'#BE123C','#FCE7EE');
+    }
+  }
+  // board anchor label
+  ctx.fillStyle='#475569';ctx.font='12px Segoe UI';ctx.textAlign='left';
+  ctx.fillText('Vector addition (tip-to-tail):',P0.x-40,P0.y-46);
+}
+
+/* ============ QUIZ ============ */
+const QUIZ=[
+ {q:'Which molecule is NONPOLAR despite having polar bonds?',
+  opts:['H₂O','CO₂','NH₃','CHCl₃'],ans:1,
+  fb:'CO₂ has two equal C=O bond dipoles pointing in opposite directions — they cancel exactly. The linear shape makes the vector sum zero.'},
+ {q:'A molecule is polar when its bond dipoles…',
+  opts:['all point the same way','cancel completely','do NOT cancel (net ≠ 0)','are all zero'],ans:2,
+  fb:'Polarity = a non-zero net dipole. Symmetric molecules (e.g. CCl₄, BF₃) have polar bonds but the vectors sum to zero → nonpolar.'},
+ {q:'In H–Cl, the δ− end is on…',
+  opts:['H (less electronegative)','Cl (more electronegative)','both equally','neither'],ans:1,
+  fb:'Cl (3.16) is more electronegative than H (2.20), so electron density shifts toward Cl → Cl carries δ− and H carries δ+.'},
+];
+let qState=[null,null,null];
+function drawQuiz(){
+  ctx.clearRect(0,0,CW,CH);
+  // backdrop: H2O with dipoles to remind; atoms can be dragged to explore
+  const mol=MOL_BY['H2O']; const L=layout(mol);
+  const P=curPos(mol,L);
+  drawMolecule(mol,L,{});
+  // net dipole from the current (possibly dragged) screen positions
+  let nx=0, ny=0, cmx=0, cmy=0;
+  mol.atoms.forEach((a,k)=>{cmx+=P[k].x;cmy+=P[k].y;});
+  cmx/=mol.atoms.length; cmy/=mol.atoms.length;
+  const nv=screenNetVec(mol,P);
+  nx=nv.x; ny=nv.y;
+  const nmag=Math.hypot(nx,ny);
+  if(nmag>=NET_EPS){
+    const k=Math.min(1,150/nmag);
+    arrow(ctx,cmx,cmy,cmx+nx*k,cmy+ny*k,NET,4.5,12);
+  }
+  ctx.fillStyle='#475569';ctx.font='13px Segoe UI';ctx.textAlign='center';
+  ctx.fillText('Example: H₂O → net dipole (polar)',L.cx,L.cy+150);
+}
+
+// net dipole from CURRENT on-screen positions (so dragging atoms updates polarity).
+// Physics: a bond dipole is a 3D vector = (unit bond) × ΔEN; its projection equals
+// the SCREEN bond vector × ΔEN/L3D. Crucially there is NO per-bond 2D normalisation
+// — normalising each projected direction would fake dipoles out of foreshortening
+// and make symmetric molecules (CH₄, CCl₄, BF₃, CO₂) look polar at some rotations.
+function screenNetVec(mol,P){
+  let nx=0,ny=0;
+  mol.bonds.forEach(([i,j])=>{
+    const ena=EN[mol.atoms[i].e], enb=EN[mol.atoms[j].e];
+    if(Math.abs(ena-enb)<0.05) return;
+    const L3=len(sub(mol.atoms[i].c,mol.atoms[j].c))||1;
+    const less=ena<=enb?P[i]:P[j], more=ena<=enb?P[j]:P[i];
+    const w=Math.abs(ena-enb)/L3;
+    nx+=(more.x-less.x)*w; ny+=(more.y-less.y)*w;
+  });
+  return {x:nx,y:ny};
+}
+const NET_EPS=1.5;   // below this the bond dipoles cancel → NONPOLAR
+function screenNetDipole(mol,P){
+  const v=screenNetVec(mol,P);
+  const m=Math.hypot(v.x,v.y);
+  return m<NET_EPS?0:m;
+}
+
+/* ============ panel rendering ============ */
+function renderPanel(){
+  const p=document.getElementById('panel');
+  if(S.mode==='explore'){
+    const mol=MOL_BY[S.mol]; const P=curPos(mol,layout(mol)); const pol=screenNetDipole(mol,P)>=0.05;
+    let rows='';
+    mol.bonds.forEach(([i,j])=>{
+      const a=mol.atoms[i].e,b=mol.atoms[j].e,d=(EN[a]-EN[b]);
+      if(Math.abs(d)<0.05){rows+=`<div class="row"><span class="k">${a}–${b}</span><span class="v" style="color:#64748B">ΔEN 0.00 · no bond dipole</span></div>`;return;}
+      const dir = d>0?`→ ${a}`:`→ ${b}`;
+      rows+=`<div class="row"><span class="k">${a}–${b}</span><span class="v">ΔEN ${Math.abs(d).toFixed(2)} ${dir}</span></div>`;
+    });
+    const cenLP=(mol.lone||[]).some(l=>l.a===0);
+    const lpNote=cenLP?`<br><br>The <b>lone pair${mol.lone[0].dirs.length>1?'s':''}</b> on ${mol.atoms[0].e} (purple lobes) occupy more space than bonds — they push the bonded atoms into the <b>${mol.shape}</b> shape, which is exactly why the bond dipoles ${pol?'<b>cannot cancel</b>':'still cancel'}.`:'';
+    p.innerHTML=`
+      <div class="card">
+        <h2>${mol.name} · ${mol.formula}</h2>
+        <div class="formula" style="margin-bottom:6px">${pol?'POLAR':'NONPOLAR'}</div>
+        <div class="small" style="margin-bottom:8px">Shape: <b>${mol.shape}</b></div>
+        <div class="insight">${pol
+          ? 'Bond dipoles <b>do not cancel</b> — the vector sum is non-zero, so the molecule has a net dipole (red arrow).'
+          : 'All bond dipoles <b>cancel</b> by symmetry (linear / trigonal planar / tetrahedral). Net dipole = 0.'}${lpNote}</div>
+      </div>
+      <div class="card">
+        <h2>Bond dipoles (ΔEN)</h2>${rows}
+      </div>
+      <div class="card">
+        <h2>Legend</h2>
+        <div class="legend">
+          <div class="it"><span class="arrowkey" style="border-top:3px solid ${DIP};"></span> bond dipole (blue, + → −)</div>
+          <div class="it"><span class="arrowkey" style="border-top:4px solid ${NET};"></span> net molecular dipole (red)</div>
+          <div class="it"><span class="sw" style="background:#B91C1C"></span> δ+ (electron-poor)</div>
+          <div class="it"><span class="sw" style="background:#1D4ED8"></span> δ− (electron-rich)</div>
+          ${mol.lone?'<div class="it"><span class="sw" style="background:#8B5CF6"></span> lone pair (non-bonding electron pair)</div>':''}
+        </div>
+      </div>`;
+    document.getElementById('caption').innerHTML=
+      `<b>Explore:</b> pick a molecule. Blue arrows are bond dipoles (point from the less- to the more-electronegative atom, length ∝ ΔEN). `+
+      `Red arrow is the <b>net dipole</b> (vector sum). When the blue arrows cancel, the molecule is <b>nonpolar</b>.`;
+  }else if(S.mode==='define'){
+    const A=S.defA,B=S.defB,d=Math.abs(EN[A]-EN[B]);
+    p.innerHTML=`
+      <div class="card">
+        <h2>Dipole = charge separation</h2>
+        <div class="slider-row"><label>Atom A</label>
+          <select id="defA">${elecOpts(A)}</select></div>
+        <div class="slider-row"><label>Atom B</label>
+          <select id="defB">${elecOpts(B)}</select></div>
+        <div class="row"><span class="k">EN(${A})</span><span class="v">${EN[A].toFixed(2)}</span></div>
+        <div class="row"><span class="k">EN(${B})</span><span class="v">${EN[B].toFixed(2)}</span></div>
+        <div class="row"><span class="k">ΔEN</span><span class="v" style="color:${d>=0.05?DIP:'#64748B'}">${d.toFixed(2)}</span></div>
+        <div class="insight">The more electronegative atom pulls the <b>shared electron pair</b> toward itself (blue glow shifts). `+
+        `This creates partial charges δ+ / δ− — that separation <b>is the dipole</b>. Larger ΔEN → larger dipole moment μ = q·d.</div>
+      </div>
+      <div class="card">
+        <h2>Definition</h2>
+        <div class="small">A <b>dipole</b> is a pair of equal and opposite charges (+q, −q) separated by a distance d. `+
+        `Its moment <b>μ = q × d</b> points from + to −. In a covalent bond, ΔEN≠0 makes the bond polar and gives it a bond dipole.</div>
+      </div>`;
+    document.getElementById('caption').innerHTML=
+      `<b>What is a dipole?</b> Drag either atom on the canvas, or use the dropdowns. Watch the shared electrons shift toward the more electronegative atom, `+
+      `producing δ+ / δ− and a bond dipole whose direction follows the bond axis.`;
+    document.getElementById('defA').onchange=e=>{S.defA=e.target.value;render();};
+    document.getElementById('defB').onchange=e=>{S.defB=e.target.value;render();};
+  }else if(S.mode==='cancel'){
+    const mol=MOL_BY[S.cancelMol]; const P=curPos(mol,layout(mol)); const pol=screenNetDipole(mol,P)>=0.05;
+    p.innerHTML=`
+      <div class="card">
+        <h2>Vector cancellation</h2>
+        <div class="slider-row"><label>Molecule</label>
+          <select id="cancelSel">${Object.keys(MOL_BY).filter(k=>['CO2','H2O','BF3','NH3','CCl4','CH4'].includes(k))
+            .map(k=>`<option value="${k}" ${k===S.cancelMol?'selected':''}>${MOL_BY[k].formula} · ${MOL_BY[k].name}</option>`).join('')}</select></div>
+        <button class="btn primary" id="addBtn">▶ Add vectors</button>
+        <button class="btn" id="clrBtn">↺ Reset</button>
+        <div class="insight" style="margin-top:10px">Each bond dipole is a <b>vector</b>. Place them tip-to-tail: if the end meets the start, `+
+        `they <b>cancel → nonpolar</b>; otherwise the gap is the <b>net dipole → polar</b>.</div>
+        <div class="row" style="margin-top:8px"><span class="k">Result</span>
+          <span class="v" style="color:${pol?NET:'#137A3A'}">${pol?'POLAR':'NONPOLAR'}</span></div>
+      </div>
+      <div class="card">
+        <h2>Why it works</h2>
+        <div class="small"><b>CO₂ / BF₃ / CCl₄ / CH₄:</b> symmetric → equal bond dipoles point in balanced directions → vector sum = 0.<br><br>`+
+        `<b>H₂O / NH₃:</b> bent / pyramidal → bond dipoles don't line up opposite → net ≠ 0.</div>
+      </div>`;
+    document.getElementById('caption').innerHTML=
+      `<b>Vector cancellation:</b> drag atoms in the top molecule to change bond directions; the vector board at the bottom updates in real time. `+
+      `A closed loop means perfect cancellation (nonpolar).`;
+    document.getElementById('cancelSel').onchange=e=>{S.cancelMol=e.target.value;S.addProg=99;S.playing=false;render();};
+    document.getElementById('addBtn').onclick=()=>{S.addProg=0;S.playing=true;};
+    document.getElementById('clrBtn').onclick=()=>{S.addProg=99;S.playing=false;render();};
+  }else if(S.mode==='quiz'){
+    let html=`<div class="card"><h2>Quiz</h2>`;
+    QUIZ.forEach((qz,k)=>{
+      html+=`<div style="margin:12px 0"><div style="font-weight:700;font-size:14px;margin-bottom:6px">${k+1}. ${qz.q}</div>`;
+      qz.opts.forEach((o,oi)=>{
+        const cls=qState[k]===null?'':(oi===qz.ans?'correct':(qState[k]===oi?'wrong':''));
+        html+=`<button class="quiz-opt ${cls}" data-q="${k}" data-o="${oi}">${o}</button>`;
+      });
+      if(qState[k]!==null){
+        const ok=qState[k]===qz.ans;
+        html+=`<div class="quiz-fb ${ok?'ok':'no'}">${ok?'✓ Correct. ':'✗ '}${qz.fb}</div>`;
+      }
+    });
+    html+=`</div>`;
+    p.innerHTML=html;
+    p.querySelectorAll('.quiz-opt').forEach(b=>{
+      b.onclick=()=>{const q=+b.dataset.q,o=+b.dataset.o;qState[q]=o;render();};
+    });
+    document.getElementById('caption').innerHTML=
+      `<b>Quiz:</b> check your understanding of bond dipoles, electronegativity and net polarity. You can still drag the H₂O atoms to see how shape affects the net dipole.`;
+  }
+}
+function elecOpts(sel){
+  const order=['H','B','C','P','S','N','Cl','O','F'];
+  return order.map(e=>`<option value="${e}" ${e===sel?'selected':''}>${e} (${EN[e].toFixed(2)})</option>`).join('');
+}
+
+/* ============ main render ============ */
+function render(){
+  ctx.clearRect(0,0,CW,CH);
+  if(S.mode==='explore'){ drawExplore();
+    const mol=MOL_BY[S.mol], P=curPos(mol,layout(mol)), pol=screenNetDipole(mol,P)>=0.05;
+    const chip=document.getElementById('stageChip');
+    chip.className='chip '+(pol?'pol':'non');
+    chip.textContent=pol?'POLAR':'NONPOLAR';
+  }else if(S.mode==='define'){ drawDefine();
+    const chip=document.getElementById('stageChip');chip.className='chip '+(Math.abs(EN[S.defA]-EN[S.defB])>=0.05?'pol':'non');
+    chip.textContent=Math.abs(EN[S.defA]-EN[S.defB])>=0.05?'BOND DIPOLE':'NONPOLAR BOND';
+  }else if(S.mode==='cancel'){ drawCancel();
+    const mol=MOL_BY[S.cancelMol], P=curPos(mol,layout(mol)), pol=screenNetDipole(mol,P)>=0.05;
+    const chip=document.getElementById('stageChip');chip.className='chip '+(pol?'pol':'non');
+    chip.textContent=pol?'POLAR':'NONPOLAR';
+  }else if(S.mode==='quiz'){ drawQuiz(); document.getElementById('stageChip').className='chip non';document.getElementById('stageChip').textContent='QUIZ'; }
+  renderPanel();
+}
+
+/* ============ mol tabs (explore) ============ */
+function buildMolTabs(){
+  const tabs=document.getElementById('molTabs');tabs.innerHTML='';
+  MOLS.forEach(m=>{
+    const b=document.createElement('button');
+    b.className='mol-tab'+(m.key===S.mol?' active':'');
+    b.textContent=m.formula;
+    b.onclick=()=>{S.mol=m.key;buildMolTabs();render();};
+    tabs.appendChild(b);
+  });
+}
+
+/* ============ toolbar ============ */
+function setMode(m){
+  S.mode=m;
+  document.getElementById('mExplore').classList.toggle('active',m==='explore');
+  document.getElementById('mDefine').classList.toggle('active',m==='define');
+  document.getElementById('mCancel').classList.toggle('active',m==='cancel');
+  document.getElementById('mQuiz').classList.toggle('active',m==='quiz');
+  document.getElementById('molTabs').classList.toggle('hidden',m!=='explore');
+  // drag-to-reshape / rotate is available in every mode
+  document.getElementById('hint').classList.remove('hidden');
+  S.playing=false;S.addProg=99;
+  if(m==='explore')buildMolTabs();
+  render();
+}
+document.getElementById('mExplore').onclick=()=>setMode('explore');
+document.getElementById('mDefine').onclick=()=>setMode('define');
+document.getElementById('mCancel').onclick=()=>setMode('cancel');
+document.getElementById('mQuiz').onclick=()=>setMode('quiz');
+document.getElementById('shiftToggle').onchange=e=>{S.showShift=e.target.checked;render();};
+
+/* ============ drag: reshape atom OR rotate ============ */
+cv.style.cursor='grab';
+let _mode=null, _atomK=-1, _lx=0, _ly=0;
+function atomRadius(e){ return e==='H'?20:27; }
+cv.addEventListener('pointerdown',e=>{
+  const x=e.offsetX, y=e.offsetY;
+  const scene=sceneLayout(); if(!scene) return;
+  const {mol,L}=scene;
+  const P=curPos(mol,L);
+  for(let k=mol.atoms.length-1;k>=0;k--){   // hit-test atoms (front-most first)
+    const r=atomRadius(mol.atoms[k].e);
+    if(Math.hypot(P[k].x-x,P[k].y-y) <= r+9){   // grabbed an atom -> reshape
+      _mode='atom'; _atomK=k; cv.style.cursor='grabbing';
+      const key=sceneKey();
+      if(!S.off[key]) S.off[key]={};
+      if(!S.off[key][k]) S.off[key][k]={x:0,y:0};
+      _lx=x;_ly=y; return;
+    }
+  }
+  _mode='rotate'; _lx=x;_ly=y; cv.style.cursor='grabbing';   // empty space -> rotate
+});
+window.addEventListener('pointermove',e=>{
+  if(!_mode) return;
+  const r=cv.getBoundingClientRect();
+  const x=e.clientX-r.left, y=e.clientY-r.top;
+  if(_mode==='atom'){
+    const key=sceneKey();
+    if(!S.off[key]) S.off[key]={};
+    if(!S.off[key][_atomK]) S.off[key][_atomK]={x:0,y:0};
+    S.off[key][_atomK].x += (x-_lx);
+    S.off[key][_atomK].y += (y-_ly);
+  }else{
+    S.rot.ay += (x-_lx)*0.012;
+    S.rot.ax += (y-_ly)*0.012;
+    S.rot.ax = Math.max(-1.45,Math.min(1.45,S.rot.ax));
+  }
+  _lx=x;_ly=y; render();
+});
+window.addEventListener('pointerup',()=>{ _mode=null;_atomK=-1;cv.style.cursor='grab'; });
+document.getElementById('resetBtn').onclick=()=>{
+  S.mol='CO2';S.defA='H';S.defB='Cl';S.cancelMol='CO2';S.addProg=99;S.playing=false;
+  S.rot={ax:-0.5,ay:0.5}; S.off={};        // clear user reshapes for all modes
+  setMode('explore');
+};
+// ⌂ Ideal: one click — scattered atoms snap back to the ideal geometry AND the
+// molecule turns to its best viewing angle (e.g. CH₄ back to a clean tetrahedron)
+document.getElementById('fitBtn').onclick=()=>{
+  delete S.off[sceneKey()];
+  const mk = S.mode==='explore' ? S.mol : S.mode==='cancel' ? S.cancelMol : S.mode==='quiz' ? 'H2O' : null;
+  const v = mk && MOL_BY[mk] && MOL_BY[mk].view;
+  S.rot = v ? {ax:v.ax, ay:v.ay} : {ax:-0.5, ay:0.5};
+  render();
+};
+
+/* ============ animation loop ============ */
+function loop(){
+  S.t+=0.016;
+  if(S.mode==='cancel' && S.playing){
+    S.addProg+=0.025;
+    if(S.addProg>=MOL_BY[S.cancelMol].bonds.length){S.addProg=MOL_BY[S.cancelMol].bonds.length;S.playing=false;}
+    renderPanel();
+  }
+  render();
+  requestAnimationFrame(loop);
+}
+
+fitCanvas();
+buildMolTabs();
+render();
+loop();
+</script>
+</body>
+</html>

@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<!--
+设计提示词（Design Prompt）：
+主题 —— PES / XPS 光电子能谱模型 (Photoelectron Spectroscopy / Binding-Energy Model)
+目的 —— 以 AP Chemistry Unit 1「Photoelectron Spectroscopy」为基准，展示不同微粒（元素原子）中
+        电子的<b>结合能 (Binding Energy, eV)</b> 分布，以及 PES 峰 ↔ 电子轨道亚层 ↔ 电子数 的对应关系。
+包含 ——
+  Mode 0 单元素 PES 谱图：选元素→绘制各亚层峰(峰高∝电子数)→标注亚层与 BE→自旋轨道裂分双峰→点击峰放大
+         → 峰正下方对齐对应「轨道盒子」，建立 峰↔亚层 对应关系。
+  Mode 1 多元素对照：叠加 2–3 种微粒的 PES，同亚层峰随 Z 右移(更高 BE)，呈现「不同微粒结合能差异与关联」。
+  Mode 2 结合能–Z 关联：价层峰 BE 与第一电离能(eV)随 Z 的对照，连回「亚层轨道电离能差异模型」的反常点。
+  Mode 3 由谱图推断元素：给出 PES(隐藏元素名)，据峰高(电子数)推断原子序数/元素。
+风格 —— teal 主色 #0A455D / #4699AA；Canvas 2D；零依赖；可离线。
+注 —— 结合能为常见元素典型 XPS 值(近似)，用于教学；真实仪器谱图 BE 标尺常向右减小(本模型默认向右增大，可切换)。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PES 光电子能谱模型 · Photoelectron Spectroscopy</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#EEF3F5;font-family:'Segoe UI',Arial,'Microsoft YaHei',sans-serif;color:#16323F;padding:18px 12px 40px;}
+  .wrap{max-width:1120px;margin:0 auto;}
+  h1{color:#0A455D;font-size:22px;letter-spacing:.2px;}
+  .sub{color:#5B7684;font-size:13px;margin:4px 0 14px;line-height:1.5;}
+  .card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(10,69,93,.08);padding:12px;}
+  .modetabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .mtab{flex:1 1 180px;padding:10px 8px;border-radius:12px;border:2px solid #0A455D;background:#fff;color:#0A455D;
+        font-size:14px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;}
+  .mtab.active{background:#0A455D;color:#fff;}
+  .duo{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch;}
+  .anim-card{flex:1 1 540px;}
+  .panel{flex:1 1 230px;min-width:230px;display:flex;flex-direction:column;gap:10px;}
+  canvas{display:block;border-radius:10px;background:#fff;}
+  .ctlrow{display:flex;align-items:center;gap:10px;font-size:13px;}
+  .ctlrow label{width:104px;color:#0A455D;font-weight:600;flex-shrink:0;}
+  .ctlrow input[type=range]{flex:1;accent-color:#0A455D;}
+  .ctlrow select{flex:1;accent-color:#0A455D;border:1.5px solid #9FB9C6;border-radius:8px;padding:5px 8px;color:#0A455D;font-size:13px;font-weight:600;background:#fff;}
+  .val{min-width:60px;text-align:center;background:#EAF3F7;color:#0A455D;border-radius:8px;
+       padding:3px 6px;font-weight:600;font-size:12.5px;}
+  .chip{display:inline-block;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;}
+  .chip.low{background:#E8F1F5;color:#4A6B7C;}
+  .chip.med{background:#FFF3D6;color:#9A6B08;}
+  .chip.high{background:#FCE8DD;color:#B3441E;}
+  .datarow{display:flex;justify-content:space-between;font-size:13px;padding:4px 2px;border-bottom:1px dashed #DDE8ED;}
+  .datarow b{color:#0A455D;font-family:Consolas,'Courier New',monospace;}
+  .formula{font-family:Consolas,'Courier New',monospace;background:#F2F7F9;border-left:4px solid #0A455D;
+           border-radius:6px;padding:8px 12px;font-size:13.5px;color:#0A455D;line-height:1.6;}
+  .causal{background:#E4EEF2;border-radius:10px;padding:10px 14px;font-size:13px;color:#0A455D;margin-top:12px;line-height:1.6;}
+  .causal b{color:#B3441E;}
+  .think{margin-top:12px;background:#fff;border-radius:10px;border:1.5px dashed #9FB9C6;
+         padding:10px 14px;font-size:13px;color:#33586B;line-height:1.6;}
+  .think b{color:#0A455D;}
+  .btn{padding:6px 14px;border-radius:9px;border:1.5px solid #0A455D;background:#fff;color:#0A455D;
+       font-size:13px;font-weight:600;cursor:pointer;}
+  .btn:hover{background:#EAF3F7;}
+  .btn.active{background:#0A455D;color:#fff;}
+  .btn.warn{border-color:#B3441E;color:#B3441E;}
+  .btn.warn:hover{background:#FCE8DD;}
+  .btn:disabled{opacity:.4;cursor:default;}
+  .elnav{display:flex;align-items:center;justify-content:center;gap:12px;margin:4px 0 2px;}
+  .elnav .sym{font-size:26px;font-weight:800;color:#0A455D;min-width:46px;text-align:center;}
+  .hint{font-size:11.5px;color:#8FA9B7;margin-top:2px;line-height:1.5;}
+  .sec-title{color:#0A455D;font-size:15px;font-weight:700;margin:6px 0 4px;}
+  .foot{margin-top:22px;text-align:center;font-size:11.5px;color:#8FA9B7;line-height:1.6;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#33586B;margin-top:8px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .sw{width:14px;height:14px;border-radius:4px;display:inline-block;}
+  .qcard{margin-bottom:14px;}
+  .qcard h3{color:#0A455D;font-size:15px;margin-bottom:10px;line-height:1.5;}
+  .qopts{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+  .qopt{flex:1 1 200px;padding:12px;border-radius:10px;border:2px solid #0A455D;background:#fff;color:#0A455D;
+        font-size:14px;font-weight:700;cursor:pointer;text-align:center;line-height:1.5;}
+  .qopt:hover{background:#EAF3F7;}
+  .qopt.picked{background:#0A455D;color:#fff;}
+  .qopt.correct{background:#16A34A;color:#fff;border-color:#16A34A;}
+  .qopt.wrong{background:#DC2626;color:#fff;border-color:#DC2626;}
+  .qfb{margin-top:8px;padding:10px 14px;border-radius:10px;font-size:13.5px;display:none;line-height:1.6;}
+  .qfb.ok{display:block;background:#E3F4E8;color:#1F6B3A;border:1.5px solid #7FC79A;}
+  .qfb.bad{display:block;background:#FCE8DD;color:#B3441E;border:1.5px solid #E8A48C;}
+  table.betab{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px;}
+  table.betab th{background:#0A455D;color:#fff;padding:6px 8px;text-align:center;font-weight:600;}
+  table.betab td{padding:5px 8px;border-bottom:1px solid #E3ECF0;text-align:center;}
+  table.betab td.sub{text-align:left;font-family:Consolas,monospace;color:#0A455D;font-weight:700;}
+  .scrollx{overflow-x:auto;}
+  /* ---- Scan sub-view (Mode 0) ---- */
+  .scan-toggle{display:flex;gap:8px;margin-bottom:10px;}
+  .stab{flex:1;padding:8px 6px;border-radius:10px;border:2px solid #0A455D;background:#fff;color:#0A455D;
+        font-size:13px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;}
+  .stab.active{background:#0A455D;color:#fff;}
+  #cvOrb,#cvScan{max-width:100%;height:auto;}
+  .scanbar{display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;}
+  .scanbar .btn{min-width:72px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>PES 光电子能谱模型 · Photoelectron Spectroscopy</h1>
+  <div class="sub">以 AP Chemistry Unit 1「Photoelectron Spectroscopy」为基准：用 X 射线打出电子，测得各亚层电子的<b>结合能 (Binding Energy, eV)</b>。
+  <b>每个峰 = 一个亚层</b>，<b>峰高/面积 ∝ 该亚层电子数</b>，<b>BE 越高 = 电子越靠近核、束缚越紧</b>。本模型把 PES 峰与电子轨道排布建立对应，并对比不同微粒的结合能差异。<br>
+  核心问题：同一亚层的峰，为什么随原子序数 Z 增大而右移？最外层（价层）峰的 BE 为何≈第一电离能？</div>
+
+  <div class="modetabs">
+    <button class="mtab active" data-mode="0">Mode 0 · 单元素 PES 谱图</button>
+    <button class="mtab" data-mode="1">Mode 1 · 多元素对照</button>
+    <button class="mtab" data-mode="2">Mode 2 · 结合能–Z 关联</button>
+    <button class="mtab" data-mode="3">Mode 3 · 由谱图推断元素</button>
+  </div>
+
+  <!-- ===================== Mode 0 ===================== -->
+  <section id="view0">
+    <div class="duo">
+      <div class="card anim-card">
+        <div class="scan-toggle">
+          <button class="stab active" data-scan="0">Static View</button>
+          <button class="stab" data-scan="1">Scan Animation</button>
+        </div>
+        <div id="staticView" style="display:flex;gap:12px;align-items:flex-start;">
+          <canvas id="cvPES" width="540" height="560" style="flex:1 1 auto;min-width:420px;"></canvas>
+          <canvas id="cvStaticOrb" width="320" height="560" style="flex:0 0 300px;"></canvas>
+        </div>
+        <div id="scanWrap" style="display:none;">
+          <div class="duo" style="align-items:flex-start;gap:12px;">
+            <canvas id="cvOrb" width="340" height="560" style="flex:0 0 320px;"></canvas>
+            <canvas id="cvScan" width="540" height="560" style="flex:1 1 auto;min-width:420px;"></canvas>
+          </div>
+          <div class="scanbar">
+            <button class="btn" id="scanPlay">▶ Play</button>
+            <button class="btn" id="scanStep">⏭ Step</button>
+            <button class="btn" id="scanReset">↺ Reset</button>
+            <div class="ctlrow" style="flex:1 1 160px;"><label>Speed</label>
+              <input type="range" id="scanSpeed" min="0.5" max="4" step="0.5" value="1">
+              <span class="val" id="vSpeed">1×</span></div>
+            <span class="chip low" id="scanStepLabel">Step 0 / 0</span>
+          </div>
+          <div class="hint">左侧轨道图逐亚层被扫描（橙色高亮），右侧 PES 峰同步生长——<b>峰高 ∝ 该亚层电子数</b>。Play 自动扫描，Step 单步，Reset 重来。</div>
+        </div>
+        <div class="legend" id="pesLegend">
+          <span><i class="sw" style="background:#0A455D;"></i> PES 峰 (高度 ∝ 电子数)</span>
+          <span><i class="sw" style="background:#D85A30;"></i> 正在扫描的亚层</span>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="card" style="display:flex;flex-direction:column;gap:8px;">
+          <div class="sec-title">元素选择 (Z = 1–32)</div>
+          <div class="elnav">
+            <button class="btn" id="prevZ">◀</button>
+            <span class="sym" id="symBig">Na</span>
+            <button class="btn" id="nextZ">▶</button>
+          </div>
+          <div class="ctlrow"><label>原子序数 Z</label>
+            <input type="range" id="sZ" min="1" max="20" step="1" value="11"><span class="val" id="vZ">11</span></div>
+          <div id="staticCtrls">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button class="btn active" id="btnSO">自旋轨道裂分: 开</button>
+            <button class="btn active" id="btnFlip">XPS 标尺 (BE→左): 开</button>
+            <button class="btn active" id="btnUniform">峰宽统一: 开</button>
+            <button class="btn" id="btnResetZoom" disabled>🔍 重置放大</button>
+          </div>
+          <div class="hint">点击任一峰可局部放大（看清亚 eV 级自旋轨道裂分与峰宽）。</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="datarow"><span>元素</span><b id="dSym">Na</b></div>
+          <div class="datarow"><span>Z</span><b id="dZ">11</b></div>
+          <div class="datarow"><span>电子排布</span><b id="dCfg">[Ne] 3s¹</b></div>
+          <div class="datarow"><span>价层峰 BE</span><b id="dVal">5.14 eV</b></div>
+          <div class="datarow"><span>第一电离能</span><b id="dIE">5.14 eV</b></div>
+        </div>
+        <div class="think" id="apNote">
+          <b>AP 关联：</b>PES 直接从实验得到电子排布——数每个峰的<b>电子数</b>就能写出构型。本图峰高已按电子数缩放，<b>2p 峰(6e⁻)是 1s 峰(2e⁻)的 3 倍高</b>。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== Mode 1 ===================== -->
+  <section id="view1" style="display:none;">
+    <div class="duo">
+      <div class="card anim-card"><canvas id="cvCmp" width="880" height="520"></canvas>
+        <div class="legend" id="cmpLegend"></div>
+      </div>
+      <div class="panel">
+        <div class="card" style="display:flex;flex-direction:column;gap:8px;">
+          <div class="sec-title">选择两种微粒对照</div>
+          <div class="ctlrow"><label>元素 A</label>
+            <select id="selA"></select></div>
+          <div class="ctlrow"><label>元素 B</label>
+            <select id="selB"></select></div>
+          <div class="hint">叠加两元素 PES，相同亚层用虚线相连——观察同一亚层峰如何随 Z 增大而右移（BE 升高）。</div>
+          <div class="think" id="cmpNote"></div>
+        </div>
+        <div class="card scrollx">
+          <div class="sec-title">同亚层结合能对照 (eV)</div>
+          <table class="betab" id="cmpTable"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== Mode 2 ===================== -->
+  <section id="view2" style="display:none;">
+    <div class="card"><canvas id="cvChart" width="880" height="440"></canvas></div>
+    <div class="duo" style="margin-top:14px;">
+      <div class="card causal" style="flex:1 1 420px;">
+        <b>为什么价层峰 BE ≈ 第一电离能？</b><br>
+        第一电离能 = 移去<b>最松束缚</b>（最高能量）电子所需的能量；PES 中 BE 最低的峰正是该电子所在的亚层，故二者数值相近（单位同为 eV）。
+        但出现<b>成对电子</b>时（如 S 3p⁴、Al 3p¹ 之后），实际第一电离能会因成对排斥而略低于峰中心 BE——这正是「亚层轨道电离能差异模型」中 Mg&gt;Al、P&gt;S 反常的来源。
+      </div>
+      <div class="card think" style="flex:1 1 420px;">
+        <b>核心规律：</b>同一亚层 BE 随 Z 单调上升（核电荷增大、有效核电荷 Z<sub>eff</sub> 增大）；但<b>同周期</b>内价层 BE 的细微起伏由<b>穿透性 / 屏蔽 / 成对排斥</b>决定，与电离能反常一致。
+        下方曲线同时画出「价层峰 BE」与「第一电离能(eV)」，可见二者几乎平行、且在 Mg/Al、P/S 处同步出现反常。
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== Mode 3 ===================== -->
+  <section id="view3" style="display:none;">
+    <div class="duo">
+      <div class="card anim-card"><canvas id="cvQuiz" width="880" height="480"></canvas></div>
+      <div class="panel">
+        <div class="card qcard">
+          <h3 id="quizQ">根据峰高(电子数)推断该原子：</h3>
+          <div class="qopts" id="quizOpts"></div>
+          <div class="qfb" id="quizFb"></div>
+          <button class="btn warn" id="quizNext" style="margin-top:10px;">🔄 下一题</button>
+        </div>
+        <div class="think" id="quizHint"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="foot">
+    PES / XPS 光电子能谱教学模型 · 结合能数据为常见元素典型 XPS 值（近似，用于教学，非仪器实测）。
+    视觉风格沿用 teal #0A455D / #4699AA。Canvas 2D · 零依赖 · 可离线。<br>
+    自旋轨道裂分（2p₃/₂ : 2p₁/₂ = 4 : 2）仅在放大视图中可见（其能量差常为亚 eV 级）。
+  </div>
+</div>
+
+<script>
+/* ===================== data ===================== */
+const ELSYM=['H','He','Li','Be','B','C','N','O','F','Ne','Na','Mg','Al','Si','P','S','Cl','Ar','K','Ca','Sc','Ti','V','Cr','Mn','Fe','Co','Ni','Cu','Zn','Ga','Ge'];
+// subshell meta: idx -> {label,n,l}
+const SM={1:{label:'1s',n:1,l:0},2:{label:'2s',n:2,l:0},3:{label:'2p',n:2,l:1},
+          4:{label:'3s',n:3,l:0},5:{label:'3p',n:3,l:1},6:{label:'4s',n:4,l:0},
+          7:{label:'3d',n:3,l:2},8:{label:'4p',n:4,l:1}};
+// PES_BE[Z] = [[subIdx, BE_eV, electronCount], ...]  (BE increasing)
+const PES_BE={
+ 1:[[1,13.6,1]],
+ 2:[[1,24.6,2]],
+ 3:[[1,54.7,2],[2,5.4,1]],
+ 4:[[1,111.0,2],[2,9.3,2]],
+ 5:[[1,188.0,2],[2,12.9,2],[3,8.3,1]],
+ 6:[[1,284.8,2],[2,19.0,2],[3,11.3,2]],
+ 7:[[1,399.6,2],[2,26.4,2],[3,15.6,3]],
+ 8:[[1,530.8,2],[2,24.0,2],[3,18.6,4]],
+ 9:[[1,684.3,2],[2,31.0,2],[3,21.7,5]],
+ 10:[[1,870.2,2],[2,48.5,2],[3,21.6,6]],
+ 11:[[1,1071.8,2],[2,63.6,2],[3,30.5,6],[4,5.14,1]],
+ 12:[[1,1303.5,2],[2,88.6,2],[3,49.3,6],[4,7.65,2]],
+ 13:[[1,1559.5,2],[2,117.7,2],[3,72.8,6],[4,11.8,2],[5,6.0,1]],
+ 14:[[1,1839,2],[2,150.9,2],[3,99.2,6],[4,15.0,2],[5,8.2,2]],
+ 15:[[1,2145,2],[2,189.0,2],[3,132.2,6],[4,18.0,2],[5,10.5,3]],
+ 16:[[1,2472,2],[2,229.0,2],[3,163.9,6],[4,21.0,2],[5,12.5,4]],
+ 17:[[1,2823,2],[2,270.0,2],[3,199.4,6],[4,24.0,2],[5,15.0,5]],
+ 18:[[1,3203,2],[2,320.0,2],[3,248.6,6],[4,29.2,2],[5,15.8,6]],
+ 19:[[1,3609,2],[2,377,2],[3,294.6,6],[4,34.0,2],[5,18.0,6],[6,4.3,1]],
+ 20:[[1,4038,2],[2,438,2],[3,346.4,6],[4,44.0,2],[5,25.0,6],[6,6.1,2]],
+ 21:[[1,4492,2],[2,500,2],[3,407,6],[4,53,2],[5,31,6],[6,6.6,2],[7,7.9,1]],
+ 22:[[1,4966,2],[2,564,2],[3,462,6],[4,62,2],[5,37,6],[6,6.8,2],[7,8.1,2]],
+ 23:[[1,5465,2],[2,628,2],[3,519,6],[4,71,2],[5,43,6],[6,6.7,2],[7,8.3,3]],
+ 24:[[1,5989,2],[2,695,2],[3,578,6],[4,80,2],[5,48,6],[6,6.8,1],[7,8.5,5]],
+ 25:[[1,6539,2],[2,769,2],[3,642,6],[4,91,2],[5,54,6],[6,7.4,2],[7,9.0,5]],
+ 26:[[1,7112,2],[2,846,2],[3,707,6],[4,101,2],[5,60,6],[6,7.9,2],[7,9.3,6]],
+ 27:[[1,7709,2],[2,926,2],[3,779,6],[4,112,2],[5,67,6],[6,7.9,2],[7,9.6,7]],
+ 28:[[1,8333,2],[2,1008,2],[3,855,6],[4,123,2],[5,74,6],[6,7.6,2],[7,9.8,8]],
+ 29:[[1,8979,2],[2,1096,2],[3,934,6],[4,135,2],[5,81,6],[6,7.7,1],[7,10.0,10]],
+ 30:[[1,9659,2],[2,1196,2],[3,1044,6],[4,148,2],[5,89,6],[6,9.4,2],[7,10.8,10]],
+ 31:[[1,10367,2],[2,1294,2],[3,1144,6],[4,161,2],[5,107,6],[6,11.0,2],[7,18.8,10],[8,6.0,1]],
+ 32:[[1,11103,2],[2,1402,2],[3,1249,6],[4,181,2],[5,153,6],[6,15.0,2],[7,29.5,10],[8,7.9,2]]
+};
+// spin-orbit split (eV) for p subshells (2p idx3, 3p idx5)
+const SO2p={5:0.2,6:0.3,7:0.4,8:0.5,9:0.6,10:0.7,11:0.5,12:1.1,13:0.4,14:0.6,15:0.8,16:1.1,17:1.2,18:2.0,19:2.7,20:3.5};
+const SO3p={15:0.8,16:1.1,17:1.2,18:2.0,19:2.7,20:3.5};
+const SO4p={31:0.3,32:0.4};
+function soSep(idx,Z){ if(idx===3) return SO2p[Z]||0.3; if(idx===5) return SO3p[Z]||0.8; if(idx===8) return SO4p[Z]||0.3; return 0; }
+// first ionization energy (kJ/mol) for Z=1..20
+const IE_KJ={1:1312,2:2372,3:520,4:899,5:801,6:1086,7:1402,8:1314,9:1681,10:2081,
+ 11:496,12:738,13:578,14:786,15:1012,16:1000,17:1251,18:1521,19:419,20:590};
+const eV=96.485;
+function ieEV(Z){ return IE_KJ[Z]/eV; }
+
+// noble-core shorthand config (e.g. C -> 1s² 2s² 2p² ; Na -> [Ne] 3s¹)
+const SUP={0:'⁰',1:'¹',2:'²',3:'³',4:'⁴',5:'⁵',6:'⁶',7:'⁷',8:'⁸',9:'⁹'};
+function sup(n){ return (''+n).split('').map(d=>SUP[d]).join(''); }
+const ORB_ORDER=[['1s',2],['2s',2],['2p',6],['3s',2],['3p',6],['4s',2],['3d',10],['4p',2]];
+const NOBLE_AT={2:'[He]',10:'[Ne]',18:'[Ar]'};
+function getNobleConfig(Z){
+  // special cases: Cr (4s¹3d⁵) and Cu (4s¹3d¹⁰) break simple Aufbau order
+  if(Z===24) return '[Ar] 4s¹ 3d⁵';
+  if(Z===29) return '[Ar] 4s¹ 3d¹⁰';
+  const parts=[]; let rem=Z;
+  for(const [lab,cap] of ORB_ORDER){ if(rem<=0) break; const k=Math.min(cap,rem); parts.push(lab+sup(k)); rem-=k; }
+  let s=parts.join(' ');
+  // compress the LARGEST closed noble core that is a FULL prefix
+  for(const c of [18,10,2]){
+    if(c>=Z) continue;
+    let pre=[], r=c;
+    for(const [lab,cap] of ORB_ORDER){ if(r<=0) break; const k=Math.min(cap,r); pre.push(lab+sup(k)); r-=k; }
+    const preStr=pre.join(' ');
+    if(s===preStr || s.startsWith(preStr+' ')){ s=(c>=Z?'':NOBLE_AT[c]+' ')+s.slice(preStr.length).trim(); break; }
+  }
+  return s;
+}
+
+/* ===================== helpers ===================== */
+function lerp(a,b,t){return a+(b-a)*t;}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function pill(c,txt,x,y,opt){opt=opt||{};c.font=opt.font||'11px Segoe UI';const w=c.measureText(txt).width+(opt.pad||6)*2;
+  const h=opt.h||18;c.fillStyle=opt.bg||'#fff';c.strokeStyle=opt.border||'transparent';c.lineWidth=1;
+  rr(c,x-w/2,y-h/2,w,h,5);c.fill();if(opt.border!=='transparent')c.stroke();
+  c.fillStyle=opt.fg||'#16323F';c.textAlign='center';c.textBaseline='middle';c.fillText(txt,x,y);return w;}
+function niceCeil(v){ if(v<=0)return 10; const p=Math.pow(10,Math.floor(Math.log10(v))); const f=v/p;
+  let nf= f<=1?1: f<=2?2: f<=2.5?2.5: f<=5?5:10; return nf*p; }
+
+/* ---- scan-mode helpers: orbital arrows (Hund's rule) ---- */
+function drawArrowUp(c,x,y,s,col){
+  c.strokeStyle=col; c.fillStyle=col; c.lineWidth=2;
+  c.beginPath(); c.moveTo(x,y+s*0.5); c.lineTo(x,y-s*0.5); c.stroke();
+  c.beginPath(); c.moveTo(x-s*0.3,y-s*0.18); c.lineTo(x,y-s*0.5); c.lineTo(x+s*0.3,y-s*0.18); c.closePath(); c.fill();
+}
+function drawArrowDown(c,x,y,s,col){
+  c.strokeStyle=col; c.fillStyle=col; c.lineWidth=2;
+  c.beginPath(); c.moveTo(x,y-s*0.5); c.lineTo(x,y+s*0.5); c.stroke();
+  c.beginPath(); c.moveTo(x-s*0.3,y+s*0.18); c.lineTo(x,y+s*0.5); c.lineTo(x+s*0.3,y+s*0.18); c.closePath(); c.fill();
+}
+// distribute `ec` electrons across `nBox` boxes following Hund's rule
+// → returns array (len nBox) of spin-arrays, e.g. p⁵ -> [[up,down],[up],[up]]
+function boxSpins(type, ec){
+  const nBox = type==='s'?1 : type==='p'?3 : 5;
+  const boxes = Array.from({length:nBox}, ()=>[]);
+  let placed=0;
+  for(let b=0;b<nBox && placed<ec;b++){ boxes[b].push('up'); placed++; }   // phase 1: one ↑ each
+  for(let b=0;b<nBox && placed<ec;b++){ boxes[b].push('down'); placed++; } // phase 2: pair ↓
+  return boxes;
+}
+
+/* ===================== state ===================== */
+const S={mode:0, Z:11, time:0, spinOrbit:true, flip:true, uniformWidth:true, zoom:null, hover:-1,
+  A:11, B:12, quiz:null,
+  scan:{mode:0, active:false, step:0, progress:0, speed:1, subshells:[], raf:null}};
+
+/* ===================== canvas refs ===================== */
+const cvPES=document.getElementById('cvPES'), cPES=cvPES.getContext('2d');
+const cvStaticOrb=document.getElementById('cvStaticOrb'), cStaticOrb=cvStaticOrb.getContext('2d');
+const cvCmp=document.getElementById('cvCmp'), cCmp=cvCmp.getContext('2d');
+const cvChart=document.getElementById('cvChart'), cChart=cvChart.getContext('2d');
+const cvQuiz=document.getElementById('cvQuiz'), cQuiz=cvQuiz.getContext('2d');
+const cvOrb=document.getElementById('cvOrb'), cOrb=cvOrb.getContext('2d');
+const cvScan=document.getElementById('cvScan'), cScan=cvScan.getContext('2d');
+
+/* ===================== PES peak geometry ===================== */
+const UNIT_H=20;          // px height per electron
+const SIG_PX=7;           // gaussian sigma in px (graphical)
+const COL_TEAL='#0A455D', COL_TEAL2='#4699AA', COL_VAL='#B3441E', COL_COMP=['#0A455D','#C0722B','#5B8C3A'];
+
+// returns list of "render peaks" for an element (each may be split into doublet when zoomed+SO)
+function elementPeaks(Z){ return PES_BE[Z].map(([idx,be,ec])=>({idx,be,ec,meta:SM[idx]})); }
+
+/* draw a single gaussian peak (px space) */
+function drawGauss(c,cx,baseY,h,fill){
+  c.beginPath();c.moveTo(cx-34,baseY);
+  for(let dx=-34;dx<=34;dx+=2){ const y=baseY-h*Math.exp(-(dx*dx)/(2*SIG_PX*SIG_PX)); c.lineTo(cx+dx,y); }
+  c.lineTo(cx+34,baseY);c.closePath();c.fillStyle=fill;c.fill();
+}
+
+/* map BE->px given xRange and plot rect; flip reverses */
+function makeXMap(x0,x1,px0,px1,flip){
+  return function(be){ const f=(be-x0)/(x1-x0); return flip? px1-(px1-px0)*f : px0+(px1-px0)*f; };
+}
+
+/* main spectrum renderer (modes 0,1,3) */
+function drawSpectrum(c, W, H, elems, opt){
+  opt=opt||{};
+  c.clearRect(0,0,W,H);
+  const px0=64, px1=W-44, yBase=H-150, plotTop=64;
+  // x range — always use LOG scale for PES (BE spans orders of magnitude)
+  let beMin=9999, beMax=0;
+  elems.forEach(Z=>elementPeaks(Z).forEach(p=>{beMin=Math.min(beMin,p.be);beMax=Math.max(beMax,p.be);}));
+  if(S.zoom){ beMin=S.zoom.be-S.zoom.half; beMax=S.zoom.be+S.zoom.half; }
+  else { beMin=Math.max(1,beMin*0.7); beMax=beMax*1.08; }
+  const logMin=Math.log(beMin), logMax=Math.log(beMax);
+  // xmap: logarithmic, flip for XPS convention (high BE on left when S.flip=true)
+  const xmap = be => {
+    const f = (Math.log(be)-logMin)/(logMax-logMin);
+    return S.flip ? px1 - f*(px1-px0) : px0 + f*(px1-px0);
+  };
+  // grid + axes — LOGARITHMIC ticks (powers of 10, like reference: 1000, 100, 10, 1, ...)
+  c.strokeStyle='#DCE7EC';c.lineWidth=1;
+  const lo=Math.floor(Math.log10(beMin)), hi=Math.ceil(Math.log10(beMax));
+  const logTicks=[];
+  for(let p=hi;p>=lo;p--){   // high-to-low so left→right matches flip direction visually
+    const v=Math.pow(10,p);
+    if(v>=beMin*0.95 && v<=beMax*1.05) logTicks.push(v);
+  }
+  // also add intermediate ticks (2× and 5×) if sparse
+  if(logTicks.length<4){
+    for(let p=hi;p>=lo;p--){
+      for(const m of [5,2]){
+        const v=m*Math.pow(10,p);
+        if(v>=beMin*0.95 && v<=beMax*1.05) logTicks.push(v);
+      }
+    }
+    logTicks.sort((a,b)=>b-a); // descending (high BE first = left side)
+  }
+  logTicks.forEach(be => {
+    const px=xmap(be);
+    c.beginPath();c.moveTo(px,plotTop);c.lineTo(px,yBase);c.stroke();
+    c.fillStyle='#8FA9B7';c.font='11px Consolas,monospace';c.textAlign='center';c.textBaseline='top';
+    c.fillText(be>=1000?(be/1000).toFixed(1)+'k':be>=10?be.toFixed(0):be.toFixed(1), px, yBase+5);
+  });
+  c.strokeStyle='#9FB9C6';c.lineWidth=1.5;c.beginPath();c.moveTo(px0,yBase);c.lineTo(px1,yBase);c.stroke();
+  c.beginPath();c.moveTo(px0,plotTop);c.lineTo(px0,yBase);c.stroke();
+  // ---- PASS A: compute all peak geometry (cx, sig, span, h) for every element ----
+  const peakSets = elems.map((Z,ei)=>{
+    const col = elems.length===1?COL_TEAL:COL_COMP[ei%COL_COMP.length];
+    const rawPeaks=elementPeaks(Z);
+    const lastIdx=rawPeaks[rawPeaks.length-1].idx;
+    const peakData = rawPeaks.map((p)=>({
+      ...p, cx:xmap(p.be), baseH:p.ec*UNIT_H, col, valence:p.idx===lastIdx
+    }));
+    peakData.sort((a,b)=>a.cx-b.cx);
+    if(S.uniformWidth){
+      // all peaks same sigma, height = electrons × UNIT_H  →  tops land on grid lines
+      peakData.forEach(p=>{ p.sig=SIG_PX; p.span=SIG_PX*5; p.h=p.baseH; });
+    } else {
+      // GAP ENFORCEMENT + AREA COMPENSATION
+      const SAME_G=6, DIFF_G=12, REF_SIG=SIG_PX;
+      peakData.forEach((p,i)=>{
+        const pN=parseInt(p.meta.label[0],10);
+        let lr=0,rr=0;
+        if(i>0){ const ln=parseInt(peakData[i-1].meta.label[0],10); lr=(ln===pN)?SAME_G:DIFF_G; }
+        if(i<peakData.length-1){ const rn=parseInt(peakData[i+1].meta.label[0],10); rr=(rn===pN)?SAME_G:DIFF_G; }
+        let mhs=999;
+        if(i>0) mhs=Math.min(mhs,(p.cx-peakData[i-1].cx-lr)/2);
+        if(i<peakData.length-1) mhs=Math.min(mhs,(peakData[i+1].cx-p.cx-rr)/2);
+        p.span=Math.max(3,mhs); p.sig=p.span/5;
+        p.h=p.baseH*REF_SIG/p.sig;
+      });
+      // SNAP to grid (integer × UNIT_H) so every peak top aligns to a horizontal line
+      peakData.forEach(p=>{ p.h=Math.round(p.h/UNIT_H)*UNIT_H; if(p.h<UNIT_H) p.h=UNIT_H; });
+    }
+    return {Z,col,peakData};
+  });
+
+  // tallest peak → number of horizontal grid lines (one per electron)
+  let maxH=0;
+  peakSets.forEach(s=>s.peakData.forEach(p=>{ maxH=Math.max(maxH,p.h); }));
+  const maxN=Math.ceil(maxH/UNIT_H);
+  c.strokeStyle='#E8EEF2'; c.lineWidth=0.8;
+  for(let n=1; n<=maxN; n++){
+    const y=yBase-n*UNIT_H;
+    if(y<plotTop) break;
+    c.beginPath(); c.moveTo(px0,y); c.lineTo(px1,y); c.stroke();
+  }
+
+  // axis titles
+  c.fillStyle='#5B7684';c.font='12px Segoe UI';c.textAlign='center';c.textBaseline='top';
+  c.fillText('Binding Energy / eV (log scale)', (px0+px1)/2, yBase+16);
+  c.save();c.translate(14,(plotTop+yBase)/2);c.rotate(-Math.PI/2);
+  c.fillText('相对电子数 (信号强度)',0,0);c.restore();
+
+  // ---- PASS B: draw peaks (tops align to horizontal grid lines) ----
+  peakSets.forEach(set=>{
+    const {peakData}=set;
+    peakData.forEach(p=>{
+      const {idx,be,ec,cx,h,sig,span,valence}=p;
+      const split=(S.zoom && S.spinOrbit && p.meta.l===1)? soSep(idx,set.Z):0;
+      if(split>0){
+        const h1=4*UNIT_H, h2=2*UNIT_H;
+        const c1=cx, c2=xmap(be+split);
+        drawGauss(c,c1,yBase,h1,set.col+'cc'); drawGauss(c,c2,yBase,h2,set.col+'99');
+      } else {
+        const hov=(S.hover===set.Z*100+idx);
+        c.fillStyle=set.col;c.globalAlpha=hov?1:0.82;
+        c.beginPath(); c.moveTo(cx-span, yBase);
+        for(let dx=-span; dx<=span; dx+=1.5){
+          const yy=yBase-h*Math.exp(-(dx*dx)/(2*sig*sig));
+          c.lineTo(cx+dx,yy);
+        }
+        c.lineTo(cx+span, yBase); c.closePath(); c.fill();
+        c.globalAlpha=1;
+        if(valence){ c.strokeStyle=COL_VAL;c.lineWidth=2.5;c.beginPath();c.moveTo(cx,yBase-h);c.lineTo(cx,yBase);c.stroke(); }
+      }
+      if(S.hover===set.Z*100+idx){ c.strokeStyle=set.col;c.setLineDash([4,4]);c.lineWidth=1;c.beginPath();c.moveTo(cx,plotTop);c.lineTo(cx,yBase);c.stroke();c.setLineDash([]); }
+    });
+  });
+}
+
+/* ===================== mode renderers ===================== */
+function renderMode0(){
+  updateInfoPanel();
+  drawSpectrum(cPES,540,560,[S.Z],{});
+  drawStaticOrbital();
+  document.getElementById('btnResetZoom').disabled=!S.zoom;
+}
+
+function renderMode1(){
+  const A=S.A,B=S.B;
+  drawSpectrum(cCmp,880,520,[A,B],{});
+  // legend
+  const lg=document.getElementById('cmpLegend');
+  lg.innerHTML='';
+  [[A,COL_COMP[0]],[B,COL_COMP[1]]].forEach(([Z,col])=>{
+    const s=document.createElement('span');s.innerHTML='<i class="sw" style="background:'+col+'"></i> '+ELSYM[Z-1]+' (Z='+Z+')';
+    lg.appendChild(s);
+  });
+  // comparison table: shared subshells
+  const pa=elementPeaks(A), pb=elementPeaks(B);
+  const tb=document.getElementById('cmpTable');
+  let rows='<tr><th>亚层</th><th>'+ELSYM[A-1]+' BE</th><th>'+ELSYM[B-1]+' BE</th><th>ΔBE (B−A)</th></tr>';
+  const mapB={}; pb.forEach(p=>mapB[p.meta.label]=p.be);
+  pa.forEach(p=>{ const lbl=p.meta.label; if(mapB[lbl]!==undefined){
+    const d=mapB[lbl]-p.be; rows+='<tr><td class="sub">'+lbl+'</td><td>'+p.be.toFixed(1)+'</td><td>'+mapB[lbl].toFixed(1)+'</td><td>'+(d>=0?'+':'')+d.toFixed(1)+'</td></tr>'; }});
+  tb.innerHTML=rows;
+  const maxShift=Math.max(...Object.keys(mapB).filter(l=>pa.find(x=>x.meta.label===l)).map(l=>mapB[l]-pa.find(x=>x.meta.label===l).be));
+  document.getElementById('cmpNote').innerHTML='<b>观察：</b>两元素<b>同一亚层</b>的峰，Z 较大的 '+ELSYM[B-1]+' 整体右移（BE 更高）。最大位移约 <b>'+maxShift.toFixed(0)+' eV</b>（核心峰），因核电荷增大、电子被拉得更紧。';
+}
+
+function renderMode2(){
+  const W=880,H=440; cChart.clearRect(0,0,W,H);
+  const px0=64,px1=W-40,py0=40,py1=H-60;
+  const zs=[]; for(let z=3;z<=32;z++) zs.push(z);
+  // series: valence BE (outermost peak) and first IE (eV)
+  const valBE=zs.map(z=>elementPeaks(z).slice(-1)[0].be);
+  const ie=zs.map(z=>ieEV(z));
+  const ymax=niceCeil(Math.max(...valBE,...ie)*1.1);
+  const xm=z=>px0+(z-3)/(32-3)*(px1-px0);
+  const ym=v=>py1-(v/ymax)*(py1-py0);
+  // grid
+  cChart.strokeStyle='#E3ECF0';cChart.lineWidth=1;cChart.fillStyle='#8FA9B7';cChart.font='10px Consolas,monospace';
+  for(let i=0;i<=5;i++){ const v=ymax*i/5; const py=ym(v); cChart.beginPath();cChart.moveTo(px0,py);cChart.lineTo(px1,py);cChart.stroke();
+    cChart.textAlign='right';cChart.textBaseline='middle';cChart.fillText(v.toFixed(0),px0-6,py); }
+  for(let z=3;z<=32;z+=2){ const px=xm(z); cChart.strokeStyle='#EEF3F5';cChart.beginPath();cChart.moveTo(px,py0);cChart.lineTo(px,py1);cChart.stroke();
+    cChart.fillStyle='#5B7684';cChart.textAlign='center';cChart.textBaseline='top';cChart.fillText(ELSYM[z-1],px,py1+6); }
+  // axes
+  cChart.strokeStyle='#9FB9C6';cChart.lineWidth=1.5;cChart.beginPath();cChart.moveTo(px0,py0);cChart.lineTo(px0,py1);cChart.lineTo(px1,py1);cChart.stroke();
+  cChart.fillStyle='#5B7684';cChart.font='12px Segoe UI';cChart.textAlign='center';cChart.textBaseline='top';
+  cChart.fillText('原子序数 Z (元素)',(px0+px1)/2,H-16);
+  cChart.save();cChart.translate(16,(py0+py1)/2);cChart.rotate(-Math.PI/2);cChart.fillText('结合能 / 第一电离能 (eV)',0,0);cChart.restore();
+  // valence BE line
+  function plot(arr,col){ cChart.strokeStyle=col;cChart.lineWidth=2.5;cChart.beginPath();
+    arr.forEach((v,i)=>{ const px=xm(zs[i]),py=ym(v); i?cChart.lineTo(px,py):cChart.moveTo(px,py); }); cChart.stroke();
+    cChart.fillStyle=col;arr.forEach((v,i)=>{ const px=xm(zs[i]),py=ym(v); cChart.beginPath();cChart.arc(px,py,2.6,0,7);cChart.fill(); }); }
+  // (plot helper closes here — no stray c. references below)
+  plot(valBE,COL_VAL);
+  plot(ie,COL_TEAL);
+  // anomaly markers Mg/Al, P/S
+  [['Mg',12],['Al',13],['P',15],['S',16]].forEach(([sym,z])=>{
+    const i=z-3; const px=xm(z); cChart.fillStyle='#B3441E';cChart.font='bold 10px Segoe UI';cChart.textAlign='center';cChart.textBaseline='bottom';
+    cChart.fillText(sym,px,ym(valBE[i])-6);
+  });
+  // legend
+  cChart.fillStyle=COL_VAL;cChart.fillRect(px1-200,py0+4,14,10);cChart.fillStyle='#5B7684';cChart.font='12px Segoe UI';cChart.textAlign='left';cChart.textBaseline='middle';
+  cChart.fillText('价层峰 BE (eV)',px1-180,py0+9);
+  cChart.fillStyle=COL_TEAL;cChart.fillRect(px1-200,py0+22,14,10);cChart.fillStyle='#5B7684';
+  cChart.fillText('第一电离能 (eV)',px1-180,py0+27);
+}
+
+function makeQuiz(){
+  const z=3+Math.floor(Math.random()*30); // 3..32
+  const opts=new Set([z]); while(opts.size<4){ const o=3+Math.floor(Math.random()*30); opts.add(o); }
+  const arr=[...opts].sort((a,b)=>a-b);
+  S.quiz={Z:z, opts:arr};
+  document.getElementById('quizQ').textContent='根据峰高(电子数)推断该原子 (Z = ?)：';
+  const box=document.getElementById('quizOpts'); box.innerHTML='';
+  arr.forEach(o=>{ const b=document.createElement('div'); b.className='qopt'; b.textContent=ELSYM[o-1]+' (Z='+o+')';
+    b.onclick=()=>answerQuiz(o,b); box.appendChild(b); });
+  document.getElementById('quizFb').className='qfb';
+  document.getElementById('quizFb').textContent='';
+  document.getElementById('quizHint').innerHTML='提示：1s 恒为 2e⁻；数 2s(2)/2p(6)/3s(2)/3p(6) 各峰高度，求和即总电子数 = Z。';
+}
+function answerQuiz(pick,b){
+  if(!S.quiz) return;
+  const ans=S.quiz.Z;
+  document.querySelectorAll('#quizOpts .qopt').forEach(el=>el.onclick=null);
+  b.classList.add('picked');
+  const fb=document.getElementById('quizFb');
+  if(pick===ans){ b.classList.add('correct'); fb.className='qfb ok';
+    fb.innerHTML='✓ 正确！'+ELSYM[ans-1]+' 的电子排布为 <b>'+getNobleConfig(ans)+'</b>，各峰电子数之和 = '+ans+'。'; }
+  else { b.classList.add('wrong');
+    document.querySelectorAll('#quizOpts .qopt').forEach(el=>{ if(el.textContent.startsWith(ELSYM[ans-1])) el.classList.add('correct'); });
+    fb.className='qfb bad';
+    fb.innerHTML='✗ 应为 <b>'+ELSYM[ans-1]+' (Z='+ans+')</b>。其排布 '+getNobleConfig(ans)+'，各峰电子数 = '+ans+'。你选的 '+ELSYM[pick-1]+' 总电子数为 '+pick+'，峰高分布不符。'; }
+}
+
+/* ===================== Scan sub-view (Mode 0) ===================== */
+function buildScanSubshells(Z){
+  // ascending BE → scan starts at valence (low BE, left) and moves to core
+  return PES_BE[Z].map(([idx,be,ec])=>({idx,be,ec,label:SM[idx].label})).sort((a,b)=>a.be-b.be);
+}
+
+// info panel (shared by static + scan)
+function updateInfoPanel(){
+  const Z=S.Z, peaks=elementPeaks(Z);
+  const val=peaks[peaks.length-1];
+  document.getElementById('symBig').textContent=ELSYM[Z-1];
+  document.getElementById('vZ').textContent=Z;
+  document.getElementById('dSym').textContent=ELSYM[Z-1];
+  document.getElementById('dZ').textContent=Z;
+  document.getElementById('dCfg').textContent=getNobleConfig(Z);
+  document.getElementById('dVal').textContent=val.be.toFixed(2)+' eV';
+  document.getElementById('dIE').textContent=ieEV(Z).toFixed(2)+' eV';
+}
+
+function drawOrbRow(c, sub, y, state){
+  const type=sub.label[1];               // s / p / d
+  const boxes=boxSpins(type, sub.ec);
+  const nBox=boxes.length;
+  const boxW=30, boxH=36, gap=8, startX=150;
+  // label
+  const labCol = state==='active' ? '#D85A30' : (state==='done' ? '#9AA9B2' : '#0A455D');
+  c.textAlign='left'; c.textBaseline='middle'; c.font='bold 14px Segoe UI';
+  c.fillStyle=labCol; c.fillText(sub.label+sup(sub.ec), 80, y);
+  // active highlight band
+  if(state==='active'){
+    c.fillStyle='rgba(216,90,48,0.10)';
+    c.fillRect(138, y-boxH/2-7, nBox*(boxW+gap)-gap+30, boxH+14);
+  }
+  // boxes
+  for(let b=0;b<nBox;b++){
+    const x=startX+b*(boxW+gap);
+    const dim = state==='done';
+    c.fillStyle = dim? '#F4F7F9' : '#fff';
+    c.strokeStyle = state==='active' ? '#D85A30' : (dim? '#C5D2DE' : '#0A455D');
+    c.lineWidth = state==='active'? 2 : 1.3;
+    rr(c, x, y-boxH/2, boxW, boxH, 5); c.fill(); c.stroke();
+    boxes[b].forEach((sp,j)=>{
+      const cx = x+boxW/2 + (boxes[b].length===2 ? (j===0?-7:7) : 0);
+      const sz=12;
+      if(sp==='up') drawArrowUp(c, cx, y, sz, dim?'#A9BECB':'#2563EB');
+      else          drawArrowDown(c, cx, y, sz, dim?'#C9A9A0':'#DC2626');
+    });
+  }
+  // active → arrow pointing to spectrum
+  if(state==='active'){
+    c.strokeStyle='#D85A30'; c.fillStyle='#D85A30'; c.lineWidth=1.6;
+    const ax=302, ay=y;
+    c.beginPath(); c.moveTo(ax,ay); c.lineTo(ax+22,ay); c.stroke();
+    c.beginPath(); c.moveTo(ax+22,ay); c.lineTo(ax+15,ay-5); c.lineTo(ax+15,ay+5); c.closePath(); c.fill();
+    c.font='10px Segoe UI'; c.textAlign='left'; c.textBaseline='middle'; c.fillText('→ PES', ax+26, ay);
+  }
+}
+
+function drawOrbital(){
+  const W=340,H=560, Z=S.Z, c=cOrb;
+  c.clearRect(0,0,W,H); c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  c.textAlign='center'; c.textBaseline='middle';
+  c.fillStyle='#5B7684'; c.font='13px Segoe UI';
+  c.fillText('Orbital diagram — '+ELSYM[Z-1]+' (Z='+Z+')', W/2, 20);
+  // energy axis (left, up = higher BE)
+  c.strokeStyle='#9FB9C6'; c.lineWidth=1.5;
+  c.beginPath(); c.moveTo(56,H-42); c.lineTo(56,84); c.stroke();
+  c.fillStyle='#5B7684'; c.font='11px Segoe UI';
+  c.save(); c.translate(20,(84+H-42)/2); c.rotate(-Math.PI/2); c.fillText('Binding energy ↑',0,0); c.restore();
+  // rows in fill order (1s bottom → valence top)
+  const present = PES_BE[Z].map(([idx,be,ec])=>({idx,be,ec,label:SM[idx].label})).sort((a,b)=>a.idx-b.idx);
+  const step=S.scan.step;
+  // map: for each subshell, its scan-order index k (= position in ascending-BE list)
+  const byBe=[...PES_BE[Z]].sort((a,b)=>a[1]-b[1]);
+  const scanK = be => byBe.findIndex(([i,bb])=> bb===be);
+  const n=present.length, rowH=58, bottomY=H-55;
+  present.forEach((sub,i)=>{
+    const y=bottomY - i*rowH;
+    const k=scanK(sub.be);
+    const state = k<step ? 'done' : (k===step ? 'active' : 'pending');
+    drawOrbRow(c, sub, y, state);
+  });
+}
+
+/* ===================== Static View: Orbital diagram (right panel) ===================== */
+function drawStaticOrbital(){
+  const W=320, H=560, Z=S.Z, c=cStaticOrb;
+  c.clearRect(0,0,W,H); c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  // title
+  c.textAlign='center'; c.textBaseline='middle';
+  c.fillStyle='#5B7684'; c.font='12px Segoe UI';
+  c.fillText('Electron Configuration', W/2, 20);
+  // energy axis (left, up = higher BE)
+  c.strokeStyle='#9FB9C6'; c.lineWidth=1.5;
+  c.beginPath(); c.moveTo(50, H-42); c.lineTo(50, 84); c.stroke();
+  // axis label
+  c.fillStyle='#5B7684'; c.font='10.5px Segoe UI';
+  c.save(); c.translate(18, (84+H-42)/2); c.rotate(-Math.PI/2);
+  c.fillText('Binding energy ↑', 0, 0); c.restore();
+  // subshells in fill order (1s bottom → valence top)
+  const present = PES_BE[Z].map(([idx,be,ec])=>({idx,be,ec,label:SM[idx].label})).sort((a,b)=>a.idx-b.idx);
+  const n=present.length, rowH=56, bottomY=H-52;
+  present.forEach((sub, i)=>{
+    const y = bottomY - i*rowH;
+    drawStaticOrbRow(c, sub, y, W);
+  });
+}
+
+function drawStaticOrbRow(c, sub, y, canvasW){
+  const type=sub.label[1];               // s / p / d
+  const boxes=boxSpins(type, sub.ec);
+  const nBox=boxes.length;
+  const boxW=26, boxH=32, gap=6, startX=130;
+  // label
+  c.textAlign='left'; c.textBaseline='middle'; c.font='bold 13px Segoe UI';
+  c.fillStyle='#0A455D'; c.fillText(sub.label+sup(sub.ec), 72, y);
+  // boxes
+  for(let b=0;b<nBox;b++){
+    const x=startX+b*(boxW+gap);
+    c.fillStyle='#fff';
+    c.strokeStyle='#0A455D';
+    c.lineWidth=1.3;
+    rr(c, x, y-boxH/2, boxW, boxH, 5); c.fill(); c.stroke();
+    boxes[b].forEach((sp,j)=>{
+      const cx = x+boxW/2 + (boxes[b].length===2 ? (j===0?-6:6) : 0);
+      const sz=11;
+      if(sp==='up') drawArrowUp(c, cx, y, sz, '#2563EB');
+      else          drawArrowDown(c, cx, y, sz, '#DC2626');
+    });
+  }
+}
+
+function drawScanSpectrum(){
+  const W=540,H=560, Z=S.Z, c=cScan;
+  c.clearRect(0,0,W,H); c.fillStyle='#fff'; c.fillRect(0,0,W,H);
+  const px0=66, px1=W-24, yBase=H-64, plotTop=64;
+  const subs=PES_BE[Z];
+  // ---- LOGARITHMIC BE scale (standard for PES — BE spans orders of magnitude) ----
+  const beValues = subs.map(([,be])=>be);
+  const beMin = Math.max(1, Math.min(...beValues) * 0.7);
+  const beMax = Math.max(...beValues) * 1.08;
+  const logMin = Math.log(beMin), logMax = Math.log(beMax);
+  const xmap = be => px1 - ((Math.log(be) - logMin) / (logMax - logMin)) * (px1 - px0);  // HIGH BE on LEFT (XPS convention)
+
+  // grid + axes — LOGARITHMIC ticks (powers of 10, descending = high BE left)
+  c.strokeStyle='#DCE7EC'; c.lineWidth=1;
+  const scanLo=Math.floor(Math.log10(beMin)), scanHi=Math.ceil(Math.log10(beMax));
+  const scanTicks=[];
+  for(let p=scanHi;p>=scanLo;p--){ const v=Math.pow(10,p); if(v>=beMin*0.95&&v<=beMax*1.05) scanTicks.push(v); }
+  if(scanTicks.length<4){
+    for(let p=scanHi;p>=scanLo;p--){
+      for(const m of [5,2]){ const v=m*Math.pow(10,p); if(v>=beMin*0.95&&v<=beMax*1.05) scanTicks.push(v); }
+    }
+    scanTicks.sort((a,b)=>b-a);
+  }
+  scanTicks.forEach(be => {
+    const px = xmap(be);
+    c.beginPath(); c.moveTo(px, plotTop); c.lineTo(px, yBase); c.stroke();
+    c.fillStyle='#8FA9B7'; c.font='10px Consolas,monospace'; c.textAlign='center'; c.textBaseline='top';
+    c.fillText(be >= 1000 ? (be/1000).toFixed(1)+'k' : be>=10 ? be.toFixed(0) : be.toFixed(1), px, yBase+5);
+  });
+  c.strokeStyle='#9FB9C6'; c.lineWidth=1.5;
+  c.beginPath(); c.moveTo(px0,yBase); c.lineTo(px1,yBase); c.stroke();
+  c.beginPath(); c.moveTo(px0,plotTop); c.lineTo(px0,yBase); c.stroke();
+  c.fillStyle='#5B7684'; c.font='12px Segoe UI'; c.textAlign='center'; c.textBaseline='bottom';
+  c.fillText('Binding Energy / eV (log scale)', (px0+px1)/2, H-6);
+  c.save(); c.translate(16,(plotTop+yBase)/2); c.rotate(-Math.PI/2); c.fillText('相对电子数 (信号强度)',0,0); c.restore();
+
+  // peaks — HARD GAP RULES: same-subshell pairs ≥ 6px, different-subshell ≥ 12px
+  const step=S.scan.step, prog=S.scan.progress;
+  const peakData = subs.map(([idx,be,ec],k)=>({
+    idx,be,ec,k,cx:xmap(be), baseH: ec*UNIT_H
+  }));
+  peakData.sort((a,b)=>a.cx-b.cx);
+  if(S.uniformWidth){
+    // UNIFORM WIDTH: same sigma, height = electrons × UNIT_H
+    peakData.forEach(p=>{ p.sig=SIG_PX; p.span=SIG_PX*5; });
+  } else {
+    const SAME_SUB_GAP=6, DIFF_SUB_GAP=12;
+    peakData.forEach((p,i)=>{
+      const pN=parseInt(SM[p.idx].label[0],10);
+      let leftReq=0,rightReq=0;
+      if(i>0){ const leftN=parseInt(SM[peakData[i-1].idx].label[0],10); leftReq=(leftN===pN)?SAME_SUB_GAP:DIFF_SUB_GAP; }
+      if(i<peakData.length-1){ const rightN=parseInt(SM[peakData[i+1].idx].label[0],10); rightReq=(rightN===pN)?SAME_SUB_GAP:DIFF_SUB_GAP; }
+      let maxHalfSpan=999;
+      if(i>0) maxHalfSpan=Math.min(maxHalfSpan,(p.cx-peakData[i-1].cx-leftReq)/2);
+      if(i<peakData.length-1) maxHalfSpan=Math.min(maxHalfSpan,(peakData[i+1].cx-p.cx-rightReq)/2);
+      p.span=Math.max(3,maxHalfSpan); p.sig=p.span/5;
+      p.h=p.baseH*SIG_PX/p.sig;
+    });
+    // SNAP to grid (integer × UNIT_H) so every peak top aligns to a horizontal line
+    peakData.forEach(p=>{ p.h=Math.round(p.h/UNIT_H)*UNIT_H; if(p.h<UNIT_H)p.h=UNIT_H; });
+  }
+  // tallest full peak → horizontal grid lines (one per electron); stable during animation
+  let maxH=0;
+  peakData.forEach(p=>{ const fullH = S.uniformWidth? p.baseH : (p.h||p.baseH); maxH=Math.max(maxH,fullH); });
+  const maxN=Math.ceil(maxH/UNIT_H);
+  c.strokeStyle='#E8EEF2'; c.lineWidth=0.8;
+  for(let n=1;n<=maxN;n++){ const y=yBase-n*UNIT_H; if(y<plotTop) break; c.beginPath(); c.moveTo(px0,y); c.lineTo(px1,y); c.stroke(); }
+
+  // draw each peak (animated height grows toward its grid-aligned top)
+  peakData.forEach(p=>{
+    const {be,ec,k,cx,sig,span}=p;
+    const fullH = S.uniformWidth? p.baseH : (p.h||p.baseH);
+    const h = k<step ? fullH : (k===step ? fullH*prog : 0);
+    if(h<=0.5) return;
+    const isAct=(k===step);
+    const col=isAct?'#D85A30':'#0A455D';
+    c.fillStyle=col; c.globalAlpha=isAct?1:0.72;
+    c.beginPath(); c.moveTo(cx-span,yBase);
+    for(let dx=-span; dx<=span; dx+=1.5){
+      const yy=yBase-h*Math.exp(-(dx*dx)/(2*sig*sig));
+      c.lineTo(cx+dx,yy);
+    }
+    c.lineTo(cx+span,yBase); c.closePath(); c.fill();
+    c.globalAlpha=1;
+    if(isAct){
+      c.strokeStyle='#D85A30'; c.setLineDash([5,3]); c.lineWidth=1.4;
+      c.beginPath(); c.moveTo(cx,plotTop+10); c.lineTo(cx,yBase-h); c.stroke(); c.setLineDash([]);
+      c.fillStyle='#993C1D'; c.font='bold 11px Segoe UI'; c.textAlign='center'; c.textBaseline='bottom';
+      c.fillText(ec+' e⁻ → this peak', cx, yBase-h-32);
+    }
+  });
+}
+
+function drawScan(){ updateInfoPanel(); drawOrbital(); drawScanSpectrum(); }
+
+function updateScanButtons(){
+  const b=document.getElementById('scanPlay');
+  const done = S.scan.step>=S.scan.subshells.length;
+  b.textContent = S.scan.active ? '⏸ Pause' : (done ? '↻ Replay' : '▶ Play');
+  const n=S.scan.subshells.length;
+  document.getElementById('scanStepLabel').textContent='Step '+Math.min(S.scan.step,n)+' / '+n;
+  document.getElementById('scanPlay').classList.toggle('active', S.scan.active);
+}
+function scanReset(){
+  if(S.scan.raf) cancelAnimationFrame(S.scan.raf);
+  S.scan.active=false; S.scan.step=0; S.scan.progress=0;
+  updateScanButtons(); drawScan();
+}
+let _lastT=0;
+function scanTick(t){
+  if(!S.scan.active) return;
+  const dt=(t-_lastT)/1000; _lastT=t;
+  const dur=1.2/S.scan.speed;
+  S.scan.progress += dt/dur;
+  if(S.scan.progress>=1){
+    S.scan.progress=0; S.scan.step++;
+    if(S.scan.step>=S.scan.subshells.length){
+      S.scan.step=S.scan.subshells.length; S.scan.progress=1;
+      S.scan.active=false; updateScanButtons(); drawScan(); return;
+    }
+  }
+  updateScanButtons(); drawScan();
+  if(S.scan.active) S.scan.raf=requestAnimationFrame(scanTick);
+}
+function scanPlay(){
+  if(S.scan.step>=S.scan.subshells.length){ S.scan.step=0; S.scan.progress=0; }
+  S.scan.active=!S.scan.active;
+  if(S.scan.active){ _lastT=performance.now(); S.scan.raf=requestAnimationFrame(scanTick); }
+  else if(S.scan.raf) cancelAnimationFrame(S.scan.raf);
+  updateScanButtons();
+}
+function scanStep(){
+  if(S.scan.raf) cancelAnimationFrame(S.scan.raf);
+  S.scan.active=false;
+  if(S.scan.step<S.scan.subshells.length){ S.scan.step++; S.scan.progress=0; }
+  updateScanButtons(); drawScan();
+}
+function setScanView(isScan){
+  S.scan.mode = isScan?1:0;
+  document.getElementById('staticView').style.display = isScan?'none':'flex';
+  document.getElementById('scanWrap').style.display = isScan?'block':'none';
+  document.getElementById('staticCtrls').style.display = isScan?'none':'block';
+  if(isScan){
+    S.scan.subshells = buildScanSubshells(S.Z);
+    scanReset();
+  } else {
+    if(S.scan.raf) cancelAnimationFrame(S.scan.raf);
+    renderMode0();
+  }
+}
+
+/* ===================== dispatch / loop ===================== */
+function render(){
+  document.getElementById('view0').style.display = S.mode===0?'block':'none';
+  document.getElementById('view1').style.display = S.mode===1?'block':'none';
+  document.getElementById('view2').style.display = S.mode===2?'block':'none';
+  document.getElementById('view3').style.display = S.mode===3?'block':'none';
+  if(S.mode===0){
+    if(S.scan.mode) setScanView(true); else setScanView(false);
+  }
+  else if(S.mode===1) renderMode1();
+  else if(S.mode===2) renderMode2();
+  else if(S.mode===3){ if(!S.quiz) makeQuiz(); drawSpectrum(cQuiz,880,480,[S.quiz.Z],{}); }
+}
+document.querySelectorAll('.mtab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.mtab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); S.mode=+t.dataset.mode; S.zoom=null; if(S.mode===3&&!S.quiz) makeQuiz(); render();
+}));
+// Mode0 controls
+function changeZ(v){
+  S.Z=Math.max(1,Math.min(32,v));
+  document.getElementById('sZ').value=S.Z;
+  S.zoom=null;
+  if(S.scan.mode){ S.scan.subshells=buildScanSubshells(S.Z); scanReset(); }
+  else renderMode0();
+}
+document.getElementById('sZ').addEventListener('input',e=>changeZ(+e.target.value));
+document.getElementById('prevZ').addEventListener('click',()=>changeZ(S.Z-1));
+document.getElementById('nextZ').addEventListener('click',()=>changeZ(S.Z+1));
+// Scan sub-view toggle
+document.querySelectorAll('.stab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.stab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  setScanView(+t.dataset.scan===1);
+}));
+// Scan controls
+document.getElementById('scanPlay').addEventListener('click',scanPlay);
+document.getElementById('scanStep').addEventListener('click',scanStep);
+document.getElementById('scanReset').addEventListener('click',scanReset);
+document.getElementById('scanSpeed').addEventListener('input',e=>{
+  S.scan.speed=+e.target.value; document.getElementById('vSpeed').textContent=S.scan.speed+'×';
+});
+document.getElementById('btnSO').addEventListener('click',()=>{S.spinOrbit=!S.spinOrbit;const b=document.getElementById('btnSO');b.textContent='自旋轨道裂分: '+(S.spinOrbit?'开':'关');b.className='btn'+(S.spinOrbit?' active':'');renderMode0();});
+document.getElementById('btnFlip').addEventListener('click',()=>{S.flip=!S.flip;const b=document.getElementById('btnFlip');b.textContent='XPS 标尺 (BE→左): '+(S.flip?'开':'关');b.className='btn'+(S.flip?' active':'');renderMode0();});
+document.getElementById('btnUniform').addEventListener('click',()=>{S.uniformWidth=!S.uniformWidth;const b=document.getElementById('btnUniform');b.textContent='峰宽统一: '+(S.uniformWidth?'开':'关');b.className='btn'+(S.uniformWidth?' active':'');renderMode0();});
+document.getElementById('btnResetZoom').addEventListener('click',()=>{S.zoom=null;renderMode0();});
+// Mode1 selects
+const selA=document.getElementById('selA'), selB=document.getElementById('selB');
+for(let z=1;z<=32;z++){ const o1=document.createElement('option');o1.value=z;o1.textContent=ELSYM[z-1]+' (Z='+z+')';selA.appendChild(o1);
+  const o2=document.createElement('option');o2.value=z;o2.textContent=ELSYM[z-1]+' (Z='+z+')';selB.appendChild(o2); }
+selA.value=S.A; selB.value=S.B;
+selA.addEventListener('change',e=>{S.A=+e.target.value;renderMode1();});
+selB.addEventListener('change',e=>{S.B=+e.target.value;renderMode1();});
+// Mode3 next
+document.getElementById('quizNext').addEventListener('click',()=>{S.quiz=null;makeQuiz();drawSpectrum(cQuiz,880,480,[S.quiz.Z],{});});
+
+// spectrum canvas click -> zoom on nearest peak (modes 0,3) — uses LOG scale
+function spectrumClick(e,cv){
+  if(S.mode===1) return;
+  const Z = S.mode===3? S.quiz.Z : S.Z;
+  const rect=cv.getBoundingClientRect();
+  const mx=(e.clientX-rect.left)*(cv.width/rect.width);
+  const W=cv.width,H=cv.height, px0=64,px1=W-44;
+  // compute log-scale BE range (same as drawSpectrum)
+  let beMin=9999,beMax=0; elementPeaks(Z).forEach(p=>{beMin=Math.min(beMin,p.be);beMax=Math.max(beMax,p.be);});
+  if(S.zoom){beMin=S.zoom.be-S.zoom.half;beMax=S.zoom.be+S.zoom.half;}
+  else{beMin=Math.max(1,beMin*0.7);beMax=beMax*1.08;}
+  const logMin=Math.log(beMin),logMax=Math.log(beMax);
+  // inverse xmap: px -> BE (log scale, flip-aware)
+  let f=(mx-px0)/(px1-px0); if(S.flip) f=1-f;
+  const beLog=logMin+f*(logMax-logMin);
+  const be=Math.exp(beLog);
+  let best=null,bd=1e9; elementPeaks(Z).forEach(p=>{ const d=Math.abs(p.be-be); if(d<bd){bd=d;best=p;} });
+  if(best && bd< (S.zoom? S.zoom.half*0.5 : 60)){ S.zoom={be:best.be,half:14}; }
+  else { S.zoom=null; }
+  if(S.mode===0) renderMode0(); else if(S.mode===3) drawSpectrum(cQuiz,880,480,[Z],{});
+}
+cvPES.addEventListener('click',e=>spectrumClick(e,cvPES));
+cvQuiz.addEventListener('click',e=>spectrumClick(e,cvQuiz));
+// hover highlight — uses LOG scale
+cvPES.addEventListener('mousemove',e=>{ if(S.mode!==0||S.zoom)return; const Z=S.Z;
+  const rect=cvPES.getBoundingClientRect(); const mx=(e.clientX-rect.left)*(cvPES.width/rect.width);
+  const W=cvPES.width,px0=64,px1=W-44;
+  let beMin=9999,beMax=0; elementPeaks(Z).forEach(p=>{beMin=Math.min(beMin,p.be);beMax=Math.max(beMax,p.be);});
+  beMin=Math.max(1,beMin*0.7);beMax=beMax*1.08;
+  const logMin=Math.log(beMin),logMax=Math.log(beMax);
+  let f=(mx-px0)/(px1-px0); if(S.flip) f=1-f;
+  const be=Math.exp(logMin+f*(logMax-logMin));
+  let best=-1,bd=1e9;
+  elementPeaks(Z).forEach(p=>{ const d=Math.abs(p.be-be); if(d<bd){bd=d;best=Z*100+p.idx;} });
+  const nh = bd<25? best : -1; if(nh!==S.hover){ S.hover=nh; renderMode0(); } });
+cvPES.addEventListener('mouseleave',()=>{ if(S.hover!==-1){S.hover=-1;renderMode0();} });
+
+render();
+</script>
+</body>
+</html>

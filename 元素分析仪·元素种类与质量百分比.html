@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elemental Analyser — Element Types &amp; Mass Percentage</title>
+<style>
+  /* Light page, but the SURFACE language is borrowed from the cushion model:
+     soft rounded cards, layered drop shadows, pill controls with a 3D press,
+     glassy translucent highlights and a coloured glow on the particles.
+     The dark base of the reference is deliberately NOT copied — this model lives
+     beside the light IG courseware. */
+  :root{
+    --ink:#0F2540; --sub:#3A4A5F; --dim:#7A8DA3;
+    --line:#DCE6F1; --line2:#E9F0F7;
+    --sky:#0EA5E9; --sky-d:#0369A1;
+    --teal:#14B8A6; --rose:#F43F5E;
+    --card:0 1px 2px rgba(15,37,64,.05), 0 10px 24px -14px rgba(15,37,64,.28);
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Nunito','Segoe UI Variable Text','Segoe UI',system-ui,-apple-system,sans-serif;
+    background:
+      radial-gradient(900px 430px at 10% -10%, #E4F2FD 0%, rgba(228,242,253,0) 62%),
+      radial-gradient(780px 400px at 94% 2%, #E3FAF5 0%, rgba(227,250,245,0) 58%),
+      linear-gradient(180deg,#FCFDFF 0%, #F0F5FA 100%);
+    background-attachment:fixed;
+    color:var(--sub);
+    display:flex; flex-direction:column; align-items:center;
+    min-height:100vh; padding:18px 14px 28px;
+  }
+  header{width:100%; max-width:1000px; display:flex; align-items:center; gap:16px;
+         margin-bottom:12px; flex-wrap:wrap;}
+  .titles{display:flex; flex-direction:column; gap:3px; min-width:0;}
+  h1{font-size:22px; font-weight:900; letter-spacing:.1px; color:var(--ink);
+     display:flex; align-items:center; gap:10px; line-height:1.15;}
+  .sub{font-size:12.5px; font-weight:600; color:var(--dim); padding-left:21px;}
+  /* the pulsing marker the reference model puts next to each column heading */
+  .dot{position:relative; width:11px; height:11px; border-radius:50%; flex:none;
+       background:linear-gradient(145deg,#38BDF8,#0E7FBF);
+       box-shadow:0 0 0 3px rgba(14,165,233,.14);}
+  .dot::after{content:''; position:absolute; inset:-4px; border-radius:50%;
+              border:2px solid rgba(14,165,233,.55);
+              animation:ping 2s cubic-bezier(0,0,.2,1) infinite;}
+  @keyframes ping{0%{transform:scale(.55); opacity:.85;} 75%,100%{transform:scale(1.7); opacity:0;}}
+
+  /* segmented pill control */
+  .tabs{display:inline-flex; gap:4px; margin-left:auto; background:#E7EFF7;
+        border:2px solid #D8E5F1; border-radius:999px; padding:3px;}
+  .tab{border:none; background:transparent; color:#5D7A93; padding:7px 18px;
+       border-radius:999px; cursor:pointer; font-size:13px; font-weight:800;
+       font-family:inherit; white-space:nowrap;
+       transition:background .22s ease, color .22s ease, box-shadow .22s ease;}
+  .tab:hover{color:#31506B;}
+  .tab.active{color:#fff; background:linear-gradient(145deg,#33AEE8,#1079B8);
+              box-shadow:0 3px 12px -2px rgba(14,165,233,.55);}
+
+  #wrap{width:100%; max-width:1000px;}
+  canvas{width:100%; border-radius:18px; border:2px solid var(--line);
+         background:#FFFFFF; display:block; touch-action:none; cursor:pointer;
+         box-shadow:0 22px 44px -26px rgba(15,37,64,.42), 0 2px 6px rgba(15,37,64,.05);}
+
+  .pickbar{display:flex; align-items:center; gap:7px; margin:12px 0 4px; flex-wrap:wrap;}
+  .pickbar .lbl{font-size:12.5px; font-weight:800; color:var(--ink); min-width:70px;
+                letter-spacing:.2px; text-transform:uppercase;}
+  .pick{border:2px solid var(--line); background:#fff; border-radius:999px; padding:6px 13px;
+        font-size:12.5px; font-weight:800; cursor:pointer; color:var(--sub);
+        font-family:inherit; box-shadow:0 2px 0 #E6EEF6;
+        transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease, color .15s ease;}
+  .pick:hover{transform:translateY(-1px); border-color:#B7D5EE; box-shadow:0 4px 0 #E0EBF5;}
+  .pick.active{color:#fff; border-color:#0E7FBF;
+               background:linear-gradient(145deg,#33AEE8,#1079B8);
+               box-shadow:0 3px 12px -2px rgba(14,165,233,.55);}
+
+  .bar{display:flex; align-items:center; gap:10px; margin-top:12px; flex-wrap:wrap;}
+  .btn{border:none; border-radius:999px; padding:9px 20px; font-size:13px; font-weight:800;
+       cursor:pointer; font-family:inherit; color:#fff;
+       background:linear-gradient(160deg,#2E7DB8,#125E96);
+       box-shadow:0 4px 0 #0B4776, 0 10px 18px -10px rgba(12,94,150,.75);
+       transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;}
+  .btn:hover{filter:brightness(1.07);}
+  .btn:active{transform:translateY(4px); box-shadow:0 0 0 #0B4776, 0 3px 8px -6px rgba(12,94,150,.6);}
+  .btn.ghost{background:#fff; color:var(--ink); border:2px solid var(--line);
+             box-shadow:0 4px 0 #E3EBF4;}
+  .btn.ghost:hover{border-color:#B7D5EE; filter:none;}
+  .btn.ghost:active{transform:translateY(4px); box-shadow:0 0 0 #E3EBF4;}
+
+  #cap{margin-top:13px; background:#fff; border:2px solid var(--line2);
+       border-left:5px solid var(--sky); border-radius:14px;
+       padding:14px 18px; font-size:14.5px; line-height:1.62; min-height:48px;
+       box-shadow:var(--card); color:var(--sub);}
+  #cap b{color:var(--ink); font-weight:800;}
+
+  @media (prefers-reduced-motion:reduce){
+    .dot::after{animation:none;}
+    .btn,.pick,.tab{transition:none;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="titles">
+    <h1><span class="dot"></span>Elemental Analyser &mdash; Element Types &amp; Mass Percentage</h1>
+    <div class="sub">Burn one mole, trap the water and the carbon dioxide, weigh them &mdash; then read the elements off by mass.</div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" id="tab0">1 &middot; Burn &amp; Trap</button>
+    <button class="tab" id="tab1">2 &middot; Compare</button>
+  </div>
+</header>
+<div id="wrap">
+  <canvas id="cv"></canvas>
+  <div class="pickbar" id="bar1"><span class="lbl">Analyse:</span></div>
+  <div class="pickbar" id="barA" style="display:none"><span class="lbl">Sample A:</span></div>
+  <div class="pickbar" id="barB" style="display:none"><span class="lbl">Sample B:</span></div>
+  <div class="bar">
+    <button class="btn" id="playBtn">&#9654; Play</button>
+    <button class="btn ghost" id="stepBtn">&#8677; Next step</button>
+    <button class="btn ghost" id="resetBtn">&#8635; Reset</button>
+  </div>
+  <div id="cap"></div>
+</div>
+<script>
+'use strict';
+/* roundRect polyfill — the house skeleton assumes it, older engines do not have it */
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    r=Math.min(r,Math.abs(w)/2,Math.abs(h)/2);
+    this.moveTo(x+r,y); this.arcTo(x+w,y,x+w,y+h,r); this.arcTo(x+w,y+h,x,y+h,r);
+    this.arcTo(x,y+h,x,y,r); this.arcTo(x,y,x+w,y,r); this.closePath(); return this;
+  };
+}
+
+/* ================= data ================= */
+/* Relative atomic masses are the WHOLE NUMBERS this lesson uses: C 12, H 1, O 16.
+   The course slides report C3H6O3 as 40.00 / 6.67 / 53.33 and H2O2 as 5.88 / 94.12;
+   both only reproduce exactly with integers (12.011 would give 6.71 instead of 6.67). */
+const AR={C:12,H:1,O:16};
+
+/* Element palette — the sky / teal / rose triad from the reference model.
+   col  = the bright neon hue. Used for GLOW, rim light and accents only.
+   dark = the deep hue. Used for FILLS THAT CARRY WHITE TEXT and for tick labels,
+          because white on the bright shade only reaches ~2.8:1 contrast.
+   glow = a pale tint for the inner rim / meniscus highlights.
+   Oxygen keeps the long-standing "oxygen is red" reflex, so only C and H move hue. */
+const EC={
+  C:{col:'#0EA5E9', dark:'#0369A1', glow:'#7DD3FC'},
+  H:{col:'#14B8A6', dark:'#0F766E', glow:'#5EEAD4'},
+  O:{col:'#F43F5E', dark:'#BE123C', glow:'#FDA4AF'}
+};
+const EO=['C','H','O'];
+
+/* comb = can this go through the furnace at all?
+   Water and hydrogen peroxide are already fully oxidised — there is nothing left to burn,
+   so they are analysed in the Compare tab instead. */
+const SAMPLES=[
+  {k:'C4H6O2' , di:'C\u2084H\u2086O\u2082' , name:'Diacetyl'       , tag:'butter-type flavour'    , e:{C:4,H:6,O:2}, comb:true },
+  {k:'C4H8O2' , di:'C\u2084H\u2088O\u2082' , name:'Ethyl acetate'  , tag:'fruit-flavour seasoning', e:{C:4,H:8,O:2}, comb:true },
+  {k:'C3H6O3' , di:'C\u2083H\u2086O\u2083' , name:'Lactic acid'    , tag:'beverage acidulant'     , e:{C:3,H:6,O:3}, comb:true },
+  {k:'C6H12O6', di:'C\u2086H\u2081\u2082O\u2086', name:'Glucose'   , tag:'sweet-flavour seasoning', e:{C:6,H:12,O:6}, comb:true },
+  {k:'H2O'    , di:'H\u2082O'               , name:'Water'          , tag:'reference'              , e:{H:2,O:1},     comb:false},
+  {k:'H2O2'   , di:'H\u2082O\u2082'         , name:'Hydrogen peroxide', tag:'reference'           , e:{H:2,O:2},     comb:false}
+];
+const find=k=>SAMPLES.find(s=>s.k===k);
+const COMBUST=SAMPLES.filter(s=>s.comb);
+
+function info(s){
+  let mr=0; EO.forEach(e=>{ mr+=(s.e[e]||0)*AR[e]; });
+  const m={}, pc={};
+  EO.forEach(e=>{ m[e]=(s.e[e]||0)*AR[e]; pc[e]=mr? m[e]/mr*100 : 0; });
+  return {mr:mr, m:m, pc:pc,
+    nC:(s.e.C||0), nH:(s.e.H||0),
+    nCO2:(s.e.C||0), nH2O:(s.e.H||0)/2,
+    mCO2:(s.e.C||0)*44, mH2O:(s.e.H||0)/2*18,
+    present:EO.filter(e=>(s.e[e]||0)>0)};
+}
+const pct=v=>v.toFixed(2);
+/* trim a number for display: 176 not 176.00, but 55.81 keeps its decimals */
+const num=v=>(Math.abs(v-Math.round(v))<1e-9? String(Math.round(v)) : v.toFixed(2));
+
+/* ================= state ================= */
+const S={view:0, one:'C3H6O3', A:'C4H6O2', B:'C4H8O2',
+         step:0, stepT:0, play:false};
+const DUR=[1.5,1.6,3.0,2.6,2.6,1.4];
+const W=960,H=560;
+let T=0;
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+
+function fitCanvas(){
+  const DPR=window.devicePixelRatio||1;
+  const w=cv.parentElement.clientWidth-4;   /* the canvas now carries a 2 px border each side */
+  const k=Math.min(1.05, w/W);
+  cv.style.height=Math.round(H*k)+'px';
+  cv.width=Math.round(W*k*DPR); cv.height=Math.round(H*k*DPR);
+  ctx.setTransform(k*DPR,0,0,k*DPR,0,0);
+}
+window.addEventListener('resize',fitCanvas);
+
+/* ================= helpers ================= */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=t=>t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+
+/* colour math for the gradient / glow work below */
+function shadeHex(hex,amt){                       /* amt < 0 darkens, amt > 0 lightens */
+  const n=parseInt(hex.slice(1),16);
+  const t=amt<0?0:255, p=Math.abs(amt);
+  const r=Math.round((t-((n>>16)&255))*p+((n>>16)&255));
+  const g=Math.round((t-((n>>8)&255))*p+((n>>8)&255));
+  const b=Math.round((t-(n&255))*p+(n&255));
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+function hexA(hex,a){
+  const n=parseInt(hex.slice(1),16);
+  return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+}
+/* Every glow must be switched OFF again. A shadowBlur left switched on silently
+   smears the next fillText, and the whole page goes soft-focus. */
+function glow(c,col,blur,dy,a){ c.shadowColor=hexA(col,a===undefined?0.85:a); c.shadowBlur=blur; c.shadowOffsetY=dy||0; }
+function noGlow(c){ c.shadowColor='transparent'; c.shadowBlur=0; c.shadowOffsetY=0; }
+
+/* a raised card: soft cast shadow, gentle top-to-bottom gradient, hairline border */
+function card(c,x,y,w,h,r,on){
+  c.save();
+  if(on){ c.shadowColor='rgba(15,37,64,0.13)'; c.shadowBlur=13; c.shadowOffsetY=4; }
+  const g=c.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,'#FFFFFF'); g.addColorStop(1,'#F7FAFD');
+  c.fillStyle=g;
+  c.beginPath(); c.roundRect(x,y,w,h,r); c.fill();
+  noGlow(c);
+  c.strokeStyle=on?'#D9E5F0':'#E9F0F7'; c.lineWidth=1.6;
+  c.beginPath(); c.roundRect(x,y,w,h,r); c.stroke();
+  c.restore();
+}
+/* the reference model's glass streak: a soft white bar hugging one edge */
+function glass(c,x,y,w,h,r,alpha,vertical){
+  c.save();
+  c.beginPath(); c.roundRect(x,y,w,h,r); c.clip();
+  if(vertical){
+    const g=c.createLinearGradient(x,0,x+w,0);
+    g.addColorStop(0,'rgba(255,255,255,'+alpha+')'); g.addColorStop(1,'rgba(255,255,255,0)');
+    c.fillStyle=g; c.fillRect(x,y,w,h);
+  }else{
+    const g=c.createLinearGradient(0,y,0,y+h);
+    g.addColorStop(0,'rgba(255,255,255,'+alpha+')'); g.addColorStop(1,'rgba(255,255,255,0)');
+    c.fillStyle=g; c.fillRect(x,y,w,h);
+  }
+  c.restore();
+}
+
+function pill(c,txt,x,y,fg,bg,fs,alpha,glowCol){
+  c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  c.font='bold '+(fs||12.5)+'px "Segoe UI",system-ui,sans-serif';
+  const w=c.measureText(txt).width+18, h=(fs||12.5)+12;
+  if(glowCol) glow(c,glowCol,12,2,0.5);
+  c.fillStyle=bg; c.strokeStyle=fg; c.lineWidth=1.3;
+  c.beginPath(); c.roundRect(x-w/2,y-h/2,w,h,h/2); c.fill();
+  noGlow(c);
+  c.stroke();
+  c.fillStyle=fg; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(txt,x,y+0.5); c.restore();
+}
+function chip(c,txt,x,y,fg,bg){ pill(c,txt,x,y,fg,bg,13); }
+
+/* Sphere. Shape comes from the cushion model: a coloured glow halo, a wide specular
+   lobe, and a bright rim light on the lit side. The BODY is the deep shade because a
+   white letter has to sit on it — white on the neon shade is only ~2.8:1. */
+function ball(c,x,y,r,col,dark,label,fs,alpha){
+  c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  glow(c,col,r*1.15,r*0.20,0.85);
+  const g=c.createRadialGradient(x-r*0.34,y-r*0.38,r*0.10,x,y,r*1.03);
+  g.addColorStop(0,'#FFFFFF');
+  g.addColorStop(0.15,col);
+  g.addColorStop(0.45,dark);
+  g.addColorStop(1,shadeHex(dark,-0.24));
+  c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  noGlow(c);
+  /* wide specular lobe */
+  c.beginPath(); c.ellipse(x-r*0.32,y-r*0.36,r*0.30,r*0.19,-Math.PI/3,0,7);
+  c.fillStyle='rgba(255,255,255,0.52)'; c.fill();
+  /* neon rim on the lit side */
+  c.beginPath(); c.arc(x,y,r*0.93,Math.PI*1.02,Math.PI*1.72);
+  c.strokeStyle=hexA(col,0.95); c.lineWidth=Math.max(1,r*0.17);
+  c.lineCap='round'; c.stroke();
+  if(label){
+    c.fillStyle='#FFFFFF'; c.font='bold '+(fs||Math.max(10,r*0.72))+'px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle'; c.fillText(label,x,y+0.5);
+  }
+  c.restore();
+}
+function eball(c,x,y,r,e,label,alpha){ const d=EC[e]; ball(c,x,y,r,d.col,d.dark,label,undefined,alpha); }
+
+/* phyllotaxis packing — scatters a list of atoms evenly over a disc without
+   clustering same-element atoms together, which is what makes the counts readable */
+function pilePos(i,n,cx,cy,R){
+  const a=i*2.399963, rr=R*Math.sqrt((i+0.6)/n);
+  return {x:cx+rr*Math.cos(a), y:cy+rr*Math.sin(a)};
+}
+function atomsOf(s){ const out=[]; EO.forEach(e=>{ for(let i=0;i<(s.e[e]||0);i++) out.push(e); }); return out; }
+function beadR(R,n){ return clamp(R/(1.15*Math.sqrt(n)),3.2,13); }
+
+/* small product glyphs */
+function glyphCO2(c,x,y,s,alpha){
+  c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  c.strokeStyle='#8FA6BC'; c.lineWidth=2.4*s; c.lineCap='round';
+  c.beginPath(); c.moveTo(x-15*s,y); c.lineTo(x+15*s,y); c.stroke();
+  eball(c,x-15*s,y,7*s,'O','O'); eball(c,x+15*s,y,7*s,'O','O');
+  eball(c,x,y,8.5*s,'C','C');
+  c.restore();
+}
+function glyphH2O(c,x,y,s,alpha){
+  c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  c.strokeStyle='#8FA6BC'; c.lineWidth=2.4*s; c.lineCap='round';
+  c.beginPath(); c.moveTo(x-12*s,y-9*s); c.lineTo(x,y); c.lineTo(x+12*s,y-9*s); c.stroke();
+  eball(c,x-12*s,y-9*s,5.5*s,'H','H'); eball(c,x+12*s,y-9*s,5.5*s,'H','H');
+  eball(c,x,y,7.5*s,'O','O');
+  c.restore();
+}
+
+/* ================= scene 1 : burn & trap ================= */
+const G={
+  boat:{x:141,y:188},
+  boatIn:{x:352,y:168},
+  tube:{x0:250,x1:516,cy:168,r:36},
+  heat:{x0:326,x1:442},
+  trapA:{x0:552,x1:612,y0:100,y1:246, cx:582, name:'H\u2082O trap', e:'H'},
+  trapB:{x0:672,x1:732,y0:100,y1:246, cx:702, name:'CO\u2082 trap', e:'C'},
+  vent:{x0:756,x1:820,y:168}
+};
+const q=()=>clamp(S.stepT/DUR[S.step],0,1);
+function trapFill(which){
+  const at=which==='A'?3:4;
+  if(S.step<at) return 0;
+  if(S.step===at) return clamp((q()-0.35)/0.55,0,1);
+  return 1;
+}
+
+/* page wash INSIDE the canvas — ties the drawing to the page background and gives
+   the white apparatus something to sit on */
+function backdrop(){
+  const c=ctx;
+  const g=c.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#FFFFFF'); g.addColorStop(1,'#F5F9FD');
+  c.fillStyle=g; c.fillRect(0,0,W,H);
+  const s=c.createRadialGradient(30,-50,10,30,-50,540);
+  s.addColorStop(0,'rgba(14,165,233,0.075)'); s.addColorStop(1,'rgba(14,165,233,0)');
+  c.fillStyle=s; c.fillRect(0,0,W,H);
+  const t=c.createRadialGradient(W-20,-40,10,W-20,-40,480);
+  t.addColorStop(0,'rgba(20,184,166,0.06)'); t.addColorStop(1,'rgba(20,184,166,0)');
+  c.fillStyle=t; c.fillRect(0,0,W,H);
+}
+
+/* Left-aligned scene heading with a neon accent bar and a gradient hairline.
+   `rest` is the grey continuation; scene 2 passes '' and gets only the bold part. */
+function sceneTitle(c,bold,rest,y){
+  c.save();
+  glow(c,'#0EA5E9',10,0,0.6);
+  c.beginPath(); c.roundRect(60,y-11,5,22,2.5);
+  c.fillStyle='#0EA5E9'; c.fill();
+  noGlow(c);
+  c.textAlign='left'; c.textBaseline='middle';
+  c.fillStyle='#0F2540'; c.font='bold 17px "Segoe UI",sans-serif';
+  c.fillText(bold,75,y);
+  if(rest){
+    const w=c.measureText(bold).width;
+    c.fillStyle='#8EA2B6'; c.font='13px "Segoe UI",sans-serif';
+    c.fillText('\u2014',75+w+8,y);
+    c.fillStyle='#5D7A93'; c.fillText(rest,75+w+24,y);
+  }
+  c.restore();
+  c.save();
+  const g=c.createLinearGradient(60,0,900,0);
+  g.addColorStop(0,'rgba(14,165,233,0.55)'); g.addColorStop(0.5,'rgba(20,184,166,0.30)');
+  g.addColorStop(1,'rgba(14,165,233,0)');
+  c.fillStyle=g; c.fillRect(60,46,840,1.6);
+  c.restore();
+}
+
+function drawTube(c){
+  const t=G.tube;
+  c.save();
+  c.shadowColor='rgba(15,37,64,0.17)'; c.shadowBlur=20; c.shadowOffsetY=8;
+  const bg=c.createLinearGradient(0,t.cy-t.r,0,t.cy+t.r);
+  bg.addColorStop(0,'#FFFFFF'); bg.addColorStop(0.42,'#F8FBFE'); bg.addColorStop(1,'#E8F0F8');
+  c.fillStyle=bg;
+  c.beginPath(); c.roundRect(t.x0,t.cy-t.r,t.x1-t.x0,t.r*2,t.r); c.fill();
+  noGlow(c);
+  c.strokeStyle='#A8BFD4'; c.lineWidth=2.6;
+  c.beginPath(); c.roundRect(t.x0,t.cy-t.r,t.x1-t.x0,t.r*2,t.r); c.stroke();
+  c.restore();
+  glass(c,t.x0+9,t.cy-t.r+8,t.x1-t.x0-18,8,4,0.95,false);
+}
+
+function drawHeat(c,on){
+  /* The heated zone is G.heat, NOT the whole tube. Destructuring G.tube here (as an earlier
+     version did) spread the coils over all 266 px of the tube and past its right end. */
+  const {cy,r}=G.tube, x0=G.heat.x0, x1=G.heat.x1, pad=9;
+  const hx=x0-pad, hy=cy-r-pad, hw=x1-x0+pad*2, hh=(r+pad)*2, rr=16;
+  /* the only light in the apparatus that MOVES, so the heat reads as heat */
+  const pulse=on?(0.5+0.5*Math.sin(T*4.2)):0;
+  c.save();
+
+  /* flames first, so the block sits in front of their tips */
+  if(on){
+    const base=cy+r+pad+28;
+    for(let i=0;i<5;i++){
+      const fx=x0+(x1-x0)*(i+0.5)/5;
+      const fh=9+15*pulse+4*Math.sin(T*7+i*1.7);
+      c.beginPath();
+      c.moveTo(fx-5.5,base);
+      c.quadraticCurveTo(fx-2,base-fh*0.55,fx,base-fh);
+      c.quadraticCurveTo(fx+2,base-fh*0.55,fx+5.5,base);
+      c.closePath();
+      const fg=c.createLinearGradient(0,base-fh-4,0,base);
+      fg.addColorStop(0,'rgba(253,224,71,0.92)');
+      fg.addColorStop(0.55,'rgba(251,146,60,0.72)');
+      fg.addColorStop(1,'rgba(249,115,22,0.18)');
+      c.fillStyle=fg; c.fill();
+    }
+  }
+
+  if(on){
+    glow(c,'#F59E0B',24+16*pulse,0,0.42+0.34*pulse);
+    const g=c.createLinearGradient(hx,hy,hx,hy+hh);
+    g.addColorStop(0,'rgba(253,186,116,0.34)'); g.addColorStop(1,'rgba(245,158,11,0.16)');
+    c.fillStyle=g;
+    c.beginPath(); c.roundRect(hx,hy,hw,hh,rr); c.fill();
+    noGlow(c);
+  }else{
+    c.fillStyle='rgba(226,236,245,0.60)';
+    c.beginPath(); c.roundRect(hx,hy,hw,hh,rr); c.fill();
+  }
+
+  /* heating coils */
+  c.lineCap='round';
+  for(let i=0;i<7;i++){
+    const wx=hx+11+i*((hw-22)/6);
+    c.beginPath(); c.moveTo(wx,hy+8); c.lineTo(wx,hy+hh-8);
+    c.strokeStyle=on?'rgba(217,119,6,'+(0.42+0.4*pulse).toFixed(3)+')':'rgba(180,196,212,0.45)';
+    c.lineWidth=3; c.stroke();
+  }
+  c.strokeStyle=on?'#D97706':'#C9D6E4'; c.lineWidth=4;
+  if(on) glow(c,'#F59E0B',12,0,0.6);
+  c.beginPath(); c.roundRect(hx,hy,hw,hh,rr); c.stroke();
+  noGlow(c);
+
+  c.fillStyle=on?'#B45309':'#8EA2B6';
+  c.font='bold 11.5px "Segoe UI",sans-serif';
+  c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(on?'furnace  900 \u00B0C':'furnace',(x0+x1)/2,cy-r-pad-15);
+  c.restore();
+}
+
+function drawTrap(c,tr,e,fill,gained){
+  const w=tr.x1-tr.x0, h=tr.y1-tr.y0, d=EC[e];
+  c.save();
+  c.shadowColor='rgba(15,37,64,0.16)'; c.shadowBlur=17; c.shadowOffsetY=7;
+  const bg=c.createLinearGradient(tr.x0,tr.y0,tr.x0+w,tr.y1);
+  bg.addColorStop(0,'#FFFFFF'); bg.addColorStop(0.5,'#F8FBFE'); bg.addColorStop(1,'#EAF1F8');
+  c.fillStyle=bg;
+  c.beginPath(); c.roundRect(tr.x0,tr.y0,w,h,12); c.fill();
+  noGlow(c);
+  c.strokeStyle='#A8BFD4'; c.lineWidth=2.4;
+  c.beginPath(); c.roundRect(tr.x0,tr.y0,w,h,12); c.stroke();
+  c.restore();
+
+  c.save();
+  c.beginPath(); c.roundRect(tr.x0+2,tr.y0+2,w-4,h-4,11); c.clip();
+  /* packing: tiny glass beads rather than flat grey dots */
+  for(let i=0;i<26;i++){
+    const yy=tr.y1-9-i*5.2, bx=tr.x0+w*(0.3+0.4*(i%2));
+    c.beginPath(); c.arc(bx,yy,2.7,0,7); c.fillStyle=(i%3===0)?'#D6E3F1':'#E4EDF7'; c.fill();
+    c.beginPath(); c.arc(bx-0.8,yy-0.9,1,0,7); c.fillStyle='rgba(255,255,255,0.95)'; c.fill();
+  }
+  /* absorbed amount */
+  if(fill>0){
+    const fh=(h-6)*fill, top=tr.y1-3-fh;
+    glow(c,d.col,15,0,0.55);
+    const g=c.createLinearGradient(0,top,0,tr.y1);
+    g.addColorStop(0,d.col); g.addColorStop(1,d.dark);
+    c.fillStyle=g; c.fillRect(tr.x0+3,top,w-6,fh);
+    noGlow(c);
+    /* bright meniscus, gently rippling — a flat rectangle does not read as liquid */
+    const rip=Math.sin(T*2.6+tr.cx*0.05)*1.5;
+    c.beginPath(); c.moveTo(tr.x0+3,top+rip);
+    c.quadraticCurveTo(tr.cx,top-2.4+rip,tr.x1-3,top+rip);
+    c.strokeStyle=hexA(d.glow,0.95); c.lineWidth=2.4; c.stroke();
+  }
+  c.restore();
+
+  glass(c,tr.x0+5,tr.y0+9,6,h-22,3,0.85,true);
+
+  c.save();
+  c.fillStyle='#0F2540'; c.font='bold 11px "Segoe UI",sans-serif';
+  c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(tr.name,tr.cx,tr.y0-12);
+  if(gained){
+    /* neutral ink: this number is the mass of the COMPOUND captured (CO2 or H2O),
+       so tinting it with the element colour implied it was the mass of that element. */
+    c.fillStyle='#334455'; c.font='bold 12.5px "Segoe UI",sans-serif';
+    c.fillText('+'+num(gained)+' g',tr.cx,tr.y1+16);
+  }
+  c.restore();
+}
+
+function sceneBurn(){
+  const c=ctx, s=find(S.one), I=info(s), qq=q();
+  const boatIn=clamp(S.stepT/DUR[1],0,1);
+  const slide=(S.step>1)?1:(S.step===1?ease(boatIn):0);
+  const burning=S.step===2, absorbA=S.step===3, absorbB=S.step===4, done=S.step>=5;
+  const flameT=(burning||S.step>2)?1:0;
+
+  sceneTitle(c,'Scene 1 \u00B7 Burn & Trap','how the analyser sees the elements',34);
+
+  /* ---- balance + boat ---- */
+  const bx=G.boat.x+(G.boatIn.x-G.boat.x)*slide;
+  const by=G.boat.y+(G.boatIn.y-G.boat.y)*slide;
+  if(slide<1){
+    c.save();
+    c.fillStyle='#E4ECF5'; c.strokeStyle='#A8BFD4'; c.lineWidth=2;
+    c.beginPath(); c.roundRect(64,214,150,10,4); c.fill(); c.stroke();
+    c.fillStyle='#F6FAFD'; c.strokeStyle='#A8BFD4'; c.lineWidth=2;
+    c.beginPath(); c.roundRect(78,224,122,26,7); c.fill(); c.stroke();
+    c.fillStyle='#3A4A5F'; c.font='bold 13px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('1 mol',139,237);
+    c.restore();
+    const a=(1-slide);
+    pill(c,'M\u1D63 = '+num(I.mr)+' g  \u2192   1 mol weighs '+num(I.mr)+' g',141,262,'#0A5378','#E7F3FB',12,a,'#0EA5E9');
+  }
+
+  /* ---- furnace tube ---- */
+  drawTube(c); drawHeat(c,flameT>0);
+
+  /* O2 inlet — the tip is pushed 10 px INSIDE the tube wall. Stopping it at the
+     nominal top edge left it floating ~20 px clear of the rounded shoulder. */
+  c.save();
+  c.globalAlpha=(S.step>=1)?1:0.38;
+  c.strokeStyle='#1079B8'; c.fillStyle='#1079B8'; c.lineWidth=3; c.lineCap='round';
+  glow(c,'#0EA5E9',9,0,0.6);
+  c.beginPath(); c.moveTo(278,94); c.lineTo(278,132); c.stroke();
+  c.beginPath(); c.moveTo(278,142); c.lineTo(273,131); c.lineTo(283,131); c.closePath(); c.fill();
+  noGlow(c);
+  c.font='bold 11.5px "Segoe UI",sans-serif'; c.textAlign='left'; c.textBaseline='middle';
+  c.fillStyle='#1079B8'; c.fillText('O\u2082 in',288,100);
+  c.restore();
+
+  /* ---- the sample: bead pile in the boat, then products after burning ---- */
+  const atoms=atomsOf(s);
+  if(S.step<=1){
+    const R=27, r=beadR(R,atoms.length);
+    atoms.forEach((e,i)=>{
+      const p=pilePos(i,atoms.length,bx,by,R);
+      eball(c,p.x,p.y,r,e,'',1);
+    });
+    c.save(); c.globalAlpha=(S.step===0)?1:0.8;
+    c.fillStyle='#5D7A93'; c.font='bold 11px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('one molecule of '+s.di,bx,by-48);
+    c.restore();
+  }
+
+  /* products, from the moment of burning onward.
+     Water and carbon dioxide ride on SEPARATE rows. On a shared row both species landed at
+     the same x with the same y offset and collapsed into two brown smudges. */
+  if(S.step>=2){
+    const appear=ease(clamp(S.step===2? qq*1.8 : 1,0,1));
+    const rowH=G.tube.cy-22, rowC=G.tube.cy+22;
+    const sx=302, ex=498;
+    const span=(i,n)=> n>1 ? sx+(ex-sx)*(i/(n-1)) : (sx+ex)/2;
+    const spread=(a,b,i,n)=> n>1 ? a+(b-a)*(i/(n-1)) : (a+b)/2;
+    const t3=ease(clamp((qq-0.14)/0.62,0,1));
+    const fade3=ease(clamp((qq-0.55)/0.45,0,1));
+    /* six products on one row would overlap, so a crowded run shrinks its glyphs */
+    const sH=I.nH2O>3?0.76:1, sC=I.nCO2>3?0.76:1;
+    for(let i=0;i<I.nH2O;i++){
+      const base=span(i,I.nH2O);
+      let gx=base, gy=rowH, al=appear;
+      if(absorbA){ gx=base+(G.trapA.cx-base)*t3; gy=rowH+((G.trapA.y1-46)-rowH)*t3; al=appear*(1-0.92*fade3); }
+      else if(absorbB||done){ al=0; }
+      if(burning){ gx+=Math.sin(T*3+i)*2.6; gy+=Math.cos(T*2.4+i*1.7)*2.6; }
+      if(al>0.02) glyphH2O(c,gx,gy,sH,al);
+    }
+    for(let i=0;i<I.nCO2;i++){
+      const base=span(i,I.nCO2);
+      /* the carbon dioxide only bunches to the right while the water is being taken out.
+         Parking it in the 60 px gap between the traps (an earlier version) laid it on top
+         of the water trap and made the two look like one smudge. */
+      const hold=spread(382,500,i,I.nCO2);
+      let gx=base, gy=rowC, al=appear;
+      if(absorbA){ gx=base+(hold-base)*t3; }
+      else if(absorbB){ gx=hold+(G.trapB.cx-hold)*t3; gy=rowC+((G.trapB.y1-46)-rowC)*t3; al=appear*(1-0.92*fade3); }
+      else if(done){ al=0; }
+      if(burning){ gx+=Math.sin(T*3.4+i*1.3)*2.6; gy+=Math.cos(T*2.7+i)*2.6; }
+      if(al>0.02) glyphCO2(c,gx,gy,sC,al);
+    }
+  }
+
+  /* ---- traps ---- */
+  const fA=trapFill('A'), fB=trapFill('B');
+  drawTrap(c,G.trapA,'H',fA, fA>0.02? I.mH2O*fA : 0);
+  drawTrap(c,G.trapB,'C',fB, fB>0.02? I.mCO2*fB : 0);
+
+  /* connecting tubing + flow */
+  c.save();
+  c.strokeStyle='#A8BFD4'; c.lineWidth=6; c.lineCap='round';
+  c.beginPath(); c.moveTo(G.tube.x1,G.tube.cy); c.lineTo(G.trapA.x0,G.tube.cy); c.stroke();
+  c.beginPath(); c.moveTo(G.trapA.x1,G.tube.cy); c.lineTo(G.trapB.x0,G.tube.cy); c.stroke();
+  c.beginPath(); c.moveTo(G.trapB.x1,G.tube.cy); c.lineTo(G.vent.x0,G.tube.cy); c.stroke();
+  c.restore();
+  if(S.step>=2&&S.step<=4){
+    for(let i=0;i<5;i++){
+      const t=((T*0.55+i*0.2)%1);
+      const x=G.tube.x1+(G.vent.x0-G.tube.x1)*t;
+      if(x>G.trapA.x0-4&&x<G.trapA.x1+4) continue;
+      if(x>G.trapB.x0-4&&x<G.trapB.x1+4) continue;
+      c.save(); c.globalAlpha=0.8;
+      glow(c,'#38BDF8',8,0,0.75);
+      c.fillStyle='#38BDF8';
+      c.beginPath(); c.arc(x,G.tube.cy,3.4,0,7); c.fill();
+      noGlow(c); c.restore();
+    }
+  }
+  c.save();
+  c.fillStyle='#8EA2B6'; c.font='bold 10.5px "Segoe UI",sans-serif';
+  c.textAlign='left'; c.textBaseline='middle'; c.fillText('vent',G.vent.x1+4,G.tube.cy);
+  c.restore();
+
+  /* ---- readout band ---- */
+  /* 56 + 5*160 + 4*12 = 904 — the tiles and the stacked bar share this
+     left/right edge so the two halves of the readout line up. */
+  const BX=56, BXR=904;
+  c.save();
+  c.fillStyle='#0F2540'; c.font='bold 13.5px "Segoe UI",sans-serif';
+  c.textAlign='left'; c.textBaseline='middle';
+  c.fillText('Analyser readout',BX,288);
+  c.restore();
+
+  /* five live tiles — each value only appears once the apparatus has produced it.
+     acc is drawn as a rail on the top edge: only the two TRAP tiles carry an element
+     colour, because only those two actually report one element. */
+  const tiles=[
+    {lab:'sample'          , val:s.di                              , sub:s.name                    , on:true  , acc:null},
+    {lab:'M\u1D63'         , val:num(I.mr)+' g'                    , sub:'1 mol = '+num(I.mr)+' g' , on:true  , acc:null},
+    {lab:'CO\u2082 trapped', val:fB>0.01? num(I.mCO2*fB)+' g':'waiting', sub:fB>0.01? num(I.nCO2)+' mol CO\u2082':'furnace', on:S.step>=4, acc:EC.C.col},
+    {lab:'H\u2082O trapped', val:fA>0.01? num(I.mH2O*fA)+' g':'waiting', sub:fA>0.01? num(I.nH2O)+' mol H\u2082O':'furnace', on:S.step>=3, acc:EC.H.col},
+    {lab:'elements found'  , val:S.step>=5? I.present.join('  '):'\u2014', sub:S.step>=5? '3 elements':'waiting', on:S.step>=5, acc:null}
+  ];
+  const tw=160, tgap=12;
+  tiles.forEach((t,i)=>{
+    const x=BX+i*(tw+tgap);
+    c.save();
+    c.globalAlpha=t.on?1:0.52;
+    card(c,x,300,tw,62,12,t.on);
+    c.beginPath(); c.moveTo(x+15,306.6); c.lineTo(x+tw-15,306.6);
+    c.strokeStyle=t.on?(t.acc||'#CBD9E6'):'#E9F0F7'; c.lineWidth=3; c.lineCap='round';
+    if(t.on&&t.acc) glow(c,t.acc,8,0,0.55);
+    c.stroke();
+    noGlow(c);
+    c.fillStyle='#7A8DA3'; c.font='bold 10.5px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle'; c.fillText(t.lab,x+tw/2,317);
+    c.fillStyle='#0F2540'; c.font='bold 20px "Segoe UI",sans-serif';
+    c.fillText(t.val,x+tw/2,338);
+    c.fillStyle='#95A7BA'; c.font='11px "Segoe UI",sans-serif';
+    c.fillText(t.sub,x+tw/2,354);
+    c.restore();
+  });
+
+    /* The readout is drawn in OUTLINE from the start and filled in at step 6. Hiding it
+     entirely left the whole lower half of the canvas blank for the first five steps. */
+  const tx0=BX, tx1=430, ty0=384, ty1=526;
+  const bx0=462, bw=BXR-bx0;
+  const byy=392, bh=52;
+  const live=(S.step>=5);
+  /* 0.30 was so faint that the "outline first" idea collapsed back into a blank half-screen.
+     The ghost has to be legible as a PLACEHOLDER, not merely non-absent. */
+  const ghost=live?1:0.52;
+
+  c.save(); c.globalAlpha=live?1:0.60;
+  c.fillStyle='#0A5378'; c.font='bold 12.5px "Segoe UI",sans-serif';
+  c.textAlign='left'; c.textBaseline='middle';
+  c.fillText('mass percentage  =  mass of element in 1 mol  \u00F7  M\u1D63  \u00D7  100',bx0,372);
+  c.restore();
+
+  /* table — the mass-% column is RIGHT-aligned on the table border. Left-aligning it ran
+     "55.81 %" ~34 px past x1 and straight into the stacked bar beside it. */
+  c.save(); c.globalAlpha=ghost;
+  card(c,tx0,ty0,tx1-tx0,ty1-ty0,12,live);
+  const cA=tx0+16, cB=tx0+118, cC=tx0+232, cD=tx1-18;
+  c.textBaseline='middle';
+  c.fillStyle='#7A8DA3'; c.font='bold 10.5px "Segoe UI",sans-serif'; c.textAlign='left';
+  c.fillText('element',cA,ty0+20); c.fillText('atoms',cB,ty0+20); c.fillText('mass in 1 mol',cC,ty0+20);
+  c.textAlign='right'; c.fillText('mass %',cD,ty0+20);
+  c.strokeStyle='#EDF3F9'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(tx0+10,ty0+32); c.lineTo(tx1-10,ty0+32); c.stroke();
+  I.present.forEach((e,i)=>{
+    const ry=ty0+56+i*28;
+    eball(c,cA,ry,8,e,e,live?1:0.45);
+    c.fillStyle='#0F2540'; c.font='bold 12.5px "Segoe UI",sans-serif'; c.textAlign='left';
+    c.fillText(e,cA+16,ry);
+    c.fillStyle='#3A4A5F'; c.font='12.5px "Segoe UI",sans-serif';
+    c.fillText(live? String(s.e[e]) : '\u2014', cB,ry);
+    c.fillText(live? num(I.m[e])+' g' : '\u2014', cC,ry);
+    c.fillStyle='#0F2540'; c.font='bold 14px "Segoe UI",sans-serif'; c.textAlign='right';
+    c.fillText(live? pct(I.pc[e])+' %' : '\u2014', cD,ry);
+    c.textAlign='left';
+    if(i<I.present.length-1){
+      c.strokeStyle='#F1F6FA'; c.beginPath(); c.moveTo(tx0+10,ry+14); c.lineTo(tx1-10,ry+14); c.stroke();
+    }
+  });
+  const tyy=ty0+56+I.present.length*28;
+  c.strokeStyle='#D9E5F0'; c.beginPath(); c.moveTo(tx0+10,tyy-20); c.lineTo(tx1-10,tyy-20); c.stroke();
+  c.fillStyle='#0F2540'; c.font='bold 12.5px "Segoe UI",sans-serif'; c.textAlign='left';
+  c.fillText('total',cA+16,tyy-6);
+  c.fillText(live? num(I.mr)+' g' : '\u2014', cC,tyy-6);
+  c.fillStyle='#0A5378'; c.font='bold 13.5px "Segoe UI",sans-serif'; c.textAlign='right';
+  c.fillText(live? '100.00 %' : '\u2014', cD,tyy-6);
+  c.restore();
+
+  /* stacked bar — the track is always visible, the segments arrive at step 6.
+     The body of each segment is the DEEP shade and the neon shade is only the top fade,
+     because white bold text has to stay legible on it. */
+  c.save(); c.globalAlpha=ghost;
+  c.beginPath(); c.roundRect(bx0,byy,bw,bh,11);
+  const tg=c.createLinearGradient(0,byy,0,byy+bh);
+  tg.addColorStop(0,'#EDF3F9'); tg.addColorStop(1,'#F7FAFD');
+  c.fillStyle=tg; c.fill();
+  c.strokeStyle='#D9E5F0'; c.lineWidth=1.6; c.stroke();
+  c.restore();
+
+  if(live){
+    c.save();
+    c.shadowColor='rgba(15,37,64,0.20)'; c.shadowBlur=18; c.shadowOffsetY=7;
+    c.beginPath(); c.roundRect(bx0,byy,bw,bh,11); c.clip();
+    let xx=bx0;
+    I.present.forEach(e=>{
+      const ww=I.pc[e]/100*bw;
+      if(ww>0.5){
+        const d=EC[e];
+        const g=c.createLinearGradient(0,byy,0,byy+bh);
+        g.addColorStop(0,d.col);              /* neon top */
+        g.addColorStop(0.30,d.dark);          /* deep body — white text sits on this */
+        g.addColorStop(1,shadeHex(d.dark,-0.18));
+        c.fillStyle=g; c.fillRect(xx,byy,ww,bh);
+        /* a bright edge between neighbouring segments, so 40 % sky next to 53 % rose
+           still reads as two blocks rather than one gradient */
+        c.fillStyle=hexA(d.glow,0.85); c.fillRect(xx,byy,2.6,bh);
+        xx+=ww;
+      }
+    });
+    /* gloss sweep across the top third */
+    const gl=c.createLinearGradient(0,byy,0,byy+bh*0.55);
+    gl.addColorStop(0,'rgba(255,255,255,0.38)'); gl.addColorStop(1,'rgba(255,255,255,0)');
+    c.fillStyle=gl; c.fillRect(bx0,byy,bw,bh*0.55);
+    c.restore();
+    c.save();
+    let xa=bx0;
+    I.present.forEach(e=>{
+      const ww=I.pc[e]/100*bw, lab=pct(I.pc[e])+' %';
+      if(ww>=72){
+        c.fillStyle='#FFFFFF'; c.font='bold 13px "Segoe UI",sans-serif';
+        c.textAlign='center'; c.textBaseline='middle';
+        glow(c,'#0F2540',5,1,0.45);           /* lifts white text off a saturated fill */
+        c.fillText(e+'  '+lab,xa+ww/2,byy+bh/2);
+        noGlow(c);
+      }else{
+        /* too narrow to hold its own label — hang it under the segment on a short tick.
+           Drawing it ABOVE the bar ran it straight through the formula line at y=372.
+           The TEXT is then clamped inside the track: a 5.88 % segment is only 22 px wide, so
+           centring a 60 px label on it pushed the label out through the panel border. The
+           tick stays at the segment centre, because the tick is the pointer. */
+        const txt=e+'  '+lab;
+        c.fillStyle=EC[e].dark; c.font='bold 11.5px "Segoe UI",sans-serif';
+        const lw=c.measureText(txt).width;
+        const mx=clamp(xa+ww/2, bx0+lw/2+4, bx0+bw-lw/2-4);
+        c.strokeStyle=EC[e].dark; c.lineWidth=1.4;
+        c.beginPath(); c.moveTo(xa+ww/2,byy+bh); c.lineTo(xa+ww/2,byy+bh+7); c.stroke();
+        c.textAlign='center'; c.textBaseline='top';
+        c.fillText(txt,mx,byy+bh+9);
+      }
+      xa+=ww;
+    });
+    c.restore();
+
+    const wy=490;
+    const lines=[
+      'C   '+num(I.mCO2)+' g CO\u2082  \u00D7  12/44  =  '+num(I.m.C)+' g',
+      'H   '+num(I.mH2O)+' g H\u2082O  \u00D7  2/18  =  '+num(I.m.H)+' g',
+      'O   '+num(I.m.O)+' g'
+    ];
+    c.save();
+    lines.forEach((t,i)=>{
+      const d=EC[['C','H','O'][i]];
+      c.beginPath(); c.roundRect(bx0-16,wy+i*22-5,4,10,2);
+      c.fillStyle=d.dark; c.fill();
+      c.fillStyle=(i===0)?'#0F2540':'#3A4A5F';
+      c.font=(i===0?'bold ':'')+'12.5px "Segoe UI",sans-serif';
+      c.textAlign='left'; c.textBaseline='middle';
+      c.fillText(t,bx0,wy+i*22);
+    });
+    c.restore();
+  }else{
+    /* the hint sits INSIDE the empty track, so the track reads as "the bar, waiting"
+       instead of as a stray empty box */
+    c.save();
+    c.fillStyle='#95A7BA'; c.font='12px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText('the readout fills in once both traps have been weighed',bx0+bw/2,byy+bh/2);
+    c.restore();
+  }
+}
+
+/* ================= scene 2 : compare ================= */
+function sceneCompare(){
+  const c=ctx;
+  sceneTitle(c,'Scene 2 \u00B7 Compare two samples','',34);
+  panel(c,56,'A',S.A);
+  panel(c,490,'B',S.B);
+}
+function panel(c,x0,which,key){
+  const s=find(key), I=info(s);
+  const w=414, y0=64, h=470;
+  c.save();
+  c.shadowColor='rgba(15,37,64,0.15)'; c.shadowBlur=22; c.shadowOffsetY=8;
+  const pg=c.createLinearGradient(0,y0,0,y0+h);
+  pg.addColorStop(0,'#FFFFFF'); pg.addColorStop(1,'#F7FAFD');
+  c.fillStyle=pg;
+  c.beginPath(); c.roundRect(x0,y0,w,h,16); c.fill();
+  noGlow(c);
+  c.strokeStyle='#D9E5F0'; c.lineWidth=1.6;
+  c.beginPath(); c.roundRect(x0,y0,w,h,16); c.stroke();
+  c.restore();
+
+  /* header band — rounded top only, the flat-bottom trick the skeleton uses */
+  c.save();
+  c.beginPath(); c.roundRect(x0,y0,w,h,16); c.clip();
+  const hg=c.createLinearGradient(x0,0,x0+w,0);
+  hg.addColorStop(0,'#E3F2FC'); hg.addColorStop(1,'#EAF6FB');
+  c.fillStyle=hg; c.fillRect(x0,y0,w,34);
+  c.fillStyle='#0EA5E9'; c.fillRect(x0,y0,4,34);
+  c.restore();
+  c.save();
+  c.strokeStyle='#D9E5F0'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(x0,y0+34); c.lineTo(x0+w,y0+34); c.stroke();
+  c.fillStyle='#0A5378'; c.font='bold 12px "Segoe UI",sans-serif';
+  c.textAlign='left'; c.textBaseline='middle';
+  c.fillText('SAMPLE '+which,x0+16,y0+17);
+  c.restore();
+
+  c.save(); c.textAlign='center'; c.textBaseline='middle';
+  c.fillStyle='#0F2540'; c.font='bold 26px "Segoe UI",sans-serif';
+  c.fillText(s.di,x0+w/2,y0+68);
+  c.fillStyle='#3A4A5F'; c.font='bold 13.5px "Segoe UI",sans-serif';
+  c.fillText(s.name,x0+w/2,y0+96);
+  c.fillStyle='#95A7BA'; c.font='12px "Segoe UI",sans-serif';
+  c.fillText(s.tag,x0+w/2,y0+117);
+  c.restore();
+
+  pill(c,'M\u1D63 = '+num(I.mr)+' g / mol',x0+w/2,y0+148,'#0A5378','#E7F3FB',13,1,'#0EA5E9');
+
+  const col=[x0+34,x0+136,x0+232];
+  const rAl=x0+w-18;
+  c.save();
+  c.fillStyle='#7A8DA3'; c.font='bold 10.5px "Segoe UI",sans-serif'; c.textBaseline='middle';
+  c.textAlign='left';
+  c.fillText('element',col[0]+18,y0+180); c.fillText('atoms',col[1],y0+180); c.fillText('mass',col[2],y0+180);
+  c.textAlign='right'; c.fillText('mass %',rAl,y0+180);
+  c.strokeStyle='#EDF3F9'; c.lineWidth=1;
+  c.beginPath(); c.moveTo(x0+14,y0+194); c.lineTo(x0+w-14,y0+194); c.stroke();
+  c.restore();
+
+  I.present.forEach((e,i)=>{
+    const ry=y0+218+i*34;
+    eball(c,col[0],ry,9,e,e,1);
+    c.save(); c.textBaseline='middle';
+    c.fillStyle='#0F2540'; c.font='bold 14px "Segoe UI",sans-serif'; c.textAlign='left';
+    c.fillText(e,col[0]+18,ry);
+    c.fillStyle='#3A4A5F'; c.font='13.5px "Segoe UI",sans-serif';
+    c.fillText(String(s.e[e]),col[1],ry);
+    c.fillText(num(I.m[e])+' g',col[2],ry);
+    c.fillStyle='#0F2540'; c.font='bold 15px "Segoe UI",sans-serif'; c.textAlign='right';
+    c.fillText(pct(I.pc[e])+' %',rAl,ry);
+    c.restore();
+  });
+
+  /* stacked bar. The y is FIXED at a three-row height rather than derived from
+     I.present.length: a two-element sample (water) used to pull its bar 34 px up, so
+     comparing water against glucose put the two bars on different baselines and silently
+     destroyed the only thing this tab exists to do. */
+  const bx0=x0+18, bw=w-36, byy=y0+218+3*34+14, bh=48;
+  c.save();
+  c.shadowColor='rgba(15,37,64,0.18)'; c.shadowBlur=16; c.shadowOffsetY=6;
+  c.beginPath(); c.roundRect(bx0,byy,bw,bh,10); c.clip();
+  let xx=bx0;
+  I.present.forEach(e=>{
+    const bwid=I.pc[e]/100*bw;
+    if(bwid<=0.5) return;
+    const d=EC[e];
+    const g=c.createLinearGradient(0,byy,0,byy+bh);
+    g.addColorStop(0,d.col); g.addColorStop(0.30,d.dark); g.addColorStop(1,shadeHex(d.dark,-0.18));
+    c.fillStyle=g; c.fillRect(xx,byy,bwid,bh);
+    c.fillStyle=hexA(d.glow,0.85); c.fillRect(xx,byy,2.6,bh);
+    xx+=bwid;
+  });
+  const gl=c.createLinearGradient(0,byy,0,byy+bh*0.55);
+  gl.addColorStop(0,'rgba(255,255,255,0.38)'); gl.addColorStop(1,'rgba(255,255,255,0)');
+  c.fillStyle=gl; c.fillRect(bx0,byy,bw,bh*0.55);
+  c.restore();
+  c.save();
+  c.beginPath(); c.roundRect(bx0,byy,bw,bh,10); c.strokeStyle='#D9E5F0'; c.lineWidth=1.4; c.stroke();
+  let xa=bx0;
+  I.present.forEach(e=>{
+    const bwid=I.pc[e]/100*bw, lab=e+'  '+pct(I.pc[e])+' %';
+    if(bwid>=72){
+      c.fillStyle='#FFFFFF'; c.font='bold 12.5px "Segoe UI",sans-serif';
+      c.textAlign='center'; c.textBaseline='middle';
+      glow(c,'#0F2540',5,1,0.45);
+      c.fillText(lab,xa+bwid/2,byy+bh/2);
+      noGlow(c);
+    }else{
+      /* same clamp as the readout bar — the tick marks the segment, the text is kept inside */
+      const lt=e+'  '+pct(I.pc[e])+' %';
+      c.fillStyle=EC[e].dark; c.font='bold 11.5px "Segoe UI",sans-serif';
+      const lw=c.measureText(lt).width;
+      const mx=clamp(xa+bwid/2, bx0+lw/2+4, bx0+bw-lw/2-4);
+      c.strokeStyle=EC[e].dark; c.lineWidth=1.4;
+      c.beginPath(); c.moveTo(xa+bwid/2,byy+bh); c.lineTo(xa+bwid/2,byy+bh+6); c.stroke();
+      c.textAlign='center'; c.textBaseline='top';
+      c.fillText(lt,mx,byy+bh+8);
+    }
+    xa+=bwid;
+  });
+  c.restore();
+
+  const ty=byy+bh+58;
+  c.save();
+  c.fillStyle='#F1F6FA'; c.strokeStyle='#E4EDF5'; c.lineWidth=1;
+  c.beginPath(); c.roundRect(x0+18,ty-18,w-36,38,10); c.fill(); c.stroke();
+  c.fillStyle='#0F2540'; c.font='bold 13px "Segoe UI",sans-serif';
+  c.textAlign='left'; c.textBaseline='middle';
+  c.fillText('total mass in 1 mol',x0+32,ty+1);
+  c.textAlign='right';
+  c.fillText(num(I.mr)+' g',x0+w-32,ty+1);
+  c.restore();
+}
+
+/* ================= dispatch ================= */
+function draw(){
+  backdrop();
+  if(S.view===0) sceneBurn(); else sceneCompare();
+}
+
+/* ================= captions ================= */
+function capBurn(){
+  const s=find(S.one), I=info(s);
+  const mH=(I.mH2O*2/18), mC=(I.mCO2*12/44);
+  const C=[
+   '<b>Step 1 &middot; Weigh.</b> Exactly <b>1 mol</b> of '+s.di+' goes into the boat \u2014 that is its <b>M\u1D63 in grams</b>. Working per mole keeps every number clean and it is the same basis the mass-percentage formula uses.',
+   '<b>Step 2 &middot; Into the furnace.</b> The boat slides into the combustion tube at about <b>900 \u00B0C</b>. A stream of <b>oxygen</b> sweeps through, so the sample burns away completely.',
+   '<b>Step 3 &middot; Burn.</b> Burning pulls the molecule apart. Every <b>C</b> leaves as <b>CO\u2082</b>; every two <b>H</b> leave as one <b>H\u2082O</b>. Counting atoms: 1 mol of '+s.di+' gives <b>'+num(I.nCO2)+' mol CO\u2082</b> and <b>'+num(I.nH2O)+' mol H\u2082O</b>.',
+   '<b>Step 4 &middot; Trap the water.</b> The gas stream passes through a tube of drying agent that holds on to <b>every H\u2082O</b>. It gained <b>'+num(I.mH2O)+' g</b> \u2014 and 2/18 of the mass of water is hydrogen, so <b>m(H) = '+num(I.mH2O)+' \u00D7 2/18 = '+num(mH)+' g</b>.',
+   '<b>Step 5 &middot; Trap the carbon dioxide.</b> A second tube, packed with alkali, absorbs <b>every CO\u2082</b>. It gained <b>'+num(I.mCO2)+' g</b> \u2014 and 12/44 of the mass of carbon dioxide is carbon, so <b>m(C) = '+num(I.mCO2)+' \u00D7 12/44 = '+num(mC)+' g</b>.',
+   '<b>Step 6 &middot; Readout.</b> Both traps were weighed empty first, so the gain in mass is the mass of gas captured. <b>Mass percentage = mass of that element in 1 mol \u00F7 M\u1D63 \u00D7 100.</b> Here: <b>'+num(I.m.C)+' / '+num(I.mr)+' = '+pct(I.pc.C)+' %</b> carbon, <b>'+num(I.m.H)+' / '+num(I.mr)+' = '+pct(I.pc.H)+' %</b> hydrogen, <b>'+num(I.m.O)+' / '+num(I.mr)+' = '+pct(I.pc.O)+' %</b> oxygen.'
+  ];
+  return C[clamp(S.step,0,5)];
+}
+const CAP_COMPARE='<b>Mass percentage = (mass of that element in 1 mol \u00F7 M\u1D63) \u00D7 100.</b> Pick any two samples and compare their bars and numbers. Water and hydrogen peroxide cannot be burnt \u2014 they are already fully oxidised \u2014 so they are read straight off their formula here.';
+
+/* ================= UI ================= */
+const _cap=document.getElementById('cap');
+function syncCap(){ _cap.innerHTML = (S.view===0)? capBurn() : CAP_COMPARE; }
+function syncPlay(){ document.getElementById('playBtn').innerHTML = S.play? '&#10074;&#10074; Pause' : '&#9654; Play'; }
+
+function setView(v){
+  S.view=v;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===v));
+  document.getElementById('bar1').style.display=(v===0)?'flex':'none';
+  document.getElementById('barA').style.display=(v===1)?'flex':'none';
+  document.getElementById('barB').style.display=(v===1)?'flex':'none';
+  document.getElementById('playBtn').style.display=(v===0)?'inline-block':'none';
+  document.getElementById('stepBtn').style.display=(v===0)?'inline-block':'none';
+  syncCap();
+}
+function resetRun(){ S.step=0; S.stepT=0; S.play=false; syncPlay(); syncCap(); }
+function nextStep(){ if(S.step<DUR.length-1){ S.step++; S.stepT=0; } else { S.stepT=DUR[S.step]; } syncCap(); }
+function advance(dt){
+  if(!S.play) return;
+  S.stepT+=dt;
+  if(S.stepT>=DUR[S.step]){
+    if(S.step<DUR.length-1){ S.step++; S.stepT=0; syncCap(); }
+    else { S.stepT=DUR[S.step]; S.play=false; syncPlay(); }
+  }
+}
+
+/* pickbars */
+function buildBar(el,keys,get,set,after){
+  el.querySelectorAll('.pick').forEach(b=>b.remove());
+  keys.forEach(k=>{
+    const s=find(k);
+    const b=document.createElement('button');
+    b.className='pick'+(k===get()?' active':'');
+    b.textContent=s.di;
+    b.title=s.name+' \u2014 '+s.tag;
+    b.dataset.k=k;
+    b.onclick=()=>{
+      set(k);
+      el.querySelectorAll('.pick').forEach(x=>x.classList.toggle('active',x.dataset.k===k));
+      if(after) after();
+    };
+    el.appendChild(b);
+  });
+}
+buildBar(document.getElementById('bar1'),COMBUST.map(s=>s.k),()=>S.one,k=>{S.one=k;},resetRun);
+buildBar(document.getElementById('barA'),SAMPLES.map(s=>s.k),()=>S.A,k=>{S.A=k;});
+buildBar(document.getElementById('barB'),SAMPLES.map(s=>s.k),()=>S.B,k=>{S.B=k;});
+
+document.getElementById('tab0').onclick=()=>setView(0);
+document.getElementById('tab1').onclick=()=>setView(1);
+document.getElementById('playBtn').onclick=()=>{
+  if(S.step>=DUR.length-1&&S.stepT>=DUR[S.step]) resetRun();
+  S.play=!S.play; syncPlay();
+};
+document.getElementById('stepBtn').onclick=()=>{ S.play=false; syncPlay(); nextStep(); };
+document.getElementById('resetBtn').onclick=resetRun;
+
+const toLogical=e=>{ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left)*W/r.width, y:(e.clientY-r.top)*H/r.height}; };
+cv.addEventListener('pointerdown',e=>{
+  if(S.view!==0) return;
+  toLogical(e); S.play=false; syncPlay(); nextStep();
+});
+
+/* ================= loop ================= */
+function loop(){
+  const dt=1/60; T+=dt; advance(dt); draw();
+  requestAnimationFrame(loop);
+}
+fitCanvas(); setView(0); syncPlay(); syncCap();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

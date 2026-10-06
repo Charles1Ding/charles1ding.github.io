@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conductivity: Ionic vs Metallic</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    background: #EAF1F5;
+    color: #1F3744;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 12px 28px;
+  }
+  h1 { font-size: 22px; color: #0A455D; letter-spacing: .3px; }
+  .sub { color: #5B7684; font-size: 13px; margin-top: 4px; margin-bottom: 12px; text-align:center; }
+  .stage {
+    background: #fff; border: 1px solid #C5D2DE; border-radius: 14px;
+    box-shadow: 0 6px 22px rgba(10,69,93,.10); padding: 8px;
+  }
+  canvas { display: block; border-radius: 10px; background: #FAFCFE; width: 1000px; max-width: 98vw; height: auto; }
+  .controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
+  .btn { border: 1px solid #0A455D; background: #0A455D; color: #fff; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; transition: .15s; }
+  .btn.ghost { background: #fff; color: #0A455D; }
+  .btn.on { background: #C0560F; border-color: #C0560F; }
+  .btn:hover { opacity: .9; }
+  .slider-wrap { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5B7684; }
+  .speed { display: flex; gap: 4px; }
+  .speed button { border: 1px solid #9FB9C6; background: #fff; color: #0A455D; border-radius: 6px; padding: 5px 11px; font-size: 12px; cursor: pointer; }
+  .speed button.active { background: #4699AA; color: #fff; border-color: #4699AA; }
+  .subsel { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:10px; }
+  .subbtn { border:1px solid #4699AA; background:#fff; color:#0A455D; padding:5px 13px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:.15s; }
+  .subbtn:hover { background:#E3F0F4; }
+  .subbtn.active { background:#4699AA; color:#fff; border-color:#4699AA; }
+  .explain { width: 1000px; max-width: 98vw; margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .card { display: flex; flex-direction: column; gap: 10px; }
+  .desc { background: #fff; border: 1px solid #C5D2DE; border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.6; color: #33485A; min-height: 118px; }
+  .desc b { color: #0A455D; }
+  .key { border-radius: 12px; padding: 14px 16px; font-size: 13px; line-height: 1.55; color: #fff; }
+  .key.ionic { background: linear-gradient(135deg,#0A455D,#1769AA); }
+  .key.metal { background: linear-gradient(135deg,#7A3B12,#C0560F); }
+  .key h3 { font-size: 14px; margin-bottom: 6px; letter-spacing:.4px; }
+  .key .em { font-style: italic; opacity: .96; }
+  .status { display:inline-block; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700; margin-left:6px; }
+  .status.on { background:#2E9E6B; color:#fff; }
+  .status.off { background:#9AA7B2; color:#fff; }
+  @media (max-width: 760px){ .explain{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+  <h1>Electrical Conductivity &mdash; Ionic vs Metallic</h1>
+  <div class="sub">Two side-by-side mechanisms. Apply a voltage and watch <b>which charged particles can move</b> &mdash; that is what decides whether a substance conducts.</div>
+
+  <div class="subsel" id="subsel">
+    <span style="font-size:12px;color:#5B7684;align-self:center;margin-right:4px;">Ionic sample:</span>
+    <button class="subbtn active" data-ion="solid">Solid</button>
+    <button class="subbtn" data-ion="molten">Molten</button>
+    <button class="subbtn" data-ion="aq">Aqueous (dissolved)</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="cv" width="1000" height="600"></canvas>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="btnVolt">⚡ Apply Voltage</button>
+    <button class="btn ghost" id="btnPlay">⏸ Pause</button>
+    <button class="btn ghost" id="btnReset">⟲ Reset</button>
+    <div class="speed">
+      <button data-spd="0.5">0.5×</button>
+      <button data-spd="1" class="active">1×</button>
+      <button data-spd="2">2×</button>
+      <button data-spd="4">4×</button>
+    </div>
+  </div>
+
+  <div class="explain">
+    <div class="card">
+      <div class="desc" id="dIonic"></div>
+      <div class="key ionic" id="kIonic"></div>
+    </div>
+    <div class="card">
+      <div class="desc" id="dMetal"></div>
+      <div class="key metal" id="kMetal"></div>
+    </div>
+  </div>
+
+<script>
+const cv = document.getElementById('cv');
+const c  = cv.getContext('2d');
+const W = 1000, H = 600;
+const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+cv.width = W*dpr; cv.height = H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+c.scale(dpr,dpr);
+
+const TEAL='#0A455D', TEAL2='#1769AA', ELEC='#2E7DD1', GREY='#6B7785';
+const CAT='#2E7DD1';      // cation (+)  -> blue
+const AN ='#E2483B';      // anion (-)   -> red
+const EG ='#2E9E6B';      // delocalised electron -> green
+const ORANGE='#C0560F';
+
+const S = { ionicState:'solid', voltage:false, playing:true, speed:1, t:0 };
+
+const PX_L = 20, PX_R = 520;   // left x of each panel
+
+// ---------------------------------------------------------------- helpers
+const SC = 1.3; // particle model scale factor (x1.3 = +30% larger)
+function clear(){ c.clearRect(0,0,W,H); }
+function rr(x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+function nucleus(cx,cy,r,fill,labelTxt,charge){
+  r*=SC;
+  c.save();
+  const g=c.createRadialGradient(cx,cy,r*0.3,cx,cy,r*1.9);
+  g.addColorStop(0,fill); g.addColorStop(1,'rgba(0,0,0,0)');
+  c.fillStyle=g; c.beginPath(); c.arc(cx,cy,r*1.9,0,7); c.fill();
+  c.fillStyle=fill; c.beginPath(); c.arc(cx,cy,r,0,7); c.fill();
+  c.fillStyle='#fff'; c.font='bold 16px Segoe UI'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(labelTxt,cx,cy);
+  if(charge){
+    c.font='bold 13px Segoe UI'; c.textAlign='left';
+    c.fillText(charge, cx+r*0.7, cy-r*0.7);
+  }
+  c.restore();
+}
+function elecDot(cx,cy,r,color){
+  r*=SC;
+  const g=c.createRadialGradient(cx-1.5,cy-1.5,0.5,cx,cy,r);
+  g.addColorStop(0,'#bfe0ff'); g.addColorStop(1,color);
+  c.fillStyle=g; c.beginPath(); c.arc(cx,cy,r,0,7); c.fill();
+  c.strokeStyle='#1c5fa6'; c.lineWidth=.6; c.stroke();
+}
+function arrow(x1,y1,x2,y2,col,w,head){
+  c.strokeStyle=col; c.fillStyle=col; c.lineWidth=w||2;
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  const ang=Math.atan2(y2-y1,x2-x1), h=head||7;
+  c.beginPath();
+  c.moveTo(x2,y2);
+  c.lineTo(x2-h*Math.cos(ang-0.4), y2-h*Math.sin(ang-0.4));
+  c.lineTo(x2-h*Math.cos(ang+0.4), y2-h*Math.sin(ang+0.4));
+  c.closePath(); c.fill();
+}
+function label(txt,x,y,col,size,align){
+  c.fillStyle=col||'#33485A'; c.font='bold '+(size||12)+'px Segoe UI';
+  c.textAlign=align||'center'; c.textBaseline='middle';
+  c.fillText(txt,x,y);
+}
+// a compact single ion (filled disc + sign)
+function ionDot(x,y,type){
+  const r = 12;
+  const col = type==='cat'?CAT:AN;
+  c.save();
+  const g=c.createRadialGradient(x-3,y-3,1,x,y,r*1.7);
+  g.addColorStop(0, type==='cat'?'#9cc6f0':'#f2a79c');
+  g.addColorStop(1,col);
+  c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  c.fillStyle='#fff'; c.font='bold 15px Segoe UI'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(type==='cat'?'+':'−', x, y+0.5);
+  c.restore();
+}
+
+// ---------------------------------------------------------------- panel geometry
+function panelGeom(px){
+  return {
+    xL: px+78, xR: px+382, yT:185, yB:455,
+    xEL: px+60, xER: px+400, yTop:170, yBot:470,
+    batX: px+230, batY:108, bulbX: px+338, wireY:150, cx: px+230
+  };
+}
+
+// ---------------------------------------------------------------- IONIC carriers
+let ionicIons = [];
+function initIonic(){
+  ionicIons = [];
+  const g = panelGeom(PX_L);
+  const cols=4, rows=5;
+  const dx=(g.xR-g.xL)/(cols+1), dy=(g.yB-g.yT)/(rows+1);
+  const list=[];
+  for(let r=0;r<rows;r++) for(let col=0;col<cols;col++){
+    const hx=g.xL+dx*(col+1), hy=g.yT+dy*(r+1);
+    list.push({ hx,hy, x:hx, y:hy, type:((r+col)%2? 'an':'cat'), ph:Math.random()*6 });
+  }
+  if(S.ionicState==='solid'){
+    list.forEach(o=>{ o.x=o.hx; o.y=o.hy; });
+  } else {
+    // molten / aqueous: random positions + velocity vectors for free movement
+    list.forEach(o=>{
+      o.x = g.xL+18+Math.random()*(g.xR-g.xL-36);
+      o.y = g.yT+18+Math.random()*(g.yB-g.yT-36);
+      // initial velocity: random direction, moderate speed
+      const spd = 0.8 + Math.random()*1.4;
+      const ang = Math.random()*Math.PI*2;
+      o.vx = Math.cos(ang)*spd;
+      o.vy = Math.sin(ang)*spd;
+    });
+  }
+  ionicIons = list;
+}
+function updateIonic(){
+  const g = panelGeom(PX_L);
+  const conducts = S.voltage && S.ionicState!=='solid';
+  ionicIons.forEach(io=>{
+    if(S.ionicState==='solid'){
+      // LOCKED in lattice: only thermal vibration, never translates
+      io.x = io.hx + Math.sin(S.t*1.6+io.ph)*2.2;
+      io.y = io.hy + Math.cos(S.t*1.3+io.ph)*2.2;
+    } else {
+      // ---- free movement (molten / aqueous) ----
+      // 1) voltage drift: cations drift toward (-) cathode, anions toward (+) anode
+      if(conducts){
+        io.vx += (io.type==='cat' ? -0.12 : 0.12) * S.speed;
+      }
+      // 2) Brownian random kick (thermal motion)
+      io.vx += (Math.random()-0.5)*0.4*S.speed;
+      io.vy += (Math.random()-0.5)*0.4*S.speed;
+      // 3) speed cap: keep ions moving at visible but not crazy speeds
+      const maxSpd = 3.8;
+      const spd = Math.hypot(io.vx, io.vy);
+      if(spd > maxSpd){ io.vx *= maxSpd/spd; io.vy *= maxSpd/spd; }
+      // 4) light damping so they don't accelerate forever
+      io.vx *= 0.97; io.vy *= 0.97;
+      // 5) integrate position
+      io.x += io.vx * S.speed;
+      io.y += io.vy * S.speed;
+      // 6) bounce off walls (elastic)
+      const margin=12;
+      if(io.x < g.xL+margin){ io.x=g.xL+margin; io.vx=Math.abs(io.vx); }
+      if(io.x > g.xR-margin){ io.x=g.xR-margin; io.vx=-Math.abs(io.vx); }
+      if(io.y < g.yT+margin){ io.y=g.yT+margin; io.vy=Math.abs(io.vy); }
+      if(io.y > g.yB-margin){ io.y=g.yB-margin; io.vy=-Math.abs(io.vy); }
+    }
+  });
+}
+
+// ---------------------------------------------------------------- METAL carriers
+let metalIons = [], metalElectrons = [];
+function initMetalNew(){
+  metalIons = []; metalElectrons = [];
+  const g = panelGeom(PX_R);
+  const cols=4, rows=5;
+  const dx=(g.xR-g.xL)/(cols+1), dy=(g.yB-g.yT)/(rows+1);
+  for(let r=0;r<rows;r++) for(let col=0;col<cols;col++){
+    const hx=g.xL+dx*(col+1), hy=g.yT+dy*(r+1);
+    metalIons.push({ hx,hy, x:hx, y:hy, ph:Math.random()*6 });
+  }
+  // delocalised electrons: ~1.3 per ion, seeded near a random ion
+  const total = Math.round(metalIons.length*1.3);
+  for(let i=0;i<total;i++){
+    const io = metalIons[i % metalIons.length];
+    const hx = io.hx + (Math.random()-0.5)*26;
+    const hy = io.hy + (Math.random()-0.5)*26;
+    metalElectrons.push({ hx,hy, x:hx, y:hy, vx:0, vy:0, ph:Math.random()*6 });
+  }
+}
+function updateMetal(){
+  const g = panelGeom(PX_R);
+  metalIons.forEach(io=>{
+    io.x = io.hx + Math.sin(S.t*1.4+io.ph)*1.6;
+    io.y = io.hy + Math.cos(S.t*1.2+io.ph)*1.6;
+  });
+  metalElectrons.forEach(e=>{
+    if(S.voltage){
+      e.vx += 0.06 * S.speed;                 // drift toward + electrode (right)
+      e.vy += (e.hy - e.y)*0.004;
+    } else {
+      e.vx += (e.hx - e.x)*0.02;              // restoring to home (jiggle in place)
+      e.vy += (e.hy - e.y)*0.02;
+    }
+    e.vx += (Math.random()-0.5)*0.35;
+    e.vy += (Math.random()-0.5)*0.35;
+    e.vx *= 0.90; e.vy *= 0.90;
+    e.x += e.vx*S.speed; e.y += e.vy*S.speed;
+    if(S.voltage){
+      if(e.x > g.xR-10) e.x = g.xL+10;        // wrap -> continuous electron stream
+      if(e.x < g.xL+10) e.x = g.xL+10;
+    } else {
+      if(e.x < g.xL+10) e.x = g.xL+10;
+      if(e.x > g.xR-10) e.x = g.xR-10;
+    }
+    if(e.y < g.yT+10) e.y = g.yT+10;
+    if(e.y > g.yB-10) e.y = g.yB-10;
+  });
+}
+
+// ---------------------------------------------------------------- circuit drawing
+function drawBattery(g){
+  const x=g.batX, y=g.batY;
+  // long plate = +, short plate = -
+  c.fillStyle=TEAL;  rr(x-26,y-16,8,32,2); c.fill();   // + plate (long)
+  c.fillStyle=ORANGE; rr(x+6, y-10,8,20,2); c.fill();  // - plate (short)
+  label('+', x-22, y-26, TEAL, 16);
+  label('−', x+10, y-22, ORANGE, 16);
+}
+function drawWires(g, conducts){
+  const yT=g.wireY;
+  c.strokeStyle='#6B7785'; c.lineWidth=2.5;
+  // left wire: battery - term to left electrode
+  c.beginPath();
+  c.moveTo(g.batX-22, g.batY); c.lineTo(g.batX-22, yT); c.lineTo(g.xEL, yT); c.lineTo(g.xEL, g.yTop);
+  c.stroke();
+  // right wire: battery + term -> bulb -> right electrode
+  c.beginPath();
+  c.moveTo(g.batX+10, g.batY); c.lineTo(g.batX+10, yT); c.lineTo(g.bulbX, yT); c.lineTo(g.xER, yT); c.lineTo(g.xER, g.yTop);
+  c.stroke();
+  if(conducts){
+    // animated current highlight
+    c.save();
+    c.strokeStyle='rgba(240,200,40,.9)'; c.lineWidth=3; c.setLineDash([7,7]); c.lineDashOffset = -S.t*40;
+    c.beginPath();
+    c.moveTo(g.batX-22, g.batY); c.lineTo(g.batX-22, yT); c.lineTo(g.xEL, yT); c.lineTo(g.xEL, g.yTop);
+    c.stroke();
+    c.beginPath();
+    c.moveTo(g.batX+10, g.batY); c.lineTo(g.batX+10, yT); c.lineTo(g.bulbX, yT); c.lineTo(g.xER, yT); c.lineTo(g.xER, g.yTop);
+    c.stroke();
+    c.restore();
+  }
+}
+function drawBulb(g, on){
+  const x=g.bulbX, y=g.wireY;
+  c.save();
+  if(on){
+    const gl=c.createRadialGradient(x,y,2,x,y,30);
+    gl.addColorStop(0,'rgba(255,230,90,.95)'); gl.addColorStop(1,'rgba(255,230,90,0)');
+    c.fillStyle=gl; c.beginPath(); c.arc(x,y,30,0,7); c.fill();
+  }
+  c.beginPath(); c.arc(x,y,13,0,7);
+  c.fillStyle = on ? '#FFF3B0' : '#E8EDF1'; c.fill();
+  c.strokeStyle='#9FB9C6'; c.lineWidth=1.5; c.stroke();
+  // filament
+  c.strokeStyle = on ? '#E0A100' : '#B9C4CD'; c.lineWidth=1.6;
+  c.beginPath(); c.moveTo(x-6,y); c.lineTo(x-3,y-4); c.lineTo(x,y); c.lineTo(x+3,y+4); c.lineTo(x+6,y); c.stroke();
+  c.restore();
+}
+function drawElectrodes(g){
+  [ [g.xEL,'−','cathode (negative)'], [g.xER,'+','anode (positive)'] ].forEach(([x,sign,name])=>{
+    c.fillStyle='#9FB9C6'; rr(x-7, g.yTop, 14, g.yBot-g.yTop, 4); c.fill();
+    c.strokeStyle='#7E93A2'; c.lineWidth=1; rr(x-7, g.yTop, 14, g.yBot-g.yTop, 4); c.stroke();
+    label(sign, x, g.yTop-16, '#33485A', 22);
+    label(name, x, g.yBot+18, '#5B7684', 11);
+  });
+}
+
+// ---------------------------------------------------------------- draw panels
+function drawIonicPanel(){
+  const g = panelGeom(PX_L);
+  const conducts = S.voltage && S.ionicState!=='solid';
+
+  // ---- sample background ----
+  c.save();
+  if(S.ionicState==='solid'){ rr(g.xL-14,g.yT-14,(g.xR-g.xL)+28,(g.yB-g.yT)+28,16); c.fillStyle='#EEF1F4'; c.fill(); c.strokeStyle='#C5D2DE'; c.lineWidth=1.5; c.stroke(); }
+  else if(S.ionicState==='molten'){ rr(g.xL-14,g.yT-14,(g.xR-g.xL)+28,(g.yB-g.yT)+28,16); c.fillStyle='#FBE9DC'; c.fill(); c.strokeStyle='#E9C3A8'; c.lineWidth=1.5; c.stroke(); }
+  else { rr(g.xL-14,g.yT-14,(g.xR-g.xL)+28,(g.yB-g.yT)+28,16); c.fillStyle='#E3EEF6'; c.fill(); c.strokeStyle='#B9CFE0'; c.lineWidth=1.5; c.stroke();
+    // faint water dots
+    c.fillStyle='rgba(70,153,170,.25)';
+    for(let i=0;i<26;i++){ const wx=g.xL+10+((i*53)% (g.xR-g.xL-20)); const wy=g.yT+10+((i*97)%(g.yB-g.yT-20)); c.beginPath(); c.arc(wx,wy,2,0,7); c.fill(); }
+  }
+  c.restore();
+
+  // ---- lattice grid (solid only) ----
+  if(S.ionicState==='solid'){
+    c.strokeStyle='rgba(10,69,93,.10)'; c.lineWidth=1;
+    ionicIons.forEach(a=>{ ionicIons.forEach(b=>{ if(a!==b){ c.beginPath(); c.moveTo(a.hx,a.hy); c.lineTo(b.hx,b.hy); c.stroke(); } }); });
+  }
+
+  drawElectrodes(g);
+
+  // ---- ions ----
+  ionicIons.forEach(io=> ionDot(io.x, io.y, io.type));
+
+  // ---- drift arrows + carrier labels (only when conducting) ----
+  if(conducts){
+    arrow(g.xL+46, g.yT+58, g.xL+12, g.yT+58, CAT, 2.6, 9);
+    label('Na⁺', g.xL+58, g.yT+44, CAT, 12, 'left');
+    arrow(g.xR-46, g.yB-58, g.xR-12, g.yB-58, AN, 2.6, 9);
+    label('Cl⁻', g.xR-58, g.yB-44, AN, 12, 'right');
+  } else {
+    // identify one ion of each type
+    const cat = ionicIons.find(o=>o.type==='cat'), an = ionicIons.find(o=>o.type==='an');
+    if(cat) label('Na⁺', cat.x, cat.y-22, CAT, 11, 'center');
+    if(an)  label('Cl⁻', an.x, an.y-22, AN, 11, 'center');
+  }
+
+  drawBattery(g);
+  drawWires(g, conducts);
+  drawBulb(g, conducts);
+
+  label('IONIC COMPOUND', g.cx, 36, TEAL, 16);
+  label('(' + (S.ionicState==='solid'?'solid lattice':S.ionicState==='molten'?'molten (melted)':'aqueous (dissolved)') + ')', g.cx, 56, '#5B7684', 12);
+}
+
+function drawMetalPanel(){
+  const g = panelGeom(PX_R);
+  const conducts = S.voltage;
+
+  // ---- sample background ----
+  c.save();
+  rr(g.xL-14,g.yT-14,(g.xR-g.xL)+28,(g.yB-g.yT)+28,16);
+  c.fillStyle='#F3EFEA'; c.fill(); c.strokeStyle='#E2D6C8'; c.lineWidth=1.5; c.stroke();
+  c.restore();
+
+  drawElectrodes(g);
+
+  // ---- metal ions (fixed, + charged) ----
+  metalIons.forEach(io=> ionDot(io.x, io.y, 'cat'));
+
+  // ---- delocalised electrons (green) ----
+  metalElectrons.forEach(e=> elecDot(e.x, e.y, 5.4, EG));
+
+  // ---- drift arrow for electrons ----
+  if(conducts){
+    arrow(g.cx-44, g.yT+54, g.cx+12, g.yT+54, EG, 2.6, 9);
+    label('e⁻ (delocalised)', g.cx-30, g.yT+40, EG, 12, 'center');
+  } else {
+    const e0 = metalElectrons[0];
+    if(e0) label('e⁻', e0.x, e0.y-18, EG, 11, 'center');
+  }
+
+  drawBattery(g);
+  drawWires(g, conducts);
+  drawBulb(g, conducts);
+
+  label('METAL', g.cx, 36, ORANGE, 16);
+  label('(solid lattice + “sea” of electrons)', g.cx, 56, '#5B7684', 12);
+}
+
+function draw(){
+  clear();
+  drawIonicPanel();
+  drawMetalPanel();
+  // vertical divider between the two panels
+  c.strokeStyle='#C5D2DE'; c.lineWidth=1.5; c.setLineDash([4,4]);
+  c.beginPath(); c.moveTo(500, 30); c.lineTo(500, 560); c.stroke(); c.setLineDash([]);
+  updatePanel();
+}
+
+// ---------------------------------------------------------------- explanation panel
+function updatePanel(){
+  const ionicConducts = S.voltage && S.ionicState!=='solid';
+  const metalConducts = S.voltage;
+
+  let di, ki;
+  if(S.ionicState==='solid'){
+    di = S.voltage
+      ? 'Battery is applied, but the <b>ions are LOCKED in the crystal lattice</b> &mdash; they can only vibrate, never travel to the electrodes. <b>No charge is carried, so the bulb stays OFF.</b> A solid ionic compound does <b>not</b> conduct electricity.'
+      : 'Ions sit in fixed lattice positions. Even with mobile charge carriers present, there is <b>no voltage</b>, so nothing drifts. <b>No current.</b>';
+    ki = { h:'Why ionic solids don’t conduct', body:'Conduction needs <span class="em">mobile charged particles</span>. In ionic compounds those are the <b>ions</b> &mdash; but in a solid they are trapped in the lattice. Only when <b>molten or dissolved</b> can the ions move, so only then do ionic compounds conduct.' };
+  } else {
+    di = S.voltage
+      ? 'Voltage applied &rarr; the free ions drift: <b>Na⁺ &rarr; (−) cathode</b>, <b>Cl⁻ &rarr; (+) anode</b>. These <b>moving charged particles carry charge</b> &rarr; current flows and the <b>bulb lights up</b>. This is exactly why molten / dissolved ionic compounds conduct.'
+      : 'The ions are free to move (molten / dissolved), but with <b>no voltage</b> there is no net drift &rarr; no current yet. Apply a voltage to see them stream toward the electrodes.';
+    ki = { h:'Why molten / aqueous ionic compounds conduct', body:'When melted or dissolved the <b>ions become mobile</b>. A voltage makes them flow toward the oppositely-charged electrodes &mdash; <span class="em">mobile charged particles</span> = electric current.' };
+  }
+  const dm = S.voltage
+    ? 'Voltage applied &rarr; the <b>delocalised (negative) electrons</b> of the “sea” drift toward the <b>(+) electrode</b>. These <b>free-moving charged particles</b> carry charge &rarr; current flows and the <b>bulb lights up</b>. Metals conduct even as a solid.'
+    : 'The delocalised electrons are free, but with <b>no voltage</b> they only jiggle randomly &rarr; no net flow, no current. Apply a voltage to set them drifting.';
+  const km = { h:'Why metals conduct', body:'Conduction needs <span class="em">mobile charged particles</span>. In metals those are the <b>delocalised electrons</b> of the “sea” &mdash; free to flow even in the solid state. (The positive metal ions stay fixed; only the electrons move.)' };
+
+  const stI = '<span class="status '+(ionicConducts?'on':'off')+'">'+(ionicConducts?'CONDUCTS':'NO CURRENT')+'</span>';
+  const stM = '<span class="status '+(metalConducts?'on':'off')+'">'+(metalConducts?'CONDUCTS':'NO CURRENT')+'</span>';
+
+  document.getElementById('dIonic').innerHTML = '<b>IONIC'+(S.ionicState==='solid'?' (solid)':S.ionicState==='molten'?' (molten)':' (aqueous)')+'</b>'+stI+'<br><br>'+di;
+  document.getElementById('kIonic').className = 'key ionic';
+  document.getElementById('kIonic').innerHTML = '<h3>'+ki.h+'</h3>'+ki.body;
+
+  document.getElementById('dMetal').innerHTML = '<b>METAL</b>'+stM+'<br><br>'+dm;
+  document.getElementById('kMetal').className = 'key metal';
+  document.getElementById('kMetal').innerHTML = '<h3>'+km.h+'</h3>'+km.body;
+}
+
+// ---------------------------------------------------------------- loop & UI
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05,(now-last)/1000); last=now;
+  S.t += dt;
+  if(S.playing){
+    updateIonic();
+    updateMetal();
+  }
+  try { draw(); }
+  catch(err){ console.error('draw() error (loop kept alive):', err); }
+  requestAnimationFrame(loop);
+}
+
+function resetAll(){
+  S.t = 0;
+  initIonic();
+  initMetalNew();
+}
+
+// ionic state sub-selector
+document.querySelectorAll('#subsel .subbtn').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#subsel .subbtn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    S.ionicState = b.dataset.ion;
+    initIonic();
+  });
+});
+document.getElementById('btnVolt').addEventListener('click',()=>{
+  S.voltage = !S.voltage;
+  const b=document.getElementById('btnVolt');
+  b.textContent = S.voltage ? '⚡ Remove Voltage' : '⚡ Apply Voltage';
+  b.classList.toggle('on', S.voltage);
+});
+document.getElementById('btnPlay').addEventListener('click',()=>{
+  S.playing=!S.playing;
+  document.getElementById('btnPlay').textContent = S.playing?'⏸ Pause':'▶ Play';
+});
+document.getElementById('btnReset').addEventListener('click',()=>{
+  resetAll();
+  S.playing=true; document.getElementById('btnPlay').textContent='⏸ Pause';
+});
+document.querySelectorAll('.speed button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.speed button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); S.speed=parseFloat(b.dataset.spd);
+  });
+});
+
+initIonic();
+initMetalNew();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

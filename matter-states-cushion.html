@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>物质三态气垫坠落测试 - 微观/宏观双模式</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #1e293b;
+            color: #f0f9ff;
+            font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .canvas-container {
+            position: relative;
+            background: #334155;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            border: 2px solid #475569;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 3/4;
+            max-width: 350px;
+            margin: 0 auto;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
+        }
+        .btn-drop {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        .btn-drop:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 rgba(0,0,0,0.2);
+        }
+        .btn-drop:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .mode-toggle {
+            position: relative;
+            display: inline-flex;
+            background: #334155;
+            border-radius: 9999px;
+            padding: 3px;
+            border: 2px solid #475569;
+        }
+        .mode-option {
+            padding: 8px 20px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .mode-option.active {
+            background: #3b82f6;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+        .mode-option:not(.active) {
+            color: #94a3b8;
+        }
+        .mode-option:not(.active):hover {
+            color: #cbd5e1;
+        }
+        /* 按住式压缩按钮。touch-action:none 是必需的——没有它，触屏上按住不放
+           会被浏览器当成滚动或长按选择，pointerup 就收不到，气垫会永远卡在压扁
+           状态。user-select 同理，防止长按选中文字。 */
+        .btn-squeeze {
+            transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+            box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            cursor: pointer;
+        }
+        .btn-squeeze.is-squeezing {
+            transform: translateY(3px) scale(0.97);
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+            filter: brightness(1.3);
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div class="max-w-6xl w-full text-center mb-6">
+        <h1 class="text-3xl md:text-4xl font-black text-slate-100 mb-3">物质三态气垫坠落测试</h1>
+        <p class="text-slate-400 mb-5">固体无法压缩直接受伤，液体表面张力大也无法缓冲，唯气体可安全压缩<br><span class="text-slate-500 text-sm">按住下面的「压住气垫」，亲手验证三种物质的可压缩性</span></p>
+        <div class="mode-toggle">
+            <span id="micro-btn" class="mode-option active">微观模型</span>
+            <span id="macro-btn" class="mode-option">宏观模式</span>
+        </div>
+    </div>
+
+    <div class="max-w-6xl w-full">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            <!-- 固体 -->
+            <div class="flex flex-col items-center">
+                <h2 class="text-2xl font-bold mb-4 text-sky-400 flex items-center gap-3">
+                    <span class="flex h-4 w-4 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-4 w-4 bg-sky-500"></span>
+                    </span>
+                    固体气垫
+                </h2>
+                <div class="canvas-container p-3 w-full">
+                    <canvas id="solid-canvas" width="300" height="400"></canvas>
+                </div>
+                <button id="solid-btn" class="mt-4 btn-drop bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-6 rounded-full">跳！</button>
+                <div class="squeeze-wrap">
+                    <button id="solid-squeeze" class="mt-2 btn-squeeze bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-5 rounded-full text-sm">压住气垫</button>
+                    <p id="solid-vol" class="mt-2 text-xs font-bold text-slate-400">体积 100%</p>
+                </div>
+                <p id="solid-info" class="h-6 mt-2 text-sm font-bold text-sky-300"></p>
+            </div>
+
+            <!-- 液体 -->
+            <div class="flex flex-col items-center">
+                <h2 class="text-2xl font-bold mb-4 text-teal-400 flex items-center gap-3">
+                     <span class="flex h-4 w-4 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-4 w-4 bg-teal-500"></span>
+                    </span>
+                    液体气垫
+                </h2>
+                <div class="canvas-container p-3 w-full">
+                    <canvas id="liquid-canvas" width="300" height="400"></canvas>
+                </div>
+                <button id="liquid-btn" class="mt-4 btn-drop bg-teal-500 hover:bg-teal-400 text-white font-bold py-2 px-6 rounded-full">跳！</button>
+                <div class="squeeze-wrap">
+                    <button id="liquid-squeeze" class="mt-2 btn-squeeze bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-5 rounded-full text-sm">压住气垫</button>
+                    <p id="liquid-vol" class="mt-2 text-xs font-bold text-slate-400">体积 100%</p>
+                </div>
+                <p id="liquid-info" class="h-6 mt-2 text-sm font-bold text-teal-300"></p>
+            </div>
+
+            <!-- 气体 -->
+            <div class="flex flex-col items-center">
+                <h2 class="text-2xl font-bold mb-4 text-rose-400 flex items-center gap-3">
+                     <span class="flex h-4 w-4 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-4 w-4 bg-rose-500"></span>
+                    </span>
+                    气体气垫
+                </h2>
+                <div class="canvas-container p-3 w-full">
+                    <canvas id="gas-canvas" width="300" height="400"></canvas>
+                </div>
+                <button id="gas-btn" class="mt-4 btn-drop bg-rose-500 hover:bg-rose-400 text-white font-bold py-2 px-6 rounded-full">跳！</button>
+                <div class="squeeze-wrap">
+                    <button id="gas-squeeze" class="mt-2 btn-squeeze bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-5 rounded-full text-sm">压住气垫</button>
+                    <p id="gas-vol" class="mt-2 text-xs font-bold text-slate-400">体积 100%</p>
+                </div>
+                <p id="gas-info" class="h-6 mt-2 text-sm font-bold text-rose-300"></p>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局模式 ====================
+        let isMacroMode = false;
+        const sims = [];   // 三个 Simulation 实例
+        const microBtn = document.getElementById('micro-btn');
+        const macroBtn = document.getElementById('macro-btn');
+        function setMode(macro) {
+            isMacroMode = macro;
+            microBtn.classList.toggle('active', !macro);
+            macroBtn.classList.toggle('active', macro);
+        }
+        microBtn.addEventListener('click', () => setMode(false));
+        macroBtn.addEventListener('click', () => setMode(true));
+
+        // ==================== 可压缩性参数 ====================
+        /* 三个数字就是本页的全部差别。max 是「按到底时半径让步的比例」：
+           固体的晶格几乎不让（2%），液体的分子能滑动但体积不变（5%），
+           气体分子之间尽是空隙，所以能大幅塌缩（45%）。
+
+           gas 的 max 不能再往上调：气垫里约 36 颗微粒按 r=10 / 间距 3.8r 的
+           网格摆放，初始只占椭圆面积的 21%。压到 55% 时密度涨到约 3.3 倍，
+           已经接近碰撞求解器还能排开的极限；再压会让微粒互相嵌进对方体内，
+           看起来像一团糊而不是「被压缩的气体」。
+
+           verdict 是同一个数在文字上的说法，显示在画布下方。 */
+        const SQUEEZE = {
+            solid:  { max: 0.02, inRate: 0.30,  outRate: 0.22,  tremble: 2.6, verdict: '晶格抵抗，几乎不可压缩' },
+            liquid: { max: 0.05, inRate: 0.045, outRate: 0.030, tremble: 0,   verdict: '分子紧密堆叠，几乎不可压缩' },
+            gas:    { max: 0.45, inRate: 0.045, outRate: 0.030, tremble: 0,   verdict: '分子间距大，高度可压缩' }
+        };
+
+        /* 画一支向内的挤压箭头，表示外面在压这个气垫 */
+        function pressArrow(ctx, x1, y1, x2, y2, alpha) {
+            const ang = Math.atan2(y2 - y1, x2 - x1), head = 6, spread = 0.45;
+            ctx.save();
+            ctx.globalAlpha = alpha;
+            ctx.strokeStyle = '#fbbf24'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2 - Math.cos(ang) * head * 0.7, y2 - Math.sin(ang) * head * 0.7);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x2, y2); ctx.lineTo(x2 - Math.cos(ang - spread) * head, y2 - Math.sin(ang - spread) * head);
+            ctx.moveTo(x2, y2); ctx.lineTo(x2 - Math.cos(ang + spread) * head, y2 - Math.sin(ang + spread) * head);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // ==================== 气垫类 ====================
+        class Cushion {
+            constructor(cx, cy, rx, ry, type) {
+                this.cx = cx; this.cy = cy; this.rx = rx; this.ry = ry;
+                this.compressY = 0;
+                this.type = type;
+                this.maxSq = SQUEEZE[type].max;
+                this.squeeze = 0;         // 0 = 原状, 1 = 按到底
+                this.squeezeTarget = 0;
+                this.tremX = 0; this.tremY = 0;
+                this.rockShell = null;
+                if (type === 'solid') this._generateRockShell();
+            }
+
+            /* 半径的让步比例。固体按到底也只让 2%，这正是要让学生看到的。 */
+            scale() { return 1 - this.maxSq * this.squeeze; }
+            effRX() { return this.rx * this.scale(); }
+            /* 竖向 = 按压导致的缩短 + 落地时的 compressY 形变 */
+            effRY() { return this.ry * this.scale() + this.compressY; }
+            /* 顶面只受按压影响。compressY 是落地后向下的形变，不该把顶面抬高，
+               否则小人会在离气垫还有一段距离的地方就「撞上了」。 */
+            topY() { return this.cy - this.ry * this.scale(); }
+            /* 这里报的是线性尺寸而不是面积。二维截面里「体积」无法真的算出来，
+               而学生看到的是轮廓缩到原来的百分之几，报面积（0.45²=20%）只会和
+               眼睛对不上号。
+               向下取整（而不是四舍五入）是必要的：固体按到底只让 2%，四舍五入会
+               在按压刚开始时把 99.9% 显示成「体积 100%」，看起来像按钮没生效。 */
+            volumePct() { return Math.floor(this.scale() * 100 + 1e-6); }
+
+            _generateRockShell() {
+                const seed = (x, y) => { const n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453; return n - Math.floor(n); };
+                const numVerts = 16;
+                this.rockShell = [];
+                for (let i = 0; i < numVerts; i++) {
+                    const a = (i / numVerts) * Math.PI * 2;
+                    const rx = this.rx * (0.85 + seed(i, 1) * 0.3);
+                    const ry = this.ry * (0.85 + seed(i, 2) * 0.3);
+                    this.rockShell.push({ dx: Math.cos(a) * rx, dy: Math.sin(a) * ry });
+                }
+            }
+
+            applyForce(force) { this.compressY = Math.min(this.ry * 0.4, this.compressY + force); }
+            update() {
+                this.compressY *= 0.9;
+
+                /* 按住时快速压入、松开时较慢弹回。固体的 inRate 给到 0.30：
+                   一瞬间就让出那 2% 然后顶住不动，观感上像「按下去顶手」。
+                   气体用 0.045，约 0.35 s 压到底，能看清微粒被逐步挤密的过程；
+                   松手用 0.030 稍慢一点，弹回的过程才看得清。 */
+                const cfg = SQUEEZE[this.type];
+                const rate = this.squeezeTarget > this.squeeze ? cfg.inRate : cfg.outRate;
+                this.squeeze += (this.squeezeTarget - this.squeeze) * rate;
+                if (Math.abs(this.squeezeTarget - this.squeeze) < 0.002) this.squeeze = this.squeezeTarget;
+
+                /* 固体不让步，压力就只能以「形变」表现：轮廓在按住期间轻微发抖，
+                   松手立刻稳住。这是它和气体之间唯一还看得见的差别，不能省。 */
+                const amp = cfg.tremble * this.squeeze;
+                this.tremX = amp ? (Math.random() - 0.5) * amp : 0;
+                this.tremY = amp ? (Math.random() - 0.5) * amp : 0;
+            }
+
+            draw(ctx) {
+                /* totRX / totRY 把按压造成的缩放一并算进来。宏观视角里的文字位置
+                   按缩放后的比例摆放、字号保持不变，所以气垫被压扁时标签只是彼此
+                   靠近，不会有任何字被压成扁形。 */
+                const totRX = this.effRX();
+                const totRY = this.effRY();
+                const scaleY = totRY / this.ry;
+
+                if (isMacroMode) {
+                    if (this.type === 'solid') {
+                        ctx.save(); ctx.translate(this.cx + this.tremX, this.cy + this.tremY); ctx.scale(1, scaleY);
+                        const shell = () => {
+                            ctx.beginPath();
+                            ctx.moveTo(this.rockShell[0].dx, this.rockShell[0].dy);
+                            for (let i = 1; i < this.rockShell.length; i++) ctx.lineTo(this.rockShell[i].dx, this.rockShell[i].dy);
+                            ctx.closePath();
+                        };
+                        const grad = ctx.createLinearGradient(-this.rx, -this.ry, this.rx, this.ry);
+                        grad.addColorStop(0, '#9ca3af'); grad.addColorStop(0.4, '#78716c');
+                        grad.addColorStop(0.7, '#6b7280'); grad.addColorStop(1, '#57534e');
+                        shell(); ctx.fillStyle = grad; ctx.fill();
+                        ctx.save(); shell(); ctx.clip();
+                        const crackSeed = (i) => { const n = Math.sin(i * 43.21) * 43758.5453; return n - Math.floor(n); };
+                        ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 2;
+                        for (let c = 0; c < 5; c++) {
+                            ctx.beginPath();
+                            ctx.moveTo((crackSeed(c * 3) - 0.5) * this.rx * 1.2, (crackSeed(c * 3 + 1) - 0.5) * this.ry * 1.2);
+                            for (let s = 1; s <= 3; s++)
+                                ctx.lineTo((crackSeed(c * 5 + s) - 0.5) * this.rx * 1.5, (crackSeed(c * 5 + s + 10) - 0.5) * this.ry * 1.5);
+                            ctx.stroke();
+                        }
+                        ctx.beginPath();
+                        ctx.ellipse(-this.rx * 0.3, -this.ry * 0.35, this.rx * 0.5, this.ry * 0.25, -Math.PI / 5, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fill();
+                        ctx.restore();
+                        shell(); ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 4; ctx.stroke();
+                        shell(); ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1.2; ctx.setLineDash([3, 3]); ctx.stroke(); ctx.setLineDash([]);
+                        ctx.restore();
+                        ctx.save();
+                        ctx.beginPath(); ctx.ellipse(this.cx - this.rx * 0.3, this.cy - this.ry * 0.4, 12, 4, -Math.PI / 4, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(255,255,255,0.3)'; ctx.fill();
+                        ctx.restore();
+                    } else if (this.type === 'liquid') {
+                        ctx.save(); ctx.beginPath(); ctx.ellipse(this.cx, this.cy, totRX, totRY, 0, 0, Math.PI * 2); ctx.clip();
+                        ctx.save(); ctx.translate(this.cx, this.cy);
+                        const grad = ctx.createLinearGradient(0, -totRY, 0, totRY);
+                        grad.addColorStop(0, '#5a2510'); grad.addColorStop(0.3, '#4a1e0a');
+                        grad.addColorStop(0.6, '#3b1505'); grad.addColorStop(1, '#2d0f03');
+                        ctx.beginPath(); ctx.ellipse(0, 0, totRX, totRY, 0, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+                        ctx.beginPath(); ctx.ellipse(0, -totRY * 0.25, totRX * 0.8, totRY * 0.12, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(120,80,40,0.3)'; ctx.fill();
+                        const bps = [{ x: -0.4, y: -0.3 }, { x: 0.2, y: -0.45 }, { x: -0.1, y: 0.05 }, { x: 0.35, y: -0.15 }, { x: -0.5, y: 0.15 }, { x: 0.5, y: -0.35 }, { x: -0.25, y: 0.4 }, { x: 0.15, y: 0.35 }, { x: 0.45, y: 0.2 }, { x: -0.6, y: -0.2 }, { x: 0.0, y: -0.1 }, { x: -0.35, y: -0.55 }, { x: 0.55, y: 0.45 }, { x: -0.15, y: 0.55 }];
+                        const bt = Date.now() / 1200;
+                        for (let i = 0; i < bps.length; i++) {
+                            const bp = bps[i], bx = bp.x * totRX, by = bp.y * totRY + Math.sin(bt + i * 1.7) * 2;
+                            if ((bx * bx) / (totRX * totRX) + (by * by) / (totRY * totRY) > 0.85) continue;
+                            const br = 2 + (i % 4);
+                            ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2);
+                            ctx.fillStyle = `rgba(255,255,255,${0.10 + (i % 5) * 0.03})`; ctx.fill();
+                            ctx.strokeStyle = 'rgba(255,255,255,0.15)'; ctx.lineWidth = 0.5; ctx.stroke();
+                            ctx.beginPath(); ctx.arc(bx - br * 0.3, by - br * 0.3, br * 0.25, 0, Math.PI * 2);
+                            ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fill();
+                        }
+                        ctx.restore();
+                        ctx.restore();
+                        ctx.save(); ctx.beginPath(); ctx.ellipse(this.cx, this.cy, totRX, totRY, 0, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 5; ctx.stroke();
+                        ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+                        ctx.restore();
+                        ctx.save(); ctx.beginPath(); ctx.ellipse(this.cx - totRX * 0.4, this.cy - totRY * 0.5, totRX * 0.2, totRY * 0.1, -Math.PI / 4, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(); ctx.restore();
+                    } else {
+                        ctx.save(); ctx.beginPath(); ctx.ellipse(this.cx, this.cy, totRX, totRY, 0, 0, Math.PI * 2); ctx.clip();
+                        ctx.save(); ctx.translate(this.cx, this.cy);
+                        ctx.beginPath(); ctx.ellipse(0, 0, totRX, totRY, 0, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(186,230,253,0.12)'; ctx.fill();
+                        const o2p = [{ x: -0.4, y: -0.3 }, { x: 0.35, y: -0.2 }, { x: -0.1, y: 0.1 }, { x: 0.45, y: 0.35 }, { x: -0.5, y: 0.3 }, { x: 0.15, y: -0.45 }, { x: -0.3, y: 0.5 }, { x: 0.55, y: -0.1 }];
+                        const dt = Date.now() / 1500;
+                        ctx.font = 'bold 10px Nunito, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                        for (let i = 0; i < o2p.length; i++) {
+                            const p = o2p[i];
+                            ctx.fillStyle = `rgba(148,200,240,${0.25 + (i % 3) * 0.06})`;
+                            ctx.fillText('O₂', p.x * totRX + Math.sin(dt + i * 2.3) * 8, p.y * totRY + Math.cos(dt + i * 1.9) * 5);
+                        }
+                        ctx.restore(); ctx.restore();
+                        ctx.save(); ctx.beginPath(); ctx.ellipse(this.cx, this.cy, totRX, totRY, 0, 0, Math.PI * 2);
+                        ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 5; ctx.stroke();
+                        ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]); ctx.stroke(); ctx.setLineDash([]);
+                        ctx.restore();
+                        ctx.save(); ctx.beginPath(); ctx.ellipse(this.cx - totRX * 0.4, this.cy - totRY * 0.5, totRX * 0.2, totRY * 0.1, -Math.PI / 4, 0, Math.PI * 2);
+                        ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(); ctx.restore();
+                    }
+                } else {
+                    /* ---- 微观视角：气垫边界。这里才是「可压缩性」真正被看见的地方 ----
+                       边界一收缩，下面 Particle.update 里的归一化椭圆约束就会把微粒
+                       顺势挤密，所以「压缩」不需要另写一套粒子物理。
+                       轮廓随按压加亮加粗；左右两侧画出向内挤压的箭头——箭头放左右
+                       而不是上下，是为了避开小人的坠落路径。 */
+                    const sq = this.squeeze;
+                    const rx = this.effRX(), ry = this.effRY();
+                    const px = this.cx + this.tremX, py = this.cy + this.tremY;
+
+                    ctx.save();
+                    ctx.beginPath(); ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255,255,255,${0.6 + 0.35 * sq})`;
+                    ctx.lineWidth = 4 + 2 * sq;
+                    ctx.fillStyle = `rgba(255,255,255,${0.08 + 0.06 * sq})`;
+                    ctx.fill(); ctx.stroke();
+                    ctx.beginPath(); ctx.ellipse(px - rx * 0.4, py - ry * 0.5, rx * 0.2, ry * 0.1, -Math.PI / 4, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255,255,255,0.4)'; ctx.fill();
+
+                    if (sq > 0.04) {
+                        const a = Math.min(1, sq * 1.6);
+                        for (const k of [-0.55, 0.55]) {
+                            const gy = py + ry * k;
+                            pressArrow(ctx, px - rx - 20, gy, px - rx - 4, gy, a);
+                            pressArrow(ctx, px + rx + 20, gy, px + rx + 4, gy, a);
+                        }
+                    }
+                    ctx.restore();
+                }
+            }
+        }
+
+        // ==================== 微粒类 ====================
+        class Particle {
+            constructor(x, y, radius, colorRgb, baseSpeed, type, layerIndex) {
+                this.x = x; this.y = y; this.radius = radius;
+                this.colorRgb = colorRgb; this.type = type;
+                this.anchorX = x; this.anchorY = y;
+                this.layerIndex = layerIndex !== undefined ? layerIndex : -1;
+
+                const angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(angle) * baseSpeed;
+                this.vy = Math.sin(angle) * baseSpeed;
+            }
+
+            draw(ctx) {
+                ctx.beginPath();
+                ctx.shadowColor = `rgb(${this.colorRgb})`; ctx.shadowBlur = 6;
+                ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 2;
+                ctx.fillStyle = `rgba(${this.colorRgb}, 0.9)`;
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+                ctx.beginPath();
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.ellipse(this.x - this.radius * 0.3, this.y - this.radius * 0.35, this.radius * 0.3, this.radius * 0.2, Math.PI / 3, 0, Math.PI * 2);
+                ctx.fill(); ctx.closePath();
+            }
+
+            update(width, height, jumper, cushion) {
+                if (this.type === 'solid') {
+                    /* 加压时晶格变「硬」（k 上升）同时振动加剧。固体不让体积，
+                       压力只能以振幅的形式表现出来——分子在原地抖得更凶，却不
+                       改变位置。这正是「固体有固定形状」的微观解释。 */
+                    const k = 0.35 + 0.6 * cushion.squeeze, damp = 0.6;
+                    const fx = (this.anchorX - this.x) * k, fy = (this.anchorY - this.y) * k;
+                    const vibrate = 1.2 + 2.6 * cushion.squeeze;
+                    const rx = (Math.random() - 0.5) * vibrate, ry = (Math.random() - 0.5) * vibrate;
+                    this.vx = (this.vx + fx + rx) * damp;
+                    this.vy = (this.vy + fy + ry) * damp;
+
+                } else if (this.type === 'liquid') {
+                    // ---- 液体：分层滑移流动 ----
+                    // 根据 layerIndex 施加交替水平驱动力（模拟层间剪切流动）
+                    // 受压时层间剪切略增强，但分子堆叠方式不变
+                    const layerForce = (this.layerIndex % 2 === 0 ? 1 : -1) * (0.06 + 0.05 * cushion.squeeze);
+                    const oscillate = Math.sin(Date.now() / 3000 + this.layerIndex * 0.8) * 0.03;
+                    this.vx += layerForce + oscillate;
+
+                    // 极弱的归位力防止粒子漂移到边缘聚团
+                    const k = 0.008;
+                    this.vx += (this.anchorX - this.x) * k;
+                    this.vy += (this.anchorY - this.y) * k;
+
+                    this.vy *= 0.96;
+                    this.vx *= 0.96;
+
+                    // 保持一定动能，避免完全静止
+                    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    const minSpeed = 0.5;
+                    if (speed < minSpeed && speed > 0) {
+                        const scale = minSpeed / speed;
+                        this.vx *= scale; this.vy *= scale;
+                    }
+
+                } else if (this.type === 'gas') {
+                    /* 气垫被压缩时分子撞壁更频繁——这正是「气体压强」的来源，
+                       所以分子随压缩明显加快。倍数封在 1.6 以内：看得出在「顶
+                       回来」，又不至于像换了温度。 */
+                    const minSpeed = 2.5 * (1 + 0.6 * cushion.squeeze);
+                    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (currentSpeed < minSpeed) { this.vx *= 1.05; this.vy *= 1.05; }
+                    if (currentSpeed > minSpeed * 1.5) { this.vx *= 0.95; this.vy *= 0.95; }
+                }
+
+                if (jumper && jumper.crashRadius > 0) {
+                    const dx = this.x - jumper.x, dy = this.y - jumper.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    const interactRadius = jumper.crashRadius + this.radius;
+                    if (dist < interactRadius) {
+                        const force = (interactRadius - dist) * 0.6;
+                        const validDist = dist === 0 ? 0.1 : dist;
+                        this.vx += (dx / validDist) * force;
+                        this.vy += (dy / validDist) * force + 0.5;
+                    }
+                }
+
+                this.x += this.vx; this.y += this.vy;
+
+                /* 归一化椭圆约束：用按压后的实际半径，气垫一缩微粒就跟着被挤密。
+                   Math.max 是必要的护栏——半径被乘上缩放系数后要再减去
+                   radius*0.8，两者虽然不会相遇，但一旦相遇分母变成 0 或负数，
+                   整帧坐标会炸成 NaN 并再也画不出来。 */
+                const cdx = this.x - cushion.cx, cdy = this.y - cushion.cy;
+                const limX = Math.max(this.radius * 0.6, cushion.effRX() - this.radius * 0.8);
+                const limY = Math.max(this.radius * 0.6, cushion.effRY() - this.radius * 0.8);
+                const nx = cdx / limX;
+                const ny = cdy / limY;
+                const distSq = nx * nx + ny * ny;
+                if (distSq > 1) {
+                    const dist = Math.sqrt(distSq), validDist = dist === 0 ? 0.1 : dist;
+                    this.x = cushion.cx + (nx / validDist) * limX;
+                    this.y = cushion.cy + (ny / validDist) * limY;
+                    let bounce = this.type === 'solid' ? 0.1 : (this.type === 'liquid' ? 0.05 : 0.6);
+                    this.vx *= -bounce; this.vy *= -bounce;
+                }
+
+                /* 气体的速率必须在这里再兜一次，不能只靠上面那段。
+                   边界反射的 bounce=0.6 是乘性阻尼，气垫被压扁后大量微粒同时贴在
+                   壁上，速度会被一帧一帧地衰减掉——实测压缩后平均速率反而从 2.57
+                   掉到 1.71，「压得越紧分子撞壁越猛」这条因果就反向成立了。
+                   把速率夹在压缩后应有的区间里，顺带也避免了贴壁微粒彻底僵住。 */
+                if (this.type === 'gas') {
+                    const sp = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    const lo = 2.5 * (1 + 0.6 * cushion.squeeze), hi = lo * 1.35;
+                    if (sp < lo || sp > hi) {
+                        const f = (sp < lo ? lo : hi) / Math.max(sp, 1e-4);
+                        this.vx *= f; this.vy *= f;
+                    }
+                }
+            }
+        }
+
+        // ==================== 跳跃小人 ====================
+        class Jumper {
+            constructor(simulation) { this.sim = simulation; this.reset(); }
+            reset() {
+                this.x = this.sim.width / 2; this.y = 20; this.vy = 0;
+                this.state = 'ready'; this.crashRadius = 0; this.rot = 0; this.ticks = 0;
+            }
+            jump() { if (this.state === 'ready') { this.state = 'falling'; this.vy = 2; } }
+
+            update() {
+                this.ticks++;
+                if (this.state === 'falling') {
+                    this.vy += 0.4; this.y += this.vy; this.rot += this.vy * 0.02;
+                    /* 顶面用 topY()：气垫被按住压扁时顶面下降，小人要落得更深才
+                       碰得到。注意不能直接减 ry+compressY，那样 compressY 会把
+                       顶面抬高，小人会在半空中就「撞上」气垫。 */
+                    const topY = this.sim.cushion.topY();
+                    if (this.y + 10 > topY) {
+                        this.y = topY - 10;
+                        if (this.sim.type === 'solid' || this.sim.type === 'liquid') {
+                            this.state = 'crashed'; this.vy = -6;
+                            const msgs = {
+                                'solid': isMacroMode ? "哎呀！石头太硬，摔伤了！ >_<" : "哎呀！固体紧密振动无法压缩，摔伤了！ >_<",
+                                'liquid': isMacroMode ? "可乐液面如同撞水泥，摔伤了！ >_<" : "哎呀！液体表面张力大无法瞬间排开，摔伤了！ >_<"
+                            };
+                            this.sim.infoEl.innerText = msgs[this.sim.type];
+                            this.sim.btn.disabled = false;
+                        } else {
+                            this.state = 'compressing'; this.crashRadius = 35; this.sim.cushion.applyForce(20);
+                            this.sim.infoEl.innerText = isMacroMode ? "氧气被压缩，气体可大幅缓冲..." : "微粒被压缩排开，缓冲中...";
+                        }
+                    }
+                } else if (this.state === 'compressing') {
+                    this.y += this.sim.cushion.compressY * 0.15; this.vy *= 0.6;
+                    this.crashRadius = 25 + Math.random() * 10;
+                    if (this.ticks > 25 && this.sim.cushion.compressY < 5) {
+                        this.state = 'bouncing'; this.vy = -5; this.crashRadius = 0;
+                        this.sim.infoEl.innerText = isMacroMode ? "氧气缓冲成功，几乎无感！ ^_^" : "安全缓冲，轻柔弹起！没受伤！ ^_^";
+                        this.sim.btn.disabled = false;
+                    }
+                } else if (this.state === 'crashed' || this.state === 'bouncing') {
+                    this.y += this.vy; this.vy += 0.35; this.rot += this.vy * 0.02;
+                    if (this.y > this.sim.height + 50) this.reset();
+                }
+            }
+
+            draw(ctx) {
+                if (this.state === 'ready') return;
+                ctx.save(); ctx.translate(this.x, this.y); ctx.rotate(this.rot);
+                ctx.fillStyle = '#fef3c7'; ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(0, -8, 8, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+                ctx.fillStyle = '#1e293b';
+                if (this.state === 'crashed') {
+                    ctx.strokeStyle = '#1e293b'; ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(-5, -11); ctx.lineTo(-1, -5); ctx.moveTo(-1, -11); ctx.lineTo(-5, -5);
+                    ctx.moveTo(1, -11); ctx.lineTo(5, -5); ctx.moveTo(5, -11); ctx.lineTo(1, -5);
+                    ctx.stroke();
+                } else { ctx.beginPath(); ctx.arc(-3, -9, 1.5, 0, Math.PI * 2); ctx.arc(3, -9, 1.5, 0, Math.PI * 2); ctx.fill(); }
+                ctx.fillStyle = '#fde047';
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-5, 10); ctx.lineTo(5, 10); ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.strokeStyle = '#fef3c7'; ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(-4, 2); ctx.lineTo(-12, 0); ctx.moveTo(4, 2); ctx.lineTo(12, 0);
+                ctx.moveTo(-3, 10); ctx.lineTo(-6, 18); ctx.moveTo(3, 10); ctx.lineTo(6, 18);
+                ctx.stroke();
+                ctx.restore();
+                if (this.state === 'crashed') {
+                    ctx.fillStyle = '#fbbf24'; const t = Date.now() / 100;
+                    for (let i = 0; i < 3; i++) {
+                        const a = t + i * 2;
+                        ctx.beginPath(); ctx.arc(this.x + Math.cos(a) * 20, this.y - 10 + Math.sin(a) * 20, 3, 0, Math.PI * 2); ctx.fill();
+                    }
+                }
+            }
+        }
+
+        // ==================== 模拟系统 ====================
+        class Simulation {
+            constructor(canvasId, btnId, infoId, volId, squeezeId, type) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+                this.width = this.canvas.width; this.height = this.canvas.height;
+                this.type = type;
+                this.cushion = new Cushion(this.width / 2, this.height * 0.55, this.width * 0.4, this.height * 0.35, type);
+                this.particles = [];
+                this.jumper = new Jumper(this);
+                this.btn = document.getElementById(btnId);
+                this.infoEl = document.getElementById(infoId);
+                this.volEl = document.getElementById(volId);
+                this._volTxt = '';
+                this.btn.addEventListener('click', () => this.startJump());
+                this.bindSqueeze(document.getElementById(squeezeId));
+                sims.push(this);
+                this.initParticles();
+            }
+
+            /* 按住压缩。pointerdown 开始、pointerup 结束。释放有两条路径，缺一不可：
+               1) setPointerCapture —— 按住后指针滑出按钮，pointerup 仍会回到按钮上；
+               2) window 上的兜底 —— 捕获不被支持或抛异常时（老浏览器、无效
+                  pointerId），按钮就再也收不到 pointerup，气垫会永远卡在压扁状态。
+               失焦（切标签页）同样要兜住。键盘可达：Tab 到按钮后按住空格或回车。 */
+            bindSqueeze(btn) {
+                const set = (on) => {
+                    this.cushion.squeezeTarget = on ? 1 : 0;
+                    btn.classList.toggle('is-squeezing', on);
+                };
+                btn.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    if (btn.setPointerCapture) {
+                        try { btn.setPointerCapture(e.pointerId); }
+                        catch (err) { /* 指针已失效，交给下面的 window 兜底 */ }
+                    }
+                    set(true);
+                });
+                btn.addEventListener('pointerup', () => set(false));
+                btn.addEventListener('pointercancel', () => set(false));
+                window.addEventListener('pointerup', () => set(false));
+                window.addEventListener('pointercancel', () => set(false));
+                btn.addEventListener('contextmenu', (e) => e.preventDefault());
+                btn.addEventListener('keydown', (e) => {
+                    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); set(true); }
+                });
+                btn.addEventListener('keyup', (e) => {
+                    if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); set(false); }
+                });
+                window.addEventListener('blur', () => set(false));
+            }
+
+            /* 只在文字真的变了才写 DOM：每帧无条件写三个 textContent 会让浏览器
+               每帧都排一次版。 */
+            updateReadout() {
+                const txt = this.cushion.squeeze > 0.02
+                    ? '体积 ' + this.cushion.volumePct() + '% · ' + SQUEEZE[this.type].verdict
+                    : '体积 100%';
+                if (txt !== this._volTxt) { this._volTxt = txt; this.volEl.textContent = txt; }
+            }
+
+            startJump() { this.jumper.reset(); this.jumper.jump(); this.infoEl.innerText = "坠落中..."; this.btn.disabled = true; }
+
+            initParticles() {
+                this.particles = [];
+                const cx = this.cushion.cx, cy = this.cushion.cy;
+                const inEllipse = (x, y) => Math.pow((x - cx) / this.cushion.rx, 2) + Math.pow((y - cy) / this.cushion.ry, 2) <= 0.85;
+
+                if (this.type === 'solid') {
+                    const r = 12, sp = 2.0;
+                    for (let row = -this.cushion.ry; row <= this.cushion.ry; row += r * sp)
+                        for (let col = -this.cushion.rx; col <= this.cushion.rx; col += r * sp)
+                            if (inEllipse(cx + col, cy + row))
+                                this.particles.push(new Particle(cx + col, cy + row, r, '56,189,248', 0, 'solid'));
+
+                } else if (this.type === 'liquid') {
+                    const r = 9, stepY = r * 1.5, stepX = r * 1.5;
+                    let rowCount = 0;
+                    for (let row = -this.cushion.ry; row <= this.cushion.ry; row += stepY) {
+                        const layerIdx = rowCount % 4;
+                        // 奇数行偏移半个步长（六角密堆积，消除缝隙）
+                        const offsetX = (rowCount % 2 === 1) ? stepX / 2 : 0;
+                        for (let col = -this.cushion.rx; col <= this.cushion.rx; col += stepX) {
+                            const px = cx + col + offsetX;
+                            const py = cy + row;
+                            if (inEllipse(px, py))
+                                this.particles.push(new Particle(px, py, r, '45,212,191', 1, 'liquid', layerIdx));
+                        }
+                        rowCount++;
+                    }
+
+                } else if (this.type === 'gas') {
+                    const r = 10, sp = 3.8;
+                    for (let row = -this.cushion.ry; row <= this.cushion.ry; row += r * sp)
+                        for (let col = -this.cushion.rx; col <= this.cushion.rx; col += r * sp)
+                            if (inEllipse(cx + col, cy + row))
+                                this.particles.push(new Particle(cx + col, cy + row, r, '251,113,133', 4, 'gas'));
+                }
+            }
+
+            resolveCollisions() {
+                const ps = this.particles;
+                for (let i = 0; i < ps.length; i++) {
+                    for (let j = i + 1; j < ps.length; j++) {
+                        const p1 = ps[i], p2 = ps[j];
+                        const dx = p2.x - p1.x, dy = p2.y - p1.y;
+                        const distSq = dx * dx + dy * dy;
+                        const minDist = p1.radius + p2.radius;
+                        if (distSq >= minDist * minDist) continue;
+
+                        const dist = Math.sqrt(distSq), validDist = dist === 0 ? 0.1 : dist;
+                        const overlap = minDist - validDist;
+                        const nx = dx / validDist, ny = dy / validDist;
+
+                        // 分离
+                        const sepF = p1.type === 'solid' ? 0.05 : 0.5;
+                        p1.x -= nx * overlap * sepF; p1.y -= ny * overlap * sepF;
+                        p2.x += nx * overlap * sepF; p2.y += ny * overlap * sepF;
+
+                        // 碰撞响应：法向速度交换
+                        const dvx = p1.vx - p2.vx, dvy = p1.vy - p2.vy;
+                        const dotProduct = dvx * nx + dvy * ny;
+                        if (dotProduct <= 0) continue;
+
+                        let restitution = 0.8;
+                        if (p1.type === 'gas') restitution = 1.0;
+                        else if (p1.type === 'solid') restitution = 0.1;
+                        else if (p1.type === 'liquid') {
+                            // 液体法向近乎零反弹，保留切向速度 → 可见"滑过"
+                            restitution = -0.3; // 负值使法向速度反向减弱更多，粒子互相推开的趋势极弱
+                        }
+                        const impulse = (1 + restitution) * dotProduct / 2;
+                        p1.vx -= impulse * nx; p1.vy -= impulse * ny;
+                        p2.vx += impulse * nx; p2.vy += impulse * ny;
+                    }
+                }
+            }
+
+            drawSolidBonds(ctx) {
+                if (this.type !== 'solid') return;
+                ctx.strokeStyle = 'rgba(56,189,248,0.4)'; ctx.lineWidth = 2;
+                const bondDist = 30;
+                for (let i = 0; i < this.particles.length; i++)
+                    for (let j = i + 1; j < this.particles.length; j++) {
+                        const p1 = this.particles[i], p2 = this.particles[j];
+                        const dist = Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+                        if (dist < bondDist) { ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
+                    }
+            }
+
+            updateAndDraw() {
+                this.ctx.fillStyle = 'rgba(51,65,85,0.3)'; this.ctx.fillRect(0, 0, this.width, this.height);
+                const iterations = this.type === 'solid' ? 1 : this.type === 'liquid' ? 4 : 3;
+                for (let i = 0; i < iterations; i++) this.resolveCollisions();
+                this.cushion.update(); this.cushion.draw(this.ctx);
+
+                if (!isMacroMode) {
+                    this.drawSolidBonds(this.ctx);
+                    this.particles.forEach(p => { p.update(this.width, this.height, this.jumper, this.cushion); p.draw(this.ctx); });
+                } else {
+                    this.particles.forEach(p => p.update(this.width, this.height, this.jumper, this.cushion));
+                }
+                this.jumper.update(); this.jumper.draw(this.ctx);
+                this.updateReadout();
+            }
+        }
+
+        const simSolid = new Simulation('solid-canvas', 'solid-btn', 'solid-info', 'solid-vol', 'solid-squeeze', 'solid');
+        const simLiquid = new Simulation('liquid-canvas', 'liquid-btn', 'liquid-info', 'liquid-vol', 'liquid-squeeze', 'liquid');
+        const simGas = new Simulation('gas-canvas', 'gas-btn', 'gas-info', 'gas-vol', 'gas-squeeze', 'gas');
+
+        function animate() {
+            simSolid.updateAndDraw(); simLiquid.updateAndDraw(); simGas.updateAndDraw();
+            requestAnimationFrame(animate);
+        }
+        window.onload = () => animate();
+    </script>
+</body>
+</html>

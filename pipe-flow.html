@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地下管道流动模型 — 宏观/微观双模式</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #1e293b;
+            color: #f0f9ff;
+            font-family: 'Nunito', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .canvas-container {
+            position: relative;
+            background: #334155;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            border: 2px solid #475569;
+        }
+        canvas { display: block; width: 100%; height: auto; }
+        .btn-drop {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+        }
+        .btn-drop:active { transform: translateY(4px); box-shadow: none; }
+        .mode-btn {
+            transition: all 0.25s ease;
+            border: 2px solid transparent;
+            cursor: pointer;
+        }
+        .mode-btn.active {
+            border-color: #fff;
+            transform: scale(1.05);
+            box-shadow: 0 0 16px currentColor;
+        }
+        .view-toggle {
+            position: relative;
+            display: inline-flex;
+            background: #334155;
+            border-radius: 9999px;
+            padding: 3px;
+            border: 2px solid #475569;
+        }
+        .view-option {
+            padding: 6px 18px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            user-select: none;
+        }
+        .view-option.active {
+            background: #3b82f6;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+        .view-option:not(.active) {
+            color: #94a3b8;
+        }
+        .view-option:not(.active):hover {
+            color: #cbd5e1;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-6">
+
+    <div class="max-w-4xl w-full text-center mb-4">
+        <h1 class="text-3xl md:text-4xl font-black text-slate-100 mb-2">地下管道流动模型</h1>
+        <p id="view-subtitle" class="text-slate-400 mb-3">固体留在原地，液体和气体沿管道流向另一端</p>
+        <div class="view-toggle">
+            <span id="macro-view-btn" class="view-option active">宏观模式</span>
+            <span id="micro-view-btn" class="view-option">微观模型</span>
+        </div>
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="max-w-4xl w-full flex flex-wrap justify-center gap-4 mb-4">
+        <div class="bg-slate-700/60 rounded-xl px-6 py-3">
+            <span class="text-sm text-slate-300 mr-3 font-bold">选择物质：</span>
+            <button id="sel-solid" class="mode-btn active bg-sky-500 hover:bg-sky-400 text-white font-bold py-2 px-5 rounded-lg">固体（石头）</button>
+            <button id="sel-liquid" class="mode-btn bg-teal-500 hover:bg-teal-400 text-white font-bold py-2 px-5 rounded-lg">液体（水）</button>
+            <button id="sel-gas" class="mode-btn bg-rose-500 hover:bg-rose-400 text-white font-bold py-2 px-5 rounded-lg">气体（空气）</button>
+        </div>
+        <button id="inject-btn" class="btn-drop bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3 px-10 rounded-full text-lg">🚰 放入管道</button>
+        <button id="clear-btn" class="btn-drop bg-slate-600 hover:bg-slate-500 text-slate-200 font-bold py-3 px-8 rounded-full text-lg">清空</button>
+    </div>
+
+    <p id="status-info" class="h-7 mb-3 text-base font-bold text-amber-300 text-center"></p>
+
+    <div class="max-w-4xl w-full">
+        <div class="canvas-container p-2 w-full">
+            <canvas id="pipe-canvas" width="900" height="420"></canvas>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局状态 ====================
+        const canvas = document.getElementById('pipe-canvas');
+        const ctx = canvas.getContext('2d');
+        let selectedType = 'solid';
+        let isMicroMode = false;
+        const particles = [];
+
+        // 管道几何
+        const PIPE = {
+            leftX: 50,
+            rightX: canvas.width - 50,
+            topY: 240,
+            bottomY: 340,
+            centerY: 290,
+            radius: 50,
+            thickness: 14
+        };
+
+        // UI
+        const selSolid = document.getElementById('sel-solid');
+        const selLiquid = document.getElementById('sel-liquid');
+        const selGas = document.getElementById('sel-gas');
+        const injectBtn = document.getElementById('inject-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const statusInfo = document.getElementById('status-info');
+        const viewSubtitle = document.getElementById('view-subtitle');
+        const macroViewBtn = document.getElementById('macro-view-btn');
+        const microViewBtn = document.getElementById('micro-view-btn');
+
+        function selectType(type) {
+            selectedType = type;
+            [selSolid, selLiquid, selGas].forEach(b => b.classList.remove('active'));
+            if (type === 'solid') selSolid.classList.add('active');
+            else if (type === 'liquid') selLiquid.classList.add('active');
+            else selGas.classList.add('active');
+        }
+        selSolid.addEventListener('click', () => selectType('solid'));
+        selLiquid.addEventListener('click', () => selectType('liquid'));
+        selGas.addEventListener('click', () => selectType('gas'));
+
+        // 视图切换
+        function setView(micro) {
+            isMicroMode = micro;
+            microViewBtn.classList.toggle('active', micro);
+            macroViewBtn.classList.toggle('active', !micro);
+            particles.length = 0;
+            statusInfo.innerText = '';
+            if (micro) {
+                viewSubtitle.innerText = '微观粒子运动细节';
+                populateMicroParticles();
+            } else {
+                viewSubtitle.innerText = '固体留在原地，液体和气体沿管道流向另一端';
+            }
+        }
+        macroViewBtn.addEventListener('click', () => setView(false));
+        microViewBtn.addEventListener('click', () => setView(true));
+
+        // ==================== 粒子类 ====================
+        class FlowParticle {
+            constructor(type, x, y) {
+                this.type = type;
+                this.x = x !== undefined ? x : PIPE.leftX + 30;
+                this.y = y !== undefined ? y : PIPE.centerY + (Math.random() - 0.5) * (PIPE.radius * 1.4);
+                this.anchorX = this.x;
+                this.anchorY = this.y;
+
+                if (type === 'solid') {
+                    this.radius = isMicroMode ? 10 : (10 + Math.random() * 5);
+                    this.colorRgb = isMicroMode ? '56,189,248' : '120,113,108';
+                    this.vx = 0; this.vy = 0;
+                } else if (type === 'liquid') {
+                    this.radius = isMicroMode ? 8 : (5 + Math.random() * 3);
+                    this.colorRgb = '45,212,191';
+                    // 微观：直接朝右运动
+                    this.vx = isMicroMode ? (1.5 + Math.random() * 1.5) : (0.8 + Math.random() * 0.8);
+                    this.vy = (Math.random() - 0.5) * (isMicroMode ? 0.4 : 0.3);
+                } else {
+                    this.radius = isMicroMode ? 7 : (4 + Math.random() * 3);
+                    this.colorRgb = '251,113,133';
+                    if (isMicroMode) {
+                        // 微观：随机方向高速运动
+                        const angle = Math.random() * Math.PI * 2;
+                        const sp = 2.5 + Math.random() * 3.5;
+                        this.vx = Math.cos(angle) * sp;
+                        this.vy = Math.sin(angle) * sp;
+                    } else {
+                        this.vx = 3.5 + Math.random() * 3;
+                        this.vy = (Math.random() - 0.5) * 1.2;
+                    }
+                }
+                this.alive = true;
+                this.age = 0;
+                this.layerIdx = 0;
+            }
+
+            update() {
+                this.age++;
+                if (!this.alive) return;
+
+                if (this.type === 'solid') {
+                    const k = isMicroMode ? 0.3 : 0.15, damp = isMicroMode ? 0.55 : 0.55;
+                    const vib = isMicroMode ? 1.0 : 0.8;
+                    this.vx = (this.vx + (this.anchorX - this.x) * k + (Math.random() - 0.5) * vib) * damp;
+                    this.vy = (this.vy + (this.anchorY - this.y) * k + (Math.random() - 0.5) * vib) * damp;
+
+                } else if (this.type === 'liquid') {
+                    if (isMicroMode) {
+                        // 微观：向下沉降填满底部 + 向右滑动，碰撞不传速度
+                        this.vy += 0.06; // 重力下沉，先填底部
+                        this.vx += 0.03; // 轻微右向漂移
+                        this.vx *= 0.98;
+                        this.vy *= 0.96;
+                        // 保持最低水平速度确保滑移
+                        if (this.vx < 0.5) this.vx += 0.3;
+                    } else {
+                        this.vx += (Math.random() - 0.5) * 0.05;
+                        this.vy += (Math.random() - 0.5) * 0.08;
+                        this.vx *= 0.98; this.vy *= 0.92;
+                        if (this.vx < 0.5) this.vx = 0.5 + Math.random() * 0.5;
+                    }
+                } else if (this.type === 'gas') {
+                    if (isMicroMode) {
+                        // 微观：纯随机高速运动，无方向偏置
+                        this.vx += (Math.random() - 0.5) * 0.8;
+                        this.vy += (Math.random() - 0.5) * 0.8;
+                        const ms = 2.5;
+                        let sp = Math.sqrt(this.vx**2 + this.vy**2);
+                        if (sp < ms) { this.vx *= 1.06; this.vy *= 1.06; }
+                        if (sp > ms * 2.2) { this.vx *= 0.95; this.vy *= 0.95; }
+                    } else {
+                        this.vx += (Math.random() - 0.5) * 0.4;
+                        this.vy += (Math.random() - 0.5) * 0.6;
+                        if (this.vx < 3) this.vx += 0.15;
+                        this.vx *= 0.97; this.vy *= 0.93;
+                    }
+                }
+
+                this.x += this.vx; this.y += this.vy;
+
+                // 微观模式：管壁边界用整个管段
+                const top = isMicroMode ? 60 : PIPE.topY;
+                const bot = isMicroMode ? canvas.height - 60 : PIPE.bottomY;
+                const left = isMicroMode ? 20 : PIPE.leftX;
+                const right = isMicroMode ? canvas.width - 20 : PIPE.rightX;
+
+                if (this.y < top + this.radius + 2) { this.y = top + this.radius + 2; this.vy *= -0.3; }
+                if (this.y > bot - this.radius - 2) { this.y = bot - this.radius - 2; this.vy *= -0.3; }
+                if (this.x < left + this.radius + 2) { this.x = left + this.radius + 2; this.vx *= -0.3; }
+                // 液体在微观模式下堆积充满管道，不消失
+                if (isMicroMode && this.type === 'liquid') {
+                    if (this.x > right - this.radius) { this.x = right - this.radius; this.vx *= -0.05; }
+                } else {
+                    if (this.x > right + 25) { this.alive = false; }
+                }
+            }
+
+            draw(ctx) {
+                if (!this.alive) return;
+                ctx.save();
+                if (isMicroMode) {
+                    // ---- 微观粒子绘制（含高光、阴影） ----
+                    ctx.beginPath();
+                    ctx.shadowColor = `rgb(${this.colorRgb})`;
+                    ctx.shadowBlur = 6;
+                    ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 2;
+                    ctx.fillStyle = `rgba(${this.colorRgb}, 0.9)`;
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.beginPath();
+                    ctx.ellipse(this.x - this.radius * 0.3, this.y - this.radius * 0.35,
+                                 this.radius * 0.3, this.radius * 0.2, Math.PI / 3, 0, Math.PI * 2);
+                    ctx.fill();
+                } else {
+                    // ---- 宏观绘制 ----
+                    if (this.type === 'solid') {
+                        ctx.translate(this.x, this.y);
+                        const verts = [];
+                        const n = 6 + Math.floor(this.age / 200 % 5);
+                        for (let i = 0; i < n; i++) {
+                            const a = (i / n) * Math.PI * 2;
+                            const r = this.radius * (0.75 + Math.sin(i * 13.7 + this.age * 0.01) * 0.25);
+                            verts.push({ dx: Math.cos(a) * r, dy: Math.sin(a) * r });
+                        }
+                        ctx.beginPath(); ctx.moveTo(verts[0].dx, verts[0].dy);
+                        for (let i = 1; i < verts.length; i++) ctx.lineTo(verts[i].dx, verts[i].dy);
+                        ctx.closePath();
+                        ctx.fillStyle = `rgba(${this.colorRgb}, 0.95)`;
+                        ctx.fill();
+                        ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1; ctx.stroke();
+                    } else {
+                        ctx.shadowColor = `rgb(${this.colorRgb})`; ctx.shadowBlur = 5;
+                        ctx.fillStyle = `rgba(${this.colorRgb}, ${this.type === 'liquid' ? 0.85 : 0.65})`;
+                        ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                        ctx.shadowBlur = 0;
+                        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+                        ctx.beginPath();
+                        ctx.arc(this.x - this.radius * 0.3, this.y - this.radius * 0.35,
+                                 this.radius * 0.28, this.radius * 0.18, Math.PI / 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+                ctx.restore();
+            }
+        }
+
+        // ==================== 微观粒子预填充 ====================
+        function populateMicroParticles() {
+            const top = 60;
+            const bot = canvas.height - 60;
+            const left = 20;
+            const right = canvas.width - 20;
+            const spanX = right - left;
+            const spanY = bot - top;
+
+            if (selectedType === 'solid') {
+                // 固体：不预填充，等待用户放入石块
+                // do nothing
+            } else if (selectedType === 'liquid') {
+                // 液体：不预填充，等待用户从入口注入后流过管道
+            } else {
+                // 气体：稀疏分布
+                const r = 9, step = r * 4.0;
+                for (let row = top + 12; row < bot - 12; row += step) {
+                    for (let col = left + 12; col < right - 12; col += step) {
+                        const p = new FlowParticle('gas', col + (Math.random() - 0.5) * 20, row + (Math.random() - 0.5) * 20);
+                        particles.push(p);
+                    }
+                }
+            }
+        }
+
+        // ==================== 绘制固体晶格键（微观） ====================
+        function drawMicroBonds() {
+            if (selectedType !== 'solid') return;
+            const bondDist = 22;
+            ctx.strokeStyle = 'rgba(56,189,248,0.35)';
+            ctx.lineWidth = 2;
+            const ps = particles.filter(p => p.alive && p.type === 'solid');
+            for (let i = 0; i < ps.length; i++) {
+                for (let j = i + 1; j < ps.length; j++) {
+                    const dx = ps[i].x - ps[j].x;
+                    const dy = ps[i].y - ps[j].y;
+                    if (dx * dx + dy * dy < bondDist * bondDist) {
+                        ctx.beginPath();
+                        ctx.moveTo(ps[i].x, ps[i].y);
+                        ctx.lineTo(ps[j].x, ps[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // ==================== 场景绘制 ====================
+        function roundRect(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+        }
+
+        function drawMacroScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 天空
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, 140);
+            skyGrad.addColorStop(0, '#87CEEB'); skyGrad.addColorStop(1, '#B0E0E6');
+            ctx.fillStyle = skyGrad; ctx.fillRect(0, 0, canvas.width, 130);
+
+            ctx.fillStyle = 'rgba(255,255,255,0.85)';
+            [[80, 30], [280, 20], [550, 40], [750, 25]].forEach(([cx, cy]) => {
+                for (let i = -1; i <= 1; i++)
+                    ctx.arc(cx + i * 22, cy + Math.abs(i) * 6, 16 + (1 - Math.abs(i)) * 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+            });
+
+            // 草地
+            const grassGrad = ctx.createLinearGradient(0, 110, 0, 155);
+            grassGrad.addColorStop(0, '#4ade80'); grassGrad.addColorStop(0.5, '#22c55e'); grassGrad.addColorStop(1, '#15803d');
+            ctx.fillStyle = grassGrad; ctx.fillRect(0, 115, canvas.width, 45);
+            ctx.strokeStyle = '#166534'; ctx.lineWidth = 2;
+            for (let gx = 5; gx < canvas.width; gx += 12 + (gx % 7)) {
+                const gh = 6 + (gx * 17) % 12;
+                ctx.beginPath(); ctx.moveTo(gx, 115); ctx.lineTo(gx + 2, 115 - gh); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(gx + 5, 116); ctx.lineTo(gx + 3, 116 - gh * 0.7); ctx.stroke();
+            }
+
+            // 土壤
+            const soilGrad = ctx.createLinearGradient(0, 155, 0, canvas.height);
+            soilGrad.addColorStop(0, '#a16207'); soilGrad.addColorStop(0.15, '#92400e');
+            soilGrad.addColorStop(0.5, '#78350f'); soilGrad.addColorStop(1, '#451a03');
+            ctx.fillStyle = soilGrad; ctx.fillRect(0, 160, canvas.width, canvas.height - 160);
+            ctx.fillStyle = 'rgba(69,26,3,0.35)';
+            [[70, 190, 45, 30], [220, 230, 55, 38], [430, 185, 40, 25], [600, 250, 50, 35], [790, 195, 48, 32], [150, 310, 42, 28], [360, 330, 52, 36], [680, 320, 44, 29]].forEach(([x, y, rx, ry]) => {
+                ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+            });
+            ctx.fillStyle = 'rgba(156,163,175,0.3)';
+            [[45, 270, 6], [180, 210, 5], [350, 260, 7], [520, 205, 5], [720, 275, 6], [850, 235, 5]].forEach(([x, y, r]) => {
+                ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+            });
+
+            // 管道阴影
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.fillRect(PIPE.leftX - 5, PIPE.topY + PIPE.thickness, PIPE.rightX - PIPE.leftX + 10, PIPE.bottomY - PIPE.topY + 10);
+
+            // 外管
+            const pipeOuterGrad = ctx.createLinearGradient(0, PIPE.topY - 4, 0, PIPE.bottomY + 4);
+            pipeOuterGrad.addColorStop(0, '#94a3b8'); pipeOuterGrad.addColorStop(0.3, '#cbd5e1');
+            pipeOuterGrad.addColorStop(0.5, '#e2e8f0'); pipeOuterGrad.addColorStop(0.7, '#cbd5e1'); pipeOuterGrad.addColorStop(1, '#64748b');
+            ctx.fillStyle = pipeOuterGrad;
+            roundRect(ctx, PIPE.leftX, PIPE.topY, PIPE.rightX - PIPE.leftX, PIPE.bottomY - PIPE.topY, 8);
+            ctx.fill();
+
+            // 内管
+            const innerGrad = ctx.createLinearGradient(0, PIPE.topY + PIPE.thickness, 0, PIPE.bottomY - PIPE.thickness);
+            innerGrad.addColorStop(0, '#1e293b'); innerGrad.addColorStop(0.5, '#0f172a'); innerGrad.addColorStop(1, '#1e293b');
+            ctx.fillStyle = innerGrad;
+            roundRect(ctx, PIPE.leftX + PIPE.thickness, PIPE.topY + PIPE.thickness, PIPE.rightX - PIPE.leftX - PIPE.thickness * 2, PIPE.bottomY - PIPE.topY - PIPE.thickness * 2, 4);
+            ctx.fill();
+
+            // 法兰
+            ctx.fillStyle = '#475569'; const fw = 8;
+            for (let fx = PIPE.leftX + 80; fx < PIPE.rightX - 40; fx += 160) {
+                ctx.fillRect(fx, PIPE.topY - fw, fw, PIPE.bottomY - PIPE.topY + fw * 2);
+                ctx.fillStyle = '#374151';
+                ctx.beginPath(); ctx.arc(fx + fw / 2, PIPE.topY + 4, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(fx + fw / 2, PIPE.bottomY - 4, 3, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#475569';
+            }
+
+            // 入口漏斗
+            ctx.save();
+            const fl = PIPE.leftX - 30;
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath(); ctx.moveTo(fl, PIPE.centerY - 50); ctx.lineTo(PIPE.leftX + 5, PIPE.topY + PIPE.thickness + 2);
+            ctx.lineTo(PIPE.leftX + 5, PIPE.bottomY - PIPE.thickness - 2); ctx.lineTo(fl, PIPE.centerY + 50); ctx.closePath();
+            ctx.fill(); ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = '#fbbf24'; ctx.font = 'bold 11px Nunito,sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('入口', fl, PIPE.centerY + 68);
+            ctx.restore();
+
+            // 出口
+            ctx.save();
+            const er = PIPE.rightX + 25;
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath(); ctx.moveTo(PIPE.rightX - 5, PIPE.topY + PIPE.thickness + 2); ctx.lineTo(er, PIPE.centerY - 35);
+            ctx.lineTo(er, PIPE.centerY + 35); ctx.lineTo(PIPE.rightX - 5, PIPE.bottomY - PIPE.thickness - 2); ctx.closePath();
+            ctx.fill(); ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = '#34d399'; ctx.font = 'bold 11px Nunito,sans-serif'; ctx.textAlign = 'center';
+            ctx.fillText('出口', er, PIPE.centerY + 53);
+            ctx.restore();
+
+            // 内壁高光 + 箭头
+            ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(PIPE.leftX + PIPE.thickness + 4, PIPE.topY + PIPE.thickness + 2);
+            ctx.lineTo(PIPE.rightX - PIPE.thickness - 4, PIPE.topY + PIPE.thickness + 2); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(PIPE.leftX + PIPE.thickness + 4, PIPE.bottomY - PIPE.thickness - 2);
+            ctx.lineTo(PIPE.rightX - PIPE.thickness - 4, PIPE.bottomY - PIPE.thickness - 2); ctx.stroke();
+            ctx.setLineDash([8, 6]); ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.beginPath(); ctx.moveTo(PIPE.leftX + 60, PIPE.centerY); ctx.lineTo(PIPE.rightX - 60, PIPE.centerY); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.beginPath(); ctx.moveTo(PIPE.rightX - 65, PIPE.centerY - 8);
+            ctx.lineTo(PIPE.rightX - 50, PIPE.centerY); ctx.lineTo(PIPE.rightX - 65, PIPE.centerY + 8); ctx.stroke();
+        }
+
+        function drawMicroScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 深色背景（管道内部）
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const top = 60, bot = canvas.height - 60;
+
+            // 管道壁（上方）
+            const wallGradTop = ctx.createLinearGradient(0, top - 30, 0, top);
+            wallGradTop.addColorStop(0, '#475569'); wallGradTop.addColorStop(0.5, '#64748b');
+            wallGradTop.addColorStop(1, '#334155');
+            ctx.fillStyle = wallGradTop;
+            ctx.fillRect(0, 0, canvas.width, top);
+
+            // 上壁下缘高光
+            ctx.strokeStyle = 'rgba(255,255,255,0.3)'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(0, top); ctx.lineTo(canvas.width, top); ctx.stroke();
+
+            // 管道壁（下方）
+            const wallGradBot = ctx.createLinearGradient(0, bot, 0, bot + 30);
+            wallGradBot.addColorStop(0, '#334155'); wallGradBot.addColorStop(0.5, '#64748b');
+            wallGradBot.addColorStop(1, '#475569');
+            ctx.fillStyle = wallGradBot;
+            ctx.fillRect(0, bot, canvas.width, canvas.height - bot);
+
+            // 下壁上缘高光
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(0, bot); ctx.lineTo(canvas.width, bot); ctx.stroke();
+
+            // 中心虚线
+            ctx.setLineDash([6, 8]);
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 1;
+            const mid = (top + bot) / 2;
+            ctx.beginPath(); ctx.moveTo(30, mid); ctx.lineTo(canvas.width - 30, mid); ctx.stroke();
+            ctx.setLineDash([]);
+
+            // 标签
+            ctx.font = 'bold 12px Nunito,sans-serif'; ctx.textAlign = 'center';
+            ctx.fillStyle = 'rgba(255,255,255,0.25)';
+            ctx.fillText('管道壁', canvas.width / 2, top - 12);
+            ctx.fillText('管道壁', canvas.width / 2, bot + 20);
+
+            // 状态标签
+            const labels = { solid: '固体晶格 — 粒子原地振动', liquid: '液体滑移 — 粒子缓慢右移', gas: '气体扩散 — 粒子高速乱窜' };
+            ctx.fillStyle = 'rgba(255,255,255,0.5)'; ctx.font = 'bold 14px Nunito,sans-serif';
+            ctx.fillText(labels[selectedType] || '', canvas.width / 2, 35);
+        }
+
+        function drawScene() {
+            if (isMicroMode) drawMicroScene();
+            else drawMacroScene();
+        }
+
+        // ==================== 碰撞检测（微观模式） ====================
+        function resolveMicroCollisions() {
+            if (!isMicroMode) return;
+            const ps = particles.filter(p => p.alive);
+            for (let i = 0; i < ps.length; i++) {
+                for (let j = i + 1; j < ps.length; j++) {
+                    const p1 = ps[i], p2 = ps[j];
+                    const dx = p2.x - p1.x, dy = p2.y - p1.y;
+                    const minD = p1.radius + p2.radius;
+                    const distSq = dx * dx + dy * dy;
+                    if (distSq >= minD * minD) continue;
+
+                    const dist = Math.sqrt(distSq) || 0.1;
+                    const gap = minD - dist;
+                    const nx = dx / dist, ny = dy / dist;
+
+                    const sep = p1.type === 'solid' ? 0.05 : (p1.type === 'liquid' ? 0.4 : 0.5);
+                    p1.x -= nx * gap * sep; p1.y -= ny * gap * sep;
+                    p2.x += nx * gap * sep; p2.y += ny * gap * sep;
+
+                    // 液体：只做位置分离，不交换速度 → 微粒"滑过"而不被推着走
+                    if (p1.type === 'liquid' || p2.type === 'liquid') continue;
+
+                    const dvx = p1.vx - p2.vx, dvy = p1.vy - p2.vy;
+                    const dp = dvx * nx + dvy * ny;
+                    if (dp <= 0) continue;
+
+                    let rest = 0.8;
+                    if (p1.type === 'gas') rest = 1.0;
+                    else if (p1.type === 'solid') rest = 0.1;
+
+                    const imp = (1 + rest) * dp / 2;
+                    p1.vx -= imp * nx; p1.vy -= imp * ny;
+                    p2.vx += imp * nx; p2.vy += imp * ny;
+                }
+            }
+        }
+
+        // ==================== 注入 ====================
+        function injectParticles() {
+            const n = isMicroMode ? 8 : (selectedType === 'solid' ? 8 : 15);
+            if (selectedType === 'solid') {
+                if (isMicroMode) {
+                    // 微观：放入一整块石头（粒子紧密成团）
+                    const cx = PIPE.leftX + 55;
+                    const cy = 60 + (canvas.height - 120) / 2;
+                    const chunkR = 22;
+                    const r = 8, step = r * 1.7;
+                    let ri = 0;
+                    for (let row = -chunkR; row <= chunkR; row += step) {
+                        const ox = (ri % 2 === 1) ? step / 2 : 0;
+                        for (let col = -chunkR; col <= chunkR; col += step) {
+                            const px = cx + col + ox, py = cy + row;
+                            if ((px - cx) ** 2 + (py - cy) ** 2 > chunkR ** 2) continue;
+                            const p = new FlowParticle('solid', px, py);
+                            p.anchorX = px; p.anchorY = py;
+                            particles.push(p);
+                        }
+                        ri++;
+                    }
+                    statusInfo.innerText = "🪨 放入一块石头 — 粒子紧密振动不流动";
+                    statusInfo.className = 'h-7 mb-3 text-base font-bold text-sky-300 text-center';
+                } else {
+                    for (let i = 0; i < n; i++) {
+                        const p = new FlowParticle('solid',
+                            PIPE.leftX + 40 + Math.random() * 50,
+                            PIPE.centerY + (Math.random() - 0.5) * (PIPE.radius - 10));
+                        p.anchorX = p.x; p.anchorY = p.y;
+                        particles.push(p);
+                    }
+                    statusInfo.innerText = "💎 固体（石头）已放入 — 停在原地不动！";
+                    statusInfo.className = 'h-7 mb-3 text-base font-bold text-sky-300 text-center';
+                }
+            } else if (selectedType === 'liquid') {
+                const ln = isMicroMode ? 40 : 15;
+                if (isMicroMode) {
+                    // 微观：从入口上方注入，向下沉降先填满底部
+                    const top = 60;
+                    for (let i = 0; i < ln; i++) {
+                        const p = new FlowParticle('liquid',
+                            PIPE.leftX + 15 + Math.random() * 35,
+                            top + 10 + Math.random() * 60);
+                        p.vx = 0.5 + Math.random() * 1.2;
+                        p.vy = 0.2 + Math.random() * 0.5;
+                        particles.push(p);
+                    }
+                } else {
+                    for (let i = 0; i < ln; i++) {
+                        const p = new FlowParticle('liquid',
+                            PIPE.leftX + 20 + Math.random() * 30);
+                        particles.push(p);
+                    }
+                }
+                statusInfo.innerText = isMicroMode ? "💧 液体滑移 — 每层独立速度，层间滑过" : "💧 液体（水）正在沿管道流向出口...";
+                statusInfo.className = 'h-7 mb-3 text-base font-bold text-teal-300 text-center';
+            } else {
+                for (let i = 0; i < n; i++)
+                    particles.push(new FlowParticle('gas', isMicroMode ? PIPE.leftX + 15 + Math.random() * 40 : PIPE.leftX + 15 + Math.random() * 25));
+                statusInfo.innerText = isMicroMode ? "🌬️ 气体扩散 — 向各个方向随机运动" : "🌬️ 气体（空气）正飞速穿过管道！";
+                statusInfo.className = 'h-7 mb-3 text-base font-bold text-rose-300 text-center';
+            }
+        }
+
+        injectBtn.addEventListener('click', injectParticles);
+        clearBtn.addEventListener('click', () => { particles.length = 0; statusInfo.innerText = ''; });
+
+        // ==================== 动画循环 ====================
+        let frameCount = 0;
+        function animate() {
+            frameCount++;
+            drawScene();
+
+            if (isMicroMode) {
+                for (let iter = 0; iter < (selectedType === 'solid' ? 2 : selectedType === 'liquid' ? 3 : 2); iter++)
+                    resolveMicroCollisions();
+                drawMicroBonds();
+            }
+
+            for (const p of particles) { p.update(); p.draw(ctx); }
+
+            for (let i = particles.length - 1; i >= 0; i--)
+                if (!particles[i].alive) particles.splice(i, 1);
+
+            const hasAlive = particles.some(p => p.alive && p.type !== 'solid' && p.age > 10);
+            if ((selectedType === 'liquid' || selectedType === 'gas') && hasAlive && frameCount % 3 === 0) {
+                const cnt = isMicroMode ? (selectedType === 'liquid' ? 8 : 4) : 3;
+                for (let i = 0; i < cnt; i++) {
+                    const p = new FlowParticle(selectedType);
+                    if (isMicroMode && selectedType === 'liquid') {
+                        // 从入口上方注入，向下沉降填底部
+                        p.y = 65 + Math.random() * 50;
+                        p.vx = 0.5 + Math.random() * 0.8;
+                        p.vy = 0.2 + Math.random() * 0.4;
+                    }
+                    particles.push(p);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = () => animate();
+    </script>
+</body>
+</html>

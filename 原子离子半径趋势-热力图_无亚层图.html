@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atomic &amp; Ionic Radius Trends</title>
+<style>
+  :root{
+    --teal:#0A455D; --teal2:#4699AA; --panel:#E9EEF3; --border:#C5D2DE;
+    --ink:#1F3A4F; --mut:#5B7684;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:#F4F8FA; color:var(--ink);
+    font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    display:flex; flex-direction:column; align-items:center; padding:22px 14px 40px;
+  }
+  h1{font-size:24px; margin:0 0 2px; color:var(--teal); letter-spacing:.3px;}
+  .sub{color:var(--mut); font-size:13px; margin-bottom:16px;}
+  .wrap{width:100%; max-width:1080px;}
+  .controls{
+    display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px;
+  }
+  .seg{display:inline-flex; border:1px solid var(--border); border-radius:9px; overflow:hidden; background:#fff;}
+  .seg button{
+    border:0; background:#fff; color:var(--mut); font:600 14px "Segoe UI";
+    padding:9px 16px; cursor:pointer; transition:.15s;
+  }
+  .seg button.active{background:var(--teal); color:#fff;}
+  .seg button:not(.active):hover{background:var(--panel);}
+  .toggle{
+    display:inline-flex; align-items:center; gap:8px; cursor:pointer;
+    border:1px solid var(--border); background:#fff; border-radius:9px;
+    padding:9px 14px; font:600 14px "Segoe UI"; color:var(--ink); user-select:none;
+  }
+  .toggle .box{width:16px; height:16px; border:2px solid var(--teal2); border-radius:4px; display:inline-block; position:relative;}
+  .toggle.on .box{background:var(--teal2);}
+  .toggle.on .box::after{content:"✓"; position:absolute; inset:-3px 0 0 2px; color:#fff; font-size:13px;}
+  .canvas-card{
+    background:#fff; border:1px solid var(--border); border-radius:14px;
+    padding:10px; box-shadow:0 6px 22px rgba(10,69,93,.08);
+  }
+  canvas{display:block; width:100%; height:auto; touch-action:none;}
+  .detail{
+    margin-top:16px; background:var(--panel); border:1px solid var(--border);
+    border-radius:12px; padding:14px 18px; min-height:64px;
+    display:flex; flex-wrap:wrap; gap:18px 30px; align-items:center;
+  }
+  .detail .big{font-size:30px; font-weight:700; color:var(--teal); min-width:46px;}
+  .detail .kv{font-size:13px; line-height:1.5;}
+  .detail .kv b{color:var(--teal);}
+  .detail .note{font-size:13px; color:var(--mut); flex:1 1 240px; min-width:220px;}
+  .detail .note b{color:var(--ink);}
+  .legend{margin-top:14px; font-size:12px; color:var(--mut); display:flex; align-items:center; gap:10px;}
+  .bar{height:12px; width:220px; border-radius:6px;
+    background:linear-gradient(90deg,#0A455D,#4699AA,#E8763A);}
+  .hint{font-size:12px; color:var(--mut); margin-top:6px;}
+  .atom-card{margin-top:14px;}
+  .panel-title{font-size:14px; font-weight:600; color:var(--teal); margin:2px 4px 10px;}
+  .panel-title b{color:var(--teal2);}
+  .atom-hint{font-size:12px; color:var(--mut); margin-top:8px;}
+  .radius-card{margin-top:14px;}
+  .cmp-note{margin-top:14px; background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:14px 18px; font-size:14px; color:var(--ink); line-height:1.55;}
+  .cmp-note b{color:var(--teal);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Atomic &amp; Ionic Radius Trends</h1>
+    <div class="sub">Periodic-table heat-map · first 4 periods (Z = 1–36) · radius in picometres (pm)</div>
+
+    <div class="controls">
+      <div class="seg" id="modeSeg">
+        <button data-mode="atom" class="active">Atomic Radius</button>
+        <button data-mode="ion">Ionic Radius</button>
+      </div>
+      <div class="toggle" id="isoBtn"><span class="box"></span>Isoelectronic series</div>
+    </div>
+
+    <div class="canvas-card">
+      <canvas id="cv"></canvas>
+    </div>
+
+    <div class="legend">
+      <span id="legMin">small</span>
+      <div class="bar"></div>
+      <span id="legMax">large</span>
+      <span style="margin-left:14px;">radius →</span>
+    </div>
+    <div class="hint">Click a cell to add it to the comparison (max 2) · click again to remove · hover to highlight · * noble-gas atomic radii are van-der-Waals estimates</div>
+
+    <div class="canvas-card atom-card">
+      <div class="panel-title" id="cmpTitle">Compare two atoms — click any two elements in the table above</div>
+      <canvas id="cvCmp"></canvas>
+      <div class="atom-hint">Each model shows a Bohr-style nucleus + electron shells; the bottom caption gives nuclear composition.</div>
+    </div>
+
+    <div class="canvas-card radius-card">
+      <div class="panel-title">Radius comparison <span id="cmpMode" style="color:var(--mut);font-weight:400"></span></div>
+      <canvas id="cvR"></canvas>
+    </div>
+
+    <div class="cmp-note" id="cmpNote">Click two elements to compare their radii side by side.</div>
+
+    <div class="controls" style="margin-top:14px;">
+      <div class="toggle" id="clearBtn"><span class="box" style="border-color:#C0392B;"></span><span style="color:#C0392B">Clear comparison</span></div>
+    </div>
+  </div>
+
+<script>
+// ============================================================
+// DATA  (atomic radius pm · common ionic radius pm, Shannon/Pauling style)
+// ============================================================
+const ELEMENTS = [
+  // ---- Period 1 ----
+  {Z:1,  sym:'H',  name:'Hydrogen',   g:1,  p:1, aR:53, ion:{f:'H⁻',   r:154}},
+  {Z:2,  sym:'He', name:'Helium',    g:18, p:1, aR:31, ion:null},
+  // ---- Period 2 ----
+  {Z:3,  sym:'Li', name:'Lithium',   g:1,  p:2, aR:167,ion:{f:'Li⁺',  r:76}},
+  {Z:4,  sym:'Be', name:'Beryllium', g:2,  p:2, aR:112,ion:{f:'Be²⁺', r:45}},
+  {Z:5,  sym:'B',  name:'Boron',     g:13, p:2, aR:87, ion:{f:'B³⁺',  r:27}},
+  {Z:6,  sym:'C',  name:'Carbon',    g:14, p:2, aR:67, ion:null},
+  {Z:7,  sym:'N',  name:'Nitrogen',  g:15, p:2, aR:56, ion:{f:'N³⁻',  r:146}},
+  {Z:8,  sym:'O',  name:'Oxygen',    g:16, p:2, aR:48, ion:{f:'O²⁻',  r:140}},
+  {Z:9,  sym:'F',  name:'Fluorine',  g:17, p:2, aR:42, ion:{f:'F⁻',   r:133}},
+  {Z:10, sym:'Ne', name:'Neon',      g:18, p:2, aR:38, ion:null},
+  // ---- Period 3 ----
+  {Z:11, sym:'Na', name:'Sodium',    g:1,  p:3, aR:190,ion:{f:'Na⁺',  r:102}},
+  {Z:12, sym:'Mg', name:'Magnesium', g:2,  p:3, aR:160,ion:{f:'Mg²⁺', r:72}},
+  {Z:13, sym:'Al', name:'Aluminium', g:13, p:3, aR:143,ion:{f:'Al³⁺', r:54}},
+  {Z:14, sym:'Si', name:'Silicon',   g:14, p:3, aR:117,ion:null},
+  {Z:15, sym:'P',  name:'Phosphorus',g:15, p:3, aR:110,ion:{f:'P³⁻',  r:212}},
+  {Z:16, sym:'S',  name:'Sulfur',    g:16, p:3, aR:104,ion:{f:'S²⁻',  r:184}},
+  {Z:17, sym:'Cl', name:'Chlorine',  g:17, p:3, aR:99, ion:{f:'Cl⁻',  r:181}},
+  {Z:18, sym:'Ar', name:'Argon',     g:18, p:3, aR:71, ion:null},
+  // ---- Period 4 (s-block) ----
+  {Z:19, sym:'K',  name:'Potassium', g:1,  p:4, aR:243,ion:{f:'K⁺',   r:138}},
+  {Z:20, sym:'Ca', name:'Calcium',   g:2,  p:4, aR:194,ion:{f:'Ca²⁺', r:100}},
+  // ---- Period 4 (d-block : Sc–Zn) ----
+  {Z:21, sym:'Sc', name:'Scandium',  g:3,  p:4, aR:162,ion:{f:'Sc³⁺', r:74.5}},
+  {Z:22, sym:'Ti', name:'Titanium',  g:4,  p:4, aR:147,ion:{f:'Ti⁴⁺', r:60.5}},
+  {Z:23, sym:'V',  name:'Vanadium',  g:5,  p:4, aR:134,ion:{f:'V³⁺',  r:64}},
+  {Z:24, sym:'Cr', name:'Chromium',  g:6,  p:4, aR:128,ion:{f:'Cr³⁺', r:61.5}},
+  {Z:25, sym:'Mn', name:'Manganese', g:7,  p:4, aR:127,ion:{f:'Mn²⁺', r:83}},
+  {Z:26, sym:'Fe', name:'Iron',      g:8,  p:4, aR:126,ion:{f:'Fe²⁺', r:78}},
+  {Z:27, sym:'Co', name:'Cobalt',    g:9,  p:4, aR:125,ion:{f:'Co²⁺', r:74.5}},
+  {Z:28, sym:'Ni', name:'Nickel',    g:10, p:4, aR:124,ion:{f:'Ni²⁺', r:69}},
+  {Z:29, sym:'Cu', name:'Copper',    g:11, p:4, aR:128,ion:{f:'Cu²⁺', r:73}},
+  {Z:30, sym:'Zn', name:'Zinc',      g:12, p:4, aR:134,ion:{f:'Zn²⁺', r:74}},
+  // ---- Period 4 (p-block : Ga–Kr) ----
+  {Z:31, sym:'Ga', name:'Gallium',   g:13, p:4, aR:135,ion:{f:'Ga³⁺', r:62}},
+  {Z:32, sym:'Ge', name:'Germanium', g:14, p:4, aR:125,ion:null},
+  {Z:33, sym:'As', name:'Arsenic',   g:15, p:4, aR:114,ion:{f:'As³⁻',  r:222}},
+  {Z:34, sym:'Se', name:'Selenium',  g:16, p:4, aR:117,ion:{f:'Se²⁻',  r:198}},
+  {Z:35, sym:'Br', name:'Bromine',   g:17, p:4, aR:114,ion:{f:'Br⁻',   r:196}},
+  {Z:36, sym:'Kr', name:'Krypton',   g:18, p:4, aR:116,ion:null},
+];
+// iso-electronic series : all carry 10 electrons (Ne configuration)
+const ISO = ['N','O','F','Na','Mg','Al'];
+
+// ============================================================
+// STATE
+// ============================================================
+const S = { mode:'atom', iso:false, hover:-1, cmp:[] };
+const SLOTS = [ {label:'A', color:'#0A455D'}, {label:'B', color:'#E8763A'} ];
+function radiusVal(e){ return S.mode==='atom' ? e.aR : (e.ion ? e.ion.r : null); }
+
+// ============================================================
+// CANVAS SETUP
+// ============================================================
+const W = 1080, H = 340;
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+function setupCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  c.width = W*dpr; c.height = H*dpr;
+  c.style.width = '100%'; c.style.height = 'auto';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+setupCanvas(cv);
+
+// ---- layout ----
+const LX = 70, TY = 70;                       // left / top margin
+const COLW = (W - LX - 24) / 18;              // 18 groups
+const ROWH = 62;
+const cellW = COLW - 6, cellH = ROWH - 6;
+
+function cellXY(el){
+  return { x: LX + (el.g-1)*COLW + 3, y: TY + (el.p-1)*ROWH + 3 };
+}
+
+// ============================================================
+// COMPARISON CANVAS  (two atom models side by side)
+// ============================================================
+const AW = 1500, AH = 420;
+const cvC = document.getElementById('cvCmp');
+const ctxC = cvC.getContext('2d');
+function setupCmpCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  c.width = AW*dpr; c.height = AH*dpr;
+  c.style.width = '100%'; c.style.height = 'auto';
+  ctxC.setTransform(dpr,0,0,dpr,0,0);
+}
+setupCmpCanvas(cvC);
+
+// ---- radius-comparison canvas ----
+const RW = 1080, RH = 170;
+const cvR = document.getElementById('cvR');
+const ctxR = cvR.getContext('2d');
+function setupRCanvas(c){
+  const dpr = window.devicePixelRatio || 1;
+  c.width = RW*dpr; c.height = RH*dpr;
+  c.style.width = '100%'; c.style.height = 'auto';
+  ctxR.setTransform(dpr,0,0,dpr,0,0);
+}
+setupRCanvas(cvR);
+
+// electron distribution helpers (first 20 elements)
+function ionCharge(f){
+  const SUP={'¹':1,'²':2,'³':3,'⁴':4,'⁵':5};
+  if(f.includes('⁺')){ const i=f.indexOf('⁺'); const d=f[i-1]; return SUP[d]||1; }
+  if(f.includes('⁻')){ const i=f.indexOf('⁻'); const d=f[i-1]; return -(SUP[d]||1); }
+  return 0;
+}
+function electronsOf(e){
+  if(S.mode==='ion' && e.ion) return e.Z - ionCharge(e.ion.f);
+  return e.Z;
+}
+function getShells(ne){                 // main-shell (K,L,M,N) counts
+  const caps=[2,8,18,8]; const out=[]; let rem=ne;
+  for(const c of caps){ if(rem<=0) break; const k=Math.min(c,rem); out.push(k); rem-=k; }
+  if(rem>0) out.push(rem);
+  return out;
+}
+
+function drawAtomModel(ctx, baseX, i, slot){
+  const e=ELEMENTS[i];
+  const ne = electronsOf(e);
+  const shells = getShells(ne);
+  const isIon = (S.mode==='ion' && e.ion);
+  const col = slot.color;
+
+  // slot header bar
+  ctx.fillStyle = col;
+  ctx.fillRect(baseX+10, 8, 168, 22);
+  ctx.fillStyle = '#fff'; ctx.font='bold 13px Segoe UI'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText(slot.label+' · '+e.sym+'  ('+(isIon?e.ion.f:'atom')+')', baseX+18, 19);
+
+  // ---- Bohr atom (centred in this slot) ----
+  const cx=baseX+375, cy=200, r0=48, dr=38;
+  // nucleus
+  const ng=ctx.createRadialGradient(cx-6,cy-6,4,cx,cy,24);
+  ng.addColorStop(0,'#E8763A'); ng.addColorStop(1,'#B8431E');
+  ctx.beginPath(); ctx.arc(cx,cy,24,0,Math.PI*2); ctx.fillStyle=ng; ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='bold 17px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText('+'+e.Z, cx, cy);
+  // shells + electrons
+  shells.forEach((cnt,k)=>{
+    const r=r0+k*dr;
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+    ctx.strokeStyle='#C5D2DE'; ctx.lineWidth=1.4; ctx.stroke();
+    for(let j=0;j<cnt;j++){
+      const a = (j/cnt)*Math.PI*2 - Math.PI/2;
+      const ex=cx+Math.cos(a)*r, ey=cy+Math.sin(a)*r;
+      ctx.beginPath(); ctx.arc(ex,ey,5,0,Math.PI*2);
+      ctx.fillStyle='#2563EB'; ctx.fill();
+      ctx.lineWidth=1.2; ctx.strokeStyle='#1D4ED8'; ctx.stroke();
+    }
+  });
+  // shell labels K,L,M,N
+  ctx.fillStyle='#5B7684'; ctx.font='11px Segoe UI'; ctx.textAlign='left';
+  ['K','L','M','N'].forEach((lab,k)=>{ if(k<shells.length) ctx.fillText(lab, cx+r0+k*dr+14, cy); });
+
+  // ---- bottom caption : nuclear composition ----
+  ctx.fillStyle='#6B7280'; ctx.font='13px Segoe UI'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  const cap = `nucleus: ${e.Z} protons` + (isIon ? `  ·  e⁻: ${ne}  (${e.ion.f})` : `  ·  e⁻: ${ne}`);
+  ctx.fillText(cap, baseX+30, AH-24);
+  ctx.textAlign='center';
+}
+
+// ============================================================
+// COLOR SCALE
+// ============================================================
+function activeRange(){
+  let lo=Infinity, hi=-Infinity;
+  ELEMENTS.forEach(e=>{
+    const v = S.mode==='atom' ? e.aR : (e.ion? e.ion.r : null);
+    if(v!=null){ lo=Math.min(lo,v); hi=Math.max(hi,v); }
+  });
+  return [lo,hi];
+}
+function radiusColor(t){            // t 0(small)→1(large) : teal → amber
+  const c0=[10,69,93], c1=[232,118,58];
+  const r=Math.round(c0[0]+(c1[0]-c0[0])*t);
+  const g=Math.round(c0[1]+(c1[1]-c0[1])*t);
+  const b=Math.round(c0[2]+(c1[2]-c0[2])*t);
+  return `rgb(${r},${g},${b})`;
+}
+
+// ============================================================
+// DRAW
+// ============================================================
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+
+  const [lo,hi] = activeRange();
+
+  // --- group numbers (top) ---
+  ctx.fillStyle='#9FB3C0'; ctx.font='11px Segoe UI'; ctx.textAlign='center';
+  for(let g=1; g<=18; g++){
+    const x = LX + (g-1)*COLW + COLW/2;
+    ctx.fillText(g, x, TY-8);
+  }
+  // --- period numbers (left) ---
+  ctx.textAlign='right';
+  for(let p=1; p<=4; p++){
+    const y = TY + (p-1)*ROWH + ROWH/2;
+    ctx.fillText('P'+p, LX-14, y+4);
+  }
+
+  // --- cells ---
+  ELEMENTS.forEach((e,i)=>{
+    const {x,y}=cellXY(e);
+    const v = S.mode==='atom' ? e.aR : (e.ion? e.ion.r : null);
+    const inCmp = S.cmp.indexOf(i);
+    const isSel = inCmp>=0, isHov = i===S.hover;
+
+    if(v==null){
+      // no common ion
+      ctx.fillStyle='#F1F4F6'; rr(ctx,x,y,cellW,cellH,7); ctx.fill();
+      ctx.strokeStyle='#D7E0E6'; ctx.lineWidth=1; ctx.stroke();
+      ctx.fillStyle='#AEBCC6'; ctx.font='13px Segoe UI'; ctx.textAlign='center';
+      ctx.fillText('—', x+cellW/2, y+cellH/2+5);
+      ctx.fillStyle='#9FB3C0'; ctx.font='bold 15px Segoe UI';
+      ctx.fillText(e.sym, x+cellW/2, y+19);
+      return;
+    }
+    const t=(v-lo)/(hi-lo);
+    ctx.fillStyle=radiusColor(t); rr(ctx,x,y,cellW,cellH,7); ctx.fill();
+
+    // symbol + value
+    ctx.fillStyle='#fff'; ctx.textAlign='center';
+    ctx.font='bold 17px Segoe UI'; ctx.fillText(e.sym, x+cellW/2, y+24);
+    ctx.font='11px Segoe UI'; ctx.fillText(v, x+cellW/2, y+cellH-9);
+    if(S.mode==='ion'){
+      ctx.font='10px Segoe UI';
+      ctx.fillText(e.ion.f, x+cellW/2, y+38);
+    }
+    if(isHov||isSel){
+      ctx.strokeStyle = isSel? SLOTS[inCmp].color : '#fff';
+      ctx.lineWidth = isSel? 4 : 2.5;
+      rr(ctx,x,y,cellW,cellH,7); ctx.stroke();
+      if(isSel){
+        ctx.fillStyle=SLOTS[inCmp].color; rr(ctx, x+cellW-24, y+4, 20,20,10); ctx.fill();
+        ctx.fillStyle='#fff'; ctx.font='bold 12px Segoe UI'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(String(inCmp+1), x+cellW-14, y+14);
+      }
+    }
+  });
+
+  // --- trend annotations ---
+  drawTrendArrows(lo,hi);
+
+  // --- isoelectronic overlay ---
+  if(S.iso) drawIso(lo,hi);
+}
+
+function drawTrendArrows(){
+  ctx.save();
+  // across a period : decrease → (top)
+  ctx.strokeStyle='#0A455D'; ctx.fillStyle='#0A455D'; ctx.lineWidth=2;
+  const ay = TY - 26;
+  ctx.beginPath(); ctx.moveTo(LX+COLW*0.5, ay); ctx.lineTo(LX+COLW*16.5, ay); ctx.stroke();
+  arrowHead(LX+COLW*16.5, ay, 0);
+  ctx.font='bold 11px Segoe UI'; ctx.textAlign='left';
+  ctx.fillText('decreases across a period  →', LX+COLW*0.5, ay-6);
+
+  // down a group : increase ↓ (left)
+  ctx.beginPath(); ctx.moveTo(20, TY+ROWH*0.6); ctx.lineTo(20, TY+ROWH*3.4); ctx.stroke();
+  arrowHead(20, TY+ROWH*3.4, Math.PI/2);
+  ctx.save(); ctx.translate(14, TY+ROWH*2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.fillText('increases ↓ down a group', 0, 0); ctx.restore();
+  ctx.restore();
+}
+
+function arrowHead(x,y,ang){
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-9,-4); ctx.lineTo(-9,4); ctx.closePath();
+  ctx.fillStyle='#0A455D'; ctx.fill(); ctx.restore();
+}
+
+function drawIso(lo,hi){
+  const pts = ISO.map(sym=>{
+    const e = ELEMENTS.find(x=>x.sym===sym);
+    const {x,y}=cellXY(e);
+    return {x:x+cellW/2, y:y+cellH/2, e, v:(S.mode==='atom'?e.aR:e.ion.r)};
+  });
+  // outline the 6 cells
+  pts.forEach(p=>{
+    const {x,y}=cellXY(p.e);
+    ctx.strokeStyle='#F2C14E'; ctx.lineWidth=3; rr(ctx,x-2,y-2,cellW+4,cellH+4,8); ctx.stroke();
+  });
+  // dashed connector
+  ctx.save();
+  ctx.strokeStyle='#C0392B'; ctx.lineWidth=2; ctx.setLineDash([6,5]);
+  ctx.beginPath();
+  pts.forEach((p,i)=> i? ctx.lineTo(p.x,p.y) : ctx.moveTo(p.x,p.y));
+  ctx.stroke();
+  // arrowhead at last
+  const a=pts[pts.length-1], b=pts[pts.length-2];
+  arrowHead(a.x,a.y, Math.atan2(a.y-b.y, a.x-b.x));
+  ctx.restore();
+
+  // caption
+  ctx.fillStyle='#C0392B'; ctx.font='bold 12px Segoe UI'; ctx.textAlign='center';
+  const last=pts[pts.length-1];
+  ctx.fillText('all 10 e⁻  →  radius shrinks as Z ↑', last.x, last.y+cellH/2+22);
+}
+
+// ============================================================
+// INTERACTION
+// ============================================================
+function hit(mx,my){
+  for(let i=0;i<ELEMENTS.length;i++){
+    const e=ELEMENTS[i]; const {x,y}=cellXY(e);
+    if(mx>=x&&mx<=x+cellW&&my>=y&&my<=y+cellH) return i;
+  }
+  return -1;
+}
+function evtPos(ev){
+  const r=cv.getBoundingClientRect();
+  const sx = W / r.width;
+  return { x:(ev.clientX-r.left)*sx, y:(ev.clientY-r.top)*sx };
+}
+cv.addEventListener('mousemove',ev=>{
+  const {x,y}=evtPos(ev); const i=hit(x,y);
+  if(i!==S.hover){ S.hover=i; draw(); }
+});
+cv.addEventListener('mouseleave',()=>{ S.hover=-1; draw(); });
+cv.addEventListener('click',ev=>{
+  const {x,y}=evtPos(ev); const i=hit(x,y);
+  if(i<0) return;
+  const k=S.cmp.indexOf(i);
+  if(k>=0) S.cmp.splice(k,1);                 // toggle off
+  else { if(S.cmp.length>=2) S.cmp.shift(); S.cmp.push(i); }
+  draw(); renderCompare();
+});
+
+// ============================================================
+// COMPARISON RENDER
+// ============================================================
+function renderCompare(){
+  ctxC.clearRect(0,0,AW,AH); ctxC.fillStyle='#fff'; ctxC.fillRect(0,0,AW,AH);
+  ctxC.textAlign='center'; ctxC.textBaseline='middle';
+  if(S.cmp.length===0){
+    ctxC.fillStyle='#9FB3C0'; ctxC.font='16px Segoe UI';
+    ctxC.fillText('Click any two elements in the table above to compare their atom / ion models', AW/2, AH/2);
+  } else if(S.cmp.length===1){
+    drawAtomModel(ctxC, 0, S.cmp[0], SLOTS[0]);
+    ctxC.setLineDash([6,6]); ctxC.strokeStyle='#C5D2DE'; ctxC.lineWidth=1.5;
+    ctxC.strokeRect(770, 56, 700, AH-110); ctxC.setLineDash([]);
+    ctxC.fillStyle='#AEBCC6'; ctxC.font='15px Segoe UI';
+    ctxC.fillText('+ click a second element', AW*0.75, AH/2);
+  } else {
+    drawAtomModel(ctxC, 0, S.cmp[0], SLOTS[0]);
+    drawAtomModel(ctxC, 750, S.cmp[1], SLOTS[1]);
+  }
+  drawRadiusCompare();
+  updateCmpNote();
+}
+
+function drawRadiusCompare(){
+  ctxR.clearRect(0,0,RW,RH); ctxR.fillStyle='#fff'; ctxR.fillRect(0,0,RW,RH);
+  ctxR.textBaseline='middle';
+  const list = S.cmp.map(i=>({e:ELEMENTS[i], v:radiusVal(ELEMENTS[i])}));
+  if(list.length===0) return;
+  if(list.length===1){
+    drawRadiusCircle(ctxR, RW/2, 92, 95, list[0].e, list[0].v, SLOTS[0].color);
+    return;
+  }
+  const a=list[0], b=list[1];
+  const maxV=Math.max(a.v||1, b.v||1);
+  const maxD=95;
+  const dA = a.v==null?40 : Math.max(20, a.v/maxV*maxD);
+  const dB = b.v==null?40 : Math.max(20, b.v/maxV*maxD);
+  drawRadiusCircle(ctxR, 270, 92, dA, a.e, a.v, SLOTS[0].color);
+  drawRadiusCircle(ctxR, RW-270, 92, dB, b.e, b.v, SLOTS[1].color);
+}
+
+function drawRadiusCircle(ctx,x,y,d,e,v,col){
+  if(v==null){
+    ctx.strokeStyle='#C5D2DE'; ctx.setLineDash([5,5]); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(x,y,28,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#AEBCC6'; ctx.font='12px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText('no ion', x, y);
+    ctx.fillStyle='#5B7684'; ctx.font='bold 15px Segoe UI';
+    ctx.fillText(e.sym, x, y-44);
+    return;
+  }
+  ctx.beginPath(); ctx.arc(x,y,d/2,0,Math.PI*2);
+  ctx.fillStyle = col+'22'; ctx.fill();
+  ctx.strokeStyle=col; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle=col; ctx.font='bold 16px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText(e.sym, x, y - d/2 - 14);
+  ctx.fillStyle='#1F3A4F'; ctx.font='bold 14px Segoe UI';
+  ctx.fillText(v+' pm', x, y + d/2 + 16);
+}
+
+function updateCmpNote(){
+  const note=document.getElementById('cmpNote');
+  document.getElementById('cmpMode').textContent='· '+(S.mode==='ion'?'ionic':'atomic')+' radius (pm)';
+  if(S.cmp.length<2){
+    note.innerHTML = S.cmp.length===0
+      ? 'Click two elements to compare their radii side by side.'
+      : 'Now click a <b>second</b> element to compare radii.';
+    return;
+  }
+  const a=ELEMENTS[S.cmp[0]], b=ELEMENTS[S.cmp[1]];
+  const va=radiusVal(a), vb=radiusVal(b);
+  if(va==null||vb==null){
+    note.innerHTML = (va==null?`<b>${a.sym}</b>`:'')+(vb==null?` <b>${b.sym}</b>`:'')+
+      ' has no common simple ion in this mode — switch to Atomic Radius to compare.';
+    return;
+  }
+  const bigger = va>=vb? a:b, smaller = va>=vb? b:a;
+  const bv=Math.max(va,vb), sv=Math.min(va,vb);
+  const ratio=(bv/sv).toFixed(2);
+  note.innerHTML = `<b>${bigger.sym}</b> (${bv} pm) is <b>${ratio}× larger</b> than <b>${smaller.sym}</b> (${sv} pm) — a difference of <b>${bv-sv} pm</b>.`;
+}
+
+// ============================================================
+// CONTROLS
+// ============================================================
+document.getElementById('modeSeg').addEventListener('click',ev=>{
+  const b=ev.target.closest('button'); if(!b) return;
+  S.mode=b.dataset.mode;
+  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('active', x===b));
+  document.getElementById('legMin').textContent = S.mode==='atom'?'small':'small ion';
+  draw(); renderCompare();
+});
+document.getElementById('isoBtn').addEventListener('click',()=>{
+  S.iso=!S.iso;
+  document.getElementById('isoBtn').classList.toggle('on', S.iso);
+  draw(); renderCompare();
+});
+document.getElementById('clearBtn').addEventListener('click',()=>{
+  S.cmp=[]; draw(); renderCompare();
+});
+window.addEventListener('resize',()=>{ setupCanvas(cv); setupCmpCanvas(cvC); setupRCanvas(cvR); draw(); renderCompare(); });
+
+// init
+renderCompare();
+draw();
+</script>
+</body>
+</html>

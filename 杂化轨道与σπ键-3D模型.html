@@ -1,0 +1,2652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orbitals, Hybridization &amp; &sigma;/&pi; Bonds &mdash; 3-D Model</title>
+<style>
+  :root{
+    --teal:#0A455D; --teal-light:#4699AA; --bg:#EEF3F5;
+    --card:rgba(255,255,255,.95); --text:#1E293B; --text2:#475569;
+    --sp:#3BC96B; --sp-deep:#25994C; --pleaf:#FBC72B; --pdeep:#D89B10;
+    --sig:#F0A62A; --pi:#E4812F;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter','Segoe UI',system-ui,-apple-system,'PingFang SC',sans-serif;background:var(--bg);color:var(--text);padding:14px;min-height:100vh;}
+  .wrap{max-width:1180px;margin:0 auto;}
+  header{background:linear-gradient(135deg,var(--teal),var(--teal-light));color:#fff;border-radius:16px;padding:14px 22px;box-shadow:0 4px 16px rgba(10,69,93,.18);display:flex;align-items:center;gap:12px;}
+  header h1{font-size:22px;font-weight:800;letter-spacing:.3px;}
+  header .sub{font-size:13px;opacity:.85;margin-left:auto;font-weight:500;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0;padding:10px 16px;background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);}
+  button.btn{border:none;cursor:pointer;border-radius:10px;padding:8px 14px;font-size:13px;font-weight:600;background:#e7eef2;color:var(--teal);transition:all .15s;font-family:inherit;}
+  button.btn:hover:not(:disabled){background:#dbe7ec;}
+  button.btn.active{background:var(--teal);color:#fff;}
+  button.btn.primary{background:var(--teal);color:#fff;}
+  button.btn.primary:hover{background:#0d5a7a;}
+  button.btn:disabled{opacity:.45;cursor:not-allowed;}
+  .seg{display:flex;background:#e7eef2;border-radius:10px;padding:3px;gap:2px;}
+  .seg button{background:transparent;color:var(--teal);border:none;border-radius:8px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;}
+  .seg button.on{background:#fff;box-shadow:0 1px 4px rgba(10,69,93,.18);}
+  .seg button:disabled{opacity:.42;cursor:not-allowed;}
+  .hint{margin-left:auto;font-size:12px;color:#64748B;font-weight:600;}
+  .stage-card{background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);padding:10px;}
+  canvas{display:block;width:100%;border-radius:12px;background:linear-gradient(180deg,#FDFEFF 0%,#F2F7F9 100%);cursor:grab;}
+  canvas.drag{cursor:grabbing;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--text2);align-items:center;}
+  .legend .it{display:flex;align-items:center;gap:6px;}
+  .swatch{width:15px;height:15px;border-radius:5px;display:inline-block;box-shadow:inset 0 -2px 3px rgba(0,0,0,.18);}
+  .stepper{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding:12px 14px;background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);}
+  .step{display:flex;align-items:center;gap:6px;border:1px solid #D8E3EA;background:#fff;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;font-family:inherit;}
+  .step .num{width:18px;height:18px;border-radius:50%;background:#e7eef2;color:var(--teal);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .step:hover:not(:disabled){border-color:var(--teal-light);}
+  .step.on{background:var(--teal);border-color:var(--teal);color:#fff;}
+  .step.on .num{background:rgba(255,255,255,.25);color:#fff;}
+  .step:disabled{opacity:.42;cursor:not-allowed;}
+  .step .soon{font-size:10px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:.4px;}
+  .step.on .soon{color:rgba(255,255,255,.75);}
+  .card{background:var(--card);border-radius:14px;padding:14px 18px;box-shadow:0 4px 16px rgba(10,69,93,.08);border-top:4px solid var(--teal-light);margin-top:12px;}
+  .card h2{font-size:15px;font-weight:800;color:var(--teal);margin-bottom:6px;letter-spacing:.2px;}
+  .card p{font-size:13.5px;line-height:1.62;color:var(--text2);}
+  .card p b{color:var(--text);}
+  .card .align{margin-top:8px;font-size:12px;color:#64748B;border-top:1px dashed #D8E3EA;padding-top:8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Orbitals, Hybridization &amp; &sigma;/&pi; Bonds</h1>
+    <div class="sub">3-D model &middot; drag to rotate</div>
+  </header>
+
+  <div class="toolbar">
+    <div class="seg">
+      <button id="mDemo" class="on">Demo</button>
+      <button id="mExplore" disabled title="Explore mode arrives in the full build">Explore</button>
+    </div>
+    <button class="btn primary" id="playBtn">&#9654; Play steps</button>
+    <button class="btn" id="resetBtn">&#8635; Reset view</button>
+    <div class="hint">&#8635; auto-spins &middot; drag to rotate</div>
+  </div>
+
+  <div class="stage-card">
+    <canvas id="cv"></canvas>
+    <div class="legend">
+      <div class="it"><span class="swatch" style="background:var(--sp);"></span> sp / sp&sup2; / sp&sup3; orbital</div>
+      <div class="it"><span class="swatch" style="background:var(--pleaf);"></span> unhybridized p orbital</div>
+      <div class="it"><span class="swatch" style="background:#8FA6B5;"></span> small back lobe</div>
+      <div class="it"><span class="swatch" style="width:24px;height:10px;border-radius:3px;background:#D9C7B4;"></span> electron level (faint dashes)</div>
+      <div class="it" style="margin-left:auto;color:#64748B;">Full build &mdash; 14 steps</div>
+    </div>
+  </div>
+
+  <div class="stepper" id="stepper"></div>
+
+  <div class="card">
+    <h2 id="cardTitle">1 &middot; The s orbital</h2>
+    <p id="cardText"></p>
+    <div class="align" id="cardAlign"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ==========================================================================
+   3-D engine (zero dependency, Canvas 2D)
+
+   Orbitals are drawn as TRUE projected ellipsoids: a lobe is an ellipsoid in
+   world space; we build its quadratic form, rotate it into view space, take
+   the Schur complement onto the screen plane, and eigen-decompose the
+   resulting 2x2 -> the exact projected ellipse for ANY orientation.
+
+   Electrons are drawn as 3-D arrows. Each arrow is a bent cylinder: it is
+   resolved into a world-space polyline of rings, every ring is projected with
+   the same ellipse maths, and the rings are painted back-to-front. No font
+   glyph is involved, so the arrow can never show up as a tofu box.
+   ========================================================================== */
+
+/* ---------- palette (sampled from the reference artwork) ---------- */
+const COL={
+  sp:'#3BC96B', spDeep:'#25994C', spLight:'#5FD983',
+  p:'#FBC72B', pDeep:'#D89B10', pLight:'#FDE9A0',
+  back:'#9FB6C4', backDeep:'#7B95A6',
+  dash:'#CBB49E', dash2:'#DCCFBE',
+  e:'#2B3A45', nuc:'#33424E', lead:'#5B7684',
+  h:'#CFE6F0', hDeep:'#7FA8BC',
+  sigma:'#2E7DA6', sigmaDeep:'#1B5A7D',
+  pi:'#E4812F', piDeep:'#B85F1C', piGhost:'#C8B49C'
+};
+
+/* ---------- vector / matrix helpers ---------- */
+const V={
+  add:(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]],
+  sub:(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]],
+  mul:(a,s)=>[a[0]*s,a[1]*s,a[2]*s],
+  dot:(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2],
+  cross:(a,b)=>[a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]],
+  len:a=>Math.hypot(a[0],a[1],a[2]),
+  norm:a=>{const L=Math.hypot(a[0],a[1],a[2])||1;return [a[0]/L,a[1]/L,a[2]/L];}
+};
+function matMul(A,B){
+  const C=[[0,0,0],[0,0,0],[0,0,0]];
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++){let s=0;for(let k=0;k<3;k++)s+=A[i][k]*B[k][j];C[i][j]=s;}
+  return C;
+}
+const transpose=A=>[[A[0][0],A[1][0],A[2][0]],[A[0][1],A[1][1],A[2][1]],[A[0][2],A[1][2],A[2][2]]];
+/* Scalar interpolation. Module scope, because more than one animated step needs
+   it and a helper that lives inside one builder is invisible to the next. */
+const lerp=(a,b,s)=>a+(b-a)*s;
+function det3(m){
+  return m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])
+       - m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])
+       + m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+}
+
+// view = R . world   (R = Rx(pitch) . Ry(yaw))
+function rotMatrix(yaw,pitch){
+  const cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+  const Ry=[[cy,0,-sy],[0,1,0],[sy,0,cy]];
+  const Rx=[[1,0,0],[0,cp,-sp],[0,sp,cp]];
+  return matMul(Rx,Ry);
+}
+const applyR=(R,p)=>[R[0][0]*p[0]+R[0][1]*p[1]+R[0][2]*p[2],
+                     R[1][0]*p[0]+R[1][1]*p[1]+R[1][2]*p[2],
+                     R[2][0]*p[0]+R[2][1]*p[1]+R[2][2]*p[2]];
+
+/* Screen-space placement for multi-object scenes (steps 9 and 11).
+   Laying separate molecules out along a WORLD axis does not work: the camera
+   is isometric, so world x projects diagonally down-right and world z projects
+   diagonally up-right. Two molecules "side by side" in world space therefore
+   appear at different HEIGHTS on screen, and two molecules "one above the
+   other" slide sideways instead. Anything that has to read as a tidy row or
+   column has to be positioned AFTER projection, which is what this does:
+   shift a world point by `off` canvas units in the projected screen frame.
+   `off` is [right, up]; up is positive because the renderer flips y. */
+function frame(p,off){
+  if(!off) return p;
+  return [p[0]+off[0], p[1]+off[1], p[2]];
+}
+
+/* Exact projected ellipse of an ellipsoid { centre c, major axis `axis`,
+   semi-axes a (along axis), b (across) } seen through rotation R. */
+function ellipseParams(c,axis,a,b,R){
+  const u=V.norm(axis);
+  const t=Math.abs(u[0])<0.9?[1,0,0]:[0,1,0];
+  const vv=V.norm(V.cross(u,t)), ww=V.cross(u,vv);
+  const M=[[u[0]/a,u[1]/a,u[2]/a],[vv[0]/b,vv[1]/b,vv[2]/b],[ww[0]/b,ww[1]/b,ww[2]/b]];
+  const MV=matMul(M,transpose(R));
+  const Q=matMul(transpose(MV),MV);
+  const q11=Q[0][0],q12=Q[0][1],q22=Q[1][1];
+  const A11=q11, A12=-q12, A22=q22;              // screen = (view.x, -view.y)
+  const det=A11*A22-A12*A12;
+  if(Math.abs(det)<1e-12) return {A:a,B:b,ang:0};
+  const C11=A22/det, C12=-A12/det, C22=A11/det;  // covariance of the ellipse
+  const tr=C11+C22, dt=C11*C22-C12*C12;
+  const disc=Math.sqrt(Math.max(0,tr*tr/4-dt));
+  const m1=Math.max(1e-9,tr/2+disc), m2=Math.max(1e-9,tr/2-disc);
+  return {A:Math.sqrt(m1),B:Math.sqrt(m2),ang:0.5*Math.atan2(2*C12,C11-C22)};
+}
+
+/* ---------- colour helpers ---------- */
+function hex2rgb(h){const n=parseInt(h.slice(1),16);return [(n>>16)&255,(n>>8)&255,n&255];}
+function hex2rgba(h,a){const c=hex2rgb(h);return 'rgba('+c[0]+','+c[1]+','+c[2]+','+a+')';}
+function shade(hex,f){
+  const c=hex2rgb(hex);
+  const mix=v=>f>0?v+(255-v)*f:v*(1+f);
+  return 'rgb('+(mix(c[0])|0)+','+(mix(c[1])|0)+','+(mix(c[2])|0)+')';
+}
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+
+/* ---------- canvas ---------- */
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+let CW=0,CH=0,DPR=1;
+function fitCanvas(){
+  DPR=window.devicePixelRatio||1;
+  const w=cv.parentElement.clientWidth-20;
+  const h=Math.max(460,Math.min(600,Math.round(w*0.52)));
+  cv.style.height=h+'px';
+  cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CW=w; CH=h;
+}
+window.addEventListener('resize',fitCanvas);
+
+/* ---------- state ---------- */
+const state={ step:1, yaw:0.785, pitch:0.615, playing:false, t:0, holdT:0, stepT:0 };
+
+/* ---------- geometry constants ----------
+   LOBE_SCALE is the "make every orbital twice the area" dial: 1.414 doubles
+   the footprint of every lobe while the nucleus positions stay put.        */
+const LOBE_SCALE=Math.SQRT2;
+
+const S_LOBE=0.50;                       // s orbital radius (soft cloud)
+/* The four sp3 directions, as an explicit tetrahedron whose orientation is
+   chosen so that NO lobe points down the default camera axis.
+
+   Why not the textbook (1,1,1)/(1,-1,-1)/(-1,1,-1)/(-1,-1,1) set: at the
+   default view (yaw 0.785, pitch 0.615) the first of those axes projects to a
+   length of 0.001 - it aims almost exactly at the viewer. Its lobe collapses
+   to a circle, its electron arrow has nowhere to sit, and the whole sp3 step
+   looks wrong. Rather than rotate the set (rotating about the body diagonal
+   fixes that very axis and about a C2 axis you can only permute - neither
+   helps), build the tetrahedron directly from a base triangle that is already
+   tilted away from the view axis.
+
+   Apex angle from the centre = acos(-1/3) = 109.4712 deg exactly, which is
+   the angle between any two of the four directions. */
+const TET=(function(){
+  const apex=Math.acos(-1/3);            // 109.4712 deg, tetrahedral
+  const out=[];
+  // apex vertex, tilted off the vertical so it does not face the camera
+  const tilt=0.9553;                     // ~54.7 deg
+  out.push(V.norm([Math.sin(tilt)*Math.cos(0.40), Math.cos(tilt), Math.sin(tilt)*Math.sin(0.40)]));
+  // the other three: cones at `apex` from the first, spaced 120 deg in azimuth
+  const a=out[0];
+  // build an orthonormal frame around a
+  const tmp=Math.abs(a[1])<0.9?[0,1,0]:[1,0,0];
+  const e1=V.norm(V.cross(a,tmp));
+  const e2=V.norm(V.cross(a,e1));
+  const s=Math.sin(apex), c=Math.cos(apex);
+  for(let i=0;i<3;i++){
+    const ph=2*Math.PI*i/3 + 0.9;
+    out.push(V.norm([
+      a[0]*c + (e1[0]*Math.cos(ph)+e2[0]*Math.sin(ph))*s,
+      a[1]*c + (e1[1]*Math.cos(ph)+e2[1]*Math.sin(ph))*s,
+      a[2]*c + (e1[2]*Math.cos(ph)+e2[2]*Math.sin(ph))*s
+    ]));
+  }
+  return out;
+})();
+
+/* =================== scene element factories =================== */
+function lobe(c,axis,a,b,col,opt){
+  return Object.assign({k:'lobe',c,axis,a:a*LOBE_SCALE,b:b*LOBE_SCALE,col,
+    alpha:opt&&opt.alpha!=null?opt.alpha:1},opt||{});
+}
+function dashBand(dir,at,len,opt){
+  return Object.assign({k:'dash',dir:V.norm(dir),at,len,n:7},opt||{});
+}
+function axes(faint){ return {k:'axes',faint:!!faint}; }
+function tag(at,text,col,opt){ return Object.assign({k:'tag',at,text,col:col||COL.lead},opt||{}); }
+function note(x,y,text,col){ return {k:'note',x,y,text,col:col||COL.lead}; }
+function nuc(at,r,sym,opt){ return Object.assign({k:'nuc',at,r:r||0.105,sym:sym||'C'},opt||{}); }
+/* A hydrogen 1s sphere, drawn as a soft cloud with a small nucleus. `at` is
+   its world position; used for every C-H bond in steps 4 and 6. */
+function hyd(at,opt){ return Object.assign({k:'hyd',at,r:0.30},opt||{}); }
+/* The same soft sphere, with the radius under the caller's control. The H used
+   as a LIGAND wants 0.30 so it tucks into the C-H bond; a hydrogen drawn as an
+   ATOM IN ITS OWN RIGHT wants to read wider than the carbon nucleus. */
+function hydR(at,r,opt){ return Object.assign({k:'hyd',at,r},opt||{}); }
+/* A faint electron-level line: a stack of short 3-D bars, drawn furthest back.
+   Used to sketch the 2p / 1s starting levels behind the artwork. */
+function levelLine(dir,at,len,opt){ return Object.assign({k:'dash',dir:V.norm(dir),at,len,n:5},opt||{}); }
+/* The energy-level inset. Everything in it is in CANVAS FRACTIONS (0..1 of
+   the stage), never world units: it must not respond to the camera at all.
+   `rows` are horizontal level lines stacked down the panel; each row lists
+   one or more `spans`, and several spans on one row are the degenerate
+   orbitals drawn side by side. `arrows` are transitions between rows. */
+function levelPanel(opt){ return Object.assign({k:'level',x:0.030,y:0.075,alpha:1,rows:[],arrows:[]},opt||{}); }
+/* A plain ball-and-stick bond. `a` and `b` are the two atom positions; the
+   stick is drawn as a thick line with a slight taper, and `kind` selects the
+   sigma / pi / double treatment. */
+function stick(a,b,kind,opt){
+  return Object.assign({k:'stick',a,b,kind:kind||'sigma',w:0.075},opt||{});
+}
+/* An overlap lens: the shaded region where two lobes meet. Drawn as a filled
+   ellipse in the plane of the two axes, which is how the textbook shades the
+   bonding region. `axis` is the bond direction, `n` the normal of the shading
+   plane, `L` the half-length along the bond. */
+function lens(c,axis,n,L,wst,col,opt){
+  return Object.assign({k:'lens',c,axis:V.norm(axis),n:V.norm(n),L,w:wst,
+    col:col||COL.sigma},opt||{});
+}
+/* A curved arrow, used to show the pi electron density above and below the
+   bond axis (and the rotation that a pi bond forbids). `pts` is a world-space
+   polyline; it is projected and stroked. */
+function curl(pts,col,opt){
+  return Object.assign({k:'curl',pts,col:col||COL.pi},opt||{});
+}
+/* A "this overlap is gone" marker: a cross centred on a point, sized in screen
+   units. Step 10 needs it because the absence of overlap leaves no visual
+   trace - without an explicit cross the twisted p orbitals just look like two
+   unrelated orbitals and the student never learns a bond was broken. */
+function cross(at,size,col,opt){
+  return Object.assign({k:'cross',at,size:size||0.28,col:col||COL.piDeep},opt||{});
+}
+
+/* An electron arrow: a short arrow sitting INSIDE one lobe of a p orbital and
+   pointing along that lobe's own axis, outward from the nucleus.
+
+   Two properties matter, and both were wrong in an earlier version:
+
+   1. `at` is a point on the lobe's own axis (the lobe centre), NOT the orbital
+      centre. Anchoring at the orbital centre with a sideways `lat` offset made
+      the arrow rotate away from its lobe: at some camera angles the "up" arrow
+      drifted into the other lobe and the pair appeared to swap ends.
+
+   2. The arrow must be drawn pointing outward for `s=+1` and inward for `s=-1`,
+      but ALWAYS within the lobe it was given. The two lobes of a p orbital sit
+      on +axis and -axis; the electron in each is drawn along its own axis. */
+function earrow(dir,at,s,opt){
+  return Object.assign({k:'ear',dir:V.norm(dir),at,s:s,span:0.30},opt||{});
+}
+/* An arrow whose direction is decided PER FRAME by the step builder, not
+   baked in at build time. `fn(t)` returns a unit vector (or null to hide the
+   arrow altogether); `at` is the anchor point the glyph is centred on; `t` is
+   the step's own elapsed time in seconds, already clamped by the builder.
+
+   Needed for the sp3 hybridisation step: during the migration the four
+   electrons have to leave the s and p lobes and ARRIVE in the four sp3 lobes.
+   A static earrow can only live in one of those two places, so a mid-flight
+   arrow would either pop into existence or point down the wrong axis. */
+function anchorAt(at,fn,opt){
+  return Object.assign({k:'anchor',at,fn,span:0.30,s:1,spanT:null},opt||{});
+}
+
+/* =================== the shared pair of a covalent bond ===================
+   Two electrons sitting in the OVERLAP region between two nuclei - one
+   contributed by each atom. This is drawn ONCE per bond and stands for both
+   electrons; the hydrogen's 1s sphere deliberately does NOT also carry its own
+   arrow, because that would draw the same electron twice.
+
+   Before this existed, the bonding figures showed the carbon's unhybridised p
+   electrons and nothing else: in C2H4 all five sigma bonds - the C-C bond and
+   the four C-H bonds - were drawn with zero electrons in them, and the
+   hydrogens were empty spheres. The class could see the pi electrons but not
+   the electrons that actually hold the molecule together.
+
+   `at` is the overlap centre, `dir` runs along the bond.
+
+   Both arrows share that one world anchor and are separated by a SCREEN-space
+   `off`. A world-space separation rotates with the camera, and the pair then
+   orbits on screen so the up-arrow sits below the down-arrow for half of every
+   turn - the bug that took three attempts to kill on the 2s pair.
+
+   `sortAt`/`sortBias` ride the pair just in FRONT of its own bond. The sp lobes
+   and the hydrogen clouds are opaque enough to bury an arrow that sorts behind
+   them, which is precisely the failure the class reported. 0.45 was chosen
+   against measured sort keys: it beats this bond's own lobe (worst case 0.30),
+   its own hydrogen cloud (0.38) and its own overlap lens (0.12), while staying
+   well under the ~1.3 separation between DIFFERENT bonds, so front/back
+   ordering across the molecule is untouched. */
+function bondPair(at,opt){
+  const o=Object.assign({span:0.17,sortAt:at,sortBias:0.45},opt||{});
+  const GAP=Math.max(14, CW*0.017);
+  /* The arrows are drawn along world +/-y and separated HORIZONTALLY on screen,
+     which is the ordinary way a shared pair is written: an up-arrow and a
+     down-arrow side by side. That combination is deliberate.
+     An earlier version pointed each arrow ALONG the bond and separated the two
+     along the bond axis too. Where the bond happened to lie horizontally on
+     screen the two antiparallel arrows then sat on the same line pointing at
+     each other - they overlapped head-on into an unreadable cross instead of
+     reading as a pair.
+     World +y projects to screen (0, cos pitch), i.e. straight up, at EVERY yaw,
+     so these arrows are always exactly vertical and the separation is always
+     exactly horizontal, hence always perpendicular to the arrows. It is also
+     the same convention step 1 and step 3 already use for their pairs. The
+     arrows show SPIN, not direction in space, so tying them to the bond axis
+     was never carrying any meaning.
+
+     `off` means TWO different things to two callers: bondPair needs it for the
+     pair's own separation, while a multi-panel step (7) uses it to place the
+     whole panel. So the caller's `off` is read as the panel offset and the
+     separation is added to it - otherwise the second use would silently
+     overwrite the first and both halves of step 7 would land on top of each
+     other. */
+  const base=o.off||[0,0];
+  const strip=Object.assign({},o); delete strip.off;
+  /* Stamp both arrows with the same `pid`. Two panels of the same molecule sit
+     at identical world coordinates, so a verification pass that groups arrows
+     by anchor alone collects FOUR arrows in one group for step 7 and then
+     skips it - reporting "0 pairs, PASS", which looks like a green result while
+     proving nothing at all. */
+  const pid='bp@'+at.map(n=>n.toFixed(3)).join(',')+'|'+base[0].toFixed(0);
+  return [
+    earrow([0,1,0], at, +1, Object.assign({},strip,{off:[base[0]+GAP, base[1]],pid})),
+    earrow([0,-1,0],at, +1, Object.assign({},strip,{off:[base[0]-GAP, base[1]],pid}))
+  ];
+}
+
+/* =================== one sigma bond forming ===================
+   The bond-forming half of the hybridisation story, shared by every bonding
+   step so that CH4, C2H4 and C2H2 all teach it identically.
+
+   Two electrons, one contributed by each atom, travel from their OWN orbitals
+   into the single orbital the bond creates, and end there as the usual up/down
+   pair. Position, direction and screen offset are all interpolated, so both
+   arrows exist at every instant and only their coordinates change. Fading one
+   out while the other fades in would depict two electrons being replaced, when
+   the chemistry is two electrons ending up together.
+
+   `merge` runs 0 -> 1. At 0 the pair is exactly where the two atoms kept their
+   own electrons; at 1 it is exactly the shared pair, matching `bondPair`, so the
+   end state of the animation is the static figure. */
+function sigmaMerge(o){
+  const GAP=Math.max(14, CW*0.017);
+  const m=o.merge;
+  const sl=(p,q,s)=>V.norm(V.add(V.mul(p,1-s),V.mul(q,s)));
+  const mp=(p,q,s)=>[lerp(p[0],q[0],s),lerp(p[1],q[1],s),lerp(p[2],q[2],s)];
+  const base={span:0.17,sortAt:o.at,sortBias:0.45,alpha:o.alpha,pid:o.pid};
+  /* A multi-panel step places its panels with the SAME  field, so the
+     caller’s value has to be read as a base and the pair separation added to
+     it. Without this both halves of step 7 would draw at the world origin and
+     land on top of one another. */
+  const bp=o.off||[0,0];
+  /* The merged pair points along the bond axis rather than snapping to a screen-
+     vertical glyph. A screen-vertical pair works for tetrahedral CH4 because the
+     tilted bonds project that way, but in planar C2H4 the same screen direction
+     no longer follows the C-H axis, so the arrow appears to connect to the back
+     lobe / nucleus instead of the green hybrid lobe. Keeping the pair on the
+     internuclear axis keeps both tips inside the lobe, and the screen-space x
+     offset still gives the parallel/opposite separation required by the rest of
+     the model. */
+  return [
+    earrow(o.aDir, mp(o.aAt,o.at,m), +1, Object.assign({},base,{off:[bp[0]+GAP*m,bp[1]]})),
+    earrow(o.bDir, mp(o.bAt,o.at,m), +1, Object.assign({},base,{off:[bp[0]-GAP*m,bp[1]]}))
+  ];
+}
+
+/* =================== hybridisation, animated ===================
+   One function drives all three of sp3, sp2 and sp, because the teaching story
+   is the same and only the numbers change: promote one s electron into the
+   empty p orbital, then let the mixing p orbitals and the s orbital RESHAPE
+   into equivalent hybrids while every electron rides along.
+
+   Measured faults in the step this replaces, all three fixed here:
+
+     1. ELECTRONS WERE DESTROYED. The arrow count ran 3 -> 4 -> 2 -> 1 -> 5 -> 4:
+        it started one short, collapsed to a single arrow mid-sequence, then
+        overshot to five. Now the four arrows are ALWAYS four and every one of
+        them keeps alpha 1 from the moment the atom appears. The trick that
+        makes the promotion free of any fade is that the promoted electron is
+        not a second object - it is the SAME arrow that started in the s cloud,
+        re-positioned every frame. Nothing appears and nothing disappears, so
+        there is no hand-off to get wrong.
+
+     2. THE SEQUENCE SAT STILL. 62 of 80 sampled frames showed zero pixel
+        change, in three long dead stretches, separated by two violent jumps
+        (15x and 43x the mean frame-to-frame change). Every phase now overlaps
+        the next one and the tail is brief.
+
+     3. THE ORBITALS CROSS-FADED INSTEAD OF MIXING. The s and p shapes faded
+        out while the sp shapes faded in: that shows the result but never the
+        process, which is what "show me HOW s mixes with p" is asking for. Now
+        each p lobe's axis ROTATES into its hybrid direction while the two lobes
+        reshape - the outer lobe grows, the inner one contracts into the small
+        back lobe - so the same object is visibly transforming throughout.
+
+   Geometry note: there are nMix p orbitals but nMix+1 hybrids, so the mapping
+   cannot be one-to-one. Each p orbital takes the hybrid direction nearest its
+   own axis (greedy, so the rotations never cross) and the direction left over
+   is the one the s orbital feeds, growing out of the nucleus as the s cloud
+   contracts into it.
+
+   Returns {objs, ph} so a caller can hang its own extras - the energy panel, in
+   step 3 - off the same clocks. */
+const HYB_T=7.4;
+const BOND_T=6.5;          // timeline of the bond-forming step
+const H_WAIT=1.45;         // where the mixing leaves the hydrogens waiting
+const ETH_T=8.0;           // timeline of the ethene step
+const ETHY_T=7.2;          // timeline of the ethyne step
+/* ---------- the sp3 animation is CUT IN TWO, and the cut is the lesson -------
+   Step 3 and step 4 are two halves of ONE process, not two figures. Both call
+   `hybridScene`, both use these four numbers, and the artwork does not change
+   across the boundary: step 3's last frame is bit-identical to step 4's first
+   frame. The phase ORDER is the chemistry -
+
+       the four hydrogens close in  ->  the carbon promotes an electron  ->
+       the s and the three p orbitals ROTATE AND RESHAPE into four sp3
+
+   - which is why the mixing window sits entirely after the arrival window.
+   Until this change the mixing ran 3.40..5.80 while the hydrogens were still
+   travelling, so the two events overlapped and the sequence the class is being
+   taught ("they are coming, so the atom mixes to meet them") was lost.
+   The window numbers also keep the shortcut keys 3 and 4 meaningful: tapping 3
+   stops at a clean frozen frame with two of the atoms still in flight, tapping
+   4 completes everything and parks the geometry. */
+const SP3_PH={
+  appear :[0.00,0.70],
+  hIn    :[0.62,1.60],
+  hCome  :[1.60,3.70],
+  promote:[3.60,4.50],
+  mix    :[4.90,7.40],
+  seat   :[7.10,7.70]
+};
+/* THE INSTANT STEP 4 IS PINNED TO, and it has to be the instant step 3 ENDS or
+   the hand-off is not a hand-off. Measured, this constant has been wrong once:
+
+     with SP3_HANDOFF = 4.20 the mixing window [4.90, 7.40] had not even opened,
+     so seg() clamped mixA to 0 and step 4 drew the UN-MIXED atom - a 2s cloud
+     and three gold p orbitals tagged pz, py, px - directly underneath a caption
+     reading "4 equivalent sp3 orbitals". Step 3's last frame had mix = 1 and
+     step 4's first frame had mix = 0: the two halves of one animation disagreed
+     about the one thing the animation is about.
+
+   The fix is to pin step 4 to SP3_T, the exact value step 3 clamps its own clock
+   to. Both halves then evaluate hybridScene at the same T with the same
+   SP3_PH, so "step 3's last frame equals step 4's first frame" is true by
+   construction rather than by two sets of numbers happening to agree.
+
+   The promotion window is deliberately still open at 4.20 - that is what makes
+   stepping 3 -> 4 feel continuous rather than like two figures - but the MIXING
+   must be complete, because mixing is what step 4 is a portrait of. */
+const SP3_T=8.60;          // both halves, so the shared timeline is never clipped
+const SP3_HANDOFF=SP3_T;   // step 4's frozen instant == step 3's last frame
+
+/* sp2 and sp: the same four phases, compressed into a single figure. They open
+   ON the atomic orbitals, mix, and - unlike the sp3 pair - go on to show the pi
+   bond, because there the leftover p orbital is the point of the lesson. */
+const SP2_PH={
+  appear :[0.00,0.70],
+  hIn    :[0.60,1.50],
+  hCome  :[1.50,4.80],
+  promote:[3.20,4.40],
+  mix    :[4.80,7.30],
+  seat   :[7.20,7.80]
+};
+const SP2M_T=7.8;          // introduces the sp2 set; no molecule yet
+const ETH_T2=12.0;         // sp2 in ethene: inventory -> mixing -> molecule
+const SP_PH={
+  appear :[0.00,0.70],
+  hIn    :[0.60,1.50],
+  hCome  :[1.50,4.30],
+  promote:[2.90,4.10],
+  mix    :[4.50,6.70],
+  seat   :[6.70,7.30]
+};
+const SPM_T=7.2;
+const ETHY_T2=11.5;
+function hybridScene(T,cfg){
+  const pax=cfg.pax, hyb=cfg.hyb, nMix=cfg.nMix;
+  const ease=v=>v*v*(3-2*v);
+  const seg=(a,b)=>ease(clamp((T-a)/(b-a),0,1));
+  const lerp=(a,b,s)=>a+(b-a)*s;
+  const slerp=(a,b,s)=>{
+    const d=clamp(V.dot(a,b),-1,1), th=Math.acos(d);
+    if(th<1e-4) return V.norm(V.add(a,V.mul(V.sub(b,a),s)));
+    const sn=Math.sin(th);
+    return V.add(V.mul(a,Math.sin((1-s)*th)/sn),V.mul(b,Math.sin(s*th)/sn));
+  };
+  const hx=h=>parseInt(h.slice(1),16);
+  const mixHex=(p,q,s)=>{
+    s=clamp(s,0,1);
+    const A=hx(p),B=hx(q);
+    return '#'+((1<<24)
+      |(Math.round(lerp((A>>16)&255,(B>>16)&255,s))<<16)
+      |(Math.round(lerp((A>>8)&255,(B>>8)&255,s))<<8)
+      | Math.round(lerp(A&255,B&255,s))).toString(16).slice(1);
+  };
+
+  /* ---- clock. Phases overlap on purpose; the only stillness is the short
+     tail, which exists so the final still frame is stable to look at.
+
+     The ORDER here is the chemistry. The hydrogens arrive FIRST and the mixing
+     is what the carbon does about them:
+       the hydrogens appear in the distance and start closing
+       the atom promotes an electron, getting four unpaired electrons ready
+       the s and p orbitals reshape to point at the incoming atoms
+     An earlier version mixed first and produced the molecule afterwards, which
+     teaches hybridisation as something a lonely carbon simply decides to do.
+     It is not: an atom hybridises because something is coming to bond to it. */
+  /* The four phases are handed in by the caller rather than baked in here.
+     Steps 3 and 4 are the FIRST HALF of one continuous sp3 animation and they
+     share these four numbers, so the promoted electron is airborne at exactly
+     the transfer moment and does not jump when the class taps "next". A caller
+     that passes nothing gets the original self-contained 7.4 s timeline. */
+  const PH=cfg.ph||{};
+  const appear = seg(PH.appear ?PH.appear[0]:0.00, PH.appear ?PH.appear[1]:0.75);
+  const hIn    = seg(PH.hIn    ?PH.hIn[0]   :0.70, PH.hIn    ?PH.hIn[1]   :1.60);
+  const hCome  = seg(PH.hCome  ?PH.hCome[0] :1.60, PH.hCome  ?PH.hCome[1] :6.10);
+  const promote= seg(PH.promote?PH.promote[0]:2.10,PH.promote?PH.promote[1]:3.25);
+  const mixA   = seg(PH.mix    ?PH.mix[0]   :3.40, PH.mix    ?PH.mix[1]   :5.80);
+  /* Geometry uses a version that overshoots by 3.5 per cent and relaxes back.
+     A merge that stops dead at its final position reads as two states with a
+     dissolve between them; travelling slightly past and settling is what makes
+     it feel like something physical coming to rest. */
+  /* The overshoot has to END, not just start. Written as a bare half-sine it
+     peaks 1.2 s after the mixing window closes and then freezes there, so the
+     geometry never reaches mix = 1: measured, step 3's last frame and step 4's
+     first frame still differed by every orbital axis and every arrow position
+     even after both halves were given identical input. The envelope below runs
+     sine up and sine down across the same 1.2 s, so it is 0 at BOTH ends and the
+     mixing lands exactly on 1 where the next half picks it up. */
+  const oA=PH.mix?PH.mix[1]:5.80;
+  const oW=PH.overW||1.20;
+  const oT=clamp((T-oA)/oW,0,1);
+  const over   = Math.sin(Math.PI*clamp(2*oT,0,1))*0.035;
+  const mix    = mixA + over;
+  const seat   = seg(PH.seat  ?PH.seat[0]  :5.80, PH.seat  ?PH.seat[1]  :6.60);
+  const rest   = seg(PH.rest  ?PH.rest[0]  :6.30, PH.rest  ?PH.rest[1]  :7.10);
+
+  /* `frozen` is the second half of the CH4 hand-off: at step 4 every phase is
+     complete, the artwork must stop moving, and the figure has to be identical
+     to the frame the class just looked at when step 3 ended. */
+  const FZ=!!cfg.frozen;
+
+  const objs=[axes(true)];
+
+  /* ---- assignment ---- */
+  const used=new Array(hyb.length).fill(false);
+  const assign=[];
+  for(let i=0;i<nMix;i++){
+    let best=-1,bd=-2;
+    for(let j=0;j<hyb.length;j++){
+      if(used[j]) continue;
+      const dd=V.dot(pax[i],hyb[j]);
+      if(dd>bd){bd=dd;best=j;}
+    }
+    used[best]=true; assign.push(best);
+  }
+  let sHyb=-1;
+  for(let j=0;j<used.length;j++) if(!used[j]){ sHyb=j; break; }
+
+  const emptyIdx=nMix-1;            // the p orbital that starts empty
+  const G=Math.max(18, CW*0.022);   // screen separation of the s pair
+  const se=0.30;                    // world lift out of the lobe convergence
+
+  /* ---- the s cloud, contracting as its density flows into the free hybrid --- */
+  const sR=lerp(0.34,0.11,mix);
+  const sA=(1-mixA)*appear;
+  if(sA>0.01){
+    objs.push(lobe([0,0,0],[0,1,0],sR,sR,COL.spLight,{soft:true,alpha:sA}));
+    objs.push(tag([0,0.46,0],'s',COL.spDeep,{alpha:sA,float:true}));
+  }
+
+  /* ---- the three p orbitals -------------------------------------------------
+     A mixing one rotates and reshapes; a leftover one (sp2, sp) is left exactly
+     where it was, still perpendicular, still holding its electron. */
+  const pArrow=(ai)=>{
+    const a=pax[ai];
+    if(ai>=nMix) return {dir:a, at:V.mul(a,0.72)};
+    const dir=slerp(a,hyb[assign[ai]],mix);
+    return {dir, at:V.mul(dir,lerp(0.72,0.54,mix))};
+  };
+  pax.forEach((a,ai)=>{
+    const isMix=ai<nMix;
+    const m=isMix?mix:0;
+    const dir=isMix?slerp(a,hyb[assign[ai]],m):a;
+
+    /* A MIXING p orbital is drawn as TWO orbitals that trade places, and the
+       overlap between them is what makes the reshape readable.
+
+       Written as ONE lobe whose colour is lerped p-gold -> sp-green, the middle
+       of the transition runs through the muddy khaki that #FBC72B -> #3BC96B
+       passes through at 50%, and the lobe reads as a dirty gold ring around a
+       green core (measured, step 8 at t=5.6). The colour is then the only thing
+       that changes, so the eye reads a colour wash where the lesson needs a
+       change of SHAPE.
+
+       So the two orbitals are drawn separately and their alphas cross:
+         - the p orbital sits on the axis it always had, gold, and fades OUT;
+         - the hybrid sits on the direction it is becoming, green, and fades IN.
+       Both are on the same clock and they meet at the halfway shape, so there
+       is no ring and no mud - the class watches a gold orbital become a green
+       one at a new angle, which is exactly what hybridisation is.
+
+       A LEFTOVER p orbital (ai >= nMix) takes the `m = 0` branch and is drawn
+       once, at full alpha, in steady gold: it is not changing, and its
+       unchanged colour is what marks it as the orbital that sat the dance out.
+       That contrast is the point of the sp2 and sp figures. */
+    if(isMix){
+      /* the p orbital it was: fades out on the mix clock */
+      const aOut=appear*(1-m);
+      if(aOut>0.01){
+        objs.push(lobe(V.mul(a,0.58),a,0.52,0.240,COL.p,{alpha:aOut}));
+        objs.push(lobe(V.mul(a,-0.58),a,0.52,0.240,COL.pLight,{alpha:aOut}));
+      }
+      /* the hybrid it becomes: grows in on the same clock */
+      const aIn=appear*m;
+      if(aIn>0.01){
+        objs.push(lobe(V.mul(dir,0.56),dir,0.56,0.215,COL.sp,{alpha:aIn}));
+        objs.push(lobe(V.mul(dir,-0.34),dir,0.28,0.150,COL.back,{alpha:aIn*0.85}));
+      }
+    } else {
+      objs.push(lobe(V.mul(a,0.58),a,0.52,0.240,COL.p,{alpha:appear}));
+      objs.push(lobe(V.mul(a,-0.58),a,0.52,0.240,COL.pLight,{alpha:appear}));
+    }
+    /* A MIXING p orbital loses its name as it stops being a p orbital - the
+       label fades on the same clock as the reshape, which is what tells the
+       class the orbital itself has changed.
+
+       A LEFTOVER p orbital keeps its name for the whole step, and it has to:
+       for sp2 and sp the leftover is the subject of the lesson ("this one does
+       not take part, and it becomes the pi bond"), so it cannot go unlabelled.
+       An earlier version only tagged `ai < nMix`, which left the one orbital the
+       class is being asked to watch as the one orbital with no name on it. */
+    if(cfg.plab && cfg.plab[ai]){
+      if(ai<nMix) objs.push(tag(V.mul(dir,1.34),cfg.plab[ai],COL.lead,{alpha:(1-mixA)*appear}));
+      else        objs.push(tag(V.mul(a,1.34),   cfg.plab[ai],COL.pDeep,{alpha:appear}));
+    }
+  });
+
+  /* ---- the hybrid the s orbital feeds, growing out of the nucleus ---------- */
+  if(sHyb>=0){
+    const d=hyb[sHyb];
+    const AB=lerp(0,0.56,mix);
+    if(AB>0.02){
+      objs.push(lobe(V.mul(d,lerp(0,0.56,mix)),d,AB,lerp(0,0.215,mix),COL.sp,{alpha:appear}));
+      objs.push(lobe(V.mul(d,-lerp(0,0.34,mix)),d,
+        lerp(0,0.28,mix),lerp(0,0.150,mix),COL.back,{alpha:appear*0.85}));
+    }
+  }
+
+  /* ---- the four electrons. Sum of alphas is exactly 4 at every instant. ---- */
+  const sPos=[0,se,0];
+  const hybSAt=sHyb>=0?V.mul(hyb[sHyb],lerp(0,0.54,mix)):sPos;
+  const hybSDir=sHyb>=0?slerp([0,1,0],hyb[sHyb],mix):[0,1,0];
+  // 1. the s electron that stays, then flows out into the free hybrid
+  const offStay=[-lerp(G*0.5,0,promote),0];
+  const atS2=[lerp(sPos[0],hybSAt[0],mix),lerp(sPos[1],hybSAt[1],mix),lerp(sPos[2],hybSAt[2],mix)];
+  objs.push(earrow(hybSDir, atS2, +1, {alpha:appear,span:0.30,off:offStay}));
+  // 2. the promoted electron: the SAME arrow, re-positioned each frame, from
+  //    the s pair out to the empty p orbital and then on into that p's hybrid
+  const dest=pArrow(emptyIdx);
+  /* A straight slide of one thin arrow is a very small event on screen, and the
+     class has to notice it - it is the whole reason hybridisation needs energy.
+     Bulging the path along world +y (which projects to screen-up at every yaw)
+     roughly doubles its length and reads as the electron arcing across. */
+  const bulge=Math.sin(Math.PI*promote)*0.26;
+  const flyAt=[lerp(sPos[0],dest.at[0],promote),
+               lerp(sPos[1],dest.at[1],promote)+bulge,
+               lerp(sPos[2],dest.at[2],promote)];
+  const flyDir=slerp([0,1,0],dest.dir,promote);
+  objs.push(earrow(flyDir, flyAt, +1, {alpha:appear,span:0.30,off:[lerp(G*0.5,0,promote),0]}));
+  // 3. one arrow in every other p orbital, riding its own lobe. These are drawn
+  //    depth-sorted rather than floated, so the far side of the rosette still
+  //    occludes its own arrow and the figure keeps reading as 3-D; `sortAt` only
+  //    lifts each arrow clear of the lobe it belongs to.
+  pax.forEach((a,ai)=>{
+    if(ai===emptyIdx) return;
+    const q=pArrow(ai);
+    objs.push(earrow(q.dir, q.at, +1,
+      {alpha:appear,span:0.30,float:true}));
+  });
+
+  /* ---- the atoms that CAUSE all of this ------------------------------------
+     Hybridisation is not something an isolated carbon decides to do. Carbon
+     mixes its s and p orbitals BECAUSE four hydrogens are coming in to bond and
+     it needs four equivalent orbitals pointing at them. With nothing incoming
+     there is nothing to aim at, and no reason to hybridise at all.
+
+     So the hydrogens arrive first and close in over most of the timeline, and
+     the reshaping below is staged as the response. They travel down exactly the
+     directions the hybrids end up pointing, which is also what stops those
+     directions from looking arbitrary - they are where the incoming atoms are.
+
+     Each hydrogen carries its own electron, drawn as the usual arrow. Those
+     four plus the carbon's four are the eight valence electrons of CH4, and
+     they only become shared pairs later, in step 5, once the bonds exist. */
+  if(cfg.hydrogens){
+    /* They close in only as far as a WAITING distance and stop. Hybridisation is
+       this step’s subject; the bond itself, and the two electrons merging into
+       one orbital, belong to the next step. Leaving them touching here would
+       collapse the sequence the class is being taught. */
+    const dist=lerp(1.60,H_WAIT,hCome);
+    hyb.forEach(d=>{
+      const at=V.mul(d,dist);
+      /* The cloud GROWS as it closes in, so the hydrogens read as arriving from a
+         distance without needing a world separation so large that they leave the
+         stage or sit on top of the energy panel. */
+      objs.push(hyd(at,{r:0.19+0.11*hCome,alpha:hIn}));
+      // the hydrogen's electron, pointing back down the bond towards the carbon
+      objs.push(earrow(V.mul(d,-1), at, +1, {alpha:hIn,span:0.26,float:true}));
+    });
+  }
+
+  /* ---- the caption ---------------------------------------------------------
+     `caption2`/`note2` are the frozen-frame wording and take precedence when
+     present; `caption`/`note` are the fallback. Reading ONLY the 2-suffixed key
+     on a frozen frame - which an earlier version did - printed the literal text
+     `undefined` across the bottom of the figure whenever a caller turned
+     `frozen` on but supplied the unsuffixed strings, and rendered no caption at
+     all. Both halves of the sp3 hand-off now pass the SAME two strings, so the
+     labels match across the cut, which is what a hand-off needs.               */
+  if(sHyb>=0){
+    const cap = cfg.caption2 != null ? cfg.caption2 : cfg.caption;
+    if(cap != null){
+      objs.push(tag([0,1.34,0],cap,COL.spDeep,{alpha:appear*seat}));
+    }
+  }
+  {
+    const tx = cfg.note2 != null ? cfg.note2 : cfg.note;
+    if(tx != null) objs.push(note(0.035,0.955,tx,'#47556B'));
+  }
+
+  return {objs, ph:{appear,promote,mix:mixA,mixRaw:mixA,seat,rest}};
+}
+
+/* Vertical stacking: the two electrons of a filled orbital are drawn as an
+   offset parallel pair (like ↑↓ written side by side), so take the lobe's minor
+   axis and shift the arrows apart along it. */
+const sgnLobe=idx=>idx===0?-1:1;
+
+/* Per-element reveal. Held OFF for now: the orbital set is a STATIC scaffold
+   the class reads off, and any element that is still ramping in reads as
+   "the orbital keeps switching states". `seq` stays on the builders so the
+   stagger can be switched back on with a single flag later.
+   NOTE the guard must be `!REVEAL` - writing `REVEAL||...` inverts the flag,
+   so REVEAL=0 would leave the stagger RUNNING and every lobe would come up
+   at partial alpha for the first second of each step. */
+const REVEAL=0;
+const shown=o=>(!REVEAL||o.seq==null)?1:clamp((state.stepT-o.seq*0.55)/0.45,0,1);
+
+/* A p orbital seen almost end-on projects to a fat disc, and the three of them
+   stack into an unreadable knot of overlapping gold. An earlier version gave
+   such lobes a veil, keyed off the projected aspect ratio.
+
+   THAT WAS THE "p ORBITALS KEEP TWITCHING" BUG, and it took three attempts to
+   land because the symptom looked like a geometry problem. Measured facts:
+
+     - the projected aspect of a p lobe sweeps 1.16 -> 2.13 during one turn, so
+       it straddles any threshold placed in that band;
+     - the pz and px lobes are foreshortened ~49% of EVERY revolution, i.e. the
+       veil toggles on and off twice per turn on four of the six lobes;
+     - frame-to-frame pixel differencing showed NO outlier - the geometry is
+       perfectly smooth. What pulses is the SHADING, and pulsing shading reads
+       as motion.
+
+   Adding hysteresis did not help: it replaced a smooth breathe with a 20-28%
+   opacity SNAP, which is worse. The lesson is that any alpha derived from the
+   camera will flicker, because the camera never stops moving. Lobe alpha is
+   therefore now constant per lobe - the legibility job is done by depth
+   sorting and the phase colours, which are stable under rotation.
+
+   `veilFor` is kept as a constant-returning stub so the call site and the
+   per-step `o.veil` escape hatch keep working; if a specific step genuinely
+   needs a dimmed lobe it sets `veil` explicitly on that object instead of
+   relying on a number that changes every frame. */
+const VEIL_CONST=1.00;
+function veilFor(){ return VEIL_CONST; }
+
+/* =================== the 14-step arc =================== */
+const STEPS=[
+  {
+    n:1, short:'s orbital', title:'1 \u00b7 The s orbital', ready:true,
+    text:'An orbital is the region of space where an electron is most likely to be found. The <b>s orbital is spherical</b> \u2014 its electron density is identical in every direction. With no directional preference it cannot, on its own, explain the fixed bond angles we observe (109.5\u00b0, 120\u00b0, 180\u00b0).',
+    align:'Builds the starting point: shape and orientation of the atomic orbitals that will be mixed.',
+    build(){
+      const objs=[axes(),
+        lobe([0,0,0],[0,1,0],S_LOBE,S_LOBE,COL.spLight,{soft:true}),
+        tag([0,0.95,0],'s orbital \u2014 spherical, no direction',COL.spDeep,{seq:0})
+      ];
+      /* ---- the two electrons, as the same \u2191\u2193 pair used everywhere else ----
+         This figure used to be a bare sphere with a label, which was the one
+         place in the deck where an orbital had no electrons drawn in it. The
+         class meets the s orbital first, so that is exactly where the arrow
+         convention has to be established - otherwise the arrows in step 2 read
+         as a new invention rather than the same notation.
+
+         Two electrons, not one: this is the same 2s orbital the hybridisation
+         step takes apart, and it holds a pair there too. Showing it with one
+         electron here and two in step 3 would contradict across two taps of the
+         stepper.
+
+         Both arrows share the world anchor at the nucleus and are separated by
+         a SCREEN-space `off`, never a world offset. A world offset rotates with
+         the camera, and the pair then orbits on screen - for half of every turn
+         the up-arrow sits below the down-arrow. That is the bug that took three
+         attempts to kill in step 3; do not reintroduce it here.
+
+         `float:true` because the sphere's centre is painted at full opacity, so
+         a depth-sorted arrow would be buried under its own orbital. */
+      const GAP=Math.max(20, CW*0.024);
+      objs.push(earrow([0,1,0], [0,0,0], +1,{float:true,off:[ GAP,0]}));
+      objs.push(earrow([0,-1,0],[0,0,0], +1,{float:true,off:[-GAP,0]}));
+      return objs;
+    }
+  },
+  {
+    n:2, short:'p orbitals', title:'2 \u00b7 The three p orbitals', ready:true,
+    text:'Each <b>p orbital is a dumbbell</b> of two lobes on one axis; p\u2093, p\u1d67 and p\u1d22 sit on <b>mutually perpendicular axes</b>. The two lobes of a single p orbital carry <b>opposite phase</b> \u2014 they are one orbital, not two, and the sign decides whether an overlap is bonding. Each lobe holds <b>one electron, drawn as an arrow</b>; two electrons sharing the orbital point in opposite directions.',
+    align:'Introduces the \u00b1 phase convention and the electron arrows that later narrate every bond.',
+    build(){
+      const objs=[axes()];
+      /* THE LOBES MUST REACH THE NUCLEUS, or the rosette pinches and splays.
+
+         A lobe is an ellipsoid centred at distance `d` from the nucleus with
+         semi-axis `a` along its own axis, so its inner tip sits at `d - a`.
+         With the old `d=0.60, a=0.50` that tip was 0.10 short of the centre.
+         Head-on that reads fine, but as an axis foreshortens the six lobes
+         alternately overlap at the middle (deep orange knot) and pull apart
+         (pale gap) - a pinch-and-splay cycle that repeats SIX TIMES PER TURN
+         and is what the class reported as the p orbitals "twitching". Measured:
+         the number of lobes covering the canvas centre flips 4 -> 0 -> 4 -> 0
+         every 16 degrees.
+
+         Setting `d = a` puts every inner tip exactly on the nucleus, so the
+         six lobes form one continuous rosette at every camera angle and the
+         centre can never open a hole. The outer tip is unchanged in direction,
+         the lobes simply grow 0.10 toward the centre - which is also what a
+         real p orbital looks like. */
+      const a=0.54, b=0.245, d=a;
+      // pz / py / px in turn. Each lobe carries ONE electron arrow drawn at the
+      // lobe's own centre, pointing along that lobe's outward axis, so the pair
+      // reads as the ↑↓ of a filled p orbital at any camera angle.
+      [[[0,0,1],1.00,0],[[0,1,0],0.90,1],[[1,0,0],0.80,2]]
+      .forEach(ax=>{
+        const dir=ax[0], alpha=ax[1], sq=ax[2];
+        // +axis lobe: the arrow points away from the nucleus; -axis lobe: the
+        // arrow still points away from the nucleus, i.e. along -dir.
+        objs.push(lobe(V.mul(dir, d),dir,a,b,COL.p,{alpha,seq:sq}));
+        objs.push(lobe(V.mul(dir,-d),dir,a,b,COL.pLight,{alpha,seq:sq}));
+        objs.push(earrow(dir, V.mul(dir, d), +1, {seq:sq}));
+        objs.push(earrow(V.mul(dir,-1), V.mul(dir,-d), +1, {seq:sq}));
+      });
+      objs.push(tag([0,0,1.46],'p\u1d22',COL.lead,{seq:0}));
+      objs.push(tag([0,1.46,0],'p\u1d67',COL.lead,{seq:1}));
+      objs.push(tag([1.46,0,0],'p\u2093',COL.lead,{seq:2}));
+      objs.push(note(0.035,0.955,'each p orbital: two lobes of opposite phase, one electron arrow each','#47556B'));
+      return objs;
+    }
+  },
+/* --- 3. sp3 from four electrons ------------------------------------------
+   Steps 1-2 build SHAPES. This one shows the REARRANGEMENT: four electrons
+   whose parent orbitals are NOT equivalent end up four-fold equivalent. The
+   staging is the teaching content, so it is explicit -
+
+     hold   the s and three p orbitals sitting there, electron arrows in place
+     level  the energy-level sketch fades in behind the artwork
+     jump   the 2s electron pair is split: one electron is shown leaving the
+            s cloud, the pair is broken
+     merge  the four shapes on screen are replaced by the four sp3 teardrops
+     settle the four electrons end up one per sp3 lobe, pointing four ways
+
+   `t` is the step's elapsed time in seconds. It is the ONLY driver of the
+   animation, so the whole sequence is deterministic and can be paused, and
+   `clamp` at the top means the final state is bit-identical to a static
+   build. Nothing here depends on the camera, which is the bug class that the
+   p-orbital twitch turned out to belong to. */
+  {
+    n:3, short:'s + 3p \u2192 sp\u00b3 mixing', title:'3 \u00b7 Mixing: s + 3p \u2192 4 \u00d7 sp\u00b3', ready:true,
+  text:'<b>Four hydrogens are closing in, each wanting one bond.</b> An s orbital and three p orbitals are <b>not equivalent</b> as they stand, and <b>none of them points</b> the way a C\u2013H bond needs to. So the carbon <b>mixes all four</b>. One s plus three p gives <b>four equivalent sp\u00b3 orbitals</b> \u2014 each a <b>large lobe</b> pointing outward with a <b>small back lobe</b>, set <b>109.5\u00b0 apart</b>. The four electrons end up <b>one to each</b> of the four equivalent orbitals, and the hydrogens wait at arm\u2019s length until they do.',
+  align:'This is the hybridisation step 2.7.A.3 requires (sp\u00b3 \u2192 109.5\u00b0). It also fixes the usual misconception: hybridisation is not something a carbon atom does on its own - it is the response to four incoming atoms.',
+  /* Pulled back and pushed right: the incoming hydrogens reach wider than the
+     bare carbon does, and the energy panel owns the top-left corner. */
+  zoom:0.82, pan:[48,18],
+  build(t){
+    const T=clamp(t==null?0:t,0,SP3_T);
+    /* The three p axes, rendered ROTATED 22 degrees about the y axis.
+       Why not the raw (x, y, z) axes: at the default camera (yaw 0.785,
+       pitch 0.615) the world z axis is only 17 degrees off the view axis, so
+       the pz pair projects to two nearly concentric discs and its electron
+       arrow shrinks to a stub - the orbital reads as absent even though it is
+       there. Rotating the whole triad keeps the three axes mutually
+       perpendicular (so the chemistry is still "three p orbitals on
+       perpendicular axes") while putting all THREE of them well off the view
+       axis, which is what makes three electron arrows legible at once.
+       Step 2 keeps the unrotated set because there the p orbitals are the
+       subject and the rosette is meant to look canonical. */
+    const ROT=0.384;                       // ~22 degrees about y
+    const rc=Math.cos(ROT), rs=Math.sin(ROT);
+    const rotY=v=>[v[0]*rc+v[2]*rs, v[1], -v[0]*rs+v[2]*rc];
+    const PAX=[rotY([0,0,1]), rotY([0,1,0]), rotY([1,0,0])];
+    const PLB=['p\u1d22','p\u1d67','p\u2093'];
+
+    /* The whole 3-D sequence lives in hybridScene so that sp2 and sp can reuse
+       it. Everything below only adds what is specific to THIS lesson: the
+       energy-level inset and its bookkeeping. */
+    const S=hybridScene(T,{
+      pax:PAX, plab:PLB, nMix:3, hyb:TET, hydrogens:true, ph:SP3_PH,
+      caption:'4 incoming H \u2192 the atom mixes to meet them',
+      note:'the H atoms arrive first \u00b7 hybridisation is the atom\u2019s RESPONSE to them'
+    });
+    const ph=S.ph;
+
+    /* ---- the energy-level inset (screen space) --------------------------
+       Pinned to the top-left of the stage and never rotated: an energy diagram
+       is not a spatial object, and one that turned with the model would say the
+       levels live somewhere inside the molecule.
+
+       The HEIGHTS ARE CHEMISTRY, not layout. 2p sits above 2s because it is
+       higher in energy; the three 2p are one row because they are degenerate;
+       the four sp3 are ONE ROW AT ONE HEIGHT because equivalence is the
+       definition of what hybridisation produces - staggering them would
+       contradict the caption on the same screen.
+
+       Its clocks are derived from hybridScene's phases, so the diagram and the
+       geometry can never disagree about what has already happened. The last two
+       rows are about the CH4 the class is heading towards, so they run on their
+       own windows and deliberately overlap the 3-D settle rather than waiting
+       for it. */
+    const ez=v=>v*v*(3-2*v);
+    const s2=(a,b)=>ez(clamp((T-a)/(b-a),0,1));
+    /* The H 1s row lights up when the hydrogens actually appear on screen, and
+       the sigma C-H row only in the second half (step 5), where the bonds are
+       made. Drawing the bonding row here would tell the class the bonds are
+       already there - which is exactly what splitting this step in two is
+       meant to stop. */
+    const showH   =s2(SP3_PH.hIn[0],SP3_PH.hIn[1]);
+    /* The panel's own alpha is driven by `appear` ALONE. Deriving it from
+       appear x rest - as an earlier version did - multiplies two ramps that
+       start six seconds apart, so the product stays at zero until the second
+       one begins: the energy diagram was invisible for the first 5.8 s of the
+       animation and then appeared all at once. The rows below carry their own
+       clocks and provide the continuing change instead. */
+    S.objs.push(levelPanel({
+      x:0.026, y:0.070, alpha:ph.appear,
+      rows:[
+        /* 2p trio: the atom's three degenerate p orbitals, above 2s */
+        {tag:'2p', tagCol:'#C79A18', spans:[
+          {col:COL.pDeep, e:1, alpha:1,    label:'p\u1d22', labCol:'#B08A12'},
+          {col:COL.pDeep, e:1, alpha:1,    label:'p\u1d67', labCol:'#B08A12'},
+          {col:COL.pDeep, e:(1-ph.promote), alpha:1, label:'p\u2093', labCol:'#B08A12'}]},
+        /* 2s: the promoted electron leaves this row - that emptiness is the
+           point, and it happens on the same clock as the flight on screen */
+        {tag:'2s', tagCol:'#2E9A55', spans:[
+          {col:COL.spDeep, e:2*(1-ph.promote), alpha:1}]},
+        /* the four sp3, one row, one height */
+        {tag:'sp\u00b3', tagCol:'#2E9A55', spans:[
+          {col:COL.spDeep, e:1, alpha:ph.mix},
+          {col:COL.spDeep, e:1, alpha:ph.mix},
+          {col:COL.spDeep, e:1, alpha:ph.mix},
+          {col:COL.spDeep, e:1, alpha:ph.mix}]},
+        /* the incoming hydrogen: still a lone 1s, because it has not bonded yet */
+        {tag:'H 1s', tagCol:'#5E93AC', spans:[
+          {col:'#5E93AC', e:1, alpha:showH}]}
+      ],
+      arrows:[
+        {from:1, to:0, alpha:ph.promote, col:'#C79A18'},
+        {from:1, to:2, alpha:ph.mix,     col:'#2E9A55'}
+      ]
+    }));
+    return S.objs;
+  }
+},
+  {
+    /* ---- the second half of the same animation -----------------------------
+       Nothing new is introduced here and the geometry does not change: this
+       step re-runs the identical scene with every phase saturated, so the class
+       sees the mixed atom standing still, with its four equivalent orbitals,
+       and can look at it as long as they like.
+
+       Two devices keep the hand-off seamless and both matter:
+
+       1. The phases are the SAME object (SP3_PH) the previous step used, and
+          this step is evaluated at the SAME T (SP3_HANDOFF === SP3_T), so frame
+          N of step 3 and frame 1 of step 4 are the same picture by construction
+          rather than by two sets of numbers happening to agree.
+       2. `frozen` is on, which is what makes it a portrait: every phase is
+          saturated, the artwork does not move, and the caller's own caption and
+          note are the ones drawn. The hydrogens are still rendered while frozen
+          (the `!FZ` guard that used to skip them was the bug that left the
+          caption promising four hydrogens that were not on screen).
+
+       T equal to SP3_T is not decoration. Pinning this step earlier - at 4.20 -
+       put it before the mix window opened, so it drew the un-mixed atom under a
+       caption about sp3 orbitals. See the note on SP3_HANDOFF.
+
+       The electron COUNT is the other thing this frame has to get right: four
+       valence electrons, one per sp3 orbital. Drawing a pair in each would put
+       eight electrons on the atom. */
+    n:4, short:'sp\u00b3 mixing', title:'4 \u00b7 The four equivalent sp\u00b3 orbitals', ready:true,
+    text:'One s orbital mixed with three p orbitals gives <b>four equivalent sp\u00b3 orbitals</b>. Each is asymmetric \u2014 a <b>large lobe</b> pointing outward and a <b>small back lobe</b> \u2014 and the four point to the corners of a <b>tetrahedron, 109.5\u00b0 apart</b>. The four electrons are now <b>one to each</b> of the four, and the four hydrogens are <b>still waiting</b> at arm\u2019s length, unbonded.',
+    align:'This is the hybridisation step that 2.7.A.3 requires (sp\u00b3 \u2192 109.5\u00b0); the four equivalent orbitals explain identical bonds in CH\u2084.',
+    /* Identical to step 3, so the frame does not shift under the class. */
+    zoom:0.82, pan:[48,18],
+    build(){
+      /* Every argument below is the one step 3 passes, and that is the whole
+       mechanism of the hand-off. Three things had to be fixed here after
+       measuring rather than looking:
+
+         1. `pax` was the raw x/y/z triad. The p orbitals land in equivalent
+            places either way, so the frame LOOKS right - but the greedy
+            assignment then pairs them with different hybrid directions, so the
+            four sp3 orbitals point somewhere else and the hydrogens land
+            somewhere else. Measured: 8 lobes and 8 arrows in step 3 against 7
+            and 4 in step 4, with the hydrogens missing altogether.
+         2. `frozen` short-circuited the hydrogen block, so the four hydrogens
+            the caption promises were not drawn at all. The guard was `!FZ`;
+            it is gone, so frozen frames now show them too.
+         3. SP3_HANDOFF was 4.20, which is BEFORE the mix window opens at 4.90.
+            Measured on the live page, step 4 then rendered zero sp3 and the
+            tags 's | pz | py | px' - the pre-mixing inventory - under a caption
+            reading '4 equivalent sp3 orbitals'. It is now SP3_T.
+
+       Both halves now feed hybridScene identical input AND the identical T, so
+       "the same frame" is true by construction and not by two sets of numbers
+       agreeing. */
+    const ROT=0.384, rc=Math.cos(ROT), rs=Math.sin(ROT);
+    const rotY=v=>[v[0]*rc+v[2]*rs, v[1], -v[0]*rs+v[2]*rc];
+    const PAX4=[rotY([0,0,1]), rotY([0,1,0]), rotY([1,0,0])];
+    /* Labels are positional: `plab[i]` names `pax[i]`, so this array has to be
+       in step 3's order (z, y, x) or every tag names the wrong orbital. */
+    const PLB4=['p\u1d22','p\u1d67','p\u2093'];
+    const S=hybridScene(SP3_HANDOFF,{
+        pax:PAX4, plab:PLB4, nMix:3, hyb:TET,
+        hydrogens:true, ph:SP3_PH, frozen:true,
+        caption:'4 equivalent sp\u00b3 orbitals \u00b7 109.5\u00b0 apart',
+        note:'each sp\u00b3 orbital: one large lobe out, one small back lobe, one electron'
+      });
+      /* NO caption is pushed here any more. `hybridScene` already draws one at
+         y = 1.34 from `cfg.caption`, and an earlier version pushed a SECOND tag
+         at the identical position - which is why the hand-off diff reported
+         step 4 with one element more than step 3. The two frames now contain the
+         same elements in the same places. */
+      return S.objs;
+    }
+  }
+];
+/* =================== steps 5-14 =================== */
+STEPS.push({
+  n:5, short:'sp\u00b3 \u00b7 CH\u2084', title:'5 \u00b7 sp\u00b3 in methane, CH\u2084', ready:true,
+  text:'Each sp\u00b3 orbital overlaps a <b>hydrogen 1s orbital</b> head-on. The overlap region is a <b>\u03c3 (sigma) bond</b> \u2014 the electron density lies directly <b>on the line joining the nuclei</b>. Four of these give CH\u2084 its <b>four identical C\u2013H bonds at 109.5\u00b0</b>, which is exactly what experiment shows.',
+  align:'Applies the sp\u00b3 set to a real molecule and introduces the \u03c3 bond as head-on overlap.',
+  build(t){
+    const T=clamp(t==null?0:t,0,BOND_T);
+    const ez=v=>v*v*(3-2*v);
+    const sg=(a,b)=>ez(clamp((T-a)/(b-a),0,1));
+    const sl=(a,b,s)=>V.norm(V.add(V.mul(a,1-s),V.mul(b,s)));
+    const objs=[axes(true)];
+    // carbon at the origin, hydrogens closing in on the four sp3 directions
+    objs.push(nuc([0,0,0],0.115,'C'));
+
+    /* ---- clock. THE ORDER IS THE LESSON, and it is:
+             the hydrogens close in  ->  the sp3 lobes overlap them  ->  only
+             then do the two electrons move together into ONE orbital.
+
+           An earlier version had the hydrogens still travelling while the
+           orbitals overlapped, which collapses "hybridise, THEN bond" into one
+           simultaneous event and loses the sequence the class is being taught.
+           The hydrogens are already waiting at 1.45 units when step 3 ends, so
+           this step starts from exactly that distance. */
+    const hIn  = sg(0.05,0.85);    // the hydrogens fade in where step 3 left them
+    const come = sg(0.85,3.40);    // ...and close to bonding distance
+    const bond = sg(2.40,3.90);    // the sigma overlap forms as they touch
+    const merge= sg(3.70,5.90);    // the two electrons move into ONE shared orbital
+    const seat = sg(5.30,6.30);
+
+    const GAP=Math.max(14, CW*0.017);
+    TET.forEach((d,i)=>{
+      const dist=lerp(H_WAIT,BL_CH,come);
+      const h=V.mul(d,dist);
+      // the sp3 lobe reaching out to the hydrogen
+      objs.push(lobe(V.mul(d,0.50),d,0.56,0.215,COL.sp,{alpha:0.92}));
+      objs.push(lobe(V.mul(d,-0.30),d,0.26,0.135,COL.back,{alpha:0.55}));
+      objs.push(hyd(h,{r:0.30*(0.82+0.18*come),alpha:hIn}));
+      objs.push(stick(V.mul(d,0.10),V.mul(d,dist-0.26),'sigma',{}));
+      // the head-on overlap, shaded on the bond axis
+      objs.push(sigmaLens(V.mul(d,lerp(1.16,0.62,come)),h,0.19,COL.sigma,{alpha:0.9*bond}));
+
+      /* ---- the two electrons of this bond -------------------------------
+         BEFORE bonding each one sits in its OWN orbital: the carbon's in its
+         sp3 lobe pointing outward, the hydrogen's in its 1s pointing back.
+         AFTER bonding BOTH are in the SAME orbital - the sigma overlap between
+         the nuclei - drawn as the usual up/down pair.
+
+         The merge interpolates POSITION, DIRECTION and SCREEN OFFSET. It must
+         not be done by fading one arrow out and another in: that shows two
+         electrons being replaced, when the chemistry is two electrons ending up
+         together. Nothing is created and nothing is destroyed, so the pair of
+         arrows exists at every instant and simply travels. */
+      const over=V.mul(d,0.80);
+      const cAt=[lerp(d[0]*0.54,over[0],merge),lerp(d[1]*0.54,over[1],merge),lerp(d[2]*0.54,over[2],merge)];
+      const hAt=[lerp(d[0]*dist,over[0],merge),lerp(d[1]*dist,over[1],merge),lerp(d[2]*dist,over[2],merge)];
+      const pid='bp@'+over.map(n=>n.toFixed(3)).join(',');
+      objs.push(earrow(sl(d,[0,1,0],merge), cAt, +1,
+        {span:0.17,sortAt:over,sortBias:0.45,alpha:hIn,off:[ GAP*merge,0],pid}));
+      objs.push(earrow(sl(V.mul(d,-1),[0,-1,0],merge), hAt, +1,
+        {span:0.17,sortAt:over,sortBias:0.45,alpha:hIn,off:[-GAP*merge,0],pid}));
+    });
+    objs.push(tag([0,BL_CH*1.20,0],'4 \u00d7 \u03c3 C\u2013H bonds \u00b7 109.5\u00b0 apart',COL.sigmaDeep,{alpha:seat}));
+    objs.push(note(0.035,0.955,'\u03c3 bond = head-on overlap \u00b7 both atoms\u2019 electrons end up in the SAME orbital','#47556B'));
+    return objs;
+  }
+});
+
+/* --- 6. sp2 · the set itself --------------------------------------------
+   Steps 6-9 are the sp² half of the arc and they follow the same staging as the
+   sp³ half in steps 3-5: OPEN ON THE ATOMIC ORBITALS, mix, then bond.
+
+   Step 4 used to jump straight to the finished hybrids with no mixing in it,
+   which left the same hole in the sp² story: the class was told "one s plus two
+   p gives three sp² orbitals" without ever seeing the s and the p orbitals
+   change into them. The figure below is that missing half, and it is deliberately
+   the SAME figure as step 3 with two numbers changed - nMix 3 -> 2 and the
+   hybrid directions tetrahedral -> trigonal planar. That is the comparison the
+   syllabus wants: the inventory is identical, only how many p orbitals take part
+   is different, and the leftover one is exactly what a π bond is made of. */
+const C2H4_PAX=[[0,1,0],[1,0,0],[0,0,1]];
+const C2H4_Y   =[0,1,0];
+const C2H4_Z   =[0,0,1];
+/* Three directions in the x-y plane, ONE OF THEM ON THE C-C AXIS. That is not a
+   detail: the two sp² orbitals that form the C-C bond have to point at each
+   other. Starting the set at 90 degrees leaves every orbital rotated 30 degrees
+   off the bond - no lobe faces the other carbon at all, and the stick is drawn
+   between two orbitals that miss it. */
+const C2H4_SP2 =[0,1,2].map(i=>{
+  const a=Math.PI*2*i/3;
+  return V.norm([Math.cos(a),Math.sin(a),0]);
+});
+const C2H4_HYB =[V.norm([-1,0,0]), V.norm([0.5,0.866,0]), V.norm([0.5,-0.866,0])];
+
+STEPS.push({
+  n:6, short:'s + 2p \u2192 sp\u00b2', title:'6 \u00b7 Mixing: s + 2p \u2192 3 \u00d7 sp\u00b2', ready:true,
+  text:'Now the same thing with <b>one p orbital left out</b>. One s plus <b>two</b> p gives <b>three equivalent sp\u00b2 orbitals</b>, lying in <b>one plane, 120\u00b0 apart</b>. The <b>third p orbital does not take part</b> \u2014 it stays exactly where it was, <b>perpendicular to that plane</b>, and keeps its one electron. Compare the s and p inventory with step 3: it is the same list, only the number that mixes has changed.',
+  align:'Introduces the sp\u00b2 set, the 120\u00b0 planar geometry, and the leftover p orbital that becomes the \u03c0 bond.',
+  zoom:0.82,
+  spin:0, yaw0:0.785,
+  build(t){
+    const T=clamp(t==null?0:t,0,SP2M_T);
+    const S=hybridScene(T,{
+      /* The two mixed p orbitals ARE named (py and px), and so is the one left
+         over (pz). An earlier version passed ['','',''] and the empty labels
+         were still drawn - the diff probe caught two `T||` entries with zero
+         alpha but a real position, i.e. stray invisible-but-present text. The
+         names are also the point of the figure: the class is meant to see that
+         the same three p orbitals as step 3 are present here and only TWO of
+         them mix. */
+      pax:C2H4_PAX, plab:['p\u1d67','p\u2093','p\u1d22']
+      , nMix:2, hyb:C2H4_HYB, hydrogens:false, ph:SP2_PH,
+      caption:'mix 1 s + 2 p \u00b7 the third p stays out of it',
+      note:'the same s and p orbitals as step 3 \u00b7 one fewer p takes part \u21d2 120\u00b0, planar'
+    });
+    const ph=S.ph;
+    const ez=v=>v*v*(3-2*v);
+    const s2=(a,b)=>ez(clamp((T-a)/(b-a),0,1));
+    S.objs.push(levelPanel({
+      x:0.026, y:0.070, alpha:ph.appear,
+      rowH:44,
+      rows:[
+        {tag:'2p', tagCol:'#C79A18', spans:[
+          {col:COL.pDeep, e:1, alpha:1,  label:'p\u1d67', labCol:'#B08A12'},
+          {col:COL.pDeep, e:1, alpha:1,  label:'p\u2093', labCol:'#B08A12'}]},
+        {tag:'2s', tagCol:'#2E9A55', spans:[
+          {col:COL.spDeep, e:2*(1-ph.promote), alpha:1}]},
+        {tag:'sp\u00b2', tagCol:'#2E9A55', spans:[
+          {col:COL.spDeep, e:1, alpha:ph.mix},
+          {col:COL.spDeep, e:1, alpha:ph.mix},
+          {col:COL.spDeep, e:1, alpha:ph.mix}]},
+        /* the p orbital that is deliberately NOT mixed: it keeps its electron
+           and keeps its energy, which is why it can form a π bond later */
+        {tag:'2p (left)', tagCol:'#C79A18', spans:[
+          {col:COL.pDeep, e:1, alpha:1}]}
+      ],
+      arrows:[
+        {from:1, to:0, alpha:ph.promote, col:'#C79A18'},
+        {from:1, to:2, alpha:ph.mix,     col:'#2E9A55'}
+      ]
+    }));
+    return S.objs;
+  }
+});
+
+/* --- 7. sp2 in ethene: the two carbons and their four hydrogens --------- */
+STEPS.push({
+  n:7, short:'sp\u00b2 \u00b7 C\u2082H\u2084', title:'7 \u00b7 sp\u00b2 in ethene, C\u2082H\u2084', ready:true,
+  text:'Two carbons, each with three sp\u00b2 orbitals and one untouched p. They join through <b>sp\u00b2\u2013sp\u00b2 head-on overlap</b> \u2014 a <b>\u03c3 bond</b> \u2014 and each pair of remaining sp\u00b2 orbitals takes a <b>hydrogen</b>, giving <b>five \u03c3 bonds</b> in all. Every <b>atom\u2019s own electron</b> travels into the orbital its bond creates, so each bond ends up holding the usual <b>shared pair</b>.',
+  align:'Applies the sp\u00b2 set to a real molecule and introduces the \u03c3 bond as head-on overlap.',
+  zoom:0.86,
+  spin:0, yaw0:0.785,
+  build(t){
+    const T=clamp(t==null?0:t,0,ETH_T2);
+    const ez=v=>v*v*(3-2*v);
+    const sg=(a,b)=>ez(clamp((T-a)/(b-a),0,1));
+    const objs=[axes(true)];
+    const X=[1,0,0];
+
+    /* ---- clock. The FIRST HALF of this step re-runs the mixing, on exactly the
+       same windows step 6 used, so the class can go straight from "here is the
+       sp² set" to "here is the molecule" without the orbitals ever appearing
+       fully formed out of nowhere. The molecule then arrives on its own
+       windows, in the order the story needs: atoms first, overlaps as they
+       touch, and only then do the electrons move into the orbitals the bonds
+       create. */
+    const appear = sg(SP2_PH.appear[0],SP2_PH.appear[1]);
+    const come   = sg(7.60, 9.20);   // the nucleii close to bonding distance
+    const hIn    = sg(8.10, 8.80);   // the four hydrogens fade in
+    const hCome  = sg(8.70,10.10);   // ...and close in
+    const sCC    = sg(9.30,10.20);   // the C-C sigma overlap forms
+    const sCH    = sg(9.70,10.60);   // the four C-H sigma overlaps form
+    const mergeS = sg(10.30,11.50);  // every sigma pair merges into its own orbital
+    const piM    = sg(11.00,11.80);  // the two p electrons merge into the pi orbital
+    const seat   = sg(11.60,12.00);
+
+    const S=hybridScene(T,{
+      /* Named p orbitals, like steps 6 and 8: the gold p that stays perpendicular
+         is the one that becomes the pi bond, so it needs its name on screen or
+         the class cannot follow it into the next panel. `note` is a real string
+         rather than the single space an earlier version passed, which drew an
+         empty bar of text. */
+      pax:C2H4_PAX, plab:['p\u1d67','p\u2093','p\u1d22'], nMix:2, hyb:C2H4_HYB,
+      hydrogens:false, ph:SP2_PH,
+      caption:'each carbon: 3 sp\u00b2 + 1 p',
+      note:'each carbon mixes 1 s + 2 p \u00b7 the third p is left for the \u03c0 bond',
+      hold:true                       // the mixed set stays put; the molecule forms around it
+    });
+    /* The mixing half describes ONE carbon. As the two carbons part, the mixed
+       set rides to the LEFT nucleus and a mirrored copy appears on the right -
+       which is what "each carbon does this" means, drawn rather than asserted. */
+    const sep=lerp(0,BL_CC/2,come);
+    const c1=[-sep,0,0], c2=[sep,0,0];
+    const R=lerp(0,1,come);
+    S.objs.filter(o=>o.k==='lobe'||o.k==='tag'||o.k==='ear').forEach(o=>{
+      if(o.k==='tag') return;          // the mixing captions are replaced below
+      if(o.k==='ear'&&o.off){ /* leave the split pairs alone */ }
+    });
+
+    const slp=(p,q,s)=>V.norm(V.add(V.mul(p,1-s),V.mul(q,s)));
+    const mp=(p,q,s)=>[lerp(p[0],q[0],s),lerp(p[1],q[1],s),lerp(p[2],q[2],s)];
+
+    /* The mixed orbitals and their four electrons, drawn PER CARBON and mirrored
+       across the bond. A single shared set sends both carbons' C-C lobes the
+       same way - one of them then points away from the bond - and it also sends
+       c2's two hydrogens back across the axis to sit on top of c1's. */
+    [c1,c2].forEach((c,ci)=>{
+      const mir=ci===0?1:-1;
+      C2H4_HYB.forEach((h0,hi)=>{
+        const d=V.mul(h0,mir);
+        objs.push(lobe(V.add(c,V.mul(d,0.56)),d,0.56,0.215,COL.sp,{alpha:0.94}));
+        objs.push(lobe(V.add(c,V.mul(d,-0.34)),d,0.28,0.150,COL.back,{alpha:0.30}));
+      });
+      /* the untouched p orbital, perpendicular to the sp2 plane, ONE electron */
+      objs.push(lobe(V.add(c,V.mul(C2H4_Z,0.62)),C2H4_Z,0.50,0.235,COL.p,{alpha:0.95}));
+      objs.push(lobe(V.add(c,V.mul(C2H4_Z,-0.62)),C2H4_Z,0.50,0.235,COL.p,{alpha:0.95}));
+    });
+    objs.push(nuc(c1,0.115,'C'));
+    objs.push(nuc(c2,0.115,'C'));
+
+    /* ---- the C-C sigma bond ---------------------------------------------- */
+    objs.push(stick([c1[0]+0.16,0,0],[c2[0]-0.16,0,0],'sigma',{}));
+    objs.push(sigmaLens([c1[0]+0.30,0,0],[c2[0]-0.30,0,0],0.18,COL.sigma,{alpha:0.9*sCC}));
+    objs.push(...sigmaMerge({
+      aAt:V.add(c1,V.mul(C2H4_HYB[0],0.54)), aDir:C2H4_HYB[0],
+      bAt:V.add(c2,V.mul(C2H4_HYB[0],0.54)), bDir:V.mul(C2H4_HYB[0],-1),
+      at:[0,0,0], merge:mergeS, alpha:come, pid:'bp@cc'
+    }));
+
+    /* ---- the four C-H sigma bonds ---------------------------------------- */
+    const hDist=lerp(1.30,BL_CH*0.92,hCome);
+    [[c1,-1,1],[c2,1,2]].forEach(pair=>{
+      const c=pair[0], mir=pair[1];
+      [1,2].forEach(hi=>{
+        const d=V.mul(C2H4_HYB[hi],mir);   // mirrored: away from the other carbon
+        const h=V.add(c,V.mul(d,hDist));
+        objs.push(hyd(h,{r:0.28*(0.82+0.18*hCome),alpha:hIn}));
+        objs.push(stick(V.add(c,V.mul(d,0.14)),V.sub(h,V.mul(d,0.24)),'sigma',{}));
+        objs.push(sigmaLens(V.add(c,V.mul(d,lerp(1.10,0.62,hCome))),h,0.19,COL.sigma,{alpha:0.9*sCH}));
+        // the carbon's sp2 electron and the hydrogen's 1s electron, into one orbital
+        // aAt/at moved outward so the merged pair sits near the GREEN lobe tip
+        // instead of collapsing back onto the nucleus / back-lobe (grey) region.
+        objs.push(...sigmaMerge({
+          aAt:V.add(c,V.mul(d,0.30)), aDir:d,
+          bAt:h, bDir:V.mul(d,-1),
+          at:V.add(c,V.mul(d,0.82)), merge:mergeS, alpha:hIn,
+          pid:'bp@ch'+hi+(mir<0?'a':'b')
+        }));
+      });
+    });
+
+    /* ---- the pi bond ------------------------------------------------------
+       Carbon has ONE 2p electron, so each p orbital shows ONE arrow. The two
+       travel together into the two lobes of the single pi orbital - one above
+       the axis, one below - and because they end up antiparallel they read as
+       the pair they are. */
+    [1,-1].forEach(s=>{
+      objs.push(lens([0,0,s*0.60],X,C2H4_Y,BL_CC*1.05,0.19,COL.pi,{alpha:0.9*piM}));
+    });
+    const piUp=[0,0, 0.58], piDn=[0,0,-0.58];
+    objs.push(earrow(slp(C2H4_Z,[0,1,0],piM),  mp(V.add(c1,V.mul(C2H4_Z,0.62)),piUp,piM), +1,
+      {span:0.30,alpha:1,float:true,pid:'pi@up'}));
+    objs.push(earrow(slp(C2H4_Z,[0,-1,0],piM), mp(V.add(c2,V.mul(C2H4_Z,0.62)),piDn,piM), +1,
+      {span:0.30,alpha:1,float:true,pid:'pi@dn'}));
+    /* The four sp2 electrons, one per sp2 orbital. They are present from the
+       moment the mixed set appears and are what sigmaMerge moves into the
+       bonds, so the atom's four valence electrons are never missing. */
+    [c1,c2].forEach((c,ci)=>{
+      const mir=ci===0?1:-1;
+      C2H4_HYB.forEach(h0=>{
+        const d=V.mul(h0,mir);
+        objs.push(earrow(d, V.add(c,V.mul(d,0.50)), +1,
+          {span:0.30,alpha:1,float:true}));
+      });
+    });
+
+    objs.push(tag([0,0,1.95],'unhybridised 2p \u2014 becomes the \u03c0 bond',COL.pDeep,{alpha:seat}));
+    /* The caption has to clear the molecule, not the bare carbon: measured at
+       full separation the topmost arrows sit at y = 0.62 and the outermost at
+       x = 1.15, so a label at BL_CH*1.20 = 1.18 ran straight through the top
+       pair. The 2s caption on the mixing half of this step rides at 1.62, and
+       these two are never on screen together, so both sit at that height and
+       the label does not move as the molecule forms. */
+    objs.push(tag([0,1.62,0],'5 \u00d7 \u03c3 + 1 \u00d7 \u03c0 \u00b7 every bond\u2019s two electrons share one orbital',COL.sigmaDeep,{alpha:seat}));
+    objs.push(note(0.035,0.955,'three sp\u00b2 orbitals at 120\u00b0 \u00b7 the p orbital stays perpendicular','#47556B'));
+    return objs;
+  }
+});
+
+/* --- 8. sp · the set itself ---------------------------------------------
+   THE ORDER OF THIS TRIAD DECIDES WHETHER THE STEP IS READABLE, and getting it
+   wrong is what made the first version teach the opposite of its caption.
+   Measured with _occl.js at the default camera:
+
+     pax = [y, z, x], nMix = 1  ->  the one mixing p orbital swings EXACTLY 90
+     degrees to become the sp along x, and screen-align is -0.499 - the hybrid
+     points the OPPOSITE way on screen to the p orbital it came from. Its lobe
+     therefore travels through the nucleus and across the two leftover p
+     orbitals, which sit on z and x: precisely the directions it crosses. On
+     screen that read as FOUR large gold p lobes with two small green sp lobes
+     buried behind them, i.e. "s + p -> 4p".
+
+   A p orbital becoming an sp MUST swing 90 degrees - that is what sp means, and
+   the number cannot be reduced. What CAN be controlled is which p orbital does
+   it, and that is what fixes the picture. The three p orbitals are
+   interchangeable chemically (they are degenerate; nothing in the lesson
+   depends on calling one of them z), so the mixing one is placed on the
+   MOLECULAR AXIS - the x axis, the same line the two sp hybrids lie along.
+
+   Two things follow, and both are visible in the render:
+     - the sp hybrid grows out of the p orbital in the SAME LINE it already
+       occupied, so the reshape reads as "this lobe stretched" rather than
+       "this lobe flew somewhere else";
+     - the two leftovers are left on y and z, still mutually perpendicular and
+       still perpendicular to the axis, so they stay clear of the swing and the
+       "two p orbitals ready to be two pi bonds" reading is untouched. */
+const C2H2_PAX=[[1,0,0],[0,1,0],[0,0,1]];
+const C2H2_Y  =[0,1,0];
+const C2H2_Z  =[0,0,1];
+const C2H2_HYB=[[-1,0,0],[1,0,0]];
+/* The p orbitals an sp atom keeps. ONE of them is on the molecular axis - that
+   is how ethyne gets two perpendicular π bonds, and it is also what makes the
+   two carbons' p orbitals line up side-on with each other. */
+const C2H2_P1 =[0,1,0];
+const C2H2_P2 =[0,0,1];
+
+STEPS.push({
+  n:8, short:'s + p \u2192 sp', title:'8 \u00b7 Mixing: s + p \u2192 2 \u00d7 sp', ready:true,
+  text:'One s plus <b>one</b> p gives <b>two sp orbitals, 180\u00b0 apart \u2014 a straight line</b>. Now <b>two</b> p orbitals are left out, still perpendicular to each other and to the axis, <b>still holding one electron each</b>. Those two are the \u03c0 bonds of a triple bond. Note the pattern across steps 3, 6 and 8: <b>the s always mixes, and the number of p orbitals that join it decides the shape</b> \u2014 3 \u2192 109.5\u00b0, 2 \u2192 120\u00b0, 1 \u2192 180\u00b0.',
+  align:'Completes the sp/sp\u00b2/sp\u00b3 trio and sets up the two perpendicular \u03c0 bonds of a triple bond.',
+  zoom:0.86,
+  spin:0, yaw0:0.785,
+  build(t){
+    const T=clamp(t==null?0:t,0,SPM_T);
+    const S=hybridScene(T,{
+      /* Named, not blank - see the note in step 6. Here it is the sharpest case
+         of the pattern the lesson is built on: ONE p mixes, and the class can
+         read the other two sitting there untouched. */
+      pax:C2H2_PAX, plab:['p\u2093','p\u1d67','p\u1d22'], nMix:1, hyb:C2H2_HYB,
+      hydrogens:false, ph:SP_PH,
+      caption:'mix 1 s + 1 p \u00b7 two p stay out of it',
+      note:'one fewer p than sp\u00b2, one fewer still than sp\u00b3 \u21d2 180\u00b0, linear'
+    });
+    const ph=S.ph;
+    const ez=v=>v*v*(3-2*v);
+    const s2=(a,b)=>ez(clamp((T-a)/(b-a),0,1));
+    S.objs.push(levelPanel({
+      x:0.026, y:0.070, alpha:ph.appear,
+      rowH:44,
+      rows:[
+        {tag:'2p', tagCol:'#C79A18', spans:[
+          {col:COL.pDeep, e:1, alpha:1, label:'p\u1d67', labCol:'#B08A12'}]},
+        {tag:'2s', tagCol:'#2E9A55', spans:[
+          {col:COL.spDeep, e:2*(1-ph.promote), alpha:1}]},
+        {tag:'sp', tagCol:'#2E9A55', spans:[
+          {col:COL.spDeep, e:1, alpha:ph.mix},
+          {col:COL.spDeep, e:1, alpha:ph.mix}]},
+        {tag:'2p (left)', tagCol:'#C79A18', spans:[
+          {col:COL.pDeep, e:1, alpha:1},
+          {col:COL.pDeep, e:1, alpha:1}]}
+      ],
+      arrows:[
+        {from:1, to:0, alpha:ph.promote, col:'#C79A18'},
+        {from:1, to:2, alpha:ph.mix,     col:'#2E9A55'}
+      ]
+    }));
+    return S.objs;
+  }
+});
+
+/* --- 9. sp in ethyne: two perpendicular pi bonds ------------------------ */
+STEPS.push({
+  n:9, short:'sp \u00b7 C\u2082H\u2082', title:'9 \u00b7 sp in ethyne, C\u2082H\u2082', ready:true,
+  text:'Two sp carbons joined head-on give the <b>C\u2013C \u03c3 bond</b>, and each takes one hydrogen. The <b>two leftover p orbitals on each carbon</b> then overlap <b>sideways, in two perpendicular planes</b>, giving <b>two \u03c0 bonds</b>. Together with the \u03c3 bonds of the skeleton that is the <b>C\u2261C triple bond</b>, and the whole molecule is <b>linear</b>.',
+  align:'Shows the two perpendicular \u03c0 bonds that make a triple bond, and closes the sp/sp\u00b2/sp\u00b3 arc.',
+  /* Held still for the same reason as step 11: this figure is about the
+     ORIENTATION of the p orbitals, and a turning camera makes them resize. */
+  spin:0, yaw0:0.785,
+  zoom:0.86,
+  build(t){
+    const T=clamp(t==null?0:t,0,ETHY_T2);
+    const ez=v=>v*v*(3-2*v);
+    const sg=(a,b)=>ez(clamp((T-a)/(b-a),0,1));
+    const objs=[axes(true)];
+    const X=[1,0,0];
+    const slp=(p,q,s)=>V.norm(V.add(V.mul(p,1-s),V.mul(q,s)));
+    const mp=(p,q,s)=>[lerp(p[0],q[0],s),lerp(p[1],q[1],s),lerp(p[2],q[2],s)];
+
+    /* ---- clock. The mixing runs first on step 8's own windows, then the
+       molecule forms on the same order as every other bonding figure: nuclei,
+       then overlaps as they touch, then the electrons move into the orbitals
+       the bonds create. */
+    const come   = sg(0.60,2.10);
+    const hIn    = sg(1.10,1.80);
+    const hCome  = sg(1.70,3.00);
+    const sCH    = sg(2.40,3.20);
+    const mergeS = sg(3.10,4.40);
+    const piM    = sg(4.30,5.30);
+    const seat   = sg(5.30,5.90);
+
+    /* Two panels: superimposing both perpendicular p pairs on one centre puts
+       eight gold lobes and two pi lenses through the same screen region and
+       they merge into one diagonal smear, so the student cannot see that there
+       are TWO pi bonds - which is the whole point of a triple bond. The
+       molecule is therefore built once and drawn twice, offset on screen. */
+    const OA=[-232,6], OB=[232,-6];
+    const Sg=0.92;
+    const draw=(off,n)=>{
+      const c1=[-BL_CC*0.72*Sg,0,0], c2=[BL_CC*0.72*Sg,0,0];
+      const hDist=lerp(1.24,BL_CH*Sg,hCome);
+      objs.push(nuc(c1,0.105,'C',{off}));
+      objs.push(nuc(c2,0.105,'C',{off}));
+
+      /* The two sp orbitals, 180 degrees apart along the axis. Each holds ONE
+         electron, and each hydrogen brings one more - the earlier figure drew
+         this whole molecule with no electrons anywhere: both carbons' sp
+         orbitals and both hydrogens were empty, and only the p orbitals were
+         ever occupied. */
+      [c1,c2].forEach((c,ci)=>{
+        const out=ci===0?-1:1, d=[out,0,0];
+        objs.push(lobe(V.add(c,V.mul(d,0.50)),d,0.54,0.205,COL.sp,{alpha:0.90,off}));
+        objs.push(lobe(V.add(c,V.mul(d,-0.28)),d,0.24,0.125,COL.back,{alpha:0.50,off}));
+        // the p orbital this panel is about: one electron, one arrow
+        objs.push(lobe(V.add(c,V.mul(n,0.56)),n,0.46,0.215,COL.p,{alpha:0.92,off}));
+        objs.push(lobe(V.add(c,V.mul(n,-0.56)),n,0.46,0.215,COL.p,{alpha:0.92,off}));
+      });
+
+      /* ---- the C-C sigma bond (already formed when this figure opens) ----- */
+      objs.push(stick([c1[0]+0.16,0,0],[c2[0]-0.16,0,0],'sigma',{off}));
+      objs.push(sigmaLens([c1[0]+0.30,0,0],[c2[0]-0.30,0,0],0.16,COL.sigma,{alpha:0.92,off}));
+      objs.push(...bondPair([0,0,0],{off,pid:'cc'+(off[0]>0?'b':'a')}));
+
+      /* ---- the two C-H sigma bonds, each with its electrons merging -------- */
+      [[c1,-1],[c2,1]].forEach(pair=>{
+        const c=pair[0], out=pair[1], d=[out,0,0];
+        const h=[c[0]+out*hDist,0,0];
+        objs.push(hyd(h,{r:0.26*(0.82+0.18*hCome),alpha:hIn,off}));
+        objs.push(stick([c[0]+out*0.18,0,0],[h[0]-out*0.22,0,0],'sigma',{off}));
+        objs.push(sigmaLens([c[0]+out*lerp(0.92,0.52,hCome),0,0],h,0.17,COL.sigma,{alpha:0.92*sCH,off}));
+        objs.push(...sigmaMerge({
+          aAt:V.add(c,V.mul(d,0.50)), aDir:d,
+          bAt:h, bDir:V.mul(d,-1),
+          at:[c[0]+out*hDist*0.78,0,0], merge:mergeS, alpha:hIn, off,
+          pid:'ch'+out+off[0]
+        }));
+      });
+
+      /* ---- the pi bond this panel is about ---------------------------------
+         Each carbon's unhybridised p orbital holds ONE electron, so each shows
+         one arrow. The two travel together into the two lobes of the single pi
+         orbital - one above the axis, one below - and because they end up
+         antiparallel they read as the pair they are. */
+      [1,-1].forEach(sn=>{
+        objs.push(lens([0,0,sn*0.58],X,C2H2_Y,BL_CC*1.05,0.19,COL.pi,{alpha:0.9*piM,off}));
+      });
+      const up=[0,0,0.54], dn=[0,0,-0.54];
+      objs.push(earrow(slp(n,[0,1,0],piM),  mp(V.add(c1,V.mul(n,0.56)),up,piM), +1,
+        {span:0.30,alpha:1,float:true,off:[off[0],off[1]],pid:'pu'+off[0]}));
+      objs.push(earrow(slp(n,[0,-1,0],piM), mp(V.add(c2,V.mul(n,0.56)),dn,piM), +1,
+        {span:0.30,alpha:1,float:true,off:[off[0],off[1]],pid:'pd'+off[0]}));
+    };
+    // panel A carries the p pair in the x-z plane, panel B the one in x-y
+    draw(OA,C2H2_Z);
+    draw(OB,C2H2_Y);
+
+    objs.push(tag([0,1.32,0],'\u03c0 bond 1 \u2014 one p pair',COL.piDeep,{alpha:seat,off:OA}));
+    objs.push(tag([0,1.32,0],'\u03c0 bond 2 \u2014 the perpendicular p pair',COL.piDeep,{alpha:seat,off:OB}));
+    objs.push(note(0.035,0.955,'two sp orbitals at 180\u00b0 \u00b7 two perpendicular p orbitals \u21d2 two \u03c0 bonds \u00b7 every bond\u2019s electrons share one orbital','#47556B'));
+    return objs;
+  }
+});
+
+/* --- 10. sigma: head-on overlap ---------------------------------------- */
+STEPS.push({
+  n:10, short:'\u03c3 \u2014 head-on overlap', title:'10 \u00b7 The \u03c3 bond: head-on overlap', ready:true,
+  text:'A <b>\u03c3 bond</b> forms when orbitals overlap <b>end-on, along the internuclear axis</b>. The electron density is concentrated <b>directly between the nuclei</b>, which is why a \u03c3 bond is strong and why <b>rotation about it is free</b> \u2014 the overlap is unchanged however you spin it.',
+  align:'Isolates the \u03c3 bond as a concept: geometry of the overlap, and the free rotation it allows.',
+  zoom:0.92,
+  build(){
+    const objs=[axes(true)];
+    const X=[1,0,0], Y=[0,1,0], Z=[0,0,1];
+    const c1=[-1.05,0,0], c2=[1.05,0,0];
+    // two sp3-like lobes pointing at each other, plus their hydrogens
+    objs.push(nuc(c1,0.115,'C')); objs.push(nuc(c2,0.115,'C'));
+    /* The hydrogens are placed on a proper sp3-like fan and each is JOINED to
+       its carbon by a stick. Left unjoined they read as stray balls floating in
+       the frame, which is how this step failed on the first pass. */
+    [c1,c2].forEach((c,ci)=>{
+      const d=V.mul(X,ci===0?1:-1);
+      objs.push(lobe(V.add(c,V.mul(d,0.58)),d,0.60,0.225,COL.sp,{alpha:0.92,seq:0.1}));
+      objs.push(lobe(V.add(c,V.mul(d,-0.30)),d,0.26,0.135,COL.back,{alpha:0.55,seq:0.1}));
+      // two C-H bonds per carbon, fanned away from the C-C axis
+      [1,-1].forEach(s=>{
+        const hp=V.norm(V.add(V.mul(Y,0.86),V.mul(Z,s*0.34)));
+        const h=V.add(c,V.mul(hp,BL_CH*0.96));
+        objs.push(stick(c,h,'sigma',{seq:0.5,w:0.05}));
+        objs.push(hyd(h,{r:0.24,seq:0.5,alpha:0.85}));
+      });
+    });
+    objs.push(stick([c1[0]+0.20,0,0],[c2[0]-0.20,0,0],'sigma',{seq:0.3}));
+    // the head-on overlap lens, drawn large and clearly on-axis
+    objs.push(sigmaLens([c1[0]+0.40,0,0],[c2[0]-0.40,0,0],0.235,COL.sigma,{alpha:0.95,seq:0.6}));
+    /* Free rotation: an arc swinging around the C-C bond axis. The arc is built
+       in the plane perpendicular to x and placed at the bond midpoint, so it
+       wraps the bond instead of sitting off to one side. Radius is set larger
+       than the C-H fans so the arc clears the hydrogens and stays readable. */
+    const arcPts=[];
+    for(let i=0;i<=16;i++){
+      const t=i/16, a=Math.PI*0.30+t*Math.PI*1.60;
+      arcPts.push([0, Math.cos(a)*1.16, Math.sin(a)*1.16]);
+    }
+    objs.push(curl(arcPts,COL.sigmaDeep,{seq:1.1}));
+    objs.push(tag([0,1.18,0],'\u03c3 \u2014 density on the axis \u00b7 free rotation',COL.sigmaDeep,{seq:1.3}));
+    objs.push(note(0.035,0.955,'\u03c3 bond: end-on overlap, maximum density between the nuclei','#47556B'));
+    return objs;
+  }
+});
+
+/* --- 11. pi: side-on overlap ------------------------------------------- */
+STEPS.push({
+  n:11, short:'\u03c0 \u2014 side-on overlap', title:'11 \u00b7 The \u03c0 bond: side-on overlap', ready:true,
+  text:'A <b>\u03c0 bond</b> forms when two <b>parallel p orbitals overlap sideways</b>. The density sits in <b>two regions above and below the internuclear axis</b>, with a <b>node on the axis itself</b>. Because the overlap is off-axis, a \u03c0 bond is <b>weaker than a \u03c3 bond</b>.',
+  align:'Contrasts the \u03c0 overlap geometry with \u03c3, and explains the node and the reduced strength.',
+  build(){
+    const objs=[axes(true)];
+    const X=[1,0,0], Z=[0,0,1];
+    const c1=[-1.05,0,0], c2=[1.05,0,0];
+    objs.push(nuc(c1,0.115,'C')); objs.push(nuc(c2,0.115,'C'));
+    [c1,c2].forEach(c=>{
+      objs.push(lobe(V.add(c,V.mul(Z,0.62)),Z,0.50,0.235,COL.p,{alpha:0.95,seq:0.1}));
+      objs.push(lobe(V.add(c,V.mul(Z,-0.62)),Z,0.50,0.235,COL.p,{alpha:0.95,seq:0.1}));
+    });
+    // sigma skeleton behind it
+    objs.push(stick([c1[0]+0.20,0,0],[c2[0]-0.20,0,0],'sigma',{seq:0.0,w:0.055}));
+    // the two side-on overlap regions: above and below the axis
+    [[1],[-1]].forEach(sgn=>{
+      const s=sgn[0];
+      const mid=[0,0,s*0.66];
+      objs.push(lens(mid,X,[0,1,0],0.72,0.22,COL.pi,{alpha:0.9,seq:0.7}));
+    });
+    // the node: a faint dashed line along the internuclear axis
+    objs.push({k:'dash',dir:X,at:[0,0,0],len:0.42,n:1,node:true});
+    objs.push(tag([0,1.02,0],'\u03c0 \u2014 density above and below \u00b7 node on the axis',COL.piDeep,{seq:1.1}));
+    objs.push(note(0.035,0.955,'\u03c0 bond: side-on overlap of parallel p orbitals \u2014 a node on the axis','#47556B'));
+    return objs;
+  }
+});
+
+/* --- 12. sigma vs pi: bond energy -------------------------------------- */
+STEPS.push({
+  n:12, short:'\u03c3 vs \u03c0 \u2014 bond energy', title:'12 \u00b7 \u03c3 vs \u03c0: which is stronger?', ready:true,
+  text:'Side-by-side, the difference is obvious: the <b>\u03c3 overlap is head-on and substantial</b>, while the <b>\u03c0 overlap is sideways and only partial</b>. So <b>\u03c3 is stronger than \u03c0</b>. That is why a C\u2261C triple bond (1 \u03c3 + 2 \u03c0) is not three times a C\u2013C single bond, and why \u03c0 bonds are the ones that break first in reactions.',
+  align:'Turns the geometry into the energy trend the syllabus tests (2.7.A.3).',
+  zoom:0.86,
+  build(){
+    const objs=[axes(true)];
+    const X=[1,0,0], Z=[0,0,1];
+    /* Both pairs get the SAME internuclear separation and the SAME lobe size,
+       so the only thing that differs on screen is the overlap geometry - which
+       is the whole point of the comparison. Previously the sigma pair used
+       bigger lobes at a closer spacing, so "sigma looks stronger" was being
+       carried by the drawing rather than by the geometry.
+       Both molecules are ALSO built at the origin and then placed with a screen
+       offset: laid out along world x the isometric camera drops one of them
+       down the screen, and a comparison needs the two on one baseline. */
+    const GAP=1.10, A=0.44, B=0.170;
+    const OFF_S=[-150,0], OFF_P=[150,0];
+    const pair=(off,kind)=>{
+      const p1=[-GAP/2,0,0], p2=[GAP/2,0,0];
+      objs.push(nuc(p1,0.10,'C',{off})); objs.push(nuc(p2,0.10,'C',{off}));
+      if(kind==='sigma'){
+        objs.push(lobe(V.add(p1,V.mul(X,GAP*0.40)),X,A,B,COL.sp,{alpha:0.92,seq:0,off}));
+        objs.push(lobe(V.add(p2,V.mul(X,-GAP*0.40)),X,A,B,COL.sp,{alpha:0.92,seq:0,off}));
+        objs.push(stick([p1[0]+0.16,0,0],[p2[0]-0.16,0,0],'sigma',{seq:0,w:0.06,off}));
+        objs.push(sigmaLens([p1[0]+0.26,0,0],[p2[0]-0.26,0,0],0.20,COL.sigma,{alpha:0.95,seq:0.3,off}));
+      }else{
+        [p1,p2].forEach(c=>{
+          objs.push(lobe(V.add(c,V.mul(Z,GAP*0.46)),Z,A,B,COL.p,{alpha:0.92,seq:0,off}));
+          objs.push(lobe(V.add(c,V.mul(Z,-GAP*0.46)),Z,A,B,COL.p,{alpha:0.92,seq:0,off}));
+        });
+        objs.push(stick([p1[0]+0.16,0,0],[p2[0]-0.16,0,0],'sigma',{seq:0,w:0.06,off}));
+        [1,-1].forEach(s=>{
+          objs.push(lens([0,0,s*GAP*0.52],X,[0,1,0],GAP*0.56,0.185,COL.pi,{alpha:0.9,seq:0.3,off}));
+        });
+      }
+      return {off};
+    };
+    pair(OFF_S,'sigma');
+    pair(OFF_P,'pi');
+    // labels ride the same offsets, so they track their own pair
+    objs.push(tag([0,1.14,0],'\u03c3  head-on \u2014 stronger',COL.sigmaDeep,{seq:0.7,off:OFF_S}));
+    objs.push(tag([0,1.14,0],'\u03c0  side-on \u2014 weaker',COL.piDeep,{seq:0.7,off:OFF_P}));
+    objs.push(note(0.035,0.955,'head-on overlap beats side-on overlap \u21d2 \u03c3 bond stronger than \u03c0','#47556B'));
+    return objs;
+  }
+});
+
+/* --- 13. pi locks rotation --------------------------------------------- */
+STEPS.push({
+  n:13, short:'\u03c0 locks rotation', title:'13 \u00b7 Why a \u03c0 bond locks rotation', ready:true,
+  text:'Twist one carbon of a C=C by 90\u00b0 and the two p orbitals are <b>no longer parallel</b> \u2014 the side-on overlap <b>falls to zero</b> and the \u03c0 bond is broken. That energy cost is why <b>rotation about a C=C is forbidden</b> and why <b>cis\u2013trans isomers exist</b>. A C\u2013C single bond has no \u03c0 bond, so it rotates freely.',
+  align:'Links the \u03c0 overlap geometry to restricted rotation and cis/trans isomerism.',
+  zoom:0.98,
+  build(){
+    const objs=[axes(true)];
+    const X=[1,0,0], Z=[0,0,1], Y=[0,1,0];
+    const c1=[-0.72,0,0], c2=[0.72,0,0];
+    objs.push(nuc(c1,0.105,'C')); objs.push(nuc(c2,0.105,'C'));
+    objs.push(stick([c1[0]+0.16,0,0],[c2[0]-0.16,0,0],'sigma',{seq:0,w:0.055}));
+    // left carbon: p orbital vertical -> the reference phase
+    objs.push(lobe(V.add(c1,V.mul(Z,0.56)),Z,0.46,0.215,COL.p,{alpha:0.95,seq:0.1}));
+    objs.push(lobe(V.add(c1,V.mul(Z,-0.56)),Z,0.46,0.215,COL.p,{alpha:0.95,seq:0.1}));
+    // right carbon: p orbital TWISTED 90 degrees into the xy plane
+    objs.push(lobe(V.add(c2,V.mul(Y,0.56)),Y,0.46,0.215,COL.p,{alpha:0.95,seq:0.1}));
+    objs.push(lobe(V.add(c2,V.mul(Y,-0.56)),Y,0.46,0.215,COL.p,{alpha:0.95,seq:0.1}));
+    /* The break itself. Absence of overlap is invisible unless something says
+       "there WAS a bond here": draw the ghost of the overlap that a parallel
+       pair WOULD have had, cross it out, and mark where the phase flips. */
+    [1,-1].forEach(s=>{
+      objs.push(lens([0,0,s*0.56],X,[0,1,0],0.62,0.185,COL.piGhost,
+        {alpha:0.30,seq:0.4,ghost:true}));
+    });
+    // the crossed-out marker, sitting on the bond midpoint
+    objs.push(cross([0,0,0],0.30,COL.piDeep,{seq:0.8}));
+    objs.push(tag([0,1.22,0],'twisted 90\u00b0 \u2014 p orbitals no longer parallel',COL.piDeep,{seq:0.8}));
+    objs.push(note(0.035,0.955,'rotate a C=C by 90\u00b0 and the \u03c0 overlap vanishes \u21d2 no rotation','#47556B'));
+    return objs;
+  }
+});
+
+/* --- 14. sigma / pi count across three molecules ----------------------- */
+STEPS.push({
+  n:14, short:'\u03c3/\u03c0 count \u2014 3 molecules', title:'14 \u00b7 Counting \u03c3 and \u03c0 in three molecules', ready:true,
+  text:'Read the count off the shape. <b>CH\u2084</b>: four \u03c3, no \u03c0. <b>C\u2082H\u2084</b>: five \u03c3 (four C\u2013H plus one C\u2013C) and <b>one</b> \u03c0. <b>C\u2082H\u2082</b>: three \u03c3 (two C\u2013H plus one C\u2013C) and <b>two</b> \u03c0. In every case <b>every single bond is one \u03c3</b>, and each extra line in a multiple bond is one more \u03c0.',
+  align:'Consolidates the whole arc into the \u03c3/\u03c0 bookkeeping students are examined on.',
+  /* This is a COUNTING figure: the class has to read "3\u03c3 2\u03c0" off the shape.
+     A camera that keeps turning makes the p orbitals swing between a clear
+     dumbbell, a diagonal pair, and a stack where both perpendicular pairs
+     coincide - measured, at yaw 0 BOTH pairs project vertically and merge into
+     one indistinct column. Holding the camera keeps the count readable. yaw0
+     0.785 is the angle where the molecular axis, the first p pair and the
+     second p pair all sit 120 degrees apart on screen, i.e. all three are
+     separately visible. */
+  spin:0, yaw0:0.785,
+  zoom:0.80,
+  build(){
+    const objs=[axes(true)];
+    const Z=[0,0,1], Y=[0,1,0];
+    /* All three molecules are built AT THE ORIGIN and then placed with `off`,
+       a screen-space offset. Building them at world offsets does not work: the
+       camera is isometric, so a world-space triangle projects into a diagonal
+       chain that walks off two edges at once, and "upper left" ends up next to
+       "bottom centre". Offsets here are [right, up] in canvas units. */
+    /* The C2H2 panel sits BELOW centre, and at this camera angle its molecular
+       axis projects 30 degrees off horizontal, so it hangs lower than the other
+       two molecules do. At the original -175 its lowest lobes ran into the
+       footnote. Raising it 28 px clears the text while keeping the three
+       molecules visually grouped. */
+    const O_CH4=[-235,110], O_C2H4=[215,110], O_C2H2=[-10,-105];
+    const place=(off,S)=>{
+      return (p)=>[p[0]*S, p[1]*S, p[2]*S];
+    };
+    // --- CH4 (upper left) ---
+    let T=place(O_CH4,0.44);
+    objs.push(nuc(T([0,0,0]),0.085,'C',{off:O_CH4}));
+    TET.forEach(d=>{
+      const h=T(V.mul(d,BL_CH*0.92));
+      objs.push(lobe(T(V.mul(d,0.42)),d,0.44,0.165,COL.sp,{alpha:0.88,seq:0,off:O_CH4}));
+      objs.push(hyd(h,{r:0.20,seq:0.3,off:O_CH4}));
+      objs.push(stick(T(V.mul(d,0.10)),h,'sigma',{seq:0.3,w:0.05,off:O_CH4}));
+    });
+    // --- C2H4 (upper right) ---
+    T=place(O_C2H4,0.46);
+    const m1=T([-BL_CC/2,0,0]), m2=T([BL_CC/2,0,0]);
+    const SP2=[0,1,2].map(i=>{
+      const a=Math.PI*2*i/3+Math.PI/2;
+      return V.norm([Math.cos(a),Math.sin(a),0]);
+    });
+    objs.push(nuc(m1,0.085,'C',{off:O_C2H4})); objs.push(nuc(m2,0.085,'C',{off:O_C2H4}));
+    [m1,m2].forEach((c,ci)=>{
+      SP2.forEach(d=>{
+        objs.push(lobe(V.add(c,V.mul(d,0.40)),d,0.42,0.160,COL.sp,{alpha:0.88,seq:0,off:O_C2H4}));
+      });
+      objs.push(lobe(V.add(c,V.mul(Z,0.46)),Z,0.36,0.170,COL.p,{alpha:0.92,seq:0,off:O_C2H4}));
+      objs.push(lobe(V.add(c,V.mul(Z,-0.46)),Z,0.36,0.170,COL.p,{alpha:0.92,seq:0,off:O_C2H4}));
+    });
+    objs.push(stick([m1[0]+0.12,0,0],[m2[0]-0.12,0,0],'sigma',{seq:0,w:0.05,off:O_C2H4}));
+    [[m1,-1],[m2,1]].forEach(pair=>{
+      SP2.forEach(d=>{
+        if(Math.abs(d[0]-pair[1])<0.2) return;
+        const h=V.add(pair[0],V.mul(d,BL_CH*0.86));
+        objs.push(hyd(h,{r:0.19,seq:0.3,off:O_C2H4}));
+        objs.push(stick(V.add(pair[0],V.mul(d,0.10)),h,'sigma',{seq:0.3,w:0.05,off:O_C2H4}));
+      });
+    });
+    // --- C2H2 (bottom centre) ---
+    T=place(O_C2H2,0.48);
+    const a1=T([-BL_CC/2,0,0]), a2=T([BL_CC/2,0,0]);
+    objs.push(nuc(a1,0.085,'C',{off:O_C2H2})); objs.push(nuc(a2,0.085,'C',{off:O_C2H2}));
+    [a1,a2].forEach((c,ci)=>{
+      const out=ci===0?-1:1, d=[out,0,0];
+      objs.push(lobe(V.add(c,V.mul(d,0.42)),d,0.44,0.165,COL.sp,{alpha:0.88,seq:0,off:O_C2H2}));
+      objs.push(lobe(V.add(c,V.mul(Z,0.44)),Z,0.34,0.160,COL.p,{alpha:0.92,seq:0,off:O_C2H2}));
+      objs.push(lobe(V.add(c,V.mul(Z,-0.44)),Z,0.34,0.160,COL.p,{alpha:0.92,seq:0,off:O_C2H2}));
+      objs.push(lobe(V.add(c,V.mul(Y,0.44)),Y,0.34,0.160,COL.p,{alpha:0.92,seq:0,off:O_C2H2}));
+      objs.push(lobe(V.add(c,V.mul(Y,-0.44)),Y,0.34,0.160,COL.p,{alpha:0.92,seq:0,off:O_C2H2}));
+    });
+    objs.push(stick([a1[0]+0.12,0,0],[a2[0]-0.12,0,0],'sigma',{seq:0,w:0.05,off:O_C2H2}));
+    [[a1,-1],[a2,1]].forEach(pair=>{
+      const h=[pair[0][0]+pair[1]*BL_CH*0.84,0,0];
+      objs.push(hyd(h,{r:0.19,seq:0.3,off:O_C2H2}));
+      objs.push(stick(V.add(pair[0],[pair[1]*0.12,0,0]),h,'sigma',{seq:0.3,w:0.05,off:O_C2H2}));
+    });
+    // counts — each rides its own molecule's offset, placed clear above it
+    objs.push(tag([0,0.98,0],'CH\u2084  4\u03c3  0\u03c0',COL.spDeep,{seq:0.7,off:O_CH4}));
+    objs.push(tag([0,0.98,0],'C\u2082H\u2084  5\u03c3  1\u03c0',COL.sigmaDeep,{seq:0.7,off:O_C2H4}));
+    objs.push(tag([0,1.02,0],'C\u2082H\u2082  3\u03c3  2\u03c0',COL.piDeep,{seq:0.7,off:O_C2H2}));
+    objs.push(note(0.035,0.955,'every single bond = 1\u03c3 \u00b7 each extra line in a multiple bond = 1\u03c0','#47556B'));
+    return objs;
+  }
+});
+
+
+const stepByN=n=>STEPS.find(s=>s.n===n);
+const curStep=()=>stepByN(state.step);
+
+/* =================== molecular geometry used by every bonding step ===========
+   Bond lengths are in the same arbitrary units as the lobe semi-axes, chosen so
+   a C-H bond just reaches the tip of an sp3 lobe and the H cloud overlaps it. */
+const BL_CH=0.98;             // C-H bond length
+const BL_CC=1.30;             // C=C / C-C bond length
+const SP3_H=TET.map(d=>V.add(d, [0,0,0]).map(v=>v));   // four sp3 directions
+
+/* The sigma-bond region between two atoms: a lens centred at the midpoint,
+   elongated along the bond. `n` gives the plane the lens is flattened in. */
+function sigmaLens(a,b,w,col,opt){
+  const mid=V.mul(V.add(a,b),0.5);
+  const ax=V.sub(b,a);
+  const up=Math.abs(V.norm(ax)[1])<0.9?[0,1,0]:[1,0,0];
+  const n=V.norm(V.cross(ax,up));
+  return lens(mid,ax,n,V.len(ax)*0.52,w,col,opt);
+}
+/* A curved arrow arcing along `dir` from `from`, bulging by `bulge` along `n`.
+   Used for the pi electron density sitting above and below the bond axis. */
+function arcArrow(from,dir,n,len,bulge,col){
+  const pts=[];
+  for(let i=0;i<=8;i++){
+    const t=i/8;
+    const p=V.add(from,V.mul(dir,t*len));
+    const b=Math.sin(Math.PI*t)*bulge;
+    pts.push(V.add(p,V.mul(n,b)));
+  }
+  return curl(pts,col);
+}
+
+/* =================== drawing: scene furniture =================== */
+function drawAxes(R,scale,cx,cy,faint){
+  const L=1.34, alpha=faint?0.38:0.54;
+  [[[L,0,0],'x'],[[0,L,0],'y'],[[0,0,L],'z']].forEach((ax,i)=>{
+    const a=applyR(R,V.mul(ax[0],-1)), b=applyR(R,ax[0]);
+    ctx.save();
+    ctx.globalAlpha=alpha; ctx.strokeStyle='#94A3B8'; ctx.lineWidth=1.2; ctx.setLineDash([5,5]);
+    ctx.beginPath();
+    ctx.moveTo(cx+a[0]*scale,cy-a[1]*scale);
+    ctx.lineTo(cx+b[0]*scale,cy-b[1]*scale);
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.globalAlpha=0.9; ctx.fillStyle='#7C8B99';
+    ctx.font='700 12px Inter,Segoe UI,sans-serif';
+    const p=applyR(R,V.mul(ax[0],L*1.07));
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(ax[1],cx+p[0]*scale,cy-p[1]*scale);
+    ctx.restore();
+  });
+  const o=applyR(R,[0,0,0]);
+  ctx.save();
+  ctx.fillStyle='rgba(30,41,59,.55)';
+  ctx.beginPath(); ctx.arc(cx+o[0]*scale,cy-o[1]*scale,2.1,0,7); ctx.fill();
+  ctx.restore();
+}
+
+/* ---------- drawing: screen-space energy-level inset ---------- */
+function drawLevelPanel(o,cx,cy,fade){
+  fade=(fade==null?1:fade)*o.alpha;
+  if(fade<=0.012) return;
+  const X=o.x*CW, Y=o.y*CH;
+  const rowH=o.rowH||52, spanW=o.spanW||32, gap=(o.gap==null?7:o.gap);
+  const rows=o.rows;
+
+  /* Panel width follows the widest row so a 4-bar row and a 1-bar row are both
+     centred in the same card; a fixed width would left-align the short rows. */
+  let maxW=0;
+  rows.forEach(r=>{ maxW=Math.max(maxW, r.spans.length*spanW+(r.spans.length-1)*gap); });
+  /* TWO separate gutters, and this is not cosmetic. The tag sits on the LEFT
+     (it names the level, so it belongs beside the bars) and the transition
+     arrows get a channel of their own on the RIGHT. An earlier version right-
+     aligned the tags at the far edge, which put them in exactly the same strip
+     as the transition arrows and collided on every transition frame. */
+  const padX=13, padY=12, head=16, gutterL=52, gutterR=22;
+  const boxW=Math.max(maxW, 104)+padX*2+gutterL+gutterR;
+  const boxH=rowH*(rows.length-1)+padY*2+head+22;
+  const rr=10;
+  const barsX=X+padX+gutterL;              // left edge of the bar column
+
+  ctx.save();
+  ctx.globalAlpha=fade;
+  ctx.beginPath();
+  ctx.moveTo(X+rr,Y);
+  ctx.lineTo(X+boxW-rr,Y); ctx.quadraticCurveTo(X+boxW,Y,X+boxW,Y+rr);
+  ctx.lineTo(X+boxW,Y+boxH-rr); ctx.quadraticCurveTo(X+boxW,Y+boxH,X+boxW-rr,Y+boxH);
+  ctx.lineTo(X+rr,Y+boxH); ctx.quadraticCurveTo(X,Y+boxH,X,Y+boxH-rr);
+  ctx.lineTo(X,Y+rr); ctx.quadraticCurveTo(X,Y,X+rr,Y);
+  ctx.closePath();
+  ctx.fillStyle='rgba(255,255,255,.82)'; ctx.fill();
+  ctx.strokeStyle='rgba(150,170,188,.50)'; ctx.lineWidth=1; ctx.stroke();
+
+  ctx.font='700 10px Inter,Segoe UI,sans-serif';
+  ctx.fillStyle='#8496A4'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText(o.caption||'ENERGY',X+padX,Y+head*0.8);
+
+  /* Row count drives the bar height: a one-bar row is centred on the row axis
+     and gets only ONE label underneath (in the earlier layout the tag sat
+     beside it and the span label underneath, which read as two names for the
+     same orbital). The bar height is 62% of the row so a lone bar looks like a
+     level line and not like a bullet point lost in white space. */
+  const barH=n=>Math.min(n*spanW+(n-1)*gap, spanW*2.6);
+
+  /* the level bars */
+  rows.forEach((r,ri)=>{
+    const ry=Y+head+padY+ri*rowH;
+    const n=r.spans.length;
+    const total=n*spanW+(n-1)*gap;
+    const bh=barH(n);
+    let bx=barsX+(maxW-total)/2;
+    r.spans.forEach(sp=>{
+      const a=(sp.alpha==null?1:sp.alpha)*fade;
+      const col=sp.col||'#5B7684';
+      if(a>0.012){
+        ctx.globalAlpha=a;
+        ctx.strokeStyle=col; ctx.lineWidth=3.0; ctx.lineCap='round';
+        ctx.beginPath(); ctx.moveTo(bx,ry); ctx.lineTo(bx+bh,ry); ctx.stroke();
+        /* electrons as up/down half-arrows ON the bar - the standard orbital
+           notation, so the count is readable at a glance */
+        if(sp.e){
+          const ew=4.6, eh=7.0;
+          for(let k=0;k<sp.e;k++){
+            const ex=bx+bh*(k+1)/(sp.e+1);
+            const up=(k%2===0);
+            const ty=ry-(up?eh:-eh);
+            ctx.strokeStyle=col; ctx.lineWidth=1.8;
+            ctx.beginPath(); ctx.moveTo(ex,ry); ctx.lineTo(ex,ty); ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(ex,ty);
+            ctx.lineTo(ex-ew*0.5, ty+(up? eh*0.42 : -eh*0.42));
+            ctx.lineTo(ex+ew*0.5, ty+(up? eh*0.42 : -eh*0.42));
+            ctx.closePath(); ctx.fillStyle=col; ctx.fill();
+          }
+          ctx.globalAlpha=a;
+        }
+      }
+      /* Only one span in a row carries a label, and it is centred under the
+         BAR COLUMN rather than under its own bar, so it reads as the name of
+         the whole row. */
+      if(n===1 && sp.label){
+        ctx.globalAlpha=fade;
+        ctx.font='700 10.5px Inter,Segoe UI,sans-serif';
+        ctx.fillStyle=sp.labCol||'#5B7684';
+        ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText(sp.label,bx+bh/2,ry+8);
+      }
+      bx+=spanW+gap;
+    });
+    if(r.tag){
+      ctx.globalAlpha=fade;
+      ctx.font='700 10.5px Inter,Segoe UI,sans-serif';
+      ctx.fillStyle=r.tagCol||'#A2B1BC';
+      /* right-aligned to the inner edge of the LEFT gutter, so every tag ends
+         the same distance from the bars whatever its length */
+      ctx.textAlign='right'; ctx.textBaseline='middle';
+      ctx.fillText(r.tag,X+padX+gutterL-8,ry);
+    }
+  });
+
+  /* transition arrows, drawn last so they ride over the bars */
+  o.arrows.forEach(ar=>{
+    const a=(ar.alpha==null?1:ar.alpha)*fade;
+    if(a<=0.012) return;
+    const y1=Y+head+padY+ar.from*rowH, y2=Y+head+padY+ar.to*rowH;
+    const ax=X+boxW-padX-7;
+    const col=ar.col||'#93A8B6';
+    ctx.globalAlpha=a;
+    ctx.strokeStyle=col; ctx.lineWidth=1.4;
+    ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(ax,y1); ctx.lineTo(ax,y2); ctx.stroke();
+    ctx.setLineDash([]);
+    const d=(y2>y1)?1:-1;
+    ctx.beginPath();
+    ctx.moveTo(ax,y2);
+    ctx.lineTo(ax-3.4,y2-d*5); ctx.lineTo(ax+3.4,y2-d*5);
+    ctx.closePath(); ctx.fillStyle=col; ctx.fill();
+  });
+  ctx.restore();
+}
+
+function drawDashBand(o,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  if(fade<=0.012) return;
+  const u=o.dir;
+  const t=Math.abs(u[0])<0.9?[1,0,0]:[0,1,0];
+  const pu=V.norm(V.cross(u,t));
+  const len=Math.hypot(0.90,0.44);
+  ctx.save();
+  ctx.globalAlpha=fade*0.95;
+  ctx.strokeStyle=COL.dash; ctx.lineWidth=1.5; ctx.lineCap='round';
+  for(let i=0;i<o.n;i++){
+    const s=(i/(o.n-1)-0.5)*len;
+    const p0=V.add(o.at,V.mul(u,(s-0.5)*o.len));
+    const p1=V.add(o.at,V.mul(u,(s+0.5)*o.len));
+    const a=applyR(R,p0), b=applyR(R,p1);
+    ctx.beginPath();
+    ctx.moveTo(cx+a[0]*scale,cy-a[1]*scale);
+    ctx.lineTo(cx+b[0]*scale,cy-b[1]*scale);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---- clay teardrop: tip at x=-1 (nucleus side), round end at x=+1 ---- */
+function teardropPath(){
+  ctx.beginPath();
+  ctx.moveTo(-1,0);
+  ctx.bezierCurveTo(-0.62,-0.60, 0.26,-1.00, 0.83,-0.52);
+  ctx.bezierCurveTo( 1.05,-0.28, 1.05, 0.28, 0.83, 0.52);
+  ctx.bezierCurveTo( 0.26, 1.00,-0.62, 0.60,-1, 0);
+  ctx.closePath();
+}
+function drawLobe(o,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  if(fade<=0.012) return;
+  const v=applyR(R,o.c);
+  const e=ellipseParams(o.c,o.axis,o.a,o.b,R);
+  // Keep the eigen-decomposition's own (algebraically larger, smaller) pairing:
+  // `ang` is the rotation of the FIRST axis, so swapping A and B without
+  // rotating by 90 degrees draws the ellipse sideways.
+  const A=e.A*scale, B=e.B*scale;
+  if(A<0.6) return;
+  const px=cx+v[0]*scale, py=cy-v[1]*scale;
+
+  // --- probability-cloud style, used for the s orbital ---
+  if(o.soft){
+    const Rr=Math.max(A,B)*1.04;
+    ctx.save(); ctx.translate(px,py); ctx.globalAlpha=fade;
+    // Denser than a bare wash: an s orbital drawn too faintly disappears into
+    // the white stage and the class cannot see the spherical shape at all.
+    const g=ctx.createRadialGradient(0,0,0,0,0,Rr);
+    g.addColorStop(0,   hex2rgba(o.col,1.00));
+    g.addColorStop(0.34,hex2rgba(o.col,0.86));
+    g.addColorStop(0.62,hex2rgba(o.col,0.58));
+    g.addColorStop(0.84,hex2rgba(o.col,0.28));
+    g.addColorStop(1,   hex2rgba(o.col,0));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(0,0,Rr,0,7); ctx.fill();
+    const g2=ctx.createRadialGradient(-Rr*0.30,-Rr*0.32,0,-Rr*0.12,-Rr*0.14,Rr*0.60);
+    g2.addColorStop(0,'rgba(255,255,255,.50)');
+    g2.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=g2; ctx.beginPath(); ctx.arc(0,0,Rr,0,7); ctx.fill();
+    // a firm outer rim + a dashed shell: the boundary surface that makes the
+    // sphere read as a shape rather than a green smudge
+    ctx.strokeStyle=hex2rgba(o.col,0.95); ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(0,0,Rr*0.985,0,7); ctx.stroke();
+    ctx.strokeStyle=hex2rgba(o.col,0.55); ctx.lineWidth=1.2; ctx.setLineDash([4,5]);
+    ctx.beginPath(); ctx.arc(0,0,Rr*0.72,0,7); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+    return v[2];
+  }
+
+  // --- clay lobe: three-stop gradient along the projected major axis ---
+  ctx.save();
+  ctx.translate(px,py); ctx.rotate(e.ang); ctx.scale(A,B);
+  const lw=1.6/Math.max(1,Math.min(A,B));
+  const g=ctx.createLinearGradient(-1,0,1,0);
+  g.addColorStop(0,   shade(o.col,-0.26));
+  g.addColorStop(0.30,o.col);
+  g.addColorStop(0.68,shade(o.col, 0.20));
+  g.addColorStop(1,   shade(o.col,-0.16));
+  // A lobe only goes translucent when it has to: either it is holding electron
+  // arrows that must stay visible, or its projection has gone fat and it is
+  // burying its neighbours. Everything else is painted at full strength, which
+  // is what the reference artwork looks like - a previous version veiled every
+  // lobe by a flat 0.78 and washed the whole model out to pale cream.
+  const holdsElectrons=(o.dotted!==false);
+  const veiled=veilFor();
+  const veil=(o.veil==null?0.97:o.veil)*veiled*(holdsElectrons?0.92:1);
+  ctx.globalAlpha=Math.min(1,veil*o.alpha)*fade;
+  ctx.fillStyle=g; teardropPath(); ctx.fill();
+  ctx.globalAlpha=Math.min(1,veil*o.alpha+0.06)*fade;
+  ctx.strokeStyle='rgba(12,22,32,.30)'; ctx.lineWidth=lw; ctx.stroke();
+  // broad soft specular, matched to the reference shading
+  ctx.globalAlpha=0.34*veil*fade; ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.ellipse(0.24,-0.36,0.36,0.20,-0.30,0,7); ctx.fill();
+  ctx.globalAlpha=0.16*veil*fade;
+  ctx.beginPath(); ctx.ellipse(-0.24, 0.42,0.24,0.12, 0.30,0,7); ctx.fill();
+  ctx.restore();
+  return v[2];
+}
+
+/* =================== drawing: electrons as arrows ===================
+   Electrons are drawn as ARROW GLYPHS, the way the reference figure does it:
+   a slim shaft + a clean solid triangular head, oriented by the orbital axis
+   and then painted in SCREEN space. Deliberately 2-D: a heavy 3-D tube reads
+   as a dark blob on top of a bright lobe and swallows the chemistry.       */
+function drawArrowGlyph(tail,head,R,scale,cx,cy,width,fade,shrink){
+  shrink=(shrink==null)?1:shrink;
+  const a=applyR(R,tail), b=applyR(R,head);
+  let x1=cx+a[0]*scale, y1=cy-a[1]*scale;
+  let x2=cx+b[0]*scale, y2=cy-b[1]*scale;
+  let dl=Math.hypot(x2-x1,y2-y1);
+  if(dl<1.2) return;
+  // A lobe aimed at the camera projects to a near-circle and its arrow would
+  // otherwise stay full size and look detached. Pull the TIP back toward the
+  // tail so the glyph shrinks with its lobe; keep a floor so it never vanishes.
+  if(shrink<1){
+    const my=(y1+y2)/2;
+    x2=x1+(x2-x1)*shrink;
+    y2=my+(y2-my)*shrink;
+    y1=my-(y2-my);          // keep the shaft centred on the lobe centre
+    dl=Math.hypot(x2-x1,y2-y1);
+    if(dl<1.2) return;
+  }
+  const ux=(x2-x1)/dl, uy=(y2-y1)/dl, px=-uy, py=ux;
+  const headLen=Math.min(9.5, dl*0.46);
+  const headW=Math.max(3.6, width*1.75*Math.max(0.55,shrink));
+  const sx=x2-ux*headLen, sy=y2-uy*headLen;      // where the shaft ends
+
+  ctx.save();
+  ctx.globalAlpha=fade*0.88;          // soft enough to read as an electron
+  ctx.fillStyle=COL.e;
+  ctx.strokeStyle=COL.e;
+  ctx.lineWidth=Math.max(1,width*Math.max(0.6,shrink)); ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(sx,sy); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(sx+px*headW, sy+py*headW);
+  ctx.lineTo(sx-px*headW, sy-py*headW);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+// geometry of one electron arrow. A short shaft + solid head that lies INSIDE
+// its own lobe, parallel to that lobe's axis (so together the two arrows of a
+// p orbital read as the ↑↓ pair). The arrow is scaled by how much its axis is
+// foreshortened on screen - an arrow on a lobe pointing straight at the camera
+// must shrink with the lobe, otherwise it detaches and "wobbles".
+function arrowGeom(o,R){
+  // An animated arrow supplies its own direction for this frame; everything
+  // downstream (span, foreshortening, screen-space glyph) is unchanged.
+  let u=o.dir;                         // unit outward axis of THIS lobe
+  if(o.k==='anchor'){
+    u=o.fn?o.fn():null;
+    if(!u) return null;                // hidden during its handover interval
+    u=V.norm(u);
+  }
+  const at=o.at;                       // the lobe's own centre
+  // Short segment centred on the lobe centre, so it can NEVER reach across the
+  // nucleus into the opposite lobe. `s` only chooses which end is the tip.
+  // `span` is passed in per-lobe: a p lobe (semi-axis 0.50) can host a longer
+  // arrow than the slimmer sp3 lobe (0.56 long but only 0.22 across).
+  const span=(o.k==='anchor'&&o.spanT!=null)?o.spanT:(o.span==null?0.30:o.span);
+  const tail=V.add(at, V.mul(u, o.s>0 ? -span :  span));
+  const head=V.add(at, V.mul(u, o.s>0 ?  span : -span));
+  // Foreshortening 0..1 from the projected length of the lobe axis.
+  //
+  // This is the fix for the "p orbitals keep twitching" report: at the default
+  // camera the first tetrahedral axis (1,1,1)/sqrt3 projects to a length of
+  // 0.001 - it points straight down the view axis. Its lobe collapses to a
+  // near-circle while a full-size arrow glyph stayed on top of it, so the
+  // arrows visibly slid off their lobes as the model turned. Scaling the glyph
+  // by the same factor keeps every electron inside the shape that owns it.
+  const pa=applyR(R,tail), pb=applyR(R,head);
+  const projLen=Math.hypot(pb[0]-pa[0], pb[1]-pa[1]);
+  return {tail,head,width:0.036,foreshorten:clamp(projLen/(2*span),0.14,1)};
+}
+function drawEArrow(o,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  // An arrow may carry its own per-frame opacity. Animated steps set it so an
+  // electron can fade IN somewhere else rather than snapping into existence;
+  // static steps leave it undefined and are unaffected.
+  if(o.alpha!=null) fade*=o.alpha;
+  if(fade<=0.012) return;
+  const g=arrowGeom(o,R);
+  if(!g) return;
+  drawArrowGlyph(g.tail,g.head,R,scale,cx,cy,g.width*scale,fade,g.foreshorten);
+}
+
+/* =================== drawing: nucleus, tags =================== */
+function drawNuc(o,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  if(fade<=0.012) return;
+  const v=applyR(R,o.at);
+  const x=cx+v[0]*scale, y=cy-v[1]*scale, r=o.r*scale;
+  ctx.save();
+  ctx.globalAlpha=fade;
+  ctx.beginPath(); ctx.arc(x,y,r,0,7);
+  const g=ctx.createRadialGradient(x-r*0.35,y-r*0.40,r*0.08,x,y,r*1.02);
+  g.addColorStop(0,'#7A8E9B'); g.addColorStop(0.55,COL.nuc); g.addColorStop(1,'#1B2833');
+  ctx.fillStyle=g; ctx.fill();
+  ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineWidth=Math.max(1,r*0.16); ctx.stroke();
+  ctx.fillStyle='#1B2833'; ctx.font='800 '+Math.round(r*1.15)+'px Inter,Segoe UI,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(o.sym,x,y+r*0.02);
+  ctx.restore();
+}
+
+/* ---------- drawing: hydrogen 1s cloud ---------- */
+function drawHyd(o,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  if(fade<=0.012) return;
+  const v=applyR(R,o.at);
+  const x=cx+v[0]*scale, y=cy-v[1]*scale, r=o.r*scale;
+  ctx.save();
+  ctx.globalAlpha=fade;
+  const g=ctx.createRadialGradient(x-r*0.3,y-r*0.35,r*0.05,x,y,r);
+  g.addColorStop(0,'rgba(255,255,255,.92)');
+  g.addColorStop(0.45,hex2rgba(COL.h,0.85));
+  g.addColorStop(0.82,hex2rgba(COL.h,0.42));
+  g.addColorStop(1,hex2rgba(COL.h,0));
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+  ctx.strokeStyle=hex2rgba(COL.hDeep,0.85); ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.arc(x,y,r*0.92,0,7); ctx.stroke();
+  // the proton at the centre
+  ctx.fillStyle='#FFFFFF'; ctx.beginPath(); ctx.arc(x,y,r*0.17,0,7); ctx.fill();
+  ctx.strokeStyle=hex2rgba(COL.hDeep,0.9); ctx.lineWidth=1.1; ctx.stroke();
+  // H label
+  ctx.fillStyle=COL.hDeep; ctx.font='800 '+Math.round(r*0.72)+'px Inter,Segoe UI,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('H',x,y-r*0.02);
+  ctx.restore();
+}
+
+/* ---------- drawing: bond stick ---------- */
+function drawStick(o,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  if(fade<=0.012) return;
+  const a=applyR(R,o.a), b=applyR(R,o.b);
+  const x1=cx+a[0]*scale, y1=cy-a[1]*scale;
+  const x2=cx+b[0]*scale, y2=cy-b[1]*scale;
+  const w=Math.max(2.2,o.w*scale);
+  const col=o.kind==='pi'?COL.pi:COL.sigma;
+  ctx.save();
+  ctx.globalAlpha=fade;
+  ctx.lineCap='round';
+  ctx.strokeStyle='rgba(12,22,32,.20)'; ctx.lineWidth=w+2.2;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const g=ctx.createLinearGradient(x1,y1,x2,y2);
+  g.addColorStop(0,shade(col,0.12));
+  g.addColorStop(0.5,col);
+  g.addColorStop(1,shade(col,-0.10));
+  ctx.strokeStyle=g; ctx.lineWidth=w;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.restore();
+}
+
+/* ---------- drawing: overlap lens ---------- */
+/* The shaded bonding region where two orbitals meet. Rendered as a rotated,
+   squashed ellipse centred on the bond midpoint, elongated along the bond and
+   flattened across it. Exact 3-D projection of the disc is overkill here - the
+   lens only has to READ as "the orbitals overlap here". */
+function drawLens(o,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  if(fade<=0.012) return;
+  const a=(o.alpha==null?0.92:o.alpha)*(o.ghost?1:1);
+  const c=applyR(R,o.c);
+  const ax=applyR(R,V.add(o.c,V.mul(o.axis,o.L)));
+  let dx=ax[0]-c[0], dy=ax[1]-c[1];
+  const dl=Math.hypot(dx,dy);
+  if(dl<1e-4) return;
+  dx/=dl; dy/=dl;
+  const A=dl*scale, B=o.w*scale;
+  ctx.save();
+  ctx.translate(cx+c[0]*scale, cy-c[1]*scale);
+  ctx.rotate(Math.atan2(dy,dx));
+  ctx.globalAlpha=fade*a;
+  ctx.scale(A,B);
+  const g=ctx.createRadialGradient(0,0,0.05,0,0,1);
+  g.addColorStop(0,hex2rgba(o.col,0.85));
+  g.addColorStop(0.55,hex2rgba(o.col,0.62));
+  g.addColorStop(1,hex2rgba(o.col,0.10));
+  ctx.fillStyle=g;
+  ctx.beginPath(); ctx.ellipse(0,0,1,1,0,0,7); ctx.fill();
+  ctx.restore();
+  // a crisp outline so the overlap reads as a defined region. A GHOST lens keeps
+  // a dashed outline: it marks an overlap that is no longer there at full
+  // strength, and a solid border would read as a real bond.
+  ctx.save();
+  ctx.translate(cx+c[0]*scale, cy-c[1]*scale);
+  ctx.rotate(Math.atan2(dy,dx));
+  ctx.globalAlpha=fade*a*0.85;
+  ctx.strokeStyle=hex2rgba(o.col,0.85);
+  ctx.lineWidth=o.ghost?1.1:1.3;
+  if(o.ghost) ctx.setLineDash([5,5]);
+  ctx.beginPath(); ctx.ellipse(0,0,A,B,0,0,7); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+/* ---------- drawing: curved pi arrow ---------- */
+function drawCurl(o,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  if(fade<=0.012) return;
+  const pts=o.pts.map(p=>applyR(R,p));
+  if(pts.length<2) return;
+  ctx.save();
+  ctx.globalAlpha=fade;
+  ctx.strokeStyle=o.col; ctx.lineWidth=2.0; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath();
+  ctx.moveTo(cx+pts[0][0]*scale, cy-pts[0][1]*scale);
+  for(let i=1;i<pts.length;i++) ctx.lineTo(cx+pts[i][0]*scale, cy-pts[i][1]*scale);
+  ctx.stroke();
+  // arrowhead at the end
+  const a=pts[pts.length-2], b=pts[pts.length-1];
+  let dx=b[0]-a[0], dy=b[1]-a[1];
+  const dl=Math.hypot(dx,dy);
+  if(dl>1e-5){
+    dx/=dl; dy/=dl;
+    const hx=cx+b[0]*scale, hy=cy-b[1]*scale;
+    const L=8.5, W=4.6;
+    const sx=hx-dx*L, sy=hy+dy*L;
+    const px=-dy, py=-dx;
+    ctx.fillStyle=o.col;
+    ctx.beginPath();
+    ctx.moveTo(hx,hy);
+    ctx.lineTo(sx+px*W, sy+py*W);
+    ctx.lineTo(sx-px*W, sy-py*W);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+}
+
+/* ---------- drawing: crossed-out bond ---------- */
+function drawCross(o,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  if(fade<=0.012) return;
+  const p=applyR(R,o.at);
+  const x=cx+p[0]*scale, y=cy-p[1]*scale;
+  const s=Math.max(6, o.size*scale*0.55);
+  ctx.save();
+  ctx.globalAlpha=fade;
+  // a soft halo so the cross stays legible when it lands on a gold lobe
+  ctx.strokeStyle='rgba(255,255,255,.85)'; ctx.lineWidth=6.4; ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(x-s,y-s); ctx.lineTo(x+s,y+s);
+  ctx.moveTo(x-s,y+s); ctx.lineTo(x+s,y-s);
+  ctx.stroke();
+  ctx.strokeStyle=o.col; ctx.lineWidth=3.2; ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(x-s,y-s); ctx.lineTo(x+s,y+s);
+  ctx.moveTo(x-s,y+s); ctx.lineTo(x+s,y-s);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/* ---------- drawing: label tag ---------- */
+function drawTag(t,R,scale,cx,cy,fade){
+  fade=(fade==null)?1:fade;
+  if(fade<=0.012) return;
+  const v=applyR(R,t.at);
+  const x=cx+v[0]*scale, y=cy-v[1]*scale;
+  ctx.save();
+  ctx.globalAlpha=fade;
+  ctx.font='700 12px Inter,Segoe UI,sans-serif';
+  const tw=ctx.measureText(t.text).width;
+  let tx=x+12;
+  if(tx+tw+8>CW-8) tx=x-tw-12;
+  ctx.strokeStyle='rgba(100,116,139,.55)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(tx-5,y); ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.92)';
+  ctx.fillRect(tx-4,y-9,tw+8,18);
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillStyle=t.col;
+  ctx.fillText(t.text,tx,y);
+  ctx.restore();
+}
+
+/* ---------- render ---------- */
+/* Per-step framing. A single global zoom cannot serve both "one p orbital"
+   (spans ~1.2 units) and "three molecules side by side" (spans ~4.4): tuned
+   for the orbital it clips the comparison, tuned for the comparison it shrinks
+   the orbital to a dot. So each step declares its own `zoom` (multiplier on the
+   base scale) and optional `pan` (screen-space offset in canvas units).
+   Defaults are 1 and [0,0], so steps 1-3 are untouched. */
+function render(){
+  ctx.clearRect(0,0,CW,CH);
+  const R=rotMatrix(state.yaw,state.pitch);
+  const step=curStep();
+  const zoom=(step&&step.zoom)||1;
+  const pan=(step&&step.pan)||[0,0];
+  const cx=CW/2+pan[0], cy=CH/2+8+pan[1];
+  const scale=Math.min(CW/4.30,CH/3.35)*zoom;
+
+  if(!step||!step.ready){
+    ctx.save();
+    ctx.fillStyle='#94A3B8'; ctx.font='700 15px Inter,Segoe UI,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('This step is not available yet.',CW/2,CH/2);
+    ctx.restore();
+    return;
+  }
+  const objs=step.build(state.stepT);
+  /* Multi-molecule scenes tag each element with `off` = [right, up] in canvas
+     units. Resolve it into a per-element origin so an object can be shifted in
+     the SCREEN frame; rotating the camera then slides the whole group together
+     instead of swinging the members around each other. Every draw call below
+     goes through `origin()` rather than using cx/cy directly. */
+  const origin=o=>{
+    if(!o||!o.off) return [cx,cy];
+    return [cx+o.off[0], cy-o.off[1]];
+  };
+  objs.filter(o=>o.k==='axes').forEach(o=>drawAxes(R,scale,cx,cy,o.faint));
+  // faint level dashes sit furthest back
+  objs.filter(o=>o.k==='dash').forEach(o=>drawDashBand(o,R,scale,cx,cy,shown(o)));
+  // bond sticks are furniture: they thread THROUGH the orbitals, so draw them
+  // behind everything solid rather than sorting them
+  objs.filter(o=>o.k==='stick').forEach(o=>{const g=origin(o);drawStick(o,R,scale,g[0],g[1],shown(o));});
+  objs.filter(o=>o.k==='curl').forEach(o=>{const g=origin(o);drawCurl(o,R,scale,g[0],g[1],shown(o));});
+  // ghost lenses mark an overlap that is MISSING; they must sit behind the
+  // orbitals or they read as a real bond painted over the top
+  objs.filter(o=>o.k==='lens'&&o.ghost).forEach(o=>{const g=origin(o);drawLens(o,R,scale,g[0],g[1],shown(o));});
+
+  // Painter's algorithm. Every element carries the z of the thing it belongs
+  // to; an electron arrow sits a hair BEHIND the lobe that owns it, so that
+  // lobe tints it and it reads as being inside the orbital, while a lobe in
+  // front still occludes it properly.
+  const solids=[];
+  objs.forEach(o=>{
+    if(o.k==='lobe') solids.push({o,z:applyR(R,o.c)[2]});
+    /* `float` elements are drawn by the overlay pass at the end of render(),
+       so they must NOT also enter the depth-sorted list - otherwise they are
+       painted twice. For a semi-transparent arrow that doubles its density,
+       and because the first copy is still subject to occlusion while the
+       second is not, the composite thickness changes as the sort flips. */
+    /* The -0.05 nudge lets a lobe tint the arrow so it reads as being INSIDE
+       the orbital. That works while the lobe is translucent; against an opaque
+       lobe it hides the arrow instead, which is why the sp3 electron pairs were
+       half invisible. An arrow that belongs to a particular lobe can therefore
+       name that lobe with `sortAt` and ride just in FRONT of it, while still
+       sorting behind every genuinely nearer object. */
+    if(o.k==='ear'&&!o.float){
+      const zAt=o.sortAt?applyR(R,o.sortAt)[2]:applyR(R,o.at)[2];
+      solids.push({o,z:zAt+(o.sortBias==null?-0.05:o.sortBias)});
+    }
+    // an anchor rides just under the lobe it is heading for, so the lobe tints
+    // it and it reads as being inside that orbital
+    if(o.k==='anchor'&&!o.float) solids.push({o,z:applyR(R,o.at)[2]-0.05, live:o.fn?o.fn():null});
+    if(o.k==='nuc')  solids.push({o,z:applyR(R,o.at)[2]+0.35});
+    if(o.k==='hyd')  solids.push({o,z:applyR(R,o.at)[2]+0.20});
+    // the overlap lens belongs to the bond, so it sits with the atoms it joins
+    if(o.k==='lens'&&!o.ghost) solids.push({o,z:applyR(R,o.c)[2]+0.12});
+    if(o.k==='cross') solids.push({o,z:applyR(R,o.at)[2]+0.60});   // marker on top
+  });
+  solids.sort((p,q)=>p.z-q.z);
+  solids.forEach(it=>{
+    const f=shown(it.o);
+    const k=it.o.k;
+    const g=origin(it.o);
+    if(k==='lobe') drawLobe(it.o,R,scale,g[0],g[1],f);
+    else if(k==='ear') drawEArrow(it.o,R,scale,g[0],g[1],f);
+    // the direction was resolved once during the sort pass; re-resolving it
+    // here would be a second call and could disagree with the sort key
+    else if(k==='anchor'){
+      if(it.live) drawEArrow(Object.assign({},it.o,{dir:it.live}),R,scale,g[0],g[1],f);
+    }
+    else if(k==='hyd') drawHyd(it.o,R,scale,g[0],g[1],f);
+    else if(k==='lens') drawLens(it.o,R,scale,g[0],g[1],f);
+    else if(k==='cross') drawCross(it.o,R,scale,g[0],g[1],f);
+    else drawNuc(it.o,R,scale,g[0],g[1],f);
+  });
+
+  /* ---- overlay pass: things that must not be eaten by a lobe -------------
+     The s label and the 2s electron pair are drawn ON TOP of every lobe, and
+     that is deliberate rather than a cheat.
+
+     The sphere they belong to is centred on the nucleus, so half of it is
+     always in front of each p lobe and half behind; the p lobes, by contrast,
+     are solid teardrops sitting out at 0.58. So whichever lobe happens to be
+     nearer the camera clips straight through the middle of the label and the
+     arrows, and as the model auto-rotates the cut moves - the label looks like
+     it is being sliced in half. "Correct" depth sorting is not achievable for
+     a sphere concentric with the lobes; the honest fix is to declare these two
+     elements annotation and float them. Arrows that genuinely belong to a lobe
+     (the p electrons, the sp3 electrons) still sort normally and are still
+     occluded by the far side of the model, which is what sells the 3-D. */
+  objs.forEach(o=>{
+    if(!o.float) return;
+    const g=origin(o), f=shown(o);
+    const dir=(o.k==='anchor'&&o.fn)?o.fn():o.dir;
+    if(o.k==='tag') drawTag(o,R,scale,g[0],g[1],f*(o.alpha==null?1:o.alpha));
+    else if(o.k==='ear'||o.k==='anchor') drawEArrow(Object.assign({},o,{dir}),R,scale,g[0],g[1],f);
+  });
+
+  /* o.alpha MUST be folded in here. It never used to be, so every fade written on a
+   tag was silently discarded and the label stayed at full strength for the whole
+   animation - which is how step 3's p-orbital labels were still sitting on top of
+   the finished sp3 orbitals. */
+  objs.filter(o=>o.k==='tag'&&!o.float).forEach(t=>{const g=origin(t);drawTag(t,R,scale,g[0],g[1],shown(t)*(t.alpha==null?1:t.alpha));});
+
+  /* energy-level insets are SCREEN space: drawn after the whole 3D pass, with
+     no rotation matrix and no scale, so they stay pinned while the model turns */
+  objs.filter(o=>o.k==='level').forEach(l=>drawLevelPanel(l,cx,cy,shown(l)));
+
+  objs.filter(o=>o.k==='note').forEach(n=>{
+    ctx.save();
+    ctx.font='700 12.5px Inter,Segoe UI,sans-serif';
+    ctx.fillStyle=n.col; ctx.textAlign='left'; ctx.textBaseline='bottom';
+    ctx.fillText(n.text,n.x*CW,n.y*CH);
+    ctx.restore();
+  });
+}
+
+/* =================== UI =================== */
+/* A step can declare `yaw0`: the camera angle it wants to be read from. A step
+   whose geometry is the subject of the lesson should open on a view chosen for
+   it rather than on whatever angle the previous step was left at. */
+function goStep(n){
+  state.step=n; state.stepT=0;
+  const s=stepByN(n);
+  if(s&&s.yaw0!=null) state.yaw=s.yaw0;
+  syncUI();
+}
+function buildStepper(){
+  const el=document.getElementById('stepper');
+  el.innerHTML='';
+  STEPS.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='step'+(s.n===state.step?' on':'');
+    b.disabled=!s.ready;
+    b.innerHTML='<span class="num">'+s.n+'</span><span>'+s.short+'</span>'+(s.ready?'':' <span class="soon">soon</span>');
+    if(s.ready) b.onclick=()=>goStep(s.n);
+    el.appendChild(b);
+  });
+}
+function syncUI(){
+  [...document.querySelectorAll('.step')].forEach((b,i)=>{
+    b.classList.toggle('on',STEPS[i].n===state.step);
+  });
+  const s=curStep();
+  document.getElementById('cardTitle').textContent=s.title||(s.n+' \u00b7 '+s.short);
+  document.getElementById('cardText').innerHTML=s.text||'';
+  document.getElementById('cardAlign').textContent=s.align||'';
+}
+const playBtn=document.getElementById('playBtn');
+playBtn.onclick=()=>{
+  if(state.playing){ state.playing=false; playBtn.textContent='\u25b6 Play steps'; return; }
+  state.playing=true; playBtn.textContent='\u23f8 Pause';
+  goStep(state.step>=3?1:state.step);
+};
+document.getElementById('resetBtn').onclick=()=>{
+  state.yaw=0.785; state.pitch=0.615;
+};
+
+let dragging=false,lastX=0,lastY=0;
+cv.addEventListener('pointerdown',e=>{dragging=true;lastX=e.clientX;lastY=e.clientY;cv.classList.add('drag');if(cv.setPointerCapture)cv.setPointerCapture(e.pointerId);});
+cv.addEventListener('pointermove',e=>{
+  if(!dragging)return;
+  state.yaw+=(e.clientX-lastX)*0.008;
+  state.pitch=Math.max(0.08,Math.min(1.25,state.pitch+(e.clientY-lastY)*0.006));
+  lastX=e.clientX;lastY=e.clientY;
+});
+['pointerup','pointercancel'].forEach(ev=>cv.addEventListener(ev,()=>{dragging=false;cv.classList.remove('drag');}));
+
+/* =================== main loop =================== */
+let last=performance.now();
+function loop(now){
+  let dt=(now-last)/1000; last=now;
+  if(!(dt>0)) dt=0; else if(dt>0.05) dt=0.05;
+  state.t+=dt;
+  if(!state.once) state.stepT+=dt;
+  if(state.pinT) state.stepT=state.stepT;   // held by the deep link
+  /* Per-step auto-rotation.
+
+     A p orbital is a fixed shape in the molecule's frame, so as the camera
+     turns its PROJECTED outline genuinely changes - measured over one turn, one
+     pair's on-screen length sweeps 40..73 px (aspect 1.16..2.12) while its
+     cross-section stays constant at 34.5 px. The change is smooth to within
+     2.85 px per frame, i.e. it is real geometry and not a rendering fault.
+
+     That is fine for a figure whose subject is a 3-D shape. It is NOT fine for
+     the two steps whose subject is the ORIENTATION of the unhybridised p
+     orbitals (9 and 14): there the eye reads the size change as "the orbital
+     keeps changing shape", which is exactly the confusion the figure is meant
+     to remove. Those steps declare spin:0 and the camera holds still, so the
+     geometry is stable and readable. Dragging still works, so the teacher can
+     turn the figure by hand at any time. */
+  const spinK=(curStep()&&curStep().spin!=null)?curStep().spin:1;
+  if(!dragging && !state.once) state.yaw+=dt*0.22*spinK;
+  if(state.playing && !state.once){
+    state.holdT+=dt;
+    if(state.holdT>3.2){
+      state.holdT=0;
+      const next=STEPS.find(s=>s.n>state.step&&s.ready);
+      if(next) goStep(next.n);
+      else { state.playing=false; playBtn.textContent='\u25b6 Play steps'; }
+    }
+  }
+  try{ render(); }catch(e){ /* never let one bad frame freeze the demo */ }
+  requestAnimationFrame(loop);
+}
+fitCanvas();
+buildStepper();
+syncUI();
+/* Deep-link hook, used by the screenshot harness and handy for teaching too:
+     ?step=7&t=4.2&yaw=0.6&pitch=0.5&once=1
+   `t` pins the step clock so a frame can be reproduced exactly (no waiting for
+   the animation), `yaw`/`pitch` pin the camera, and `once` stops the loop from
+   ever advancing - otherwise a screenshot taken 3 s in would catch a different
+   moment than the one asked for. Everything is clamped into the same legal
+   ranges the pointer drag uses. */
+(function(){
+  let q={}; try{ q=Object.fromEntries(new URLSearchParams(location.search)); }catch(e){ return; }
+  if(q.step!=null && !isNaN(+q.step)) goStep(+q.step);
+  if(q.yaw!=null && !isNaN(+q.yaw)) state.yaw=+q.yaw;
+  if(q.pitch!=null && !isNaN(+q.pitch)) state.pitch=Math.max(0.08,Math.min(1.25,+q.pitch));
+  if(q.t!=null && !isNaN(+q.t)){ state.stepT=+q.t; state.pinT=true; }
+  if(q.once!=null) state.once=true;
+})();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

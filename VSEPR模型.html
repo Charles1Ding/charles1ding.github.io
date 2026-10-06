@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="en" data-page-node-id="8pOEYzQSGq9Nm3zXbjAYCf">
+<head data-page-node-id="adBzcXqoPZbuukwMElZu5P">
+<meta charset="UTF-8" data-page-node-id="0DhNzJ3FKLbHbyPtwVuFvM" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="9Fu2mZkLHto4is1dcdvXDp" />
+<title>VSEPR Theory — Electron Pair Repulsion</title>
+<style>
+  :root{
+    --teal:#0A455D; --teal-light:#4699AA; --bg:#EEF3F5;
+    --card:rgba(255,255,255,.95); --text:#1E293B; --text2:#475569;
+    --lp:#FACC15; --bond:#AEB9C2;
+    --ll:#EF4444; --al:#F97316; --aa:#EAB308;
+    --ok:#22C55E; --err:#DC2626;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Inter','Segoe UI',system-ui,-apple-system,'PingFang SC',sans-serif;
+    background:var(--bg); color:var(--text); padding:14px; min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+  header{
+    background:linear-gradient(135deg,var(--teal),var(--teal-light));
+    color:#fff; border-radius:16px; padding:14px 22px;
+    box-shadow:0 4px 16px rgba(10,69,93,.18); display:flex; align-items:center; gap:12px;
+  }
+  header h1{font-size:24px;font-weight:800;letter-spacing:.3px;}
+  header .sub{font-size:13px;opacity:.85;margin-left:auto;font-weight:500;}
+  .toolbar{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    margin:14px 0; padding:12px 14px; background:var(--card);
+    border-radius:16px; box-shadow:0 4px 16px rgba(10,69,93,.08);
+  }
+  .toolbar .grp{display:flex;gap:6px;align-items:center;}
+  .sep{width:1px;height:26px;background:#d6e0e6;margin:0 4px;}
+  button.btn{
+    border:none;cursor:pointer;border-radius:10px;padding:8px 13px;font-size:13px;font-weight:600;
+    background:#e7eef2;color:var(--teal);transition:all .15s;font-family:inherit;
+  }
+  button.btn:hover{background:#dbe7ec;}
+  button.btn.active{background:var(--teal);color:#fff;box-shadow:0 2px 8px rgba(10,69,93,.3);}
+  button.btn.primary{background:var(--teal-light);color:#fff;}
+  select{
+    border:1px solid #cfdbe2;border-radius:10px;padding:7px 10px;font-size:13px;font-family:inherit;
+    color:var(--text);background:#fff;cursor:pointer;
+  }
+  .toggle{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;user-select:none;}
+  .toggle input{width:16px;height:16px;accent-color:var(--teal);cursor:pointer;}
+  .stage{display:flex;gap:16px;align-items:stretch;}
+  .canvas-card{
+    background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);
+    padding:14px;flex:1 1 72%;position:relative;min-width:560px;
+  }
+  canvas{width:100%;display:block;border-radius:10px;}
+  .panel{flex:1 1 26%;display:flex;flex-direction:column;gap:14px;min-width:260px;}
+  .card{background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);padding:16px 18px;}
+  .card h2{font-size:15px;color:var(--text2);font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+  .formula{font-size:34px;font-weight:800;color:var(--teal);font-variant-numeric:tabular-nums;}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px dashed #e0e8ec;font-size:14px;}
+  .row:last-child{border-bottom:none;}
+  .row .k{color:var(--text2);} .row .v{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+  .angle-big{font-size:30px;font-weight:800;color:var(--teal-light);font-variant-numeric:tabular-nums;}
+  .legend{display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--text2);}
+  .legend .it{display:flex;align-items:center;gap:8px;}
+  .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .insight{font-size:14px;line-height:1.5;color:var(--text);background:#f3f8fa;border-left:4px solid var(--teal-light);padding:10px 12px;border-radius:8px;}
+  .caption{background:var(--card);border-radius:16px;box-shadow:0 4px 16px rgba(10,69,93,.08);padding:14px 18px;margin-top:16px;font-size:14px;color:var(--text2);line-height:1.5;}
+  .caption b{color:var(--teal);}
+  .hidden{display:none !important;}
+  .quiz-opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 14px;border-radius:10px;border:1px solid #cfdbe2;background:#fff;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;transition:all .15s;font-family:inherit;}
+  .quiz-opt:hover{background:#f0f6f9;}
+  .quiz-opt.correct{background:#e7f9ee;border-color:var(--ok);color:#137a3a;}
+  .quiz-opt.wrong{background:#fdeaea;border-color:var(--err);color:#a11;}
+  .quiz-fb{margin-top:10px;font-size:13px;line-height:1.5;padding:10px 12px;border-radius:8px;}
+  .quiz-fb.ok{background:#e7f9ee;color:#137a3a;}
+  .quiz-fb.no{background:#fdeaea;color:#a11;}
+  .slider-row{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:14px;color:var(--text2);}
+  .slider-row input[type=range]{flex:1;accent-color:var(--teal);}
+  .slider-row .val{font-weight:800;color:var(--teal);min-width:54px;text-align:right;font-variant-numeric:tabular-nums;}
+  .stepper{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0;font-size:14px;color:var(--text2);}
+  .stepper .lab{font-weight:700;}
+  .step-ctrl{display:flex;align-items:center;gap:7px;}
+  .step-ctrl button{width:32px;height:32px;border:none;border-radius:9px;background:var(--teal);color:#fff;font-size:20px;font-weight:800;cursor:pointer;line-height:1;transition:background .15s;font-family:inherit;}
+  .step-ctrl button:hover:not(:disabled){background:var(--teal-light);}
+  .step-ctrl button:disabled{background:#cbd5e1;cursor:not-allowed;}
+  .step-ctrl .num{font-weight:800;color:var(--teal);min-width:26px;text-align:center;font-variant-numeric:tabular-nums;font-size:18px;}
+  .chip{position:absolute;bottom:16px;left:16px;background:var(--teal);color:#fff;padding:6px 14px;border-radius:20px;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(10,69,93,.3);}
+  .mol-tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;padding-right:100px;}
+  .mol-tab{border:1px solid #cfdbe2;background:#fff;color:var(--teal);border-radius:20px;padding:6px 13px;font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;font-family:inherit;}
+  .mol-tab:hover{background:#eef6f9;}
+  .mol-tab.active{background:var(--teal);color:#fff;border-color:var(--teal);box-shadow:0 2px 8px rgba(10,69,93,.3);}
+</style>
+</head>
+<body data-page-node-id="KbqcyWikpr4Qd6CW1Zm4Fb">
+<div class="wrap" data-page-node-id="v17hfr9D7DiwmPghEQ1RtO">
+  <header data-page-node-id="OrJBtN1j6Px5b71aLdZA1M">
+    <span style="font-size:26px;" data-page-node-id="1XrcFjdRD7CzJNAFca4Jjj">🧪</span>
+    <h1 data-page-node-id="FduncQoeU5TV4qFOyd6EG0">VSEPR Theory: Electron Pair Repulsion</h1>
+    <span class="sub" data-page-node-id="iNbTjZahCwLE2Z4zP40DbE">Molecular shape from electron-domain geometry</span>
+  </header>
+
+  <div class="toolbar" data-page-node-id="pAe0FX4N8Aq2tleWN7cxIW">
+    <div class="grp" data-page-node-id="DocENIQv4iA6sl2YMDBMi5">
+      <button class="btn active" id="mExplore" data-page-node-id="A50Vk3oEVwjBDvjiMsiukL">Explore</button>
+      <button class="btn" id="mCompare" data-page-node-id="Tw9E3rTSbYSBvNV8VsgYSP">Compare</button>
+      <button class="btn" id="mBuild" data-page-node-id="s89jJ9MzQ39Y7tLouSXpW5">Build</button>
+      <button class="btn" id="mQuiz" data-page-node-id="cnvSUeHkCwzmHOWqfEEJOP">Quiz</button>
+    </div>
+    <div class="sep" data-page-node-id="k8L8XSNI4OhWX2qDC5QoYF"></div>
+    <div class="grp hidden" id="compareCtl" data-page-node-id="Vt5y7HSAwHfj5pvbCft0Wm">
+      <label style="font-size:13px;font-weight:600;color:var(--text2);" data-page-node-id="uvF1tqNM47b3FDX21bB8tO">Pair</label>
+      <select id="cmpSel" data-page-node-id="3iaQrBEsZ4K35LeCoqeLUd"></select>
+    </div>
+    <div class="sep" data-page-node-id="kPhRpt6iHand8gH94jDaGZ"></div>
+    <label class="toggle" data-page-node-id="oAsMKRtCGlwtQsBAvTIlff"><input type="checkbox" id="repToggle" checked data-page-node-id="IsowRfWPJbvp4BCfyOJbH8"> Show Repulsion</label>
+    <label class="toggle" data-page-node-id="MjcNxW9uEPGoviMuNia3NJ"><input type="checkbox" id="pairToggle" checked data-page-node-id="tymtw9LmszQPYvycbmZLwX"> Show e⁻ pairs</label>
+    <div class="sep" data-page-node-id="5fZd8Fu7jhYUsZTBRXjZKG"></div>
+    <button class="btn primary" id="animBtn" data-page-node-id="C0zjWwlBDjM4XuyzpXAkhq">↻ Arrange (VSEPR)</button>
+    <button class="btn" id="resetBtn" data-page-node-id="VGLdjiElvrEA8e3UhefpQI">↻ Reset</button>
+  </div>
+
+  <div class="stage" data-page-node-id="DQ2Fl6kuVrbLypS30QaQFV">
+    <div class="canvas-card" data-page-node-id="oHQLX2yrv2iKxdh6aN6zrH">
+      <div class="mol-tabs" id="molTabs" data-page-node-id="cohPDKJbX3m9RbWLpBgRZk"></div>
+      <div class="chip" id="stageChip" data-page-node-id="s37zxb5r7hoNrAMW55IgcB">—</div>
+      <canvas id="cv" height="620" data-page-node-id="BXtAacPULU130ZHSjGSTAA"></canvas>
+    </div>
+    <div class="panel" id="panel" data-page-node-id="R57AXOKywS2bIbSRJQnwZX"></div>
+  </div>
+
+  <div class="caption" id="caption" data-page-node-id="8kOi7MK1AmEFoHCnZXIWVx"></div>
+</div>
+
+<script>
+const TEAL='#0A455D', TEALL='#4699AA', BG='#EEF3F5';
+const LPCOL='#FACC15';          // PhET lone-pair amber
+const BOND='#AEB9C2';           // PhET bond cylinder grey
+const C_LL='#EF4444', C_AL='#F97316', C_AA='#38BDF8';  // repulsion: LP-LP / LP-BP / BP-BP(blue)
+const TXT='#1E293B', TXT2='#475569';
+// CPK element colors (PhET ball-and-stick style)
+const CPK={H:'#E6E9EC',C:'#4B4F54',N:'#2F6FCB',O:'#E03B2F',F:'#3FB950',S:'#E8C21E',Cl:'#2EA043',B:'#9AA0A6',P:'#E8A33D',X:'#9AA0A6',E:'#9AA0A6'};
+function darken(hex,amt){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)-amt, g=((n>>8)&255)-amt, b=(n&255)-amt;
+  r=Math.max(0,r);g=Math.max(0,g);b=Math.max(0,b);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+let CW=0, CH=620;
+function fitCanvas(){
+  const card=cv.parentElement;
+  CW=card.clientWidth-28; if(CW<480)CW=480;
+  const dpr=window.devicePixelRatio||1;
+  cv.width=CW*dpr; cv.height=CH*dpr; cv.style.height=CH+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+// large radius for single-model modes (Explore / Build) — fills the canvas
+function singleR(){ return Math.max(150, Math.min((CW-110)/2.7,(CH-120)/1.5)); }
+window.addEventListener('resize',()=>{
+  fitCanvas();
+  if(state.mode==='compare') rebuildCmp();
+  else if(state.mode==='build') rebuildBuild();
+  else rebuildExplore();
+});
+
+// ---------- helpers ----------
+function rrect(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+function pill(c,text,x,y,fg,bg,font,align){
+  c.font=font; const w=c.measureText(text).width;
+  const padX=7, h=parseInt(font)+6;
+  const tw=w+padX*2;
+  let tx=x;
+  if(align==='center') tx=x-tw/2;
+  else if(align==='right') tx=x-tw;
+  c.fillStyle=bg; rrect(c,tx,y-h/2,tw,h,h/2); c.fill();
+  c.fillStyle=fg; c.textAlign='left'; c.textBaseline='middle';
+  c.fillText(text,tx+padX,y);
+}
+function atom(c,x,y,r,col,label){
+  // soft contact shadow (PhET floating look)
+  c.save();
+  c.beginPath(); c.ellipse(x,y+r*0.95,r*0.82,r*0.30,0,0,7);
+  c.fillStyle='rgba(15,40,55,.10)'; c.fill();
+  c.restore();
+  // 3D shaded sphere (PhET style)
+  const g=c.createRadialGradient(x-r*0.36,y-r*0.42,r*0.08, x,y,r*1.02);
+  g.addColorStop(0,lighten(col,52));
+  g.addColorStop(0.45,col);
+  g.addColorStop(1,darken(col,28));
+  c.beginPath(); c.arc(x,y,r,0,7); c.fillStyle=g; c.fill();
+  c.lineWidth=1; c.strokeStyle=darken(col,34); c.stroke();
+  // specular highlight
+  c.beginPath(); c.ellipse(x-r*0.34,y-r*0.40,r*0.30,r*0.19,-0.6,0,7);
+  c.fillStyle='rgba(255,255,255,.6)'; c.fill();
+  if(label){
+    // dark symbol on light atoms, white on dark atoms
+    const light = (col==='#E6E9EC'||col==='#E8C21E'||col==='#9AA0A6'||col==='#3FB950'||col==='#2EA043');
+    c.fillStyle = light ? '#1E2A33' : '#ffffff';
+    c.font='bold '+Math.max(11,Math.round(r*0.62))+'px Segoe UI, sans-serif';
+    c.textAlign='center'; c.textBaseline='middle'; c.fillText(label,x,y);
+  }
+}
+function loneCloud(c,x,y,cx,cy,t){
+  // PhET signature: translucent amber lone-pair lobe, tip toward centre, bulge outward
+  const ang=Math.atan2(y-cy,x-cx);
+  const breathe=1+0.10*Math.sin(t*2.0);
+  const len=36*breathe, w=21*breathe;
+  c.save();
+  c.translate(x,y); c.rotate(ang);
+  const g=c.createRadialGradient(-len*0.15,0,2, 0,0, len);
+  g.addColorStop(0,'rgba(250,204,21,.92)');
+  g.addColorStop(0.55,'rgba(250,204,21,.5)');
+  g.addColorStop(1,'rgba(250,204,21,0)');
+  c.fillStyle=g;
+  c.beginPath();
+  c.moveTo(-len*0.72,0);
+  c.quadraticCurveTo(-len*0.08,-w, len*0.58,0);
+  c.quadraticCurveTo(-len*0.08, w, -len*0.72,0);
+  c.closePath(); c.fill();
+  c.setLineDash([4,3]); c.strokeStyle='rgba(180,120,8,.85)'; c.lineWidth=1.4; c.stroke(); c.setLineDash([]);
+  // two yellow electrons = the lone (non-bonding) pair
+  const er=Math.max(4,w*0.30);
+  eeDot(c,-len*0.12,-w*0.4,er);
+  eeDot(c,-len*0.12, w*0.4,er);
+  c.restore();
+  // label placed outward
+  c.fillStyle='#B45309'; c.font='bold 11px Segoe UI, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText('LP', x+Math.cos(ang)*len*0.66, y+Math.sin(ang)*len*0.66);
+}
+// Return the world position of the electron in a pair that is closest to (otherX, otherY).
+// The pair particle p has been mapped to world coords: p.x/y for LP, p.ax/ay for terminal atom
+// (BP bubble sits at bond midpoint (cx+p.ax)/2, (cy+p.ay)/2).
+function electronFacing(p, cx, cy, aR, otherX, otherY){
+  let pos;
+  if(p.t==='a'){
+    // bonding domain bubble: σ-pair along the bond axis, π-pairs perpendicular.
+    // Match the exact positions used by drawBondPair so arrows start from real e⁻ dots.
+    const mx=(cx+p.ax)/2, my=(cy+p.ay)/2;
+    const br=Math.max(11,aR*0.52)*(p.multi===1?1: p.multi===2?1.15: 1.32);
+    const sigOff=br*0.40, piOff=br*0.55;
+    const pang=Math.atan2(p.ay-cy,p.ax-cx);
+    const ax=Math.cos(pang), ay=Math.sin(pang);
+    const px=Math.cos(pang+Math.PI/2), py=Math.sin(pang+Math.PI/2);
+    pos=[{x:mx-ax*sigOff,y:my-ay*sigOff},{x:mx+ax*sigOff,y:my+ay*sigOff}];
+    const multi=p.multi||1;
+    if(multi>=2){
+      pos.push({x:mx-px*piOff,y:my-py*piOff});
+      pos.push({x:mx+px*piOff,y:my+py*piOff});
+    }
+    if(multi>=3){
+      pos.push({x:mx-px*piOff*0.55,y:my-py*piOff*0.55});
+      pos.push({x:mx+px*piOff*0.55,y:my+py*piOff*0.55});
+    }
+  } else {
+    // lone pair: 2 e⁻ inside the cloud, perpendicular to its long axis (matches loneCloud)
+    const ang=Math.atan2(p.y-cy,p.x-cx);
+    const len=36, w=21;
+    pos=[
+      {x:p.x-0.12*len*Math.cos(ang)+0.4*w*Math.sin(ang),
+       y:p.y-0.12*len*Math.sin(ang)-0.4*w*Math.cos(ang)},
+      {x:p.x-0.12*len*Math.cos(ang)-0.4*w*Math.sin(ang),
+       y:p.y-0.12*len*Math.sin(ang)+0.4*w*Math.cos(ang)}
+    ];
+  }
+  // pick the electron closer to (otherX, otherY) — that's the one "facing" the other pair
+  let best=pos[0],bestD=Math.hypot(pos[0].x-otherX,pos[0].y-otherY);
+  for(let i=1;i<pos.length;i++){
+    const d=Math.hypot(pos[i].x-otherX,pos[i].y-otherY);
+    if(d<bestD){bestD=d;best=pos[i];}
+  }
+  return best;
+}
+// PhET-style 3D cylinder bond (grey, shaded, rounded caps). multi = bond order (1,2,3)
+function drawBond(c,x1,y1,x2,y2,multi){
+  multi=multi||1;
+  const ang=Math.atan2(y2-y1,x2-x1);
+  const px=Math.cos(ang+Math.PI/2), py=Math.sin(ang+Math.PI/2);
+  const offs = multi===1?[0] : multi===2?[-5.5,5.5] : [-9,0,9];
+  const r=6.5;
+  for(const off of offs){
+    const ox=px*off, oy=py*off;
+    const g=c.createLinearGradient(x1+ox+px*r,y1+oy+py*r,x1+ox-px*r,y1+oy-py*r);
+    g.addColorStop(0,lighten(BOND,30)); g.addColorStop(0.5,BOND); g.addColorStop(1,darken(BOND,22));
+    c.beginPath();
+    c.moveTo(x1+ox+px*r,y1+oy+py*r); c.lineTo(x2+ox+px*r,y2+oy+py*r);
+    c.lineTo(x2+ox-px*r,y2+oy-py*r); c.lineTo(x1+ox-px*r,y1+oy-py*r);
+    c.closePath(); c.fillStyle=g; c.fill();
+    c.beginPath(); c.arc(x2+ox,y2+oy,r,0,7); c.fillStyle=BOND; c.fill();
+    // highlight stripe
+    c.beginPath();
+    c.moveTo(x1+ox+px*r*0.45,y1+oy+py*r*0.45); c.lineTo(x2+ox+px*r*0.45,y2+oy+py*r*0.45);
+    c.strokeStyle='rgba(255,255,255,.45)'; c.lineWidth=1.2; c.lineCap='round'; c.stroke();
+  }
+}
+function lighten(hex,amt){
+  const n=parseInt(hex.slice(1),16);
+  let r=(n>>16)+amt, g=((n>>8)&255)+amt, b=(n&255)+amt;
+  r=Math.min(255,r);g=Math.min(255,g);b=Math.min(255,b);
+  return '#'+((1<<24)+(r<<16)+(g<<8)+b).toString(16).slice(1);
+}
+function repArrow(c,ax,ay,bx,by,cx,cy,color,alpha,pulse,t,lw){
+  const mx=(ax+bx)/2,my=(ay+by)/2;
+  let nx=mx-cx,ny=my-cy; const nl=Math.hypot(nx,ny)||1; nx/=nl;ny/=nl;
+  const bow=16+(pulse?5*Math.sin(t*3):0);
+  const cxp=mx+nx*bow, cyp=my+ny*bow;
+  c.save();
+  c.globalAlpha=alpha*(pulse?(0.65+0.35*Math.sin(t*3)):1);
+  c.strokeStyle=color; c.lineWidth=lw||2; c.setLineDash([]);
+  c.beginPath(); c.moveTo(ax,ay); c.quadraticCurveTo(cxp,cyp,bx,by); c.stroke();
+  // arrowheads pointing outward
+  drawHead(c,ax,ay,Math.atan2(ay-my,ax-mx),color);
+  drawHead(c,bx,by,Math.atan2(by-my,bx-mx),color);
+  c.restore();
+}
+function drawHead(c,x,y,ang,color){
+  // Bold, double-arrow head at electron — makes the repulsion force visibly
+  // emanate FROM the e⁻ dot (primary triangle) with a small inner chevron
+  // stacked behind it for a clearer two-way "push" look.
+  const s=11, s2=6;
+  c.save();
+  c.fillStyle=color;
+  c.translate(x,y);
+  c.rotate(ang);
+  // primary arrowhead
+  c.beginPath(); c.moveTo(2,0); c.lineTo(-s,-s*0.55); c.lineTo(-s*0.55,0); c.lineTo(-s,s*0.55); c.closePath(); c.fill();
+  // secondary inner chevron (gives a stronger "→→" feel to emphasise bidirectionality)
+  c.beginPath(); c.moveTo(s2,0); c.lineTo(-2,-s2*0.5); c.lineTo(-2,s2*0.5); c.closePath(); c.fill();
+  // dark outline for crispness against light BP bubbles
+  c.strokeStyle='rgba(10,69,93,.85)';
+  c.lineWidth=0.9;
+  c.beginPath(); c.moveTo(2,0); c.lineTo(-s,-s*0.55); c.lineTo(-s*0.55,0); c.lineTo(-s,s*0.55); c.closePath(); c.stroke();
+  c.restore();
+}
+// a single electron (PhET-ish yellow sphere with highlight)
+function eeDot(c,x,y,r){
+  const g=c.createRadialGradient(x-r*0.3,y-r*0.35,r*0.1,x,y,r);
+  g.addColorStop(0,'#FFF3B0'); g.addColorStop(0.5,'#FACC15'); g.addColorStop(1,'#C98A0A');
+  c.beginPath(); c.arc(x,y,r,0,7); c.fillStyle=g; c.fill();
+  c.lineWidth=1; c.strokeStyle='#9A6B07'; c.stroke();
+  c.beginPath(); c.ellipse(x-r*0.32,y-r*0.38,r*0.30,r*0.20,-0.5,0,7); c.fillStyle='rgba(255,255,255,.7)'; c.fill();
+}
+// one shared electron pair (teal bubble, 2 e⁻) for a BONDING domain
+// shared electron pairs for a BONDING domain (one VSEPR "electron domain" bubble,
+// holding multi × 2 electrons inside it: 1 σ-pair + (multi-1) π-pair(s)).
+// pang = bond direction (so σ-electrons sit along the bond axis).
+function drawBondPair(c,mx,my,aR,multi,pang){
+  multi=multi||1; pang=pang||0;
+  // bubble slightly grows with bond order so all electrons fit
+  const br=Math.max(11,aR*0.52)*(multi===1?1: multi===2?1.15: 1.32);
+  // ---- 1 unified domain bubble ----
+  c.beginPath(); c.arc(mx,my,br,0,7);
+  c.fillStyle='rgba(70,153,170,.20)'; c.fill();
+  c.setLineDash([3,3]); c.strokeStyle='rgba(10,69,93,.55)'; c.lineWidth=1.2; c.stroke(); c.setLineDash([]);
+  // ---- electrons (2 × multi) inside: σ-pair on the bond axis, π-pairs perpendicular ----
+  const er=Math.max(3.6, br*0.26);
+  const sigOff=br*0.40, piOff=br*0.55;
+  const ax=Math.cos(pang), ay=Math.sin(pang);
+  const px=Math.cos(pang+Math.PI/2), py=Math.sin(pang+Math.PI/2);
+  // σ-pair — always present
+  eeDot(c, mx-ax*sigOff, my-ay*sigOff, er);
+  eeDot(c, mx+ax*sigOff, my+ay*sigOff, er);
+  if(multi>=2){
+    // first π-pair — perpendicular to bond
+    eeDot(c, mx-px*piOff, my-py*piOff, er);
+    eeDot(c, mx+px*piOff, my+py*piOff, er);
+  }
+  if(multi>=3){
+    // second π-pair — same perpendicular line, slightly inset so all 6 fit
+    eeDot(c, mx-px*piOff*0.55, my-py*piOff*0.55, er);
+    eeDot(c, mx+px*piOff*0.55, my+py*piOff*0.55, er);
+  }
+  // ---- label ----
+  c.fillStyle='#0A455D'; c.font='bold 11px Segoe UI, sans-serif'; c.textAlign='center'; c.textBaseline='middle';
+  if(multi===1) c.fillText('BP · 2e⁻', mx, my-br-7);
+  else c.fillText(multi+'×BP · '+(2*multi)+'e⁻', mx, my-br-7);
+}
+// lone pairs on a TERMINAL atom (for diatomic O₂ / CO), bulging outward from the atom.
+// off is sized so the LP cloud's base (loneCloud tip→base span ≈ 26 px) sits just outside the atom edge.
+function drawTerminalLPs(c,ax,ay,cx,cy,count,t,aR){
+  aR=aR||30;
+  const ang=Math.atan2(ay-cy,ax-cx);
+  const px=Math.cos(ang+Math.PI/2), py=Math.sin(ang+Math.PI/2);
+  const off = Math.max(38, aR + 28);
+  if(count===1){
+    const lx=ax+Math.cos(ang)*off, ly=ay+Math.sin(ang)*off;
+    loneCloud(c,lx,ly,ax,ay,t);
+  } else if(count>=2){
+    loneCloud(c, ax+px*off, ay+py*off, ax,ay,t);
+    loneCloud(c, ax-px*off, ay-py*off, ax,ay,t);
+  }
+}
+
+// ---------- molecule data ----------
+const MOL=[
+  {f:'CO₂',name:'Carbon Dioxide',ctr:'C',per:['O','O'],angle:180,ideal:180,shape:'Linear',ex:'CO₂',threeD:true,
+   dom3d:[[-1,0,0],[1,0,0]],
+   doms:[{x:-1,y:0,t:'a',el:'O',multi:2},{x:1,y:0,t:'a',el:'O',multi:2}],
+   insight:'2 electron domains (each C=O double bond = 1 domain holding 2 shared pairs), 0 lone pairs → domains push directly apart → straight line, 180°. Each double-bond domain contains 4 shared electrons (1σ + 1π).',
+   cap:'Why is CO₂ linear while H₂O is bent, even though both have an "O" in the middle?'},
+  {f:'O₂',name:'Oxygen (diatomic)',ctr:null,per:[],angle:180,ideal:180,shape:'Linear (diatomic)',ex:'O₂',di:true,threeD:true,
+   dom3d:[[-1,0,0],[1,0,0]],
+   doms:[{x:-1,y:0,t:'a',el:'O',multi:2,lpTerminal:2},{x:1,y:0,t:'a',el:'O',multi:2,lpTerminal:2}],
+   insight:'Diatomic → always linear (180°). Each O carries 2 lone pairs; the O=O double bond is ONE electron domain holding 2 shared pairs.',
+   cap:'O₂ is a diatomic molecule — its shape is automatically linear, no matter how many lone pairs it has. Why?'},
+  {f:'CO',name:'Carbon Monoxide',ctr:null,per:[],angle:180,ideal:180,shape:'Linear (diatomic)',ex:'CO',di:true,threeD:true,
+   dom3d:[[-1,0,0],[1,0,0]],
+   doms:[{x:-1,y:0,t:'a',el:'C',multi:3,lpTerminal:1},{x:1,y:0,t:'a',el:'O',multi:3,lpTerminal:1}],
+   insight:'Diatomic → linear (180°). The C≡O triple bond is ONE electron domain; C also has 1 lone pair and O has 1 lone pair (:C≡O:).',
+   cap:'CO is linear with a triple bond. Formal charges (C⁻ ≡ O⁺) come from its lone-pair arrangement — how?'},
+  {f:'BF₃',name:'Boron Trifluoride',ctr:'B',per:['F','F','F'],angle:120,ideal:120,shape:'Trigonal planar',ex:'BF₃',threeD:true,
+   dom3d:[[0,-1,0],[-0.866,0.5,0],[0.866,0.5,0]],
+   doms:[{x:0,y:-1,t:'a',el:'F'},{x:-0.87,y:0.5,t:'a',el:'F'},{x:0.87,y:0.5,t:'a',el:'F'}],
+   insight:'3 bonding pairs, 0 lone pairs → equal repulsion in a flat plane → 120° triangle.',
+   cap:'All three B–F bonds repel equally. What happens to the angles if one bond becomes a lone pair (SO₂)?'},
+  {f:'SO₂',name:'Sulfur Dioxide',ctr:'S',per:['O','O'],angle:117,ideal:120,shape:'Bent',ex:'SO₂',threeD:true,
+   dom3d:[[0,-1,0],[-0.866,0.5,0],[0.866,0.5,0]],
+   doms:[{x:0,y:-1,t:'l'},{x:-0.87,y:0.5,t:'a',el:'O'},{x:0.87,y:0.5,t:'a',el:'O'}],
+   insight:'3 domains but 1 is a lone pair → LP repels more → bends the molecule, angle drops 120° → 117°.',
+   cap:'SO₂ is bent even though it has 3 atoms — the bend comes from the lone pair, not from "only two bonds".'},
+  {f:'CH₄',name:'Methane',ctr:'C',per:['H','H','H','H'],angle:109.5,ideal:109.5,shape:'Tetrahedral',ex:'CH₄',threeD:true,
+   dom3d:[[0,1,0],[0.943,-0.333,0],[-0.471,-0.333,0.816],[-0.471,-0.333,-0.816]],
+   doms:[{x:-0.82,y:-0.57,t:'a',el:'H'},{x:0.82,y:-0.57,t:'a',el:'H'},{x:0.82,y:0.57,t:'a',el:'H'},{x:-0.82,y:0.57,t:'a',el:'H'}],
+   insight:'4 bonding pairs, 0 lone pairs → perfect tetrahedron, equal angles 109.5°.',
+   cap:'All four C–H bonds are identical. Add a lone pair (NH₃) — what should happen to the angles?'},
+  {f:'CCl₄',name:'Carbon Tetrachloride',ctr:'C',per:['Cl','Cl','Cl','Cl'],angle:109.5,ideal:109.5,shape:'Tetrahedral',ex:'CCl₄',threeD:true,
+   dom3d:[[0,1,0],[0.943,-0.333,0],[-0.471,-0.333,0.816],[-0.471,-0.333,-0.816]],
+   doms:[{x:-0.82,y:-0.57,t:'a',el:'Cl'},{x:0.82,y:-0.57,t:'a',el:'Cl'},{x:0.82,y:0.57,t:'a',el:'Cl'},{x:-0.82,y:0.57,t:'a',el:'Cl'}],
+   insight:'Same 4 bonding pairs, 0 lone pairs as CH₄ → identical tetrahedral shape, 109.5° — only the terminal atoms are larger Cl.',
+   cap:'CCl₄ has the same geometry as CH₄ (both 4 bonding pairs, 0 lone pairs). What changes when one bond becomes a lone pair (NH₃)?'},
+  {f:'NH₃',name:'Ammonia',ctr:'N',per:['H','H','H'],angle:107,ideal:109.5,shape:'Trigonal pyramidal',ex:'NH₃',threeD:true,
+   dom3d:[[0,1,0],[0.943,-0.333,0],[-0.471,-0.333,0.816],[-0.471,-0.333,-0.816]],
+   doms:[{x:0,y:-1,t:'l'},{x:0,y:1,t:'a',el:'H'},{x:-0.95,y:0.25,t:'a',el:'H'},{x:0.95,y:0.25,t:'a',el:'H'}],
+   insight:'3 bonding + 1 lone pair → the LP occupies MORE space → compresses the H–N–H angle to 107°.',
+   cap:'The lone pair is invisible in the shape name, yet it decides the 107° angle. Why is it smaller than 109.5°?'},
+  {f:'H₂O',name:'Water',ctr:'O',per:['H','H'],angle:104.5,ideal:109.5,shape:'Bent / V-shaped',ex:'H₂O',threeD:true,
+   dom3d:[[0,1,0],[-0.471,-0.333,-0.816],[0.943,-0.333,0],[-0.471,-0.333,0.816]],
+   doms:[{x:0,y:-1,t:'l'},{x:-0.95,y:0.25,t:'l'},{x:0,y:1,t:'a',el:'H'},{x:0.95,y:0.25,t:'a',el:'H'}],
+   insight:'2 bonding + 2 lone pairs → TWO LPs push hardest → angle squeezed to 104.5°, smaller than NH₃.',
+   cap:'H₂O has two lone pairs. Why is its bond angle (104.5°) even smaller than NH₃ (107°)?'},
+  {f:'PCl₅',name:'Phosphorus Pentachloride',ctr:'P',per:['Cl','Cl','Cl','Cl','Cl'],angle:90,ideal:90,shape:'Trigonal bipyramidal',ex:'PCl₅',threeD:true,
+   dom3d:[[1,0,0],[-0.5,0,0.866],[-0.5,0,-0.866],[0,1,0],[0,-1,0]],
+   doms:[{x:0,y:-0.55,t:'a',el:'Cl'},{x:-0.95,y:0.15,t:'a',el:'Cl'},{x:0.95,y:0.15,t:'a',el:'Cl'},{x:0,y:-1,t:'a',el:'Cl'},{x:0,y:1,t:'a',el:'Cl'}],
+   insight:'5 bonding pairs, 0 lone pairs → trigonal bipyramid: 3 equatorial Cl at 120° to each other, 2 axial Cl at 90° above and below the plane.',
+   cap:'PCl₅ has TWO different bond positions — equatorial (120°) and axial (90°). Rotate the model to see both.'},
+  {f:'SF₆',name:'Sulfur Hexafluoride',ctr:'S',per:['F','F','F','F','F','F'],angle:90,ideal:90,shape:'Octahedral',ex:'SF₆',threeD:true,
+   dom3d:[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]],
+   doms:[{x:1,y:0,t:'a',el:'F'},{x:-1,y:0,t:'a',el:'F'},{x:0,y:-1,t:'a',el:'F'},{x:0,y:1,t:'a',el:'F'},{x:-0.8,y:-0.4,t:'a',el:'F'},{x:0.8,y:0.4,t:'a',el:'F'}],
+   insight:'6 bonding pairs, 0 lone pairs → octahedron, all 90° apart, perfectly symmetric.',
+   cap:'Six identical S–F bonds with no lone pairs → why is every F–S–F angle exactly 90°? Drag to rotate and see the square plane + 2 apex atoms.'}
+];
+
+const CMP=[
+  {a:5,b:7,kd:'Adding 1 lone pair (CH₄ → NH₃) compresses the bond angle 109.5° → 107°.'},
+  {a:7,b:8,kd:'Two lone pairs (NH₃ → H₂O) push even harder: 107° → 104.5°.'},
+  {a:3,b:4,kd:'Trigonal planar (BF₃) vs Bent (SO₂): 1 lone pair bends the molecule, 120° → 117°.'},
+  {a:1,b:2,kd:'O₂ vs CO: both diatomic and linear, but the bond order differs (double vs triple).'},
+  {a:9,b:10,kd:'5 domains (PCl₅, trigonal bipyramidal: 120° + 90°) vs 6 domains (SF₆, octahedral: all 90°).'}
+];
+
+const QUIZ=[
+  {q:'What is the shape of ClF₃?',opts:['Trigonal planar','T-shaped','Tetrahedral','Octahedral'],ans:1,
+   ex:'ClF₃ has 5 electron domains (3 bonds + 2 lone pairs). The two lone pairs occupy equatorial sites → T-shaped, ~90°.'},
+  {q:'What is the shape of XeF₄?',opts:['Square planar','Tetrahedral','Octahedral','Bent'],ans:0,
+   ex:'XeF₄ has 6 domains (4 bonds + 2 lone pairs opposite each other) → square planar, 90°.'},
+  {q:'What is the shape of BrF₅?',opts:['Square pyramidal','Octahedral','Trigonal bipyramidal','T-shaped'],ans:0,
+   ex:'BrF₅ has 6 domains (5 bonds + 1 lone pair) → square pyramidal.'},
+  {q:'What is the shape of SF₂?',opts:['Linear','Bent','Tetrahedral','Trigonal planar'],ans:1,
+   ex:'SF₂ has 4 domains (2 bonds + 2 lone pairs) → bent, ~104.5°.'}
+];
+
+// ---------- state ----------
+const state={mode:'explore',molIdx:4,showRep:true,showPairs:true,anim:false,curAng:107,targetAng:107,curR:135,cmpIdx:0,build:{bp:4,lp:0},quizIdx:0,quizDone:false,spin:0,tilt:0.30};
+
+// ---------- draggable particle system ----------
+// Each particle stores a SCREEN OFFSET (relative to its sub-canvas centre),
+// already in the pseudo-3D compressed space (y scaled by 0.55).
+let exploreParts=[], buildParts=[], cmpParts={a:[],b:[]};
+let HITS=[];            // rebuilt every frame: {arr, idx, x, y, cx, cy}
+let drag=null;          // {arr, idx, cx, cy}
+let relaxArrs=[];       // particle arrays currently relaxing back to VSEPR equilibrium
+const EXT=1.55;         // terminal atom sits EXT× further out than the pair particle
+function pairR0(R){ return R*0.8; }
+function initParts(mol,R){
+  const pr=pairR0(R);
+  return mol.doms.map(d=>{ const x=d.x*pr, y=d.y*pr*0.55;
+    return {x,y, hx:x, hy:y, vx:0, vy:0, t:d.t, el:d.el, multi:d.multi||1, lpTerminal:d.lpTerminal||0}; });
+}
+function buildFake(n,lp){
+  const pos=genPos(n);
+  return {ctr:'E', doms:pos.map((p,i)=>({x:p[0],y:p[1],t:i<lp?'l':'a',el:'X'})),
+          ideal:buildShape(n,lp)[1], shape:buildShape(n,lp)[0]};
+}
+function rebuildExplore(){ drag=null; exploreParts=initParts(MOL[state.molIdx],singleR()); }
+function rebuildBuild(){ drag=null; const n=state.build.bp+state.build.lp; buildParts=initParts(buildFake(n,state.build.lp),singleR()); }
+// Animated rebuild for Build mode: when BP/LP changes, the model must visibly follow.
+// Surviving particles KEEP their current position and then relax (slide) into the new
+// VSEPR geometry; newly added particles emerge from the centre and pop outward.
+function rebuildBuildAnimated(){
+  drag=null;
+  const old=buildParts;
+  const n=state.build.bp+state.build.lp;
+  buildParts=initParts(buildFake(n,state.build.lp),singleR());
+  buildParts.forEach((p,i)=>{
+    if(i<old.length && old[i].t===p.t){ p.x=old[i].x; p.y=old[i].y; }  // keep position → slides to new home
+    else if(i>=old.length){ p.x=(Math.random()-0.5)*8; p.y=(Math.random()-0.5)*8; p.vx=0; p.vy=0; } // new pair emerges from centre
+  });
+  relaxArrs=relaxArrs.filter(a=>a!==old);       // stop relaxing the retired array
+  relaxArrs.push(buildParts);                    // glide into the new geometry
+}
+function rebuildCmp(){ drag=null; const pr=CMP[state.cmpIdx]; cmpParts={a:initParts(MOL[pr.a],100), b:initParts(MOL[pr.b],100)}; }
+function modeR(){ return state.mode==='compare'?100:singleR(); }
+
+// generic geometry generator
+function genPos(n){
+  if(n===2) return [[-1,0],[1,0]];
+  if(n===3) return [[0,-1],[-0.87,0.5],[0.87,0.5]];
+  if(n===4) return [[0,-1],[0,1],[-0.95,0.25],[0.95,0.25]];
+  if(n===5) return [[0,0.55],[-0.9,0.15],[0.9,0.15],[0,-1],[0,1]]; // equatorial first
+  if(n===6) return [[0,-1.1],[0,1.1],[-0.8,-0.4],[0.8,-0.4],[-0.8,0.4],[0.8,0.4]];
+  return [];
+}
+function buildShape(n,l){
+  const k=n+'/'+l;
+  const T={
+    '2/0':['Linear',180],'3/0':['Trigonal planar',120],'3/1':['Bent',117],
+    '4/0':['Tetrahedral',109.5],'4/1':['Trigonal pyramidal',107],'4/2':['Bent / V-shaped',104.5],
+    '5/0':['Trigonal bipyramidal',90],'5/1':['Seesaw',102],'5/2':['T-shaped',90],'5/3':['Linear',180],
+    '6/0':['Octahedral',90],'6/1':['Square pyramidal',90],'6/2':['Square planar',90]
+  };
+  return T[k]||['—',0];
+}
+function domGeo(n){
+  return {2:'Linear',3:'Trigonal planar',4:'Tetrahedral',5:'Trigonal bipyramidal',6:'Octahedral'}[n]||'—';
+}
+
+// ---------- drawing ----------
+let t0=0;
+function project(x,y,cx,cy,R){
+  return {x:cx+x*R, y:cy+y*R*0.55};
+}
+// ---------- 3D projection helpers (for tetrahedral-family molecules) ----------
+// yaw = rotation about vertical axis (auto-spins); pitch = tilt toward viewer.
+// Returns screen point + depth (z, + = toward viewer) + a size scale for depth cue.
+function project3(v,cx,cy,R,yaw,pitch){
+  const cyaw=Math.cos(yaw), syaw=Math.sin(yaw);
+  const x1 = v[0]*cyaw + v[2]*syaw;
+  const z1 = -v[0]*syaw + v[2]*cyaw;
+  const y1 = v[1];
+  const cp=Math.cos(pitch), sp=Math.sin(pitch);
+  const y2 = y1*cp - z1*sp;
+  const z2 = y1*sp + z1*cp;
+  const x2 = x1;
+  return { x: cx + R*x2, y: cy + R*y2*0.92, depth: z2, scale: 0.80 + 0.20*((z2+1)/2) };
+}
+// a bond drawn in 3D: back bonds (behind the central atom) are dashed + thin,
+// front bonds are solid PhET cylinders. This depth cue sells the 3D look.
+function drawBond3(c,x1,y1,x2,y2,multi,back){
+  if(back){
+    c.save();
+    c.strokeStyle='rgba(120,135,145,.55)'; c.lineWidth=3; c.setLineDash([5,4]); c.lineCap='round';
+    c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+    c.setLineDash([]); c.restore();
+    return;
+  }
+  drawBond(c,x1,y1,x2,y2,multi);
+}
+function drawMolecule(mol,cx,cy,R,t,parts,opts){
+  opts=opts||{};
+  // 3D molecules (tetrahedral family) render through a true perspective path
+  if(mol.threeD){ drawMolecule3D(mol,cx,cy,R,t,parts); return; }
+  // diatomic doms now place BOTH atoms symmetrically around (cx, cy) — no shift needed
+  const pr=pairR0(R);
+  // atom radius scales with overall molecule size (so gallery thumbnails stay tidy)
+  const aR=Math.max(7,R*0.135), cR=Math.max(10,R*0.20);
+  // screen positions of each electron-pair particle (and its terminal atom)
+  const D=parts.map(p=>({
+    x:cx+p.x, y:cy+p.y,
+    ax:cx+p.x*EXT, ay:cy+p.y*EXT,
+    t:p.t, el:p.el, multi:p.multi||1, lpTerminal:p.lpTerminal||0
+  }));
+  // register hit targets for dragging — grab the VISIBLE atom (bonding) or lobe (lone pair)
+  if(!opts.simple) D.forEach((p,i)=>{
+    const hx = p.t==='a' ? p.ax : p.x;
+    const hy = p.t==='a' ? p.ay : p.y;
+    HITS.push({arr:parts, idx:i, x:hx, y:hy, cx, cy, t:p.t});
+  });
+  // faint rays: centre → each electron-pair particle (shows them as domains) — detail view only
+  if(!opts.simple) D.forEach(p=>{
+    ctx.strokeStyle='rgba(100,116,139,.32)'; ctx.lineWidth=1.5; ctx.setLineDash([3,4]);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(p.x,p.y); ctx.stroke(); ctx.setLineDash([]);
+  });
+  // bonds as 3D cylinders (PhET ball-and-stick). multi = bond order.
+  // Diatomic: ONE bond between the two terminal atoms (not from a centre).
+  if(mol.di){
+    const bps=D.filter(p=>p.t==='a');
+    if(bps.length===2) drawBond(ctx,bps[0].ax,bps[0].ay,bps[1].ax,bps[1].ay,bps[0].multi||1);
+  } else {
+    D.forEach(p=>{ if(p.t==='a') drawBond(ctx,cx,cy,p.ax,p.ay,p.multi||1); });
+  }
+  // repulsion arrows — strength grows as particles get CLOSER (F ∝ base·(d0/d)²)
+  // Skipped for diatomic molecules: there's no single central atom, so the
+  // VSEPR "domain-repulsion" picture doesn't apply. Drawing arrows between
+  // the LPs on one atom and the BP on the other atom would create the
+  // misleading triangle shown in the screenshot.
+  if(state.showRep && !opts.simple && !mol.di){
+    for(let i=0;i<D.length;i++)for(let j=i+1;j<D.length;j++){
+      const a=D[i],b=D[j];
+      let col,base;
+      if(a.t==='l'&&b.t==='l'){col=C_LL;base=1.0;}        // lone–lone: strongest
+      else if(a.t==='l'||b.t==='l'){col=C_AL;base=0.7;}   // lone–bond: medium
+      else{col=C_AA;base=0.45;}                            // bond–bond: weakest
+      const d=Math.hypot(a.x-b.x,a.y-b.y);
+      const d0=pr*1.25;                                    // reference distance (ideal geometry)
+      let s=base*Math.pow(d0/d,2); s=Math.max(0.04,Math.min(s,3));
+      const al=Math.max(0.12,Math.min(0.15+0.6*(s/1.6),0.95));
+      const lw=1.4+2.6*Math.min(s/1.6,1.4);
+      const pulse=(a.t==='l'&&b.t==='l')?true:(s>1.5);
+      // The repulsion force acts BETWEEN ELECTRONS (one from each pair). Pull the
+      // arrow endpoints from the BP/LP centre to the actual e⁻ position so the line
+      // visibly originates from the yellow electron dot, not from the BP label centre.
+      const eA=electronFacing(a,cx,cy,aR,b.x,b.y);
+      const eB=electronFacing(b,cx,cy,aR,a.x,a.y);
+      repArrow(ctx,eA.x,eA.y,eB.x,eB.y,cx,cy,col,al,pulse,t,lw);
+    }
+  }
+  // live bond-angle arc — uses molecule's ideal bond angle (consistent with right panel)
+  if(!opts.simple){
+    const atoms=D.filter(p=>p.t==='a');
+    if(atoms.length>=2){
+      // pick the two most adjacent bonding atoms (smallest visual angle) for arc placement
+      let idx1=0, idx2=1, minDa=Math.PI*2;
+      for(let i=0;i<atoms.length;i++){
+        for(let j=i+1;j<atoms.length;j++){
+          const ai=Math.atan2(atoms[i].y-cy,atoms[i].x-cx);
+          const aj=Math.atan2(atoms[j].y-cy,atoms[j].x-cx);
+          let da=Math.abs(ai-aj); if(da>Math.PI) da=2*Math.PI-da;
+          if(da>0.01 && da<minDa){minDa=da;idx1=i;idx2=j;}
+        }
+      }
+      const a1=Math.atan2(atoms[idx1].y-cy,atoms[idx1].x-cx);
+      const a2=Math.atan2(atoms[idx2].y-cy,atoms[idx2].x-cx);
+      const r=aR+28;
+      ctx.beginPath();
+      if(a1<a2) ctx.arc(cx,cy,r,a1,a2);
+      else ctx.arc(cx,cy,r,a2,a1);
+      ctx.strokeStyle=TEAL; ctx.lineWidth=2; ctx.stroke();
+      // display the molecule's ideal bond angle — consistent with right panel
+      const deg=mol.angle;
+      const mid=(a1+a2)/2;
+      const lx=cx+Math.cos(mid)*(r+18), ly=cy+Math.sin(mid)*(r+18);
+      pill(ctx, deg.toFixed(1)+'°',lx,ly,TEAL,'rgba(255,255,255,.92)',13,'center');
+    } else if(mol.di && atoms.length===2){
+      // diatomic: simple 180° label at midpoint between the two atoms (no arc)
+      const [a,b]=atoms;
+      const mx=(a.ax+b.ax)/2, my=(a.ay+b.ay)/2;
+      pill(ctx, mol.angle.toFixed(1)+'°', mx, my+aR+24, TEAL,'rgba(255,255,255,.92)',13,'center');
+    }
+  }
+  // lone-pair lobes (PhET amber, with 2 e⁻ dots inside)
+  D.forEach(p=>{ if(p.t==='l') loneCloud(ctx,p.x,p.y,cx,cy,t); });
+  // terminal atoms for bonding pairs (CPK element colour)
+  D.forEach(p=>{ if(p.t==='a') atom(ctx,p.ax,p.ay,aR,CPK[p.el]||TEALL,p.el); });
+  // centre atom (element colour, e.g. C dark / O red / N blue / S yellow).
+  // Diatomic: NO centre atom — both atoms are terminals and were drawn above.
+  if(!mol.di) atom(ctx,cx,cy,cR,CPK[mol.ctr]||TEAL,mol.ctr);
+  // lone pairs on the TERMINAL atom (diatomic O₂ / CO), bulging outward.
+  // For non-diatomic, this also fires on the rare case a terminal atom declares terminal LPs.
+  D.forEach(p=>{ if(p.t==='a' && p.lpTerminal>0) drawTerminalLPs(ctx,p.ax,p.ay,cx,cy,p.lpTerminal,t,aR); });
+  // explicit electron pairs laid ON the molecule (each domain = one e⁻ pair)
+  if(state.showPairs){
+    if(mol.di){
+      // diatomic: shared e⁻ pair(s) drawn ONCE at the midpoint between the two atoms
+      const bps=D.filter(p=>p.t==='a');
+      if(bps.length===2){
+        const [a,b]=bps;
+        const mx=(a.ax+b.ax)/2, my=(a.ay+b.ay)/2;
+        const pang=Math.atan2(b.ay-a.ay,b.ax-a.ax);
+        drawBondPair(ctx,mx,my,aR,a.multi||1,pang);
+      }
+    } else {
+      D.forEach(p=>{
+        if(p.t==='a'){                      // bonding pair: shared e⁻ pair at the bond midpoint
+          const mx=(cx+p.ax)/2, my=(cy+p.ay)/2;
+          const pang=Math.atan2(p.ay-cy,p.ax-cx);
+          drawBondPair(ctx,mx,my,aR,p.multi||1,pang);
+        }
+      });
+    }
+  }
+}
+
+// ---------- true 3D rendering for tetrahedral-family molecules ----------
+function drawMolecule3D(mol,cx,cy,R,t,parts){
+  const yaw=state.spin, pitch=state.tilt;
+  const R3=R*0.74;                 // 3D radius (keeps the whole molecule on-canvas)
+  const TERM=R3*1.02, LP=R3*0.60;  // distance of terminal atom / lone-pair lobe from centre
+  const aR=Math.max(7,R*0.135), cR=Math.max(10,R*0.20);
+  // map each domain (in doms order) to its 3D unit direction + render radius
+  const D3=mol.doms.map((d,i)=>{
+    const dir=mol.dom3d[i];
+    const rad = d.t==='a'?TERM:LP;
+    return { t:d.t, el:d.el, multi:d.multi||1, lpTerminal:d.lpTerminal||0, dir, rad };
+  });
+  // project everything to screen (project3 takes a UNIT vector + radius)
+  const P=D3.map(dm=>{ const p=project3(dm.dir,cx,cy,dm.rad,yaw,pitch); return {dm,p}; });
+  // ---- bonds: back ones (depth<0) dashed, drawn first; front ones solid ----
+  // Diatomic: ONE bond between the two terminal atoms (no centre atom at all).
+  if(mol.di){
+    const bps=P.filter(o=>o.dm.t==='a');
+    if(bps.length===2) drawBond3(ctx,bps[0].p.x,bps[0].p.y,bps[1].p.x,bps[1].p.y,bps[0].dm.multi,false);
+  } else {
+    P.forEach(o=>{ if(o.dm.t==='a' && o.p.depth<0)  drawBond3(ctx,cx,cy,o.p.x,o.p.y,o.dm.multi,true); });
+    P.forEach(o=>{ if(o.dm.t==='a' && o.p.depth>=0) drawBond3(ctx,cx,cy,o.p.x,o.p.y,o.dm.multi,false); });
+  }
+  // ---- depth-sorted spheres + lone-pair lobes (far → near) ----
+  const list=(mol.di?[]:[{depth:0,kind:'c'}]).concat(P.map(o=>({depth:o.p.depth, kind:o.dm.t, o})));
+  list.sort((a,b)=>a.depth-b.depth);
+  list.forEach(it=>{
+    if(it.kind==='c') atom(ctx,cx,cy,cR,CPK[mol.ctr]||TEAL,mol.ctr);
+    else if(it.kind==='a') atom(ctx,it.o.p.x,it.o.p.y,aR*it.o.p.scale,CPK[it.o.dm.el]||TEALL,it.o.dm.el);
+    else loneCloud(ctx,it.o.p.x,it.o.p.y,cx,cy,t);
+  });
+  // terminal lone pairs on diatomic atoms (O₂ / CO), bulging outward
+  P.forEach(o=>{ if(o.dm.t==='a' && o.dm.lpTerminal>0) drawTerminalLPs(ctx,o.p.x,o.p.y,cx,cy,o.dm.lpTerminal,t,aR); });
+  // ---- shared e⁻ pairs drawn at the (projected) bond midpoint ----
+  if(state.showPairs){
+    if(mol.di){
+      const bps=P.filter(o=>o.dm.t==='a');
+      if(bps.length===2){
+        const [A,B]=bps;
+        const mx=(A.p.x+B.p.x)/2, my=(A.p.y+B.p.y)/2;
+        const pang=Math.atan2(B.p.y-A.p.y,B.p.x-A.p.x);
+        drawBondPair(ctx,mx,my,aR,A.dm.multi,pang);
+      }
+    } else {
+      P.forEach(o=>{ if(o.dm.t==='a'){
+        const m=project3(o.dm.dir,cx,cy,o.dm.rad*0.5,yaw,pitch);
+        const pang=Math.atan2(o.p.y-cy,o.p.x-cx);
+        drawBondPair(ctx,m.x,m.y,aR,o.dm.multi,pang);
+      }});
+    }
+  }
+  // ---- repulsion arrows: electron-to-electron, computed in 3D then projected ----
+  // Skipped for diatomic molecules (no single central atom — same reason as the 2D path).
+  if(state.showRep && !mol.di){
+    const eps=P.map(o=>{
+      const r = o.dm.t==='a'? o.dm.rad*0.5 : o.dm.rad;   // e⁻ sit at bond midpoint / lobe centre
+      return project3(o.dm.dir,cx,cy,r,yaw,pitch);
+    });
+    for(let i=0;i<eps.length;i++)for(let j=i+1;j<eps.length;j++){
+      const a=D3[i], b=D3[j];
+      let col,base;
+      if(a.t==='l'&&b.t==='l'){col=C_LL;base=1.0;}
+      else if(a.t==='l'||b.t==='l'){col=C_AL;base=0.7;}
+      else{col=C_AA;base=0.45;}
+      const dx=eps[i].x-eps[j].x, dy=eps[i].y-eps[j].y, d=Math.hypot(dx,dy);
+      const d0=R3*1.3;
+      let s=base*Math.pow(d0/d,2); s=Math.max(0.04,Math.min(s,3));
+      const al=Math.max(0.12,Math.min(0.15+0.6*(s/1.6),0.95));
+      const lw=1.4+2.6*Math.min(s/1.6,1.4);
+      const pulse=(a.t==='l'&&b.t==='l')?true:(s>1.5);
+      repArrow(ctx,eps[i].x,eps[i].y,eps[j].x,eps[j].y,cx,cy,col,al,pulse,t,lw);
+    }
+  }
+  // ---- live bond-angle arc (uses the molecule's ideal angle, consistent with the panel) ----
+  if(mol.di){
+    const bps=P.filter(o=>o.dm.t==='a');
+    if(bps.length===2){
+      const mx=(bps[0].p.x+bps[1].p.x)/2, my=(bps[0].p.y+bps[1].p.y)/2;
+      pill(ctx, mol.angle.toFixed(1)+'°', mx, my+aR+24, TEAL,'rgba(255,255,255,.92)',13,'center');
+    }
+  } else {
+  const atoms=P.filter(o=>o.dm.t==='a').map(o=>o.p);
+  if(atoms.length>=2){
+    let i1=0,i2=1,minDa=Math.PI*2;
+    for(let i=0;i<atoms.length;i++)for(let j=i+1;j<atoms.length;j++){
+      const ai=Math.atan2(atoms[i].y-cy,atoms[i].x-cx), aj=Math.atan2(atoms[j].y-cy,atoms[j].x-cx);
+      let da=Math.abs(ai-aj); if(da>Math.PI)da=2*Math.PI-da;
+      if(da>0.01&&da<minDa){minDa=da;i1=i;i2=j;}
+    }
+    const A=atoms[i1], B=atoms[i2];
+    const a1=Math.atan2(A.y-cy,A.x-cx), a2=Math.atan2(B.y-cy,B.x-cx);
+    const r=aR+30;
+    ctx.beginPath();
+    if(a1<a2) ctx.arc(cx,cy,r,a1,a2); else ctx.arc(cx,cy,r,a2,a1);
+    ctx.strokeStyle=TEAL; ctx.lineWidth=2; ctx.stroke();
+    const mid=(a1+a2)/2;
+    const lx=cx+Math.cos(mid)*(r+18), ly=cy+Math.sin(mid)*(r+18);
+    pill(ctx, mol.angle.toFixed(1)+'°', lx, ly, TEAL,'rgba(255,255,255,.92)',13,'center');
+  }
+  }
+}
+
+// ---------- relaxation back to VSEPR equilibrium ----------
+function relaxStep(arr){
+  // Each particle is pulled back to its VSEPR home position by a weak spring,
+  // while repelling its neighbours (F ∝ base / d²). The net result: the pairs
+  // slide apart until they reach the lowest-repulsion arrangement.
+  const kHome=0.10;      // spring toward ideal geometry
+  const kRep=520*Math.pow(state.curR/135,2);  // repulsion scaled to molecule size
+  const damp=0.80;       // velocity damping
+  const maxV=6.5;        // speed clamp (keeps it stable)
+  let moving=false;
+  for(let i=0;i<arr.length;i++){
+    const p=arr[i];
+    let fx=kHome*(p.hx-p.x), fy=kHome*(p.hy-p.y);
+    for(let j=0;j<arr.length;j++){
+      if(i===j) continue;
+      const q=arr[j];
+      let dx=p.x-q.x, dy=p.y-q.y, d=Math.hypot(dx,dy); if(d<8)d=8;
+      const base=(p.t==='l'&&q.t==='l')?1.0:(p.t==='l'||q.t==='l')?0.7:0.45;
+      const f=kRep*base/(d*d);
+      fx+=f*dx/d; fy+=f*dy/d;
+    }
+    p.vx=(p.vx+fx)*damp; p.vy=(p.vy+fy)*damp;
+    const sp=Math.hypot(p.vx,p.vy); if(sp>maxV){p.vx*=maxV/sp;p.vy*=maxV/sp;}
+    p.x+=p.vx; p.y+=p.vy;
+    if(sp>0.18) moving=true;
+  }
+  return moving;
+}
+function draw(){
+  ctx.clearRect(0,0,CW,CH);
+  t0+=0.016;
+  // gentle auto-rotation for 3D (tetrahedral-family) molecules — makes the 3D shape obvious
+  if(!drag3d) state.spin += 0.012;
+  // active relaxations: electron pairs relax back to their VSEPR equilibrium
+  for(let k=relaxArrs.length-1;k>=0;k--){
+    const a=relaxArrs[k];
+    if(drag && a===drag.arr) continue;    // don't fight the user's active drag
+    if(!relaxStep(a)){
+      a.forEach(p=>{ p.x=p.hx; p.y=p.hy; p.vx=0; p.vy=0; });
+      relaxArrs.splice(k,1);
+    }
+  }
+  HITS.length=0;
+  if(state.mode==='explore'){
+    const m=MOL[state.molIdx];
+    state.curR=singleR();
+    drawMolecule(m,CW/2,CH/2-10,singleR(),t0,exploreParts);
+    document.getElementById('stageChip').textContent=m.shape+' · '+state.curAng.toFixed(1)+'°';
+  } else if(state.mode==='compare'){
+    const pr=CMP[state.cmpIdx];
+    const mA=MOL[pr.a], mB=MOL[pr.b];
+    state.curR=100;
+    drawMolecule(mA,CW*0.27,CH/2-10,100,t0,cmpParts.a);
+    drawMolecule(mB,CW*0.73,CH/2-10,100,t0,cmpParts.b);
+    // divider
+    ctx.strokeStyle='#d6e0e6'; ctx.lineWidth=1; ctx.setLineDash([5,5]);
+    ctx.beginPath(); ctx.moveTo(CW/2,40); ctx.lineTo(CW/2,CH-40); ctx.stroke(); ctx.setLineDash([]);
+    pill(ctx,mA.f,CW*0.27,60,TEAL,'rgba(255,255,255,.92)',15,'center');
+    pill(ctx,mB.f,CW*0.73,60,TEAL,'rgba(255,255,255,.92)',15,'center');
+    document.getElementById('stageChip').textContent='Compare';
+  } else if(state.mode==='build'){
+    const n=state.build.bp+state.build.lp;
+    if(buildParts.length!==n) rebuildBuild();   // self-heal: model must always match BP/LP panel
+    const fake=buildFake(n,state.build.lp);
+    state.curR=singleR();
+    drawMolecule(fake,CW/2,CH/2-10,singleR(),t0,buildParts);
+    document.getElementById('stageChip').textContent=fake.shape+' · '+fake.ideal+'°';
+  } else if(state.mode==='quiz'){
+    state.curR=135;
+    const q=QUIZ[state.quizIdx];
+    ctx.textAlign='center';
+    pill(ctx,'Predict the shape of',CW/2,CH/2-60,TXT2,'rgba(255,255,255,.92)',16,'center');
+    pill(ctx,q.q.replace('What is the shape of ','').replace('?',''),CW/2,CH/2-20,TEAL,'rgba(255,255,255,.92)',26,'center');
+    document.getElementById('stageChip').textContent='Quiz';
+  }
+  requestAnimationFrame(draw);
+}
+
+// ---------- panel rendering ----------
+const panel=document.getElementById('panel');
+function renderPanel(){
+  if(state.mode==='explore'){
+    const m=MOL[state.molIdx];
+    // For non-diatomic: count BPs and LPs directly from doms.
+    // For diatomic: count 1 shared bond + sum of lpTerminal across both atoms (per-atom analysis).
+    let bp, lp;
+    if(m.di){
+      bp = 1;
+      lp = m.doms.reduce((s,d)=>s+(d.lpTerminal||0), 0);
+    } else {
+      bp = m.doms.filter(d=>d.t==='a').length;
+      lp = m.doms.filter(d=>d.t==='l').length;
+    }
+    panel.innerHTML=`
+      <div class="card">
+        <div class="formula">${m.f}</div>
+        <div style="color:var(--text2);font-size:13px;margin-top:2px;">${m.name}</div>
+      </div>
+      <div class="card">
+        <h2>${m.di?'Electron-Domain Geometry (per atom)':'Electron-Domain Geometry'}</h2>
+        <div class="row"><span class="k">Total e⁻ pairs</span><span class="v">${bp+lp}</span></div>
+        <div class="row"><span class="k">Bonding pairs</span><span class="v">${bp}</span></div>
+        <div class="row"><span class="k">Lone pairs</span><span class="v">${lp}${m.di?' (sum over both atoms)':''}</span></div>
+      </div>
+      <div class="card">
+        <h2>Electron Pairs as Particles</h2>
+        <div class="legend">
+          <div class="it"><span class="dot" style="background:#4699AA"></span> Bonding pair — shared e⁻ pair (teal bubble, 2 e⁻) on the bond</div>
+          <div class="it"><span class="dot" style="background:${LPCOL}"></span> Lone pair — non-bonding e⁻ pair (amber lobe, 2 e⁻)</div>
+        </div>
+        <div style="font-size:13px;line-height:1.5;color:var(--text2);margin-top:8px;">${m.di?'Each atom contributes its lone pairs around itself; the bond is shared between the two atoms.':'Every domain around the central atom is one <b>electron pair</b>. The pairs repel each other and push apart into the geometry you see.'}</div>
+      </div>
+      <div class="card">
+        <h2>Molecular Shape</h2>
+        <div class="row"><span class="k">Shape</span><span class="v">${m.shape}</span></div>
+        <div class="row"><span class="k">Bond angle</span><span class="v angle-big">${state.curAng.toFixed(1)}°</span></div>
+      </div>
+      <div class="card">
+        <h2>Repulsion Priority</h2>
+        <div class="legend">
+          <div class="it"><span class="dot" style="background:${C_LL}"></span> Lone Pair – Lone Pair (strongest)</div>
+          <div class="it"><span class="dot" style="background:${C_AL}"></span> Lone Pair – Bonding (medium)</div>
+          <div class="it"><span class="dot" style="background:${C_AA}"></span> Bonding – Bonding (weakest)</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Key Insight</h2>
+        <div class="insight">${m.insight}</div>
+      </div>`;
+    document.getElementById('caption').innerHTML='<b>Think:</b> '+m.cap+(m.di?' &nbsp;<span style="color:var(--teal-light);font-weight:700;">Drag either atom</span> to compress the bond — the shared pair stays in the middle.':(m.threeD?' &nbsp;<span style="color:var(--teal-light);font-weight:700;">Drag to rotate</span> the 3D model — repulsion arrows (electron-to-electron) update live as it turns.':' &nbsp;<span style="color:var(--teal-light);font-weight:700;">Drag any particle</span> to change distances — the repulsion arrows grow as particles move closer.'));
+  } else if(state.mode==='compare'){
+    const pr=CMP[state.cmpIdx];
+    panel.innerHTML=`
+      <div class="card"><h2>Comparison</h2>
+        <div class="row"><span class="k">Left</span><span class="v">${MOL[pr.a].f}</span></div>
+        <div class="row"><span class="k">Right</span><span class="v">${MOL[pr.b].f}</span></div>
+      </div>
+      <div class="card"><h2>Key Difference</h2>
+        <div class="insight">${pr.kd}</div>
+      </div>
+      <div class="card"><h2>How to read</h2>
+        <div style="font-size:14px;line-height:1.5;color:var(--text2);">Lone pairs (amber lobes) are fatter than bonding pairs and repel more strongly, squeezing the bond angle. Toggle <b>Show Repulsion</b> to see the three levels of repulsion.</div>
+      </div>`;
+    document.getElementById('caption').innerHTML='<b>Compare:</b> watch how adding lone pairs compresses the bond angle step by step.';
+  } else if(state.mode==='build'){
+    const bp=state.build.bp, lp=state.build.lp, n=bp+lp;
+    const [sh,an]=buildShape(n,lp);
+    const geo=domGeo(n);
+    panel.innerHTML=`
+      <div class="card">
+        <h2>Add / Remove Electron Pairs</h2>
+        <div class="stepper"><span class="lab">Bonding pairs</span>
+          <div class="step-ctrl"><button id="bpMinus">−</button><span class="num" id="bpVal">${bp}</span><button id="bpPlus">+</button></div></div>
+        <div class="stepper"><span class="lab">Lone pairs</span>
+          <div class="step-ctrl"><button id="lpMinus">−</button><span class="num" id="lpVal">${lp}</span><button id="lpPlus">+</button></div></div>
+        <div class="row" style="margin-top:6px;"><span class="k">Total domains (BP + LP)</span><span class="v">${n}</span></div>
+      </div>
+      <div class="card">
+        <h2>Electron Pairs as Particles</h2>
+        <div class="legend">
+          <div class="it"><span class="dot" style="background:#4699AA"></span> Bonding pair — shared e⁻ pair (teal bubble, 2 e⁻) on the bond</div>
+          <div class="it"><span class="dot" style="background:${LPCOL}"></span> Lone pair (amber lobe, 2 e⁻) — non-bonding pair</div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Prediction</h2>
+        <div class="row"><span class="k">Electron-domain geometry</span><span class="v">${geo}</span></div>
+        <div class="row"><span class="k">Molecular shape</span><span class="v">${sh}</span></div>
+        <div class="row"><span class="k">Bond angle</span><span class="v angle-big">${an}°</span></div>
+      </div>`;
+    document.getElementById('caption').innerHTML='<b>Build:</b> tap <b>+</b> / <b>−</b> to add or remove pairs, or <span style="color:var(--teal-light);font-weight:700;">drag particles</span> directly. Repulsion arrows show how distance changes the force (max 6 domains).';
+    bindBuild();
+  } else if(state.mode==='quiz'){
+    const q=QUIZ[state.quizIdx];
+    let opts='';
+    q.opts.forEach((o,i)=>{ opts+=`<button class="quiz-opt" data-i="${i}">${o}</button>`; });
+    panel.innerHTML=`
+      <div class="card">
+        <h2>Quiz ${state.quizIdx+1} / ${QUIZ.length}</h2>
+        <div style="font-size:15px;font-weight:700;margin-bottom:10px;">${q.q}</div>
+        ${opts}
+        <div id="quizFb"></div>
+      </div>
+      <div class="card"><button class="btn primary" id="quizNext" style="width:100%;">Next question →</button></div>`;
+    document.getElementById('caption').innerHTML='<b>Quiz:</b> predict the VSEPR shape. Remember: lone pairs are invisible but they decide the angle!';
+    bindQuiz();
+  }
+}
+function bindBuild(){
+  const bpv=document.getElementById('bpVal'), lpv=document.getElementById('lpVal');
+  const bpM=document.getElementById('bpMinus'), bpP=document.getElementById('bpPlus');
+  const lpM=document.getElementById('lpMinus'), lpP=document.getElementById('lpPlus');
+  function maxLp(n){ return {2:0,3:1,4:2,5:3,6:2}[n]||0; }
+  const total=()=>state.build.bp+state.build.lp;
+  function refresh(){
+    let n=total();
+    if(state.build.lp>maxLp(n)) state.build.lp=maxLp(n);  // keep a real VSEPR shape
+    bpv.textContent=state.build.bp; lpv.textContent=state.build.lp;
+    bpM.disabled = state.build.bp<=1;
+    bpP.disabled = total()>=6;
+    lpM.disabled = state.build.lp<=0;
+    lpP.disabled = total()>=6 || state.build.lp>=maxLp(total());
+  }
+  bpP.onclick=()=>{ if(total()<6){ state.build.bp++; refresh(); rebuildBuildAnimated(); renderPanel(); } };
+  bpM.onclick=()=>{ if(state.build.bp>1){ state.build.bp--; refresh(); rebuildBuildAnimated(); renderPanel(); } };
+  lpP.onclick=()=>{ if(total()<6 && state.build.lp<maxLp(total()+1)){ state.build.lp++; refresh(); rebuildBuildAnimated(); renderPanel(); } };
+  lpM.onclick=()=>{ if(state.build.lp>0){ state.build.lp--; refresh(); rebuildBuildAnimated(); renderPanel(); } };
+  refresh();
+}
+function bindQuiz(){
+  const fb=document.getElementById('quizFb');
+  panel.querySelectorAll('.quiz-opt').forEach(btn=>{
+    btn.onclick=()=>{
+      const i=+btn.dataset.i; const q=QUIZ[state.quizIdx];
+      panel.querySelectorAll('.quiz-opt').forEach(b=>b.disabled=true);
+      if(i===q.ans){ btn.classList.add('correct'); fb.className='quiz-fb ok'; fb.innerHTML='✓ Correct! '+q.ex; }
+      else{ btn.classList.add('wrong'); panel.querySelectorAll('.quiz-opt')[q.ans].classList.add('correct'); fb.className='quiz-fb no'; fb.innerHTML='✗ Not quite. '+q.ex; }
+    };
+  });
+  document.getElementById('quizNext').onclick=()=>{
+    state.quizIdx=(state.quizIdx+1)%QUIZ.length; renderPanel();
+  };
+}
+
+// ---------- controls ----------
+const molTabs=document.getElementById('molTabs');
+function buildMolTabs(){
+  molTabs.innerHTML='';
+  MOL.forEach((m,i)=>{
+    const b=document.createElement('button');
+    b.className='mol-tab'+(i===state.molIdx?' active':'');
+    b.textContent=m.f;
+    b.title=m.name+' · '+m.shape;
+    b.onclick=()=>{ state.molIdx=i; buildMolTabs(); resetAngle(); rebuildExplore(); renderPanel(); };
+    molTabs.appendChild(b);
+  });
+}
+
+const cmpSel=document.getElementById('cmpSel');
+CMP.forEach((c,i)=>{ const o=document.createElement('option'); o.value=i; o.textContent=MOL[c.a].f+' vs '+MOL[c.b].f; cmpSel.appendChild(o); });
+cmpSel.onchange=()=>{ state.cmpIdx=+cmpSel.value; };
+
+document.getElementById('repToggle').onchange=e=>{ state.showRep=e.target.checked; };
+document.getElementById('pairToggle').onchange=e=>{ state.showPairs=e.target.checked; };
+
+function resetAngle(){
+  const m=MOL[state.molIdx];
+  state.curAng=m.angle; state.targetAng=m.angle;
+}
+function setMode(m){
+  state.mode=m;
+  ['mExplore','mCompare','mBuild','mQuiz'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById({explore:'mExplore',compare:'mCompare',build:'mBuild',quiz:'mQuiz'}[m]).classList.add('active');
+  document.getElementById('compareCtl').classList.toggle('hidden',m!=='compare');
+  document.getElementById('animBtn').classList.toggle('hidden',m==='quiz');
+  relaxArrs=[]; drag=null;
+  if(m==='explore'){ resetAngle(); rebuildExplore(); buildMolTabs(); }
+  else if(m==='compare'){ rebuildCmp(); }
+  else if(m==='build'){ rebuildBuild(); }
+  else if(m==='quiz'){ state.quizIdx=0; }
+  renderPanel();
+}
+document.getElementById('mExplore').onclick=()=>setMode('explore');
+document.getElementById('mCompare').onclick=()=>setMode('compare');
+document.getElementById('mBuild').onclick=()=>setMode('build');
+document.getElementById('mQuiz').onclick=()=>setMode('quiz');
+
+document.getElementById('animBtn').onclick=()=>{
+  if(state.mode==='quiz') return;
+  relaxArrs=[];
+  if(state.mode==='compare'){ relaxArrs.push(cmpParts.a, cmpParts.b); }
+  else if(state.mode==='build'){ relaxArrs.push(buildParts); }
+  else { relaxArrs.push(exploreParts); }
+  showReturnHint();
+};
+document.getElementById('resetBtn').onclick=()=>{
+  if(state.mode==='explore'){ resetAngle(); rebuildExplore(); }
+  else if(state.mode==='compare'){ rebuildCmp(); }
+  else if(state.mode==='build'){ rebuildBuild(); }
+  relaxArrs=[]; drag=null;
+  state.showRep=true; document.getElementById('repToggle').checked=true;
+  renderPanel();
+};
+
+// ---------- drag interaction ----------
+let drag3d=null;   // active when dragging a 3D molecule → rotates the view
+function canvasPos(e){
+  const rect=cv.getBoundingClientRect();
+  const sx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+  const sy=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+  return {x:sx,y:sy};
+}
+// Is a 3D (tetrahedral) molecule currently on screen? (rotation drag applies to it)
+function active3D(){
+  if(state.mode==='explore') return MOL[state.molIdx].threeD ? MOL[state.molIdx] : null;
+  if(state.mode==='compare'){ const pr=CMP[state.cmpIdx]; if(MOL[pr.a].threeD||MOL[pr.b].threeD) return true; }
+  return null;
+}
+function pickHit(p){
+  let best=null, bd=24;
+  HITS.forEach(h=>{ const d=Math.hypot(h.x-p.x,h.y-p.y); if(d<bd){bd=d;best=h;} });
+  return best;
+}
+function onDown(e){
+  if(state.mode==='quiz') return;
+  const p=canvasPos(e);
+  if(active3D()){ drag3d={x:p.x,y:p.y,spin:state.spin,tilt:state.tilt}; cv.style.cursor='grabbing'; e.preventDefault(); return; }
+  const h=pickHit(p);
+  if(h){ drag={arr:h.arr, idx:h.idx, cx:h.cx, cy:h.cy}; cv.style.cursor='grabbing'; e.preventDefault(); }
+}
+function onMove(e){
+  const p=canvasPos(e);
+  if(drag3d){
+    const dx=p.x-drag3d.x, dy=p.y-drag3d.y;
+    state.spin = drag3d.spin + dx*0.012;
+    state.tilt = Math.max(-1.15, Math.min(1.15, drag3d.tilt - dy*0.012));
+    e.preventDefault(); return;
+  }
+  if(drag){
+    let nx=p.x-drag.cx, ny=p.y-drag.cy;
+    const lim=modeR()*1.8; const d=Math.hypot(nx,ny);
+    if(d>lim){ nx*=lim/d; ny*=lim/d; }
+    drag.arr[drag.idx].x=nx; drag.arr[drag.idx].y=ny;
+    e.preventDefault(); return;
+  }
+  cv.style.cursor = active3D()? 'grab' : (pickHit(p)?'grab':'default');
+}
+function showReturnHint(){
+  const msg = state.mode==='build'
+    ? 'the electron pairs now <b>repel each other</b> and slide back to the lowest-repulsion arrangement (VSEPR geometry).'
+    : 'repulsion between the electron pairs pushes them back to the stable VSEPR arrangement.';
+  document.getElementById('caption').innerHTML='<b>Repulsion → equilibrium:</b> '+msg;
+}
+function onUp(){
+  if(drag3d){ drag3d=null; cv.style.cursor='default'; return; }
+  if(drag){ const a=drag.arr; if(!relaxArrs.includes(a)) relaxArrs.push(a); showReturnHint(); }
+  drag=null; cv.style.cursor='default';
+}
+cv.addEventListener('mousedown',onDown);
+cv.addEventListener('mousemove',onMove);
+window.addEventListener('mouseup',onUp);
+cv.addEventListener('touchstart',onDown,{passive:false});
+cv.addEventListener('touchmove',onMove,{passive:false});
+window.addEventListener('touchend',onUp);
+
+// ---------- init ----------
+fitCanvas();
+resetAngle();
+rebuildExplore(); rebuildCmp(); rebuildBuild();
+buildMolTabs();
+renderPanel();
+requestAnimationFrame(draw);
+</script>
+</body>
+</html>

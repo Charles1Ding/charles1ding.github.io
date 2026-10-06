@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Electron Sub-shell &amp; Orbital Diagram — Aufbau · Pauli · Hund (up to 4f)</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#EEF3F5;font-family:'Segoe UI',Arial,'Microsoft YaHei',sans-serif;color:#16323F;padding:18px 12px 40px;}
+.wrap{max-width:1080px;margin:0 auto;}
+h1{color:#0A455D;font-size:22px;letter-spacing:.2px;}
+.sub{color:#5B7684;font-size:13px;margin:4px 0 14px;}
+.card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(10,69,93,.08);padding:12px;}
+.modetabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.mtab{flex:1 1 200px;padding:10px 8px;border-radius:12px;border:2px solid #0A455D;background:#fff;color:#0A455D;
+      font-size:14px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;}
+.mtab.active{background:#0A455D;color:#fff;}
+.duo{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch;}
+.panel{flex:1 1 320px;min-width:300px;display:flex;flex-direction:column;gap:10px;}
+canvas{display:block;border-radius:10px;}
+.ctlrow{display:flex;align-items:center;gap:10px;font-size:13px;}
+.ctlrow label{width:96px;color:#0A455D;font-weight:600;flex-shrink:0;}
+.ctlrow input[type=range]{flex:1;accent-color:#0A455D;}
+.val{min-width:54px;text-align:center;background:#EAF3F7;color:#0A455D;border-radius:8px;
+     padding:3px 6px;font-weight:600;font-size:12.5px;}
+.chip{display:inline-block;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;}
+.chip.aufbau{background:#E8F4F8;color:#0A455D;}
+.chip.pauli{background:#FCE8DD;color:#B3441E;}
+.chip.hund{background:#FFF3D6;color:#9A6B08;}
+.datarow{display:flex;justify-content:space-between;font-size:13px;padding:4px 2px;border-bottom:1px dashed #DDE8ED;}
+.datarow b{color:#0A455D;font-family:Consolas,'Courier New',monospace;}
+.formula{font-family:Consolas,'Courier New',monospace;background:#F2F7F9;border-left:4px solid #0A455D;
+         border-radius:6px;padding:8px 12px;font-size:13px;color:#0A455D;line-height:1.6;word-break:break-all;}
+.btn{padding:6px 14px;border-radius:9px;border:1.5px solid #0A455D;background:#fff;color:#0A455D;
+     font-size:13px;font-weight:600;cursor:pointer;}
+.btn:hover{background:#EAF3F7;}
+.btn:disabled{opacity:.4;cursor:default;}
+.stepper{display:flex;align-items:center;gap:8px;}
+.stepper button{width:34px;height:30px;font-size:17px;padding:0;}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#33586B;margin-top:8px;}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block;}
+.elbtn{padding:5px 10px;border-radius:8px;border:1.5px solid #4699AA;background:#fff;color:#4699AA;
+       font-size:12px;font-weight:600;cursor:pointer;margin:2px;}
+.elbtn:hover{background:#EDF5F8;}
+.elbtn.on{background:#4699AA;color:#fff;}
+.hint{font-size:11.5px;color:#8FA9B7;margin-top:2px;}
+.sec-title{color:#0A455D;font-size:15px;font-weight:700;margin:6px 0 4px;}
+.foot{margin-top:22px;text-align:center;font-size:11.5px;color:#8FA9B7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Electron Sub-shell &amp; Orbital Diagram</h1>
+  <p class="sub">Aufbau · Pauli Exclusion · Hund's Rule — each row is one <b>sub-shell</b> (s / p / d / f); the boxes are its <b>orbitals</b>. Filled up to <b>4f</b>.</p>
+
+  <div class="modetabs" id="modeTabs"></div>
+
+  <div class="duo">
+    <div class="panel">
+      <div class="card">
+        <canvas id="cvMain"></canvas>
+        <div class="legend">
+          <span><i class="sw" style="background:#fff;border:1.5px solid #0A455D"></i> empty orbital</span>
+          <span><span style="color:#2563EB;font-weight:700;">↑</span> spin-up (mₛ=+½)</span>
+          <span><span style="color:#DC2626;font-weight:700;">↓</span> spin-down (mₛ=−½)</span>
+          <span><span style="color:#4699AA;font-weight:700;">▦</span> sub-shell group</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="sidePanel"></div>
+  </div>
+
+  <p class="foot">Single HTML · zero dependency · Canvas 2D · offline-projection ready</p>
+</div>
+
+<script>
+// ============================================================
+// Canvas setup
+// ============================================================
+const cv = document.getElementById('cvMain');
+const ctx = cv.getContext('2d');
+function setupCanvas(c){
+  const r = c.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio||1;
+  c.width = Math.round(r.width*dpr); c.height = 980*dpr;   // tall enough for 13 sub-shells + nucleus
+  c.style.width = r.width+'px'; c.style.height='980px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+setupCanvas(cv);
+
+// ============================================================
+// HELPERS
+// ============================================================
+function rrect(c,x,y,w,h,r,fill,stroke){
+  c.beginPath();
+  c.moveTo(x+r,y);
+  c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r);
+  c.arcTo(x,y,x+w,y,r);
+  c.closePath();
+  if(fill) c.fill();
+  if(stroke) c.stroke();
+}
+function drawArrowUp(c,x,y,size,color){
+  c.strokeStyle=color; c.fillStyle=color; c.lineWidth=2.6;
+  const h=size*0.55;
+  c.beginPath(); c.moveTo(x,y+h); c.lineTo(x,y-h); c.stroke();
+  c.beginPath();
+  c.moveTo(x-size*0.32,y-h+size*0.38); c.lineTo(x,y-h); c.lineTo(x+size*0.32,y-h+size*0.38);
+  c.closePath(); c.fill();
+}
+function drawArrowDown(c,x,y,size,color){
+  c.strokeStyle=color; c.fillStyle=color; c.lineWidth=2.6;
+  const h=size*0.55;
+  c.beginPath(); c.moveTo(x,y-h); c.lineTo(x,y+h); c.stroke();
+  c.beginPath();
+  c.moveTo(x-size*0.32,y+h-size*0.38); c.lineTo(x,y+h); c.lineTo(x+size*0.32,y+h-size*0.38);
+  c.closePath(); c.fill();
+}
+// Arrow from (x,y) along unit (dx,dy) of given pixel length, with arrowhead
+function drawVec(c,x,y,dx,dy,len,color,lw){
+  const ex=x+dx*len, ey=y+dy*len;
+  c.strokeStyle=color; c.fillStyle=color; c.lineWidth=lw||3;
+  c.beginPath(); c.moveTo(x,y); c.lineTo(ex,ey); c.stroke();
+  const ang=Math.atan2(dy,dx), ah=9;
+  c.beginPath();
+  c.moveTo(ex,ey);
+  c.lineTo(ex-Math.cos(ang-0.42)*ah, ey-Math.sin(ang-0.42)*ah);
+  c.lineTo(ex-Math.cos(ang+0.42)*ah, ey-Math.sin(ang+0.42)*ah);
+  c.closePath(); c.fill();
+}
+
+// ============================================================
+// DATA: sub-shells (up to 4f), ordered by energy (Aufbau)
+//   E = energy rank (1 = lowest). count = # of orbitals in sub-shell
+// ============================================================
+const ORBS = [
+  {label:'1s', n:1, l:0, E:1,  count:1},
+  {label:'2s', n:2, l:0, E:2,  count:1},
+  {label:'2p', n:2, l:1, E:3,  count:3},
+  {label:'3s', n:3, l:0, E:4,  count:1},
+  {label:'3p', n:3, l:1, E:5,  count:3},
+  {label:'4s', n:4, l:0, E:6,  count:1},
+  {label:'3d', n:3, l:2, E:7,  count:5},
+  {label:'4p', n:4, l:1, E:8,  count:3},
+  {label:'5s', n:5, l:0, E:9,  count:1},
+  {label:'4d', n:4, l:2, E:10, count:5},
+  {label:'5p', n:5, l:1, E:11, count:3},
+  {label:'6s', n:6, l:0, E:12, count:1},
+  {label:'4f', n:4, l:3, E:13, count:7},
+];
+const ORB_BY_E = ORBS.map((o,i)=>i).sort((a,b)=> ORBS[a].E-ORBS[b].E || ORBS[a].n-ORBS[b].n);
+
+// Element symbols 1..86
+const SYM = ['','H','He','Li','Be','B','C','N','O','F','Ne','Na','Mg','Al','Si','P','S','Cl','Ar',
+ 'K','Ca','Sc','Ti','V','Cr','Mn','Fe','Co','Ni','Cu','Zn','Ga','Ge','As','Se','Br','Kr',
+ 'Rb','Sr','Y','Zr','Nb','Mo','Tc','Ru','Rh','Pd','Ag','Cd','In','Sn','Sb','Te','I','Xe',
+ 'Cs','Ba','La','Ce','Pr','Nd','Pm','Sm','Eu','Gd','Tb','Dy','Ho','Er','Tm','Yb','Lu','Hf','Ta','W','Re','Os','Ir','Pt','Au','Hg','Tl','Pb','Bi','Po','At','Rn'];
+
+// Noble-gas cores for short config
+const NOBLE = {2:'He',10:'Ne',18:'Ar',36:'Kr',54:'Xe',86:'Rn'};
+
+// ---- Fill algorithm: given Z -> electron distribution ----
+function computeDist(Z){
+  const d = ORBS.map(()=>[]);
+  let rem = Z;
+  for(const i of ORB_BY_E){
+    const cap = ORBS[i].count*2;
+    const c = ORBS[i].count;
+    while(rem>0 && d[i].length<cap){
+      const k = d[i].length;                 // 0-indexed within sub-shell
+      d[i].push({spin: k<c ? 'up' : 'down'}); // Hund: singly (up) first, then pair (down)
+      rem--;
+    }
+    if(rem===0) break;
+  }
+  // Exceptions: Cr (Z=24) [Ar]4s¹3d⁵ ; Cu (Z=29) [Ar]4s¹3d¹⁰
+  if(Z===24){ d[5]=[{spin:'up'}]; d[6]=Array.from({length:5},()=>({spin:'up'})); }
+  if(Z===29){ d[5]=[{spin:'up'}]; d[6]=Array.from({length:10},(_,k)=>({spin:k<5?'up':'down'})); }
+  return d;
+}
+
+function sup(n){
+  const m={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+  return String(n).split('').map(ch=>m[ch]).join('');
+}
+function getConfigString(d){
+  let s='';
+  ORBS.forEach((o,i)=>{ if(d[i].length) s += o.label + sup(d[i].length); });
+  return s;
+}
+function getNobleCore(Z){
+  let core=0; for(const k in NOBLE){ if(+k<Z) core=+k; }
+  if(core===0) return null;
+  let d=computeDist(core);
+  let s='['+NOBLE[core]+']';
+  ORBS.forEach((o,i)=>{ if(d[i].length) s += o.label + sup(d[i].length); });
+  return s;
+}
+
+// ============================================================
+// IONIZATION ENERGY — estimate to remove a SPECIFIC electron
+//   Method: Slater's rules → effective nuclear charge Z_eff, then
+//   hydrogenic binding E = 13.6 · Z_eff² / n*² (eV).
+//   Anchored to the element's experimental 1st IE so that dragging
+//   the valence electron shows the TRUE first ionization energy,
+//   while inner (core) electrons are scaled by their Slater ratio.
+// ============================================================
+// Experimental first ionization energy (eV), Z = 1..86  [index 0 unused]
+const IE_TABLE = [0,
+ 13.598,24.587,5.392,9.323,8.298,11.260,14.534,13.618,17.423,21.565,
+ 5.139,7.646,5.986,8.152,10.487,10.360,12.968,15.760,4.341,6.113,
+ 6.54,6.82,6.74,6.767,7.434,7.902,7.881,7.640,7.726,9.394,
+ 5.999,7.900,9.815,9.752,11.814,14.000,4.177,5.695,6.22,6.63,
+ 6.76,7.09,7.28,7.36,7.46,8.34,7.576,8.994,5.786,7.344,
+ 8.608,9.010,10.451,12.130,3.894,5.212,5.577,5.47,5.42,5.49,
+ 5.55,5.63,5.67,6.15,5.86,5.94,6.02,6.10,6.18,6.25,
+ 5.426,7.00,7.89,7.98,7.88,8.7,8.97,8.96,9.23,10.44,
+ 6.11,7.42,7.29,8.42,9.30,10.75];
+// Slater group membership (1s | 2s2p | 3s3p | 3d | 4s4p | 4d | 4f | 5s5p | 6s)
+const SLATER_GROUP = [1,2,2,3,3,4,5,4,7,6,7,10,11];
+// effective principal quantum number n*
+const NSTAR = {1:1, 2:2, 3:3, 4:3.7, 5:4.0, 6:4.2};
+
+// Raw Slater estimate (eV) for removing electron from sub-shell idx
+function slaterEst(d, idx){
+  const cnt = d.map(a=>a.length);
+  const o = ORBS[idx], n = o.n, l = o.l, myG = SLATER_GROUP[idx];
+  let sigma = 0;
+  if(idx===0){                                   // 1s special case
+    sigma = (cnt[0]-1)*0.30;
+  } else {
+    // same Slater group (other electrons)
+    for(let i=0;i<ORBS.length;i++){
+      if(i===idx) continue;
+      if(SLATER_GROUP[i]===myG) sigma += cnt[i]*0.35;
+    }
+    if(l===0||l===1){                            // ns / np electron
+      for(let i=0;i<ORBS.length;i++){
+        if(i===idx) continue;
+        const on = ORBS[i].n;
+        if(on===n-1) sigma += cnt[i]*0.85;
+        else if(on<=n-2) sigma += cnt[i]*1.00;
+      }
+    } else {                                      // nd / nf electron
+      for(let i=0;i<idx;i++) sigma += cnt[i]*1.00;
+    }
+  }
+  const Zeff = Math.max(0.1, S.Z - sigma);
+  const ns = NSTAR[n] || 4.2;
+  const eVraw = 13.6 * Zeff*Zeff / (ns*ns);
+  return {eVraw, Zeff, sigma, n};
+}
+// Which sub-shell loses its electron on FIRST ionization?
+//  → highest principal quantum number, and among those the highest-E one
+//  (correctly gives 4s for transition metals, 4p for Ga, 6s for lanthanides…)
+function removalIdx(d){
+  let maxN=0; ORBS.forEach((o,i)=>{ if(d[i].length) maxN=Math.max(maxN,o.n); });
+  let cand=-1, candE=-1;
+  ORBS.forEach((o,i)=>{ if(d[i].length && o.n===maxN && o.E>candE){ cand=i; candE=o.E; } });
+  return cand;
+}
+// Full info for the dragged electron
+function ionizationInfo(draggedIdx){
+  const d = computeDist(S.Z);
+  const raw = slaterEst(d, draggedIdx);
+  const rem = removalIdx(d);
+  const anchor = slaterEst(d, rem).eVraw;
+  const expFirstIE = IE_TABLE[S.Z] || 0;
+  const factor = anchor>0 ? expFirstIE/anchor : 1;     // anchor valence → real 1st IE
+  const eV = raw.eVraw * factor;
+  return {
+    sub: ORBS[draggedIdx].label,
+    eV, kJmol: eV*96.485,
+    Zeff: raw.Zeff, sigma: raw.sigma,
+    isValence: draggedIdx===rem,
+    expFirstIE, rawEv: raw.eVraw
+  };
+}
+
+// ============================================================
+// STATE
+// ============================================================
+const S = { mode:0, Z:8, animating:false, animFrom:-1, animTo:-1, animT:0, animShow:null,
+           nuc:{x:0,y:0}, electrons:[], drag:null };
+
+// Small DOM builders
+function secTitle(t){ const d=document.createElement('div'); d.className='sec-title'; d.textContent=t; return d; }
+function datarow(k,v){ const d=document.createElement('div'); d.className='datarow'; d.innerHTML=`<span>${k}</span><b>${v}</b>`; return d; }
+
+// ============================================================
+// DRAW — Orbital / Sub-shell diagram
+// ============================================================
+const boxW=36, boxH=48, gapX=8, gapY=6, startX=92, topY=42, rowStep=58;
+const arrowSize=17, offX=8;
+
+function drawDiagram(dist, highlightIdx){
+  const W=cv.clientWidth, H=cv.clientHeight;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#EEF3F5'; ctx.fillRect(0,0,W,H);
+  S.electrons = [];   // reset electron hit-list each frame
+
+  // ---- Energy axis (left) ----
+  const axX=34;
+  ctx.strokeStyle='#0A455D'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(axX, topY-10); ctx.lineTo(axX, H-34); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(axX-6, topY+4); ctx.lineTo(axX, topY-10); ctx.lineTo(axX+6, topY+4);
+  ctx.closePath(); ctx.fillStyle='#0A455D'; ctx.fill();
+  ctx.fillStyle='#0A455D'; ctx.textAlign='center';
+  ctx.font='bold 17px Segoe UI'; ctx.textBaseline='alphabetic';
+  ctx.fillText('E', axX, H-20);
+  ctx.font='12px Segoe UI';
+  ctx.fillText('Energy', axX, topY-22);
+  ctx.font='bold 13px Segoe UI'; ctx.fillText('↑', axX, topY-8);
+
+  // ---- Rows: high energy (top) -> low energy (bottom) ----
+  let y = topY;
+  for(let idx=ORBS.length-1; idx>=0; idx--){
+    const orb=ORBS[idx];
+    const by=y;
+    const rowW=orb.count*(boxW+gapX)-gapX;
+    const bx0=startX;
+
+    // sub-shell background band
+    ctx.fillStyle = (idx===highlightIdx) ? 'rgba(70,153,170,.16)' : 'rgba(70,153,170,.06)';
+    rrect(ctx, bx0-7, by-7, rowW+14, boxH+14, 9, true, false);
+
+    // orbital boxes + electrons
+    const ups = dist[idx].filter(e=>e.spin==='up').length;
+    const downs = dist[idx].filter(e=>e.spin==='down').length;
+    for(let j=0;j<orb.count;j++){
+      const bx=bx0+j*(boxW+gapX);
+      ctx.fillStyle='#fff';
+      ctx.lineWidth = (idx===highlightIdx && (j<ups||j<downs)) ? 2.5 : 1.6;
+      ctx.strokeStyle = (idx===highlightIdx) ? '#4699AA' : '#0A455D';
+      rrect(ctx, bx, by, boxW, boxH, 5, true, true);
+
+      const hasUp = j<ups, hasDown = j<downs;
+      const cx = bx + boxW/2;
+      const ox = (hasUp&&hasDown) ? offX : 0;
+      if(hasUp){
+        const ex2=cx-ox, ey2=by+boxH/2;
+        S.electrons.push({idx,j,spin:'up',x:ex2,y:ey2});
+        if(!(S.drag && S.drag.idx===idx && S.drag.j===j && S.drag.spin==='up'))
+          drawArrowUp(ctx, ex2, ey2, arrowSize, '#2563EB');
+      }
+      if(hasDown){
+        const ex2=cx+ox, ey2=by+boxH/2;
+        S.electrons.push({idx,j,spin:'down',x:ex2,y:ey2});
+        if(!(S.drag && S.drag.idx===idx && S.drag.j===j && S.drag.spin==='down'))
+          drawArrowDown(ctx, ex2, ey2, arrowSize, '#DC2626');
+      }
+    }
+
+    // sub-shell label (right)
+    const labelX = bx0 + rowW + 20;
+    ctx.fillStyle='#0A455D'; ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.font='bold 20px Consolas,"Courier New",monospace';
+    ctx.fillText(orb.label, labelX, by+boxH/2-9);
+    // orbital-count caption
+    ctx.fillStyle='#7C97A4'; ctx.font='11px Segoe UI';
+    const orbWord = orb.count===1 ? '1 orbital' : orb.count+' orbitals';
+    const cap = orb.count*2;
+    ctx.fillText(orbWord+' · max '+cap+'e⁻', labelX, by+boxH/2+11);
+
+    y += rowStep;
+  }
+
+  // ---- Atomic Nucleus ----
+  drawNucleus(S.Z, W, H);
+
+  // ---- Dragged electron + 3 force vectors + ionization-energy badge ----
+  if(S.drag){
+    const info = ionizationInfo(S.drag.idx);
+    drawForces(S.drag);
+    const col = S.drag.spin==='up' ? '#2563EB' : '#DC2626';
+    if(S.drag.spin==='up') drawArrowUp(ctx, S.drag.x, S.drag.y, arrowSize+2, col);
+    else drawArrowDown(ctx, S.drag.x, S.drag.y, arrowSize+2, col);
+    drawIEBadge(info, S.drag.x, S.drag.y);
+  }
+}
+
+// ============================================================
+// NUCLEUS: protons + neutrons + attraction field
+// ============================================================
+function drawNucleus(Z, W, H){
+  const nx = W*0.5;                        // horizontally centered
+  const ny = H - 85;                       // below all orbitals
+  const R = Math.min(55, 24 + Z*0.36);    // larger radius, scales with Z
+  S.nuc = {x:nx, y:ny};
+
+  // Approximate neutron count (most common isotope for light elements; for heavy use N≈1.5Z)
+  let Nn;
+  if(Z<=2) Nn=Z===1?0:2;               // H:0n, He:2n
+  else if(Z<=10) Nn=Z;                   // Li~Ne: N≈Z
+  else if(Z<=20) Nn=Math.round(Z*1.08);  // Na~Ca
+  else if(Z<=36) Nn=Math.round(Z*1.22);  // Sc~Kr
+  else if(Z<=54) Nn=Math.round(Z*1.35);  // Rb~Xe
+  else Nn=Math.round(Z*1.5);             // Cs~Rn
+  const Np = Z;
+
+  // ---- Attraction field: radial gradient + faint lines toward electron region ----
+  // Soft glow behind nucleus
+  const glow = ctx.createRadialGradient(nx, ny, R*0.5, nx, ny, R*4);
+  glow.addColorStop(0, 'rgba(220,80,60,0.14)');
+  glow.addColorStop(0.5, 'rgba(70,153,170,0.06)');
+  glow.addColorStop(1, 'rgba(70,153,170,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath(); ctx.arc(nx, ny, R*4, 0, Math.PI*2); ctx.fill();
+
+  // Attraction arrows radiating upward (toward orbitals)
+  ctx.save();
+  ctx.strokeStyle = 'rgba(180,100,80,0.18)';
+  ctx.lineWidth = 1.2;
+  ctx.setLineDash([4,6]);
+  for(let a=0; a<7; a++){
+    const angle = -Math.PI/2 - 0.45 + a*0.15;  // fan upward (-90° ± ~40°)
+    const len = R*2.8 + Math.random()*30;
+    ctx.beginPath();
+    ctx.moveTo(nx + Math.cos(angle)*R*1.3, ny + Math.sin(angle)*R*1.3);
+    ctx.lineTo(nx + Math.cos(angle)*(R*1.3+len), ny + Math.sin(angle)*(R*1.3+len));
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // ---- Draw nucleons (protons red, neutrons gray) in a tight cluster ----
+  const nucleonR = Math.max(7, Math.min(13, R/Math.sqrt(Np+Nn)*1.45));
+  const positions = [];
+  // Dynamic concentric rings (handles light → heavy atoms)
+  let ring = 0, placed = 0;
+  while(placed < Np + Nn && ring < 14){
+    const ringR = ring === 0 ? 0 : ring * nucleonR * 2.15;
+    if(ringR > R*0.95) break;                       // stop when ring exceeds nucleus
+    const cap = ring === 0 ? 1 : Math.max(1, Math.floor((2*Math.PI*ringR)/(nucleonR*2.2)) + 1);
+    const count = Math.min(cap, Np+Nn-placed);
+    for(let i=0; i<count; i++){
+      const ang = (i/count) * Math.PI*2 + ring*0.5;
+      positions.push({
+        x: nx + Math.cos(ang)*ringR,
+        y: ny + Math.sin(ang)*ringR,
+        type: placed+i < Np ? 'p' : 'n'
+      });
+    }
+    placed += count;
+    ring++;
+  }
+
+  // Draw each nucleon
+  positions.forEach(pos => {
+    ctx.beginPath();
+    ctx.arc(pos.x, pos.y, nucleonR, 0, Math.PI*2);
+    if(pos.type === 'p'){
+      ctx.fillStyle='#DC2626';  // proton: red
+      ctx.fill();
+      ctx.strokeStyle='#B91C1C'; ctx.lineWidth=1.2; ctx.stroke();
+      // + symbol
+      ctx.fillStyle='#fff'; ctx.font='bold '+(nucleonR*1.1)+'px Arial';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('+', pos.x, pos.y+0.5);
+    } else {
+      ctx.fillStyle='#9CA3AF';  // neutron: gray
+      ctx.fill();
+      ctx.strokeStyle='#6B7280'; ctx.lineWidth=1.2; ctx.stroke();
+      // ° or n symbol
+      ctx.fillStyle='#fff'; ctx.font='bold '+(nucleonR*0.95)+'px Arial';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('n', pos.x, pos.y+0.5);
+    }
+  });
+
+  // Nucleus outline circle (dashed, to show it's a bound cluster)
+  ctx.beginPath();
+  ctx.arc(nx, ny, R + nucleonR + 3, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(180,100,80,0.25)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([3,3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Labels
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#0A455D'; ctx.font='bold 13px Segoe UI';
+  ctx.fillText('Nucleus', nx + R + 16, ny - 6);
+  ctx.fillStyle='#DC2626'; ctx.font='11px Consolas,"Courier New",monospace';
+  ctx.fillText('p⁺: '+Np, nx + R + 16, ny + 10);
+  ctx.fillStyle='#6B7280';
+  ctx.fillText('n⁰: '+Nn, nx + R + 50, ny + 10);
+}
+
+// ============================================================
+// FORCES on a dragged electron (visual only, no text)
+//   red   = nuclear attraction (pulls electron toward nucleus)
+//   orange= inner-shell repulsion (net push from lower-E electrons)
+//   purple= same-orbital partner repulsion
+// ============================================================
+function drawForces(drag){
+  const ex=drag.x, ey=drag.y;
+  const nx=S.nuc.x, ny=S.nuc.y;
+
+  // 1. Nuclear attraction — electron pulled toward nucleus (red)
+  let ax=nx-ex, ay=ny-ey; let ad=Math.hypot(ax,ay)||1;
+  const aLen=Math.min(100, ad*0.5)+24;
+  drawVec(ctx, ex,ey, ax/ad, ay/ad, aLen, '#E0245E', 3.4);
+
+  // 2. Inner-shell repulsion — net push from all lower-E electrons (orange)
+  const draggedE=ORBS[drag.idx].E;
+  let rx=0, ry=0;
+  S.electrons.forEach(e=>{
+    if(e===drag) return;
+    if(ORBS[e.idx].E < draggedE){
+      const vx=ex-e.x, vy=ey-e.y; const r=Math.hypot(vx,vy)||1;
+      const w=1/(r*r); rx+=vx/r*w; ry+=vy/r*w;            // Coulomb-like 1/r² weighting
+      ctx.beginPath(); ctx.arc(e.x,e.y,11,0,Math.PI*2);   // halo marks the source
+      ctx.strokeStyle='rgba(245,158,11,0.55)'; ctx.lineWidth=2; ctx.stroke();
+    }
+  });
+  const rmag=Math.hypot(rx,ry);
+  if(rmag>1e-4){
+    const rLen=Math.min(85, 38+rmag*55);
+    drawVec(ctx, ex,ey, rx/rmag, ry/rmag, rLen, '#F59E0B', 3.4);
+  }
+
+  // 3. Same-orbital partner repulsion (purple)
+  const partner=S.electrons.find(e=> e!==drag && e.idx===drag.idx && e.j===drag.j && e.spin!==drag.spin);
+  if(partner){
+    const vx=ex-partner.x, vy=ey-partner.y; const r=Math.hypot(vx,vy)||1;
+    const pLen=Math.min(72, 36+r*0.22);
+    drawVec(ctx, ex,ey, vx/r, vy/r, pLen, '#7C3AED', 3.4);
+    ctx.beginPath(); ctx.arc(partner.x,partner.y,11,0,Math.PI*2);
+    ctx.strokeStyle='rgba(124,58,237,0.65)'; ctx.lineWidth=2.5; ctx.stroke();
+  }
+
+  // highlight ring on the dragged electron
+  ctx.beginPath(); ctx.arc(ex,ey,15,0,Math.PI*2);
+  ctx.strokeStyle='rgba(10,69,93,0.65)'; ctx.lineWidth=2.5; ctx.setLineDash([3,3]);
+  ctx.stroke(); ctx.setLineDash([]);
+}
+
+// Badge showing the ionization energy to remove the dragged electron
+function drawIEBadge(info, ex, ey){
+  const W = cv.clientWidth;
+  const bw=216, bh=92;
+  let bx = ex+26, by = ey-46;
+  if(bx+bw > W-6) bx = ex-26-bw;        // flip to the left if near right edge
+  if(by < 6) by = 6;
+  if(by+bh > cv.clientHeight-6) by = cv.clientHeight-6-bh;
+  ctx.save();
+  rrect(ctx, bx, by, bw, bh, 10, true, true);
+  ctx.fillStyle='#0A455D'; ctx.fill();
+  ctx.strokeStyle='#4699AA'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle='#9FD0DE'; ctx.font='12px Segoe UI';
+  ctx.fillText('Lose e⁻ from', bx+14, by+20);
+  ctx.fillStyle='#fff'; ctx.font='bold 15px Consolas,"Courier New",monospace';
+  ctx.fillText(info.sub + (info.isValence ? '  (valence)' : '  sub-shell'), bx+14, by+40);
+  ctx.fillStyle='#FFD56B'; ctx.font='bold 23px Consolas,"Courier New",monospace';
+  ctx.fillText(info.eV.toFixed(1)+' eV', bx+14, by+68);
+  ctx.fillStyle='#CFE6EE'; ctx.font='11px Segoe UI';
+  ctx.fillText('≈ '+info.kJmol.toFixed(0)+' kJ·mol⁻¹   Z_eff '+info.Zeff.toFixed(2), bx+14, by+84);
+  ctx.restore();
+}
+
+// ============================================================
+// MODES
+// ============================================================
+const MODES = ['Orbital Builder','Configurator','Quiz'];
+
+function draw(){
+  const dist = computeDist(S.Z);
+  if(S.mode===0) drawDiagram(dist, S.drag ? S.drag.idx : (S.animating ? S.animTo : -1));
+  else if(S.mode===1) drawDiagram(dist, -1);
+  else drawQuiz();
+}
+
+// ---------- Panel: Builder ----------
+function buildPanelBuilder(p){
+  p.innerHTML='';
+  const sym=SYM[S.Z]||'?';
+  const cfg=getConfigString(computeDist(S.Z));
+  const core=getNobleCore(S.Z);
+
+  p.appendChild(secTitle('Orbital Builder'));
+  p.appendChild(datarow('Atomic number Z', S.Z));
+  p.appendChild(datarow('Element', sym));
+
+  // Z stepper + slider
+  const ctl=document.createElement('div'); ctl.className='ctlrow'; ctl.style.marginTop='8px';
+  ctl.innerHTML=`<label>Z slider</label>`;
+  const sl=document.createElement('input'); sl.type='range'; sl.min=1; sl.max=86; sl.value=S.Z;
+  sl.oninput=()=>{ S.Z=+sl.value; syncZ(); };
+  const v=document.createElement('span'); v.className='val'; v.textContent=S.Z;
+  ctl.appendChild(sl); ctl.appendChild(v); p.appendChild(ctl);
+
+  const step=document.createElement('div'); step.className='stepper'; step.style.marginTop='8px';
+  const minus=document.createElement('button'); minus.className='btn'; minus.textContent='−';
+  minus.onclick=()=>{ if(S.Z>1){S.Z--; syncZ();} };
+  const plus=document.createElement('button'); plus.className='btn'; plus.textContent='+';
+  plus.onclick=()=>{ if(S.Z<86){S.Z++; syncZ();} };
+  step.appendChild(minus); step.appendChild(plus); p.appendChild(step);
+
+  // quick elements
+  const qwrap=document.createElement('div');
+  [1,2,6,7,8,10,11,17,18,19,20,24,26,29,36,54,86].forEach(z=>{
+    const b=document.createElement('button'); b.className='elbtn'+(z===S.Z?' on':'');
+    b.textContent=SYM[z]; b.onclick=()=>{ S.Z=z; syncZ(); };
+    qwrap.appendChild(b);
+  });
+  p.appendChild(qwrap);
+
+  // config
+  p.appendChild(secTitle('Electron configuration'));
+  const f=document.createElement('div'); f.className='formula'; f.textContent=cfg; p.appendChild(f);
+  if(core){ const f2=document.createElement('div'); f2.className='formula'; f2.style.marginTop='6px'; f2.textContent=core; p.appendChild(f2); }
+
+  // rules chips
+  p.appendChild(secTitle('Active rule'));
+  const chips=document.createElement('div');
+  chips.innerHTML=`<span class="chip aufbau">Aufbau: lowest-E first</span> <span class="chip pauli">Pauli: max 2e⁻ / orbital</span> <span class="chip hund">Hund: singly first</span>`;
+  p.appendChild(chips);
+
+  // live ionization-energy readout (visible while dragging an electron)
+  const ro=document.createElement('div');
+  ro.id='ieReadout'; ro.className='card';
+  ro.style.cssText='margin-top:12px;padding:10px 12px;display:none;background:#F2F7F9;border-left:4px solid #4699AA;';
+  p.appendChild(ro);
+}
+
+// Update the live IE readout while an electron is being dragged
+function updateIEReadout(){
+  const el=document.getElementById('ieReadout');
+  if(!el) return;
+  if(!S.drag){ el.style.display='none'; return; }
+  const info=ionizationInfo(S.drag.idx);
+  el.style.display='block';
+  el.innerHTML =
+    `<div class="sec-title" style="margin:0 0 4px;">Ionization energy to remove this e⁻</div>`+
+    `<div style="font-size:11.5px;color:#5B7684;">Sub-shell <b style="color:#0A455D;font-family:Consolas,monospace;">${info.sub}</b>`+
+      (info.isValence ? ` &nbsp;<span style="color:#B3441E;font-weight:700;">(valence — = 1st IE)</span>` : ``)+`</div>`+
+    `<div style="font-size:25px;font-weight:800;color:#0A455D;font-family:Consolas,monospace;margin:3px 0 1px;">${info.eV.toFixed(1)} eV</div>`+
+    `<div style="font-size:12px;color:#33586B;">≈ ${info.kJmol.toFixed(0)} kJ·mol⁻¹</div>`+
+    `<div style="font-size:11px;color:#8FA9B7;margin-top:5px;">Z_eff ≈ ${info.Zeff.toFixed(2)} &nbsp;|&nbsp; σ ≈ ${info.sigma.toFixed(2)} &nbsp;|&nbsp; 1st IE(exp) ${info.expFirstIE.toFixed(2)} eV</div>`;
+}
+
+// ---------- Panel: Configurator ----------
+function buildPanelConfig(p){
+  p.innerHTML='';
+  const sym=SYM[S.Z]||'?';
+  const cfg=getConfigString(computeDist(S.Z));
+  const core=getNobleCore(S.Z);
+  p.appendChild(secTitle('Sub-shell Explorer'));
+  p.appendChild(datarow('Z', S.Z));
+  p.appendChild(datarow('Element', sym+(S.Z===24?'  ⚠ half-filled d⁵':S.Z===29?'  ⚠ full d¹⁰':'')));
+
+  const ctl=document.createElement('div'); ctl.className='ctlrow'; ctl.style.marginTop='8px';
+  ctl.innerHTML=`<label>Z slider</label>`;
+  const sl=document.createElement('input'); sl.type='range'; sl.min=1; sl.max=86; sl.value=S.Z;
+  sl.oninput=()=>{ S.Z=+sl.value; syncZ(); };
+  const v=document.createElement('span'); v.className='val'; v.textContent=S.Z;
+  ctl.appendChild(sl); ctl.appendChild(v); p.appendChild(ctl);
+
+  // sub-shell breakdown table
+  p.appendChild(secTitle('Sub-shell occupancy'));
+  const d=computeDist(S.Z);
+  ORBS.forEach((o,i)=>{
+    if(d[i].length===0 && o.E > (highestE(S.Z))) return; // hide high empty
+    const r=document.createElement('div'); r.className='datarow';
+    r.innerHTML=`<span>${o.label} <small style="color:#8FA9B7">(${o.count} orb)</small></span><b>${d[i].length}/${o.count*2}e⁻</b>`;
+    p.appendChild(r);
+  });
+
+  p.appendChild(secTitle('Configuration'));
+  const f=document.createElement('div'); f.className='formula'; f.textContent=cfg; p.appendChild(f);
+  if(core){ const f2=document.createElement('div'); f2.className='formula'; f2.style.marginTop='6px'; f2.textContent=core; p.appendChild(f2); }
+
+  // quick
+  const qwrap=document.createElement('div');
+  [2,10,18,24,29,36,54,86].forEach(z=>{
+    const b=document.createElement('button'); b.className='elbtn'+(z===S.Z?' on':'');
+    b.textContent=SYM[z]; b.onclick=()=>{ S.Z=z; syncZ(); };
+    qwrap.appendChild(b);
+  });
+  p.appendChild(qwrap);
+}
+function highestE(Z){
+  let h=0; const d=computeDist(Z); ORBS.forEach((o,i)=>{ if(d[i].length) h=Math.max(h,o.E); }); return h;
+}
+
+// ---------- Panel: Quiz ----------
+const QZ = [
+  {q:'Nitrogen (Z=7) has how many unpaired electrons in its ground state?',
+   opts:['1','2','3','4'], correct:2,
+   explain:'2p³ → three p orbitals each hold one ↑ electron (Hund): 3 unpaired.'},
+  {q:'Which sub-shell contains the MOST orbitals?',
+   opts:['3s','3p','3d','4f'], correct:3,
+   explain:'f sub-shell has 7 orbitals (mₗ = −3… +3); d=5, p=3, s=1.'},
+  {q:'In the 2p sub-shell of oxygen (2p⁴), how are the electrons arranged?',
+   opts:['↑↓ ↑↓ empty','↑↓ ↑ ↑','↑ ↑ ↑↓','↑ ↑ ↑'], correct:1,
+   explain:'2p⁴ = three boxes: ↑↓ , ↑ , ↑ (Hund: fill singly, then pair).'},
+  {q:'Energy ordering: which fills first?',
+   opts:['3d before 4s','4s before 3d','they fill together','2p before 2s'], correct:1,
+   explain:'Aufbau: 4s (E=6) fills before 3d (E=7) — the 4s<3d crossover.'},
+  {q:'Chromium (Z=24) ground-state configuration is anomalous because it is:',
+   opts:['[Ar]4s²3d⁴','[Ar]4s¹3d⁵','[Ar]4s²3d⁵','[Ar]4s¹3d⁴'], correct:1,
+   explain:'Cr is [Ar]4s¹3d⁵ — a half-filled d sub-shell (d⁵) is unusually stable.'},
+];
+let quizSel=Array(QZ.length).fill(-1);
+function buildPanelQuiz(p){
+  p.innerHTML='';
+  p.appendChild(secTitle('Quiz Challenge'));
+  QZ.forEach((qz,i)=>{
+    const card=document.createElement('div'); card.className='qcard';
+    card.innerHTML=`<h3 style="color:#0A455D;font-size:14px;margin-bottom:8px;">Q${i+1}. ${qz.q}</h3>`;
+    const opts=document.createElement('div'); opts.className='qopts'; opts.style.flexDirection='column'; opts.style.gap='6px';
+    qz.opts.forEach((o,j)=>{
+      const b=document.createElement('button'); b.className='qopt'; b.style.flex='none'; b.style.textAlign='left';
+      b.textContent=o;
+      if(quizSel[i]===j) b.classList.add(j===qz.correct?'correct':'wrong');
+      b.onclick=()=>{ quizSel[i]=j; buildPanelQuiz(p); };
+      opts.appendChild(b);
+    });
+    card.appendChild(opts);
+    if(quizSel[i]>=0){
+      const fb=document.createElement('div'); fb.className='qfb '+(quizSel[i]===qz.correct?'ok':'bad');
+      fb.style.display='block';
+      fb.innerHTML=`<b>${quizSel[i]===qz.correct?'✓ Correct':'✗ '}</b> ${qz.explain}`;
+      card.appendChild(fb);
+    }
+    p.appendChild(card);
+  });
+  const reset=document.createElement('button'); reset.className='btn'; reset.textContent='Reset quiz';
+  reset.onclick=()=>{ quizSel=Array(QZ.length).fill(-1); buildPanelQuiz(p); };
+  p.appendChild(reset);
+}
+function drawQuiz(){ drawDiagram(computeDist(S.Z), -1); }
+
+// ============================================================
+// Sync & mode switching
+// ============================================================
+function syncZ(){
+  // redraw + rebuild panel
+  draw();
+  buildPanel();
+}
+function buildPanel(){
+  const p=document.getElementById('sidePanel');
+  if(S.mode===0) buildPanelBuilder(p);
+  else if(S.mode===1) buildPanelConfig(p);
+  else buildPanelQuiz(p);
+}
+
+// mode tabs
+const tabsEl=document.getElementById('modeTabs');
+MODES.forEach((m,i)=>{
+  const b=document.createElement('button'); b.className='mtab'+(i===0?' active':'');
+  b.textContent=m; b.dataset.mode=i;
+  b.onclick=()=>{
+    S.mode=i;
+    document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('active',+t.dataset.mode===i));
+    buildPanel();
+    draw();
+  };
+  tabsEl.appendChild(b);
+});
+
+function draw2(){ draw(); } // alias
+
+// keyboard
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'&&S.Z<86){S.Z++;syncZ();}
+  if(e.key==='ArrowLeft'&&S.Z>1){S.Z--;syncZ();}
+  if(e.key==='r'||e.key==='R'){S.Z=8;syncZ();}
+});
+window.addEventListener('resize',()=>{setupCanvas(cv);draw();});
+
+// ============================================================
+// Electron dragging — grasp an electron and feel the forces
+// ============================================================
+function canvasPos(e){ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+function hitElectron(px,py){
+  let best=null, bd=15;
+  for(const e of S.electrons){ const d=Math.hypot(e.x-px, e.y-py); if(d<bd){ bd=d; best=e; } }
+  return best;
+}
+cv.addEventListener('mousedown', e=>{
+  const p=canvasPos(e); const hit=hitElectron(p.x,p.y);
+  if(hit){
+    S.drag={idx:hit.idx, j:hit.j, spin:hit.spin, x:p.x, y:p.y, hx:hit.x, hy:hit.y};
+    cv.style.cursor='grabbing'; draw(); updateIEReadout(); e.preventDefault();
+  }
+});
+window.addEventListener('mousemove', e=>{
+  if(!S.drag){ const p=canvasPos(e); cv.style.cursor = hitElectron(p.x,p.y) ? 'grab' : 'default'; return; }
+  const p=canvasPos(e);
+  S.drag.x=Math.max(10, Math.min(cv.clientWidth-10,  p.x));
+  S.drag.y=Math.max(10, Math.min(cv.clientHeight-10, p.y));
+  draw(); updateIEReadout();
+});
+window.addEventListener('mouseup', ()=>{ if(S.drag){ S.drag=null; cv.style.cursor='default'; draw(); updateIEReadout(); } });
+
+// init
+buildPanel();
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ionic Equations — Particle Interaction Model</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body{margin:0;overflow:hidden;background:#ECEFF1;font-family:'Segoe UI',Tahoma,sans-serif;user-select:none;}
+        #canvas-container{position:absolute;inset:0;z-index:1;}
+        #ui-layer{position:absolute;top:10px;left:10px;z-index:10;background:rgba(255,255,255,.96);
+            padding:14px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.12);width:352px;
+            border:1px solid #e2e8f0;max-height:96vh;overflow-y:auto;}
+        .btn{transition:all .15s;cursor:pointer;}
+        .btn:active{transform:scale(.98);}
+        .scene-btn{text-align:left;padding:7px 9px;margin-bottom:4px;border-radius:8px;
+            border:1.5px solid #cbd5e1;background:#f8fafc;font-size:12.5px;}
+        .scene-btn:hover{background:#f1f5f9;}
+        .scene-btn.active{background:#E0F2FE;border-color:#0284C7;}
+        .legend-item{display:flex;align-items:center;margin-bottom:3px;font-size:12px;color:#334155;}
+        .dot{width:13px;height:13px;border-radius:50%;margin-right:7px;display:inline-block;
+            border:1px solid rgba(0,0,0,.15);}
+        input[type=range]{-webkit-appearance:none;width:100%;background:transparent;}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;height:16px;width:16px;
+            border-radius:50%;background:#0284C7;cursor:pointer;margin-top:-6px;}
+        input[type=range]::-webkit-slider-runnable-track{height:4px;background:#cbd5e1;border-radius:2px;cursor:pointer;}
+        .eqbtn{padding:5px 10px;border-radius:14px;border:1.5px solid #cbd5e1;background:#fff;
+            font-size:11.5px;font-weight:700;cursor:pointer;color:#475569;}
+        .eqbtn.active{background:#0A455D;color:#fff;border-color:#0A455D;}
+    </style>
+</head>
+<body>
+<div id="ui-layer">
+    <h2 class="text-base font-bold text-slate-800 mb-1">Ionic Equations — see the ions react</h2>
+    <div class="text-[11px] text-slate-500 mb-3 bg-slate-50 p-2 rounded border border-slate-200 leading-snug">
+        Pour two solutions in. The ions spread out and <b>hover in the middle of the solution</b> — the reaction happens there.
+        Watch which ions <b>react</b> and which just <b>watch</b> (spectator ions).
+        Every ion is one labelled sphere, 2× the textbook dot size.
+    </div>
+
+    <div class="text-[11px] font-bold text-slate-500 uppercase mb-1">Reaction</div>
+    <div id="sceneBtns" class="mb-3"></div>
+
+    <div class="mb-3 bg-slate-50 p-3 rounded border border-slate-200" id="ctrlBox"></div>
+
+    <div class="mb-3">
+        <div class="text-[11px] font-bold text-slate-500 uppercase mb-1">Equation view</div>
+        <div class="flex gap-1.5">
+            <button class="eqbtn active" id="eq0">Molecular</button>
+            <button class="eqbtn" id="eq1">Full ionic</button>
+            <button class="eqbtn" id="eq2">Net ionic</button>
+        </div>
+    </div>
+
+    <button id="btn-reset" class="btn w-full bg-slate-100 hover:bg-slate-200 text-slate-600 py-2 rounded font-bold border border-slate-200 text-sm mb-3">↻ Reset beaker</button>
+
+    <div class="border-t border-slate-200 pt-2">
+        <div class="text-[11px] font-bold text-slate-400 uppercase mb-1">Live counts</div>
+        <div id="legend" class="grid grid-cols-2 gap-x-3"></div>
+    </div>
+    <div id="note" class="text-xs text-slate-600 mt-3 bg-amber-50 border border-amber-200 rounded p-2 leading-snug">
+        Pick a reaction, then pour in both solutions.
+    </div>
+</div>
+<div id="canvas-container"><canvas id="simCanvas"></canvas></div>
+<script>
+'use strict';
+/* ==================== species (radius = 2× reference model) ==================== */
+const SPEC={
+  Ba :{r:26,col:'#C084FC',dark:'#6B21A8',lbl:'Ba',chg:'2+'},
+  Cl :{r:22,col:'#4ADE80',dark:'#15803D',lbl:'Cl',chg:'−'},
+  Na :{r:20,col:'#93C5FD',dark:'#1D4ED8',lbl:'Na',chg:'+'},
+  K  :{r:22,col:'#60A5FA',dark:'#1D4ED8',lbl:'K',chg:'+'},
+  Ag :{r:26,col:'#CBD5E1',dark:'#475569',lbl:'Ag',chg:'+'},
+  Br :{r:24,col:'#FDBA74',dark:'#C2410C',lbl:'Br',chg:'−'},
+  H  :{r:13,col:'#F87171',dark:'#B91C1C',lbl:'H',chg:'+'},
+  SO4:{r:36,col:'#FACC15',dark:'#A16207',lbl:'SO₄²⁻',fs:14},
+  NO3:{r:36,col:'#3B82F6',dark:'#1E40AF',lbl:'NO₃⁻',fs:15},
+  OH :{r:36,col:'#EF4444',dark:'#991B1B',lbl:'OH⁻',fs:16},
+  CO3:{r:36,col:'#2DD4BF',dark:'#0F766E',lbl:'CO₃²⁻',fs:14},
+  H2O:{r:30,lbl:'H₂O'},
+  Cl2:{r:34,lbl:'Cl₂'},
+  Br2:{r:32,lbl:'Br₂'},
+  CO2:{r:30,lbl:'CO₂'}
+};
+/* ==================== scenes ==================== */
+const SCENES=[
+ {k:'ba',name:'1 · Ba²⁺ + SO₄²⁻ (white ppt. · 4 reagent combos)',combo:'ba',
+  spectators:[],  // dynamic — depends on which two salts you pick
+  pair:[['Ba','SO4','BaSO4']],
+  legend:[['Ba','Ba²⁺ reacting'],['SO4','SO₄²⁻ reacting'],['BaSO4','BaSO₄(s) — the two ions locked together, sunk']],
+  note:'Ba²⁺ and SO₄²⁻ lock into a white BaSO₄ lattice. Change the two salts: the spectator ions change completely, but the net ionic equation NEVER does.'},
+ {k:'neu',name:'2 · Neutralisation (2×2 combos)',combo:true,
+  spectators:[],  // dynamic
+  pair:[['H','OH','H2O']],
+  legend:[['H','H⁺ reacting'],['OH','OH⁻ reacting'],['H2O','H₂O formed']],
+  note:'Whatever the acid or the base, the only real change is H⁺ + OH⁻ → H₂O. The other ions are spectators.'},
+ {k:'ag',name:'3 · NaCl + AgNO₃ (white ppt.)',
+  add:[{lbl:'Add NaCl(aq)',tag:'Na⁺ + Cl⁻',ions:['Na','Cl'],n:1,col:'bg-blue-100 text-blue-800 border-blue-200'},
+       {lbl:'Add AgNO₃(aq)',tag:'Ag⁺ + NO₃⁻',ions:['Ag','NO3'],n:1,col:'bg-gray-100 text-gray-700 border-gray-300'}],
+  spectators:['Na','NO3'],
+  pair:[['Ag','Cl','AgCl']],
+  eqMol:['NaCl(aq)',' + ','AgNO₃(aq)',' → ','AgCl(s)',' + ','NaNO₃(aq)'],
+  eqFull:[['Na⁺(aq)',1],[' + '],['Cl⁻(aq)',0],[' + '],['Ag⁺(aq)',0],[' + '],['NO₃⁻(aq)',1],[' → '],['AgCl(s)',0],[' + '],['Na⁺(aq)',1],[' + '],['NO₃⁻(aq)',1]],
+  eqNet:['Ag⁺(aq)',' + ','Cl⁻(aq)',' → ','AgCl(s)'],
+  legend:[['Na','Na⁺ spectator'],['Cl','Cl⁻ reacting'],['Ag','Ag⁺ reacting'],['NO3','NO₃⁻ spectator'],['AgCl','AgCl(s) — the two ions locked together, sunk']],
+  note:'Ag⁺ grabs Cl⁻ to build the white AgCl lattice. Na⁺ and NO₃⁻ stay dissolved — spectators.'},
+ {k:'co3',name:'4 · Na₂CO₃ + HCl (CO₂ gas)',
+  add:[{lbl:'Add Na₂CO₃(aq)',tag:'2Na⁺ + CO₃²⁻',ions:['Na','Na','CO3'],n:1,col:'bg-teal-100 text-teal-800 border-teal-200'},
+       {lbl:'Add HCl(aq)',tag:'H⁺ + Cl⁻',ions:['H','Cl'],n:2,col:'bg-red-100 text-red-800 border-red-200'}],
+  spectators:['Na','Cl'],
+  pair:[['CO3','H','CO2'],['CO3','H','CO2']],   // two H⁺ attack the same CO₃²⁻
+  eqMol:['Na₂CO₃(aq)',' + ','2HCl(aq)',' → ','2NaCl(aq)',' + ','H₂O(l)',' + ','CO₂(g)'],
+  eqFull:[['2Na⁺(aq)',1],[' + '],['CO₃²⁻(aq)',0],[' + '],['2H⁺(aq)',0],[' + '],['2Cl⁻(aq)',1],[' → '],
+          ['2Na⁺(aq)',1],[' + '],['2Cl⁻(aq)',1],[' + '],['H₂O(l)',0],[' + '],['CO₂(g)',0]],
+  eqNet:['CO₃²⁻(aq)',' + ','2H⁺(aq)',' → ','H₂O(l)',' + ','CO₂(g)'],
+  legend:[['Na','Na⁺ spectator'],['Cl','Cl⁻ spectator'],['CO3','CO₃²⁻ reacting'],['H','H⁺ reacting'],['CO2','CO₂(g) — bubbles escape upward']],
+  note:'Two H⁺ ions pull CO₃²⁻ apart: 2H⁺ + CO₃²⁻ → H₂O + CO₂. The CO₂ bubbles fizz up and escape as a gas — Na⁺ and Cl⁻ are spectators.'},
+ {k:'disp',name:'5 · Cl₂ + 2KBr (orange Br₂)',
+  add:[{lbl:'Add KBr(aq)',tag:'K⁺ + Br⁻',ions:['K','Br'],n:1,col:'bg-orange-100 text-orange-800 border-orange-200'},
+       {lbl:'Bubble Cl₂(g) in',tag:'Cl₂ molecules',ions:['Cl2'],n:1,col:'bg-lime-100 text-lime-800 border-lime-300'}],
+  spectators:['K'],
+  pair:[['Cl2','Br','eT']],
+  eqMol:['Cl₂(g)',' + ','2KBr(aq)',' → ','2KCl(aq)',' + ','Br₂(l)'],
+  eqFull:[['Cl₂(g)',0],[' + '],['2K⁺(aq)',1],[' + '],['2Br⁻(aq)',0],[' → '],['2K⁺(aq)',1],[' + '],['2Cl⁻(aq)',0],[' + '],['Br₂(l)',0]],
+  eqNet:['Cl₂(g)',' + ','2Br⁻(aq)',' → ','2Cl⁻(aq)',' + ','Br₂(l)'],
+  legend:[['K','K⁺ spectator'],['Br','Br⁻ reacting'],['Cl2','Cl₂(g) added'],['Cl','Cl⁻ formed'],['Br2','Br₂(l) formed']],
+  note:'Each Cl₂ molecule pulls one electron from two Br⁻ ions (they become Cl⁻). The Br atoms pair up into orange Br₂ droplets.'}
+];
+/* ===== precipitation reagents: the Ba²⁺ source and the SO₄²⁻ source can be swapped =====
+   All four combinations give the SAME net ionic equation — only the spectator ions change.
+   (This is the whole teaching point: spectator ions carry no chemical information.) */
+const BA_SALTS={
+  BaCl2 :{name:'BaCl₂', anions:['Cl','Cl'], anLbl:'Cl⁻',  spec:'Cl', n:2, col:'bg-purple-100 text-purple-800 border-purple-200'},
+  BaNO32:{name:'Ba(NO₃)₂', anions:['NO3','NO3'], anLbl:'NO₃⁻', spec:'NO3', n:2, col:'bg-slate-100 text-slate-700 border-slate-300'}
+};
+const SO4_SALTS={
+  Na2SO4:{name:'Na₂SO₄', cations:['Na','Na'], catLbl:'Na⁺', spec:'Na', n:2, col:'bg-yellow-100 text-yellow-800 border-yellow-200'},
+  K2SO4 :{name:'K₂SO₄',  cations:['K','K'],  catLbl:'K⁺',  spec:'K',  n:2, col:'bg-blue-100 text-blue-800 border-blue-200'}
+};
+function baFormula(baSalt, so4Salt){        // e.g. BaCl₂ + Na₂SO₄ → 2NaCl + BaSO₄(s)
+  const ba=BA_SALTS[baSalt], so=SO4_SALTS[so4Salt];
+  const product=ba.spec==='Cl' ? (so.spec==='Na'?'NaCl':'KCl') : (so.spec==='Na'?'NaNO₃':'KNO₃');
+  return [ba.name+'(aq)',' + ',so.name+'(aq)',' → ','2'+product+'(aq)',' + ','BaSO₄(s)'];
+}
+function baFull(baSalt, so4Salt){           // complete ionic, with spectator flags
+  const ba=BA_SALTS[baSalt], so=SO4_SALTS[so4Salt];
+  return [['Ba²⁺(aq)',0],[' + '],['2'+ba.anLbl+'(aq)',1],[' + '],
+          ['2'+so.catLbl+'(aq)',1],[' + '],['SO₄²⁻(aq)',0],[' → '],
+          ['BaSO₄(s)',0],[' + '],
+          ['2'+ba.anLbl+'(aq)',1],[' + '],['2'+so.catLbl+'(aq)',1]];
+}
+function baEquation(baSalt, so4Salt){
+  const ba=BA_SALTS[baSalt], so=SO4_SALTS[so4Salt];
+  return {
+    eqMol :baFormula(baSalt,so4Salt),
+    eqFull:baFull(baSalt,so4Salt),
+    // identical for every combination — that is the point
+    eqNet :['Ba²⁺(aq)',' + ','SO₄²⁻(aq)',' → ','BaSO₄(s)'],
+    specA :ba.spec, specB:so.spec,
+    unitsA:['Ba',...ba.anions], unitsB:[...so.cations,'SO4'],
+    labelA:'Add '+ba.name+'(aq)', labelB:'Add '+so.name+'(aq)',
+    tagA:'Ba²⁺ + 2'+ba.anLbl, tagB:'2'+so.catLbl+' + SO₄²⁻',
+    colA:ba.col, colB:so.col
+  };
+}
+
+const NEUTRAL={  HCl :{name:'HCl',units:[['H','Cl']],eqMol:['HCl(aq)',' + ','NaOH(aq)',' → ','NaCl(aq)',' + ','H₂O(l)']},
+  H2SO4:{name:'H₂SO₄',units:[['H','H','SO4']],eqMol:['H₂SO₄(aq)',' + ','2NaOH(aq)',' → ','Na₂SO₄(aq)',' + ','2H₂O(l)']}
+};
+const BASES={
+  NaOH:{name:'NaOH',units:[['Na','OH']],spec:'Na'},
+  KOH :{name:'KOH',units:[['K','OH']],spec:'K'}
+};
+function neuEquation(acid,base){
+  const stoich=acid==='H2SO4'?2:1;
+  const specA=(acid==='H2SO4'?'SO₄²⁻':'Cl⁻'), specB=(base==='NaOH'?'Na⁺':'K⁺');
+  const sat=acid==='H2SO4'?'SO4':(acid==='HCl'?'Cl':'');
+  const a=NEUTRAL[acid], b=BASES[base];
+  const salt=(acid==='H2SO4'?(base==='NaOH'?'Na₂SO₄':'K₂SO₄'):(base==='NaOH'?'NaCl':'KCl'));
+  const naq=acid==='H2SO4'?stoich:1;
+  const molM=(acid==='H2SO4'?a.eqMol.map(t=>t.replace('NaOH',b.name).replace('Na₂SO₄',salt).replace('2NaOH','2'+b.name)):a.eqMol.map(t=>t.replace('NaOH',b.name).replace('NaCl',salt)));
+  const full=[[(stoich>1?'2H⁺(aq)':'H⁺(aq)'),0],[' + '],[(acid==='H2SO4'?'SO₄²⁻(aq)':'Cl⁻(aq)'),1],[' + '],
+              [(stoich>1?'2'+(base==='NaOH'?'Na⁺':'K⁺')+'(aq)':(base==='NaOH'?'Na⁺(aq)':'K⁺(aq)')),1],[' + '],
+              [(stoich>1?'2OH⁻(aq)':'OH⁻(aq)'),0],[' → '],
+              [(stoich>1?'2'+(base==='NaOH'?'Na⁺':'K⁺')+'(aq)':(base==='NaOH'?'Na⁺(aq)':'K⁺(aq)')),1],[' + '],
+              [(acid==='H2SO4'?'SO₄²⁻(aq)':'Cl⁻(aq)'),1],[' + '],[(stoich>1?'2H₂O(l)':'H₂O(l)'),0]];
+  return {eqMol:molM,eqFull:full,eqNet:['H⁺(aq)',' + ','OH⁻(aq)',' → ','H₂O(l)'],specA:acid==='H2SO4'?'SO4':'Cl',specB:base==='NaOH'?'Na':'K',stoich};
+}
+
+/* ==================== state ==================== */
+let scene=SCENES[0], acid='HCl', base='NaOH', eqView=0;
+let baSalt='BaCl2', so4Salt='Na2SO4';
+let entities=[], effects=[];
+let addAmt=[4,4];
+let width,height, beaker={x:0,y:0,w:0,h:0,wall:6,waterY:0};
+const canvas=document.getElementById('simCanvas'), ctx=canvas.getContext('2d');
+let T=0, noteTimer=0;
+
+/* ==================== canvas / beaker ==================== */
+function resize(){
+  width=window.innerWidth; height=window.innerHeight;
+  canvas.width=width; canvas.height=height;
+  const bW=Math.min(660,width*0.62), bH=Math.min(620,height*0.72);
+  const cx0=400+(width-400)/2;
+  beaker={w:bW,h:bH,x:cx0-bW/2,y:height-bH-40,wall:6,waterY:height-bH-40+bH*0.18};
+  const f=beaker.y+beaker.h-beaker.wall;
+  beaker.bandTop=beaker.waterY+(f-beaker.waterY)*0.22; // mid-solution hover band
+  beaker.bandBot=beaker.waterY+(f-beaker.waterY)*0.72;
+}
+window.addEventListener('resize',resize);
+
+/* ==================== particle ==================== */
+class P{
+  constructor(x,y,type){
+    this.x=x; this.y=y; this.type=type; this.del=false; this.fixed=false;
+    this.vx=(Math.random()-0.5)*1.2; this.vy=1+Math.random();
+    this.brGot=0; this.hits=0; this.gas=false; this.spec=false;
+    this.sink=!(type==='H2O'||type==='Br2'||type==='BaSO4'||type==='AgCl'||type==='CO2'); this.sunk=false;
+    this.suspendY=beaker.bandTop+Math.random()*(beaker.bandBot-beaker.bandTop);
+    this.pAng=0;
+    if(type==='BaSO4'||type==='AgCl'){ this.aT=type==='BaSO4'?'Ba':'Ag'; this.bT=type==='BaSO4'?'SO4':'Cl';
+      this.vx=(Math.random()-0.5)*0.4; this.vy=1.5; }
+    if(type==='H2O'){ this.vx=(Math.random()-0.5); this.vy=(Math.random()-0.5); this.ang=Math.random()*7; this.rot=(Math.random()-0.5)*0.04; }
+    if(type==='CO2'){ this.vx=(Math.random()-0.5)*0.6; this.vy=-1.6; this.esc=false; this.wob=Math.random()*6; }
+    if(type==='Cl2'){ this.vx=(Math.random()-0.5)*0.8; this.vy=0.6; }
+    if(type==='Br2'){ this.vx=0; this.vy=1.2; }
+  }
+  update(){
+    if(this.fixed)return;
+    const l=beaker.x+beaker.wall, r=beaker.x+beaker.w-beaker.wall, f=beaker.y+beaker.h-beaker.wall;
+    const sp=SPEC[this.type];
+    const rad=sp?sp.r:30;
+    if(this.type==='BaSO4'||this.type==='AgCl'){
+      // the paired precipitate sinks as ONE locked unit and settles on the bottom
+      const off=SPEC[this.aT].r+SPEC[this.bT].r-3;
+      const halfW=off*0.5+Math.max(SPEC[this.aT].r,SPEC[this.bT].r); // horizontal half-extent when lying flat
+      const bed=beaker.y+beaker.h-beaker.wall-Math.max(SPEC[this.aT].r,SPEC[this.bT].r)-8;
+      const m=halfW+4;
+      if(!this.fixed){
+        this.vx*=0.99;
+        this.vy=Math.min(2.4,this.vy+0.06);
+        this.x+=this.vx; this.y+=this.vy;
+        if(this.x<l+m){this.x=l+m;this.vx=Math.abs(this.vx)*0.4;}
+        if(this.x>r-m){this.x=r-m;this.vx=-Math.abs(this.vx)*0.4;}
+        if(this.y>=bed){
+          this.y=bed; this.fixed=true; this.vx=0; this.vy=0;
+          this.pAng=0;                                  // lie FLAT, side by side on the floor
+          this.x=clampX(this.x,l+m,r-m);
+        }
+      }else{
+        this.wob=(this.wob||0)+0.05;
+        this.x=clampX(this.x+(Math.random()-0.5)*0.24,l+m,r-m);
+        this.y=bed+Math.sin(this.wob)*0.6;
+      }
+      return;
+    }
+    if(this.type==='CO2'){ // gas: rises through the liquid, breaks the surface, drifts up and fades out
+      this.esc=true;
+      this.wob=(this.wob||0)+0.14;
+      const above=this.y<beaker.waterY;          // already bubbled out of the liquid
+      this.vy=above?-0.55:-0.85;                 // slow, watchable rise — students should see it leave
+      // start fading only once it is clearly airborne, and finish before the rim
+      if(above){
+        const airSpan=Math.max(1,beaker.waterY-beaker.y-24);
+        const climbed=beaker.waterY-this.y;
+        this.fade=Math.max(0,1-climbed/airSpan);
+      }
+      this.vx=this.vx*0.94+(Math.random()-0.5)*(above?0.22:0.34);
+      this.x+=this.vx+Math.sin(this.wob)*(above?0.30:0.45);
+      this.y+=this.vy;
+      if(this.x<l+rad){this.x=l+rad;this.vx=Math.abs(this.vx);}
+      if(this.x>r-rad){this.x=r-rad;this.vx=-Math.abs(this.vx);}
+      // fades out in the clear air above the liquid, then is removed (gas escaped)
+      if(this.fade<=0){ this.del=true; }
+      return;
+    }
+    if(this.type==='Br2'){
+      if(this.y>f-rad){this.y=f-rad;this.fixed=true;this.vx=0;this.vy=0;
+        this.x=clampX(this.x,l+rad,r-rad);}
+      if(this.x<l+rad)this.x=l+rad; if(this.x>r-rad)this.x=r-rad;
+      return;
+    }
+    if(this.sink){ // ions hover in the mid-solution band — reactions happen there
+      if(!this.sunk){
+        this.vy=1.5;
+        this.vx=this.vx*0.98+(Math.random()-0.5)*0.3;
+        this.x+=this.vx; this.y+=this.vy;
+        if(this.x<l+rad){this.x=l+rad;this.vx=0;}
+        if(this.x>r-rad){this.x=r-rad;this.vx=0;}
+        if(this.y>=this.suspendY){this.y=this.suspendY;this.sunk=true;this.vy=0;}
+      }else{
+        this.vx=this.vx*0.96+(Math.random()-0.5)*0.32;
+        this.vy=this.vy*0.96+(Math.random()-0.5)*0.22;
+        this.x+=this.vx; this.y+=this.vy;
+        if(this.x<l+rad){this.x=l+rad;this.vx=Math.abs(this.vx)*0.5;}
+        if(this.x>r-rad){this.x=r-rad;this.vx=-Math.abs(this.vx)*0.5;}
+        if(this.y<beaker.bandTop){this.y=beaker.bandTop;this.vy=Math.abs(this.vy)*0.5;}
+        if(this.y>beaker.bandBot){this.y=beaker.bandBot;this.vy=-Math.abs(this.vy)*0.5;}
+      }
+      return;
+    }
+    this.x+=this.vx; this.y+=this.vy;
+    if(this.x<l+rad){this.x=l+rad;this.vx*=-1;}
+    if(this.x>r-rad){this.x=r-rad;this.vx*=-1;}
+    if(this.y>f-rad){this.y=f-rad;this.vy*=-1;}
+    if(this.y<beaker.waterY+rad)this.y=beaker.waterY+rad;
+    if(this.y>beaker.waterY){
+      this.vx*=0.97;this.vy*=0.97;
+      this.vx+=(Math.random()-0.5)*0.35; this.vy+=(Math.random()-0.5)*0.35;
+    }
+  }
+}
+function clampX(x,l,r){return Math.max(l,Math.min(r,x));}
+
+/* ==================== drawing helpers ==================== */
+function hex2rgb(h){ const n=parseInt(h.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function shade(hex,f){
+  const c=hex2rgb(hex);
+  const mix=v=> f>0 ? v+(255-v)*f : v*(1+f);
+  return 'rgb('+(mix(c[0])|0)+','+(mix(c[1])|0)+','+(mix(c[2])|0)+')';
+}
+/* polished 3-D ball (style matched to the CO2 model): contact shadow + light-source
+   shading + slim translucent outline + labelled text with drop shadow + twin highlights */
+function sphere(c,x,y,r,col,dark,lbl,fs){
+  c.save(); c.globalAlpha=0.20; c.fillStyle='#43556A';
+  c.beginPath(); c.ellipse(x,y+r*0.98,r*0.94,r*0.29,0,0,7); c.fill();
+  c.restore();
+  const g=c.createRadialGradient(x-r*0.36,y-r*0.42,r*0.08,x,y,r*1.06);
+  g.addColorStop(0,shade(col,0.62));
+  g.addColorStop(0.45,shade(col,0.10));
+  g.addColorStop(1,shade(col,-0.45));
+  c.fillStyle=g; c.beginPath(); c.arc(x,y,r,0,7); c.fill();
+  c.strokeStyle='rgba(12,22,32,.22)'; c.lineWidth=Math.max(0.8,r*0.085);
+  c.beginPath(); c.arc(x,y,r-0.4,0,7); c.stroke();
+  if(lbl){
+    c.font='800 '+(fs||Math.max(9,Math.round(r*1.02)))+'px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillStyle='rgba(0,0,0,.26)'; c.fillText(lbl,x+0.7,y+r*0.15+0.7);
+    c.fillStyle='#fff'; c.fillText(lbl,x,y+r*0.15);
+  }
+  c.save();
+  c.globalAlpha=0.88; c.fillStyle='#fff';
+  c.beginPath(); c.ellipse(x-r*0.33,y-r*0.40,r*0.31,r*0.20,-0.6,0,7); c.fill();
+  c.globalAlpha=0.24;
+  c.beginPath(); c.ellipse(x+r*0.32,y+r*0.36,r*0.15,r*0.09,-0.6,0,7); c.fill();
+  c.restore();
+}
+function chargeBadge(c,x,y,txt,col){
+  c.fillStyle=col; c.beginPath(); c.arc(x,y,11,0,7); c.fill();
+  c.strokeStyle='#fff'; c.lineWidth=1.6; c.stroke();
+  c.fillStyle='#fff'; c.font='bold 11px "Segoe UI",sans-serif';
+  c.textAlign='center'; c.textBaseline='middle'; c.fillText(txt,x,y+0.5);
+}
+function drawParticle(c,e){
+  const isPrecip=(e.type==='BaSO4'||e.type==='AgCl');
+  const sp=SPEC[e.type]; if(!sp&&!isPrecip)return;
+  const specFade=e.spec&&eqView>0;
+  const gasFade=(e.type==='CO2'&&e.fade!=null)?Math.max(0,e.fade):1;
+  c.save(); if(specFade)c.globalAlpha=0.38; else if(gasFade<1)c.globalAlpha=gasFade;
+  const x=e.x,y=e.y;
+  if(e.type==='H2O'){
+    c.save(); c.translate(x,y); c.rotate(e.ang||0);
+    sphere(c,0,0,18,'#38BDF8','#0369A1','O',12);
+    sphere(c,-17,-13,9,'#E0F2FE','#7DD3FC','H',8);
+    sphere(c,17,-13,9,'#E0F2FE','#7DD3FC','H',8);
+    c.restore();
+    c.fillStyle='#075985'; c.font='bold 11px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle'; c.fillText('H₂O',x,y+26);
+  }else if(e.type==='Cl2'){
+    sphere(c,x-14,y,19,'#A3E635','#4D7C0F','Cl',12);
+    sphere(c,x+14,y,19,'#A3E635','#4D7C0F','Cl',12);
+    c.fillStyle='#3F6212'; c.font='bold 11px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.fillText('Cl₂',x,y+34);
+  }else if(e.type==='CO2'){
+    // gas bubble — soft halo so it reads as "escaped into the air", not a dissolved ion
+    const above=e.y<beaker.waterY;
+    c.save();
+    c.fillStyle=above?'rgba(45,212,191,.16)':'rgba(45,212,191,.26)';
+    c.beginPath(); c.arc(x,y,sp.r+6,0,7); c.fill();
+    c.restore();
+    sphere(c,x,y,sp.r,'#5EEAD4','#0F766E','CO₂',15);
+    if(above){
+      c.fillStyle='#0F766E'; c.font='bold 10px "Segoe UI",sans-serif';
+      c.textAlign='center'; c.textBaseline='middle'; c.fillText('↑ gas',x,y-24);
+    }
+  }else if(e.type==='Br2'){
+    const g=c.createRadialGradient(x-10,y-12,6,x,y,30);
+    g.addColorStop(0,'#FDBA74'); g.addColorStop(0.6,'#FB923C'); g.addColorStop(1,'#C2410C');
+    c.fillStyle=g; c.beginPath(); c.ellipse(x,y,32,26,0,0,7); c.fill();
+    c.strokeStyle='#9A3412'; c.lineWidth=1.6; c.stroke();
+    c.fillStyle='#7C2D12'; c.font='bold 12px "Segoe UI",sans-serif';
+    c.textAlign='center'; c.textBaseline='middle'; c.fillText('Br₂',x,y+0.5);
+  }else if(e.type==='BaSO4'||e.type==='AgCl'){
+    // the precipitate KEEPS the two ions visible, locked together as one particle
+    const aS=SPEC[e.aT], bS=SPEC[e.bT];
+    const off=aS.r+bS.r-3;
+    const ang=(e.pAng==null?0:e.pAng);
+    const ca=Math.cos(ang), sa=Math.sin(ang);
+    const ax=x-ca*off*0.5, ay=y-sa*off*0.5;
+    const bx=x+ca*off*0.5, by=y+sa*off*0.5;
+    // solid-dark rounded capsule behind the pair → reads as ONE lump of solid, and
+    // keeps the two spheres high-contrast against the pale blue water
+    c.save();
+    c.fillStyle='rgba(51,65,85,.30)';
+    c.strokeStyle='rgba(15,23,42,.55)'; c.lineWidth=2.4;
+    const cxc=(ax+bx)/2, cyc=(ay+by)/2;
+    const capW=off+Math.max(aS.r,bS.r)*2+7, capH=Math.max(aS.r,bS.r)*2+7;
+    c.translate(cxc,cyc); c.rotate(ang);
+    c.beginPath(); c.roundRect(-capW/2,-capH/2,capW,capH,capH*0.42); c.fill(); c.stroke();
+    c.restore();
+    c.strokeStyle='rgba(15,23,42,.42)'; c.lineWidth=Math.max(2.5,off*0.09);
+    c.beginPath(); c.moveTo(ax,ay); c.lineTo(bx,by); c.stroke();
+    sphere(c,ax,ay,aS.r,aS.col,aS.dark,aS.lbl,aS.fs);
+    sphere(c,bx,by,bS.r,bS.col,bS.dark,bS.lbl,bS.fs);
+  }else{
+    sphere(c,x,y,sp.r,sp.col,sp.dark,sp.lbl,sp.fs||Math.max(12,sp.r*0.5));
+    if(sp.chg)chargeBadge(c,x+sp.r*0.66,y-sp.r*0.66,sp.chg,sp.chg.includes('−')?'#2563EB':'#DC2626');
+  }
+  if(specFade){ // dashed spectator halo
+    const hr=(sp?sp.r:Math.max(SPEC[e.aT].r,SPEC[e.bT].r)+28)+7;
+    c.setLineDash([4,4]); c.strokeStyle='#94A3B8'; c.lineWidth=1.5;
+    c.beginPath(); c.arc(x,y,hr,0,7); c.stroke(); c.setLineDash([]);
+  }
+  c.restore();
+}
+function drawBeaker(){
+  const b=beaker;
+  ctx.fillStyle='rgba(178,235,242,0.35)';
+  ctx.fillRect(b.x+b.wall,b.waterY,b.w-2*b.wall,b.y+b.h-b.wall-b.waterY);
+  // water surface line
+  ctx.strokeStyle='rgba(2,132,199,0.35)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(b.x+b.wall,b.waterY); ctx.lineTo(b.x+b.w-b.wall,b.waterY); ctx.stroke();
+  // Br₂ orange pool tint
+  const brCount=entities.filter(e=>e.type==='Br2'&&e.fixed).length;
+  if(brCount>0){
+    ctx.fillStyle='rgba(251,146,60,'+Math.min(0.5,brCount*0.12)+')';
+    ctx.fillRect(b.x+b.wall,b.y+b.h-b.wall-16*brCount,b.w-2*b.wall,16*brCount);
+  }
+  // glass
+  ctx.lineWidth=b.wall; ctx.strokeStyle='rgba(150,150,150,0.55)'; ctx.lineJoin='round';
+  ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.x,b.y+b.h); ctx.lineTo(b.x+b.w,b.y+b.h); ctx.lineTo(b.x+b.w,b.y); ctx.stroke();
+  ctx.strokeStyle='rgba(150,150,150,0.7)'; ctx.lineWidth=2;
+  for(let i=1;i<4;i++){const yy=b.y+b.h-(i*b.h/4);
+    ctx.beginPath();ctx.moveTo(b.x+10,yy);ctx.lineTo(b.x+34,yy);ctx.stroke();}
+  // spout
+  ctx.beginPath(); ctx.moveTo(b.x,b.y); ctx.lineTo(b.x-12,b.y-16); ctx.stroke();
+}
+/* ==================== equations strip ==================== */
+function currentEq(){
+  if(scene.k==='neu'){ const n=neuEquation(acid,base);
+    return [n.eqMol,n.eqFull,n.eqNet]; }
+  if(scene.k==='ba'){ const b=baEquation(baSalt,so4Salt);
+    return [b.eqMol,b.eqFull,b.eqNet]; }
+  return [scene.eqMol,scene.eqFull,scene.eqNet];
+}
+function drawEquations(){
+  const eqs=currentEq(), eq=eqs[eqView];
+  const names=['MOLECULAR EQUATION','COMPLETE IONIC EQUATION','NET IONIC EQUATION'];
+  const x0=410, y0=34;
+  ctx.fillStyle='#0A455D'; ctx.font='bold 11px "Segoe UI",sans-serif'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillText(names[eqView],x0,y0-12);
+  ctx.font='bold 17px "Segoe UI",sans-serif';
+  let x=x0;
+  eq.forEach(tk=>{
+    const txt=Array.isArray(tk)?tk[0]:tk;
+    const isSpec=Array.isArray(tk)&&tk[1]===1;
+    ctx.fillStyle=isSpec?'#94A3B8':'#1F3A5F';
+    const w=ctx.measureText(txt).width;
+    ctx.fillText(txt,x,y0);
+    if(isSpec){ // strike-through
+      ctx.strokeStyle='#DC2626'; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.moveTo(x-2,y0-5); ctx.lineTo(x+w+2,y0-5); ctx.stroke();
+    }
+    x+=w;
+  });
+  if(eqView===1){
+    ctx.fillStyle='#B45309'; ctx.font='11px "Segoe UI",sans-serif';
+    ctx.fillText('red strikethrough = spectator ions (identical on both sides — they cancel)',x0,y0+22);
+  }
+  if(eqView===2&&scene.k==='neu'){
+    ctx.fillStyle='#B45309'; ctx.font='11px "Segoe UI",sans-serif';
+    ctx.fillText('same net ionic equation for ALL four acid–base combinations!',x0,y0+22);
+  }
+  if(eqView===2&&scene.k==='ba'){
+    ctx.fillStyle='#B45309'; ctx.font='11px "Segoe UI",sans-serif';
+    const sp=baEquation(baSalt,so4Salt);
+    ctx.fillText('unchanged for all 4 salt combinations — '+(sp.specA==='Cl'?'Cl⁻':'NO₃⁻')+' and '+(sp.specB==='Na'?'Na⁺':'K⁺')+' do nothing',x0,y0+22);
+  }
+}
+/* ==================== effects & notes ==================== */
+function pop(txt,x,y,col){ effects.push({txt,x,y,col:col||'#334155',life:1}); }
+function setNote(html){ document.getElementById('note').innerHTML=html; }
+/* ==================== simulation ==================== */
+function pairsOf(t){ return scene.pair.filter(p=>(p[0]===t)||(p[1]===t)); }
+function simStep(){
+  // attraction & reaction for configured pairs
+  scene.pair.forEach(pr=>{
+    const [aT,bT,prod]=pr;
+    const As=entities.filter(e=>e.type===aT&&!e.del);
+    const Bs=entities.filter(e=>e.type===bT&&!e.del);
+    As.forEach(A=>{
+      Bs.forEach(B=>{
+        if(A.del||B.del)return;
+        const dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy)||1;
+        if(d<260){ // strong directed seek (damping would kill a weak force)
+          A.vx=A.vx*0.85+dx/d*0.55; A.vy=A.vy*0.85+dy/d*0.55;
+          B.vx=B.vx*0.85-dx/d*0.55; B.vy=B.vy*0.85-dy/d*0.55; }
+        if(d<(SPEC[aT].r+SPEC[bT].r)*0.85){
+          if(prod==='eT'){ // electron transfer: Cl2 + Br⁻
+            B.del=true; A.brGot++;
+            pop('e⁻ →',B.x,B.y-26,'#7C3AED');
+            const c1=new P(B.x,B.y,'Cl'); entities.push(c1);
+            if(A.brGot>=2){ A.del=true;
+              entities.push(new P(A.x,A.y,'Br2'));
+              // 2 Br⁻ already yielded 2 Cl⁻ (one each) — stoichiometry: Cl₂+2Br⁻→2Cl⁻+Br₂
+              pop('Br₂ formed!',A.x,A.y-40,'#C2410C');
+              setNote('Two Br⁻ each lost one electron to Cl₂ → 2Cl⁻ + orange Br₂(l). K⁺ is a spectator. Net: Cl₂ + 2Br⁻ → 2Cl⁻ + Br₂');
+            }
+          }else if(prod==='CO2'){ // 2 H⁺ + CO₃²⁻ → H₂O + CO₂  (needs TWO protons)
+            if(!A.hGot) A.hGot=0;
+            A.hGot++;
+            B.del=true;
+            pop('H⁺ →',B.x,B.y-26,'#B91C1C');
+            if(A.hGot>=2){ A.del=true;
+              const mx=A.x, my=A.y;
+              entities.push(new P(mx-16,my-6,'H2O'));
+              entities.push(new P(mx+16,my-6,'CO2'));
+              pop('CO₂ ↑',mx+16,my-44,'#0F766E');
+              pop('H₂O',mx-16,my-40,'#0369A1');
+              if(noteTimer<=0){
+                setNote('Two H⁺ ions strip CO₃²⁻ apart → H₂O + CO₂. The CO₂ fizzes up and leaves as a gas. Net ionic: CO₃²⁻ + 2H⁺ → H₂O + CO₂ — Na⁺ and Cl⁻ are spectators.');
+                noteTimer=3; }
+            }
+          }else if(prod==='H2O'){
+            A.del=true;B.del=true;
+            entities.push(new P((A.x+B.x)/2,(A.y+B.y)/2,'H2O'));
+            if(noteTimer<=0){ const LBL={Cl:'Cl⁻',SO4:'SO₄²⁻',Na:'Na⁺',K:'K⁺'};
+              setNote('H⁺ + OH⁻ → H₂O. The '+LBL[neuEquation(acid,base).specA]+' and '+LBL[neuEquation(acid,base).specB]+' ions never react — spectators!');
+              noteTimer=3; }
+          }else{ // precipitate lattice block
+            A.del=true;B.del=true;
+            entities.push(new P((A.x+B.x)/2,(A.y+B.y)/2,prod));
+            pop('↓',A.x,A.y-30,'#B91C1C');
+            if(noteTimer<=0){ setNote(scene.k==='ba'?'Ba²⁺ + SO₄²⁻ → BaSO₄(s). Na⁺ and Cl⁻ are spectators — unchanged.':'Ag⁺ + Cl⁻ → AgCl(s). Na⁺ and NO₃⁻ are spectators — unchanged.');
+              noteTimer=3; }
+          }
+        }
+      });
+    });
+  });
+  entities=entities.filter(e=>!e.del);
+  // keep hovering ions from stacking on the same spot (2D separation)
+  const sunkP=entities.filter(e=>e.sink&&e.sunk);
+  for(let i=0;i<sunkP.length;i++)for(let j=i+1;j<sunkP.length;j++){
+    const A=sunkP[i],B=sunkP[j],min=(SPEC[A.type].r+SPEC[B.type].r)*0.8;
+    const dx=B.x-A.x,dy=B.y-A.y,d=Math.hypot(dx,dy)||1;
+    if(d<min){
+      const push=(min-d)*0.08;
+      A.x-=dx/d*push; A.y-=dy/d*push; B.x+=dx/d*push; B.y+=dy/d*push;
+      [A,B].forEach(e=>{
+        const rr=SPEC[e.type].r;
+        e.x=Math.max(beaker.x+beaker.wall+rr,Math.min(beaker.x+beaker.w-beaker.wall-rr,e.x));
+        e.y=Math.max(beaker.bandTop,Math.min(beaker.bandBot,e.y));
+      });
+    }
+  }
+  // precipitate units spread along the beaker floor (they are much wider than one ion)
+  const floorP=entities.filter(e=>(e.type==='BaSO4'||e.type==='AgCl'));
+  for(let i=0;i<floorP.length;i++)for(let j=i+1;j<floorP.length;j++){
+    const A=floorP[i],B=floorP[j],min=SPEC[A.aT].r+SPEC[A.bT].r-6;
+    const dx=B.x-A.x;
+    if(Math.abs(dx)<min){
+      const push=(min-Math.abs(dx))*0.10*(dx>=0?1:-1);
+      A.x-=push; B.x+=push;
+      A.x=Math.max(beaker.x+beaker.wall+52,Math.min(beaker.x+beaker.w-beaker.wall-52,A.x));
+      B.x=Math.max(beaker.x+beaker.wall+52,Math.min(beaker.x+beaker.w-beaker.wall-52,B.x));
+    }
+  }
+  // mark spectators (for fading)
+  const spec=scene.k==='neu'?[neuEquation(acid,base).specA,neuEquation(acid,base).specB]
+            :scene.k==='ba' ?[baEquation(baSalt,so4Salt).specA,baEquation(baSalt,so4Salt).specB]
+            :scene.spectators;
+  entities.forEach(e=>{ e.spec=spec.includes(e.type); });
+  if(noteTimer>0)noteTimer-=1/60;
+  // effects
+  effects.forEach(f=>{f.life-=0.012; f.y-=0.4;});
+  effects=effects.filter(f=>f.life>0);
+}
+function draw(){
+  ctx.clearRect(0,0,width,height);
+  ctx.fillStyle='#ECEFF1'; ctx.fillRect(0,0,width,height);
+  drawBeaker();
+  // clip everything inside the beaker cavity so precipitate pairs never spill over the glass
+  ctx.save();
+  ctx.beginPath(); ctx.rect(beaker.x+2,beaker.y,beaker.w-4,beaker.h-beaker.wall+2); ctx.clip();
+  entities.filter(e=>e.spec).forEach(e=>{e.update();drawParticle(ctx,e);});
+  entities.filter(e=>!e.spec).forEach(e=>{e.update();drawParticle(ctx,e);});
+  ctx.restore();
+  effects.forEach(f=>{ ctx.save();ctx.globalAlpha=Math.max(0,f.life);
+    ctx.fillStyle=f.col;ctx.font='bold 15px "Segoe UI",sans-serif';ctx.textAlign='center';
+    ctx.fillText(f.txt,f.x,f.y);ctx.restore(); });
+  simStep();
+  drawEquations();
+  updateLegend();
+  requestAnimationFrame(draw);
+}
+/* ==================== pouring ==================== */
+function pour(btnIdx){
+  const b=beaker, n=addAmt[btnIdx];
+  let ions;
+  if(scene.k==='neu'){
+    ions = btnIdx===0 ? NEUTRAL[acid].units : BASES[base].units;
+  }else if(scene.k==='ba'){
+    const be=baEquation(baSalt,so4Salt);
+    ions=[btnIdx===0?be.unitsA:be.unitsB];
+  }else{
+    ions=[scene.add[btnIdx].ions];
+  }
+  for(let i=0;i<n;i++){
+    const grp=ions[0];
+    grp.forEach((t,j)=>{
+      const x=b.x+b.wall+30+Math.random()*(b.w-2*b.wall-60);
+      const y=b.waterY-40-Math.random()*60-j*10;
+      entities.push(new P(x,y,t));
+    });
+  }
+  const name=scene.k==='neu'?(btnIdx===0?NEUTRAL[acid].name:BASES[base].name)
+            :scene.k==='ba'?(btnIdx===0?baEquation(baSalt,so4Salt).labelA:baEquation(baSalt,so4Salt).labelB).replace('Add ','')
+            :scene.add[btnIdx].lbl.replace('Add ','');
+  setNote('Poured '+n+' formula unit'+(n>1?'s':'')+' of <b>'+name+'</b>. The ions dissolve and hover in the middle of the solution — the reaction happens there.');
+}
+/* ==================== legend / stats ==================== */
+function updateLegend(){
+  const counts={};
+  entities.forEach(e=>{counts[e.type]=(counts[e.type]||0)+1;});
+  const box=document.getElementById('legend');
+  if(box.dataset.scene!==sceneKey()){
+    box.dataset.scene=sceneKey(); box.innerHTML='';
+    const items=scene.k==='neu'
+      ?[['H','H⁺ (acid)'],['OH','OH⁻ (base)'],['H2O','H₂O formed'],
+        [acid==='H2SO4'?'SO4':'Cl',acid==='H2SO4'?'SO₄²⁻ spectator':'Cl⁻ spectator'],
+        [base==='NaOH'?'Na':'K',base==='NaOH'?'Na⁺ spectator':'K⁺ spectator']]
+      :scene.k==='ba'
+      ?(()=>{ const be=baEquation(baSalt,so4Salt);
+          return [['Ba','Ba²⁺ reacting'],['SO4','SO₄²⁻ reacting'],
+                  [be.specA, be.specA==='Cl'?'Cl⁻ spectator':'NO₃⁻ spectator'],
+                  [be.specB, be.specB==='Na'?'Na⁺ spectator':'K⁺ spectator'],
+                  ['BaSO4','BaSO₄(s) — locked together, sunk']]; })()
+      :scene.legend;
+    items.forEach(([key,lbl])=>{
+      const sp=SPEC[key];
+      const d=document.createElement('div'); d.className='legend-item';
+      let dot;
+      if(key==='BaSO4') dot='<span class="dot" style="background:#C084FC"></span><span class="dot" style="background:#FACC15;margin-left:-6px"></span>';
+      else if(key==='AgCl') dot='<span class="dot" style="background:#CBD5E1"></span><span class="dot" style="background:#4ADE80;margin-left:-6px"></span>';
+      else if(key==='H2O') dot='<span class="dot" style="background:#38BDF8"></span>';
+      else if(key==='Cl2') dot='<span class="dot" style="background:#A3E635"></span>';
+      else if(key==='Br2') dot='<span class="dot" style="background:#FB923C"></span>';
+      else if(key==='CO2') dot='<span class="dot" style="background:#5EEAD4"></span>';
+      else dot='<span class="dot" style="background:'+sp.col+'"></span>';
+      d.innerHTML=dot+' '+lbl+' <span class="ml-auto font-mono font-bold text-slate-500" data-count="'+key+'">0</span>';
+      box.appendChild(d);
+    });
+  }
+  box.querySelectorAll('[data-count]').forEach(el=>{
+    const k=el.dataset.count;
+    el.textContent=counts[k]||0;
+  });
+}
+function sceneKey(){ return scene.k+'-'+acid+'-'+base; }
+/* ==================== UI build ==================== */
+function buildScenes(){
+  const box=document.getElementById('sceneBtns'); box.innerHTML='';
+  SCENES.forEach((s,i)=>{
+    const b=document.createElement('button');
+    b.className='scene-btn w-full block'+(s===scene?' active':'');
+    b.innerHTML='<span class="font-bold block text-slate-700">'+sceneTitle(s)+'</span>';
+    b.onclick=()=>{ scene=s; addAmt=s.k==='disp'?[4,2]:(s.k==='co3'?[4,8]:[4,4]); resetAll(); buildScenes(); buildCtrl(); };
+    box.appendChild(b);
+  });
+}
+/* the Ba²⁺ scene title follows whichever two salts are selected */
+function sceneTitle(s){
+  if(s.k!=='ba')return s.name;
+  return '1 · '+BA_SALTS[baSalt].name+' + '+SO4_SALTS[so4Salt].name+' (white ppt.)';
+}
+function syncSceneName(){ buildScenes(); }
+function buildCtrl(){
+  const box=document.getElementById('ctrlBox'); box.innerHTML='';
+  if(scene.k==='neu'){
+    box.innerHTML='<div class="text-[11px] font-bold text-slate-700 mb-2">Pick the acid &amp; the base (2×2 = 4 reactions, one net ionic equation)</div>'+
+      '<div class="grid grid-cols-2 gap-2 mb-3">'+
+      '<div><div class="text-[11px] text-slate-500 mb-1">Acid</div><div id="acidBtns" class="flex gap-1"></div></div>'+
+      '<div><div class="text-[11px] text-slate-500 mb-1">Base</div><div id="baseBtns" class="flex gap-1"></div></div></div>';
+    [['HCl','HCl'],['H2SO4','H₂SO₄']].forEach(([k,lbl])=>{
+      const b=document.createElement('button');
+      b.className='eqbtn'+(acid===k?' active':''); b.textContent=lbl;
+      b.onclick=()=>{acid=k;buildCtrl();resetAll();};
+      document.getElementById('acidBtns').appendChild(b);
+    });
+    [['NaOH','NaOH'],['KOH','KOH']].forEach(([k,lbl])=>{
+      const b=document.createElement('button');
+      b.className='eqbtn'+(base===k?' active':''); b.textContent=lbl;
+      b.onclick=()=>{base=k;buildCtrl();resetAll();};
+      document.getElementById('baseBtns').appendChild(b);
+    });
+  }
+  if(scene.k==='ba'){
+    box.innerHTML='<div class="text-[11px] font-bold text-slate-700 mb-1">Swap the TWO salts — 4 combinations</div>'+
+      '<div class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 mb-3 leading-snug">'+
+      'Every combination gives the <b>SAME</b> net ionic equation. Only the spectator ions change — proof they do nothing.</div>'+
+      '<div class="grid grid-cols-2 gap-2 mb-3">'+
+      '<div><div class="text-[11px] text-slate-500 mb-1">Ba²⁺ source</div><div id="baBtns" class="flex flex-wrap gap-1"></div></div>'+
+      '<div><div class="text-[11px] text-slate-500 mb-1">SO₄²⁻ source</div><div id="so4Btns" class="flex flex-wrap gap-1"></div></div></div>';
+    Object.keys(BA_SALTS).forEach(k=>{
+      const b=document.createElement('button');
+      b.className='eqbtn'+(baSalt===k?' active':''); b.textContent=BA_SALTS[k].name;
+      b.onclick=()=>{baSalt=k;buildCtrl();resetAll();if(scene.k==='ba')syncSceneName();};
+      document.getElementById('baBtns').appendChild(b);
+    });
+    Object.keys(SO4_SALTS).forEach(k=>{
+      const b=document.createElement('button');
+      b.className='eqbtn'+(so4Salt===k?' active':''); b.textContent=SO4_SALTS[k].name;
+      b.onclick=()=>{so4Salt=k;buildCtrl();resetAll();if(scene.k==='ba')syncSceneName();};
+      document.getElementById('so4Btns').appendChild(b);
+    });
+  }
+  const be=scene.k==='ba'?baEquation(baSalt,so4Salt):null;
+  const labels=scene.k==='neu'
+    ?['Add '+NEUTRAL[acid].name+'(aq)','Add '+BASES[base].name+'(aq)']
+    :(scene.k==='ba'?[be.labelA,be.labelB]:[scene.add[0].lbl,scene.add[1].lbl]);
+  const cols=scene.k==='neu'
+    ?['bg-red-100 hover:bg-red-200 text-red-800 border-red-200','bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200']
+    :(scene.k==='ba'?[be.colA,be.colB]:[scene.add[0].col,scene.add[1].col]);
+  for(let i=0;i<2;i++){
+    const wrap=document.createElement('div'); wrap.className='mb-3';
+    wrap.innerHTML='<div class="flex justify-between text-xs text-slate-600 mb-1">'+
+      '<span class="font-bold">'+labels[i]+'</span><span class="font-bold text-sky-600" id="amt'+i+'">'+addAmt[i]+' units</span></div>'+
+      '<input type="range" min="1" max="8" value="'+addAmt[i]+'" id="sl'+i+'">';
+    box.appendChild(wrap);
+    wrap.querySelector('#sl'+i).oninput=function(){ addAmt[i]=+this.value;
+      document.getElementById('amt'+i).textContent=this.value+' units'; };
+    const btn=document.createElement('button');
+    btn.className='btn w-full py-2 rounded font-bold border shadow-sm text-sm mb-2 '+cols[i];
+    btn.textContent=labels[i];
+    btn.onclick=()=>pour(i);
+    box.appendChild(btn);
+  }
+}
+document.getElementById('eq0').onclick=function(){eqView=0;eqActive();};
+document.getElementById('eq1').onclick=function(){eqView=1;eqActive();};
+document.getElementById('eq2').onclick=function(){eqView=2;eqActive();};
+function eqActive(){[0,1,2].forEach(i=>document.getElementById('eq'+i).classList.toggle('active',i===eqView));}
+document.getElementById('btn-reset').onclick=resetAll;
+function resetAll(){ entities=[]; effects=[]; setNote(scene.note); }
+
+/* ==================== init ==================== */
+resize(); buildScenes(); buildCtrl(); setNote(SCENES[0].note); draw();
+</script>
+</body>
+</html>

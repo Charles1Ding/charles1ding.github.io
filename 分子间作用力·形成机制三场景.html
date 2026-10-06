@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Intermolecular Forces — 形成机制三场景演示</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;background:#EEF2F6;color:#1F2937;padding:18px 14px}
+  .wrap{max-width:1020px;margin:0 auto}
+  .head{background:#0A455D;border-radius:12px 12px 0 0;padding:14px 20px 12px;color:#fff;display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+  .head h1{font-size:19px;font-weight:700;letter-spacing:.3px}
+  .head .en{font-size:12px;opacity:.75;margin-left:4px}
+  .tabs{margin-left:auto;display:flex;gap:6px}
+  .tab{border:1px solid rgba(255,255,255,.35);background:transparent;color:#DDE9EF;font-size:12.5px;padding:6px 12px;border-radius:8px;cursor:pointer;transition:.15s}
+  .tab.on{background:#4699AA;border-color:#4699AA;color:#fff;font-weight:600}
+  .stage{background:#fff;border-left:1px solid #C9D6DE;border-right:1px solid #C9D6DE;padding:8px;display:flex;justify-content:center}
+  canvas{border-radius:8px;display:block}
+  .ctrl{background:#fff;border-left:1px solid #C9D6DE;border-right:1px solid #C9D6DE;padding:8px 16px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn{border:1px solid #B9C7D1;background:#F4F8FA;color:#0A455D;font-size:13px;font-weight:600;padding:7px 16px;border-radius:8px;cursor:pointer}
+  .btn.primary{background:#0A455D;border-color:#0A455D;color:#fff}
+  .btn:hover{filter:brightness(1.06)}
+  .hint{font-size:12px;color:#64748B;margin-left:auto}
+  .cap{background:#fff;border:1px solid #C9D6DE;border-radius:0 0 12px 12px;padding:14px 20px 16px;box-shadow:0 2px 10px rgba(10,69,93,.08)}
+  .capTop{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .capStep{font-size:12px;font-weight:700;color:#4699AA;letter-spacing:.5px}
+  .capT{font-size:16.5px;font-weight:700;color:#0A455D}
+  .force{margin-left:auto;font-size:12px;font-weight:700;color:#7C3AED;background:#F3EEFB;border:1px solid #DDD0F5;border-radius:20px;padding:3px 12px}
+  .capD{margin-top:7px;font-size:13.5px;line-height:1.65;color:#334155;max-width:860px}
+  .dots{display:flex;gap:8px;margin-top:12px}
+  .dot{width:26px;height:8px;border-radius:4px;background:#D7E1E8;cursor:pointer;border:none;transition:.15s}
+  .dot.on{background:#4699AA}
+  .legend{display:flex;gap:14px;margin-top:10px;flex-wrap:wrap;font-size:12px;color:#475569}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:13px;height:13px;border-radius:50%;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+  .arl{width:22px;height:0;border-top:3px solid #BE123C;display:inline-block;border-radius:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <h1>分子间作用力 · 形成机制<span class="en">Intermolecular Forces — how each attraction forms, step by step</span></h1>
+    <div class="tabs">
+      <button class="tab on" id="t0">1 · Dipole–dipole</button>
+      <button class="tab" id="t1">2 · Ion–dipole (NaCl dissolving)</button>
+      <button class="tab" id="t2">3 · Dipole–induced dipole</button>
+    </div>
+  </div>
+  <div class="stage"><canvas id="cv"></canvas></div>
+  <div class="ctrl">
+    <button class="btn primary" id="playBtn">⏸ Pause</button>
+    <button class="btn" id="replayBtn">↺ Replay</button>
+    <span class="hint">点击下方步骤条可跳转到任意步骤 · 动画自动循环播放</span>
+  </div>
+  <div class="cap">
+    <div class="capTop"><span class="capStep" id="capStep">STEP 1/4</span><span class="capT" id="capT"></span><span class="force" id="forceTag"></span></div>
+    <div class="capD" id="capD"></div>
+    <div class="dots" id="dots"></div>
+    <div class="legend">
+      <span><span class="sw" style="background:#F8FAFC"></span>H (δ+)</span>
+      <span><span class="sw" style="background:#15803D"></span>Cl</span>
+      <span><span class="sw" style="background:#DC2626"></span>O (δ−)</span>
+      <span><span class="sw" style="background:#7C3AED"></span>Na⁺</span>
+      <span><span class="sw" style="background:#16A34A"></span>Cl⁻</span>
+      <span><span class="arl"></span>dipole arrow (+ → −)</span>
+    </div>
+  </div>
+</div>
+<script>
+'use strict';
+/* ================= canvas & state ================= */
+const CV=document.getElementById('cv'), ctx=CV.getContext('2d');
+const W=960, H=560;                      // logical design space
+const S={scene:0, phase:0, playing:true, last:0, lastK:-1};
+const RATE=[1/18, 1/23, 1/19];           // full cycle seconds per scene
+const PK=Math.SQRT2;                     // particle scale: area ×2 → linear ×1.41 (labels stay original size)
+const C_PLUS='#B91C1C', C_MINUS='#1D4ED8', DIP='#BE123C', IONDIP='#7C3AED', NETP='#9333EA';
+
+function fit(){
+  const DPR=window.devicePixelRatio||1;
+  const w=CV.parentElement.clientWidth-16;
+  const k=Math.max(0.45, Math.min(1.12, w/W));
+  CV.width=Math.round(W*k*DPR); CV.height=Math.round(H*k*DPR);
+  CV.style.width=(W*k)+'px'; CV.style.height=(H*k)+'px';
+  ctx.setTransform(DPR*k,0,0,DPR*k,0,0);
+  draw();
+}
+window.addEventListener('resize',fit);
+
+/* ================= steps data ================= */
+const STEPS=[
+ {force:'Dipole–dipole force (HCl dissolving in water)', steps:[
+   ['Polar HCl meets polar H₂O','Both are permanent dipoles: in HCl the shared electron pair shifts toward Cl (H = δ+, Cl = δ−); in H₂O the O pulls electron density (O = δ−, the two H = δ+). The red arrows point from + to −.'],
+   ['Water approaches, randomly oriented','Four water molecules drift near HCl. At random orientations the attractions and repulsions on each molecule cancel out — no net force yet.'],
+   ['Dipoles rotate into alignment','Each water rotates so that its O(δ−) end faces the H(δ+) of HCl, and its H(δ+) ends face the Cl(δ−). This dipole–dipole orientation maximises the attraction.'],
+   ['HCl dissolves','Aligned dipoles now attract strongly: O(δ−)···H(δ+) and H(δ+)···Cl(δ−). The water molecules hold HCl in the solvent and the cluster sinks in — HCl dissolves through dipole–dipole forces.']]},
+ {force:'Ion–dipole force (NaCl dissolving in water)', steps:[
+   ['NaCl lattice + water dipoles','Na⁺ and Cl⁻ ions are locked in a rigid electrostatic lattice. Every water molecule is a strong permanent dipole: O carries δ− (and two lone pairs), the two H carry δ+.'],
+   ['Water orients around each ion','The δ− oxygen end of each water turns toward a Na⁺; the δ+ hydrogen ends turn toward a Cl⁻. Each water rotates to maximise attraction to its ion — this orientation is the ion–dipole interaction forming.'],
+   ['Ion–dipole attraction pulls surface ions','Several oriented waters now pull together on each surface ion. Where this combined ion–dipole attraction beats the lattice forces holding the ion in place, the ion starts to leave.'],
+   ['Ions leave the lattice — hydration shells','Surface Na⁺ and Cl⁻ are pulled off the lattice. Each becomes surrounded by water: O ends pointing in around Na⁺, H ends pointing in around Cl⁻ — a hydration shell.'],
+   ['Lattice dismantled — fully dissolved','As surface ions keep leaving, the lattice crumbles ion by ion. Every ion ends up hydrated in solution: dissolution is driven by ion–dipole forces.']]},
+ {force:'Dipole–induced dipole (CO₂ / O₂ in water)', steps:[
+   ['Nonpolar molecules — no dipole','CO₂ (like O₂) is symmetric: its shared electron pairs sit exactly halfway along each C=O bond, the two bond dipoles point opposite ways and cancel exactly. Net dipole = 0, so a water dipole has “nothing to grab” — at first.'],
+   ['Water induces a dipole','The approaching water brings its δ+ H side near CO₂. Those δ+ charges pull CO₂’s <b>shared electron pairs</b>: all four pairs slide toward the water side (gray shift arrows), so the near O end becomes δ− and the far C–O end δ+ — an induced dipole (dashed arrow).'],
+   ['Weak dipole–induced dipole attraction','The induced dipole attracts the permanent water dipole — but the induced charges are tiny, so this force is far weaker than dipole–dipole or ion–dipole.'],
+   ['Weak force → low solubility','Only a nonpolar molecule that happens to arrive very close to the surface gets briefly held; most escape back to the gas phase. That is why CO₂ and O₂ dissolve only slightly in water.']]}
+];
+
+/* ================= helpers ================= */
+function clamp(t){return t<0?0:t>1?1:t;}
+function ease(t){t=clamp(t);return t*t*(3-2*t);}
+function seg(p,a,b){return ease((p-a)/(b-a));}
+function lerp(a,b,t){return a+(b-a)*t;}
+function lerpAngle(a,b,t){let d=(b-a)%(Math.PI*2);if(d>Math.PI)d-=Math.PI*2;if(d<-Math.PI)d+=Math.PI*2;return a+d*t;}
+function pt(x,y,a,d){return {x:x+Math.cos(a)*d, y:y+Math.sin(a)*d};}
+function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function arrow(c,x1,y1,x2,y2,col,w,hs,alpha){
+  hs=hs||9; if(alpha!==undefined&&alpha<=0.01) return;
+  c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;
+  c.strokeStyle=col;c.fillStyle=col;c.lineWidth=w||3;
+  c.beginPath();c.moveTo(x1,y1);c.lineTo(x2-ux*hs*0.7,y2-uy*hs*0.7);c.stroke();
+  c.beginPath();c.moveTo(x2,y2);
+  c.lineTo(x2-ux*hs-uy*hs*0.5, y2-uy*hs+ux*hs*0.5);
+  c.lineTo(x2-ux*hs+uy*hs*0.5, y2-uy*hs-ux*hs*0.5);
+  c.closePath();c.fill();c.restore();
+}
+function pill(c,txt,x,y,fg,bg,fs,alpha){
+  fs=fs||13; c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  c.font='bold '+fs+'px system-ui,Segoe UI,sans-serif';
+  const w=c.measureText(txt).width+16;
+  c.fillStyle=bg;c.strokeStyle=fg;c.lineWidth=1.4;
+  rr(c,x-w/2,y-11,w,22,11);c.fill();c.stroke();
+  c.fillStyle=fg;c.textAlign='center';c.textBaseline='middle';
+  c.fillText(txt,x,y+0.5);c.restore();
+}
+function chip(c,txt,x,y,fg,bg,alpha){
+  c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  c.font='bold 14px system-ui,Segoe UI,sans-serif';
+  const w=c.measureText(txt).width+26;
+  c.fillStyle=bg;c.strokeStyle=fg;c.lineWidth=1.5;
+  rr(c,x-w/2,y-14,w,28,14);c.fill();c.stroke();
+  c.fillStyle=fg;c.textAlign='center';c.textBaseline='middle';
+  c.fillText(txt,x,y+0.5);c.restore();
+}
+function dot(c,x,y,r,col){c.fillStyle=col;c.beginPath();c.arc(x,y,r,0,7);c.fill();}
+
+/* ================= molecule painters ================= */
+/* water: O at (x,y); rot = bisector direction from O toward the H side */
+function drawWater(c,x,y,rot,s,o){
+  o=o||{}; const bl=30*s;
+  const h1=pt(x,y,rot-0.912,bl), h2=pt(x,y,rot+0.912,bl);   // 104.5°
+  const back=rot+Math.PI;
+  // bonds
+  c.strokeStyle='#475569';c.lineWidth=2.4*s;
+  c.beginPath();c.moveTo(x,y);c.lineTo(h1.x,h1.y);c.moveTo(x,y);c.lineTo(h2.x,h2.y);c.stroke();
+  // lone pairs (two, on the O side opposite the H's)
+  if(o.lp!==false){
+    [-0.55,0.55].forEach(function(d){const p2=pt(x,y,back+d*0.9,17*s);dot(c,p2.x,p2.y,2.6*s,'#1D4ED8');});
+  }
+  // O
+  c.fillStyle='#DC2626';c.strokeStyle='#991B1B';c.lineWidth=1.5;
+  c.beginPath();c.arc(x,y,13*s,0,7);c.fill();c.stroke();
+  c.fillStyle='#fff';c.font='bold '+(12*s)+'px system-ui,Segoe UI,sans-serif';c.textAlign='center';c.textBaseline='middle';
+  c.fillText('O',x,y+0.5);
+  // H's
+  [h1,h2].forEach(function(h){
+    c.fillStyle='#F8FAFC';c.strokeStyle='#94A3B8';c.lineWidth=1.4;
+    c.beginPath();c.arc(h.x,h.y,8.5*s,0,7);c.fill();c.stroke();
+    c.fillStyle='#334155';c.font='bold '+(10*s)+'px system-ui,Segoe UI,sans-serif';
+    c.fillText('H',h.x,h.y+0.5);
+  });
+  // partial charges
+  if(o.delta){
+    const po=pt(x,y,back+0.5,29*s);   // offset sideways so the dipole arrow doesn't pierce the pill
+    pill(c,'δ−',po.x,po.y,C_MINUS,'#E6EEFB',12.5*s,o.dA);
+    [h1,h2].forEach(function(h){const p2=pt(h.x,h.y,rot,14*s);pill(c,'δ+',p2.x,p2.y,C_PLUS,'#FDE8E8',11.5*s,o.dA);});
+  }
+  // net dipole arrow (+ → −, i.e. from H side through O)
+  if(o.dip){
+    const a1=pt(x,y,rot,18*s), a2=pt(x,y,back,36*s);
+    arrow(c,a1.x,a1.y,a2.x,a2.y,DIP,3,8,o.pA);
+  }
+}
+/* HCl: rot = dipole direction (+ → −), H at the back, Cl at the front */
+function drawHCl(c,x,y,rot,s,o){
+  o=o||{}; const L=62*s;
+  const h=pt(x,y,rot+Math.PI,L*0.46), cl=pt(x,y,rot,L*0.54);
+  c.save(); if(o.alpha!==undefined)c.globalAlpha=o.alpha;
+  c.strokeStyle='#475569';c.lineWidth=3*s;
+  c.beginPath();c.moveTo(h.x,h.y);c.lineTo(cl.x,cl.y);c.stroke();
+  // bonding electrons, biased toward Cl as eShift grows
+  const bias=lerp(0.5,0.66,o.eShift||0);
+  const em=pt(h.x,h.y,rot,L*bias);
+  const px=Math.cos(rot+Math.PI/2), py=Math.sin(rot+Math.PI/2);
+  dot(c,em.x+px*4.4,em.y+py*4.4,3*s,'#2563EB');
+  dot(c,em.x-px*4.4,em.y-py*4.4,3*s,'#2563EB');
+  // H
+  c.fillStyle='#F8FAFC';c.strokeStyle='#94A3B8';c.lineWidth=1.6;
+  c.beginPath();c.arc(h.x,h.y,11*s,0,7);c.fill();c.stroke();
+  c.fillStyle='#334155';c.font='bold '+(12*s)+'px system-ui,Segoe UI,sans-serif';c.textAlign='center';c.textBaseline='middle';
+  c.fillText('H',h.x,h.y+0.5);
+  // Cl
+  c.fillStyle='#15803D';c.strokeStyle='#14532D';c.lineWidth=1.6;
+  c.beginPath();c.arc(cl.x,cl.y,16*s,0,7);c.fill();c.stroke();
+  c.fillStyle='#fff';c.font='bold '+(12*s)+'px system-ui,Segoe UI,sans-serif';
+  c.fillText('Cl',cl.x,cl.y+0.5);
+  // partial charges
+  if(o.delta){
+    const p1=pt(h.x,h.y,rot+Math.PI,17*s), p2=pt(cl.x,cl.y,rot+0.6,24*s);
+    pill(c,'δ+',p1.x,p1.y,C_PLUS,'#FDE8E8',12*s,o.dA);
+    pill(c,'δ−',p2.x,p2.y,C_MINUS,'#E6EEFB',12*s,o.dA);
+  }
+  // dipole arrow
+  if(o.dip){
+    const a1=pt(x,y,rot+Math.PI,12*s), a2=pt(x,y,rot,L*0.86);
+    arrow(c,a1.x,a1.y,a2.x,a2.y,DIP,3,8,o.pA);
+  }
+  c.restore();
+}
+/* CO2: vertical axis; ind = induced-dipole amount; sdir = unit shift direction of the cloud */
+function drawCO2(c,x,y,s,ind,sdx,sdy){
+  const L=44*s, oy1=y-L, oy2=y+L;
+  // bonds (double lines)
+  c.strokeStyle='#475569';c.lineWidth=2.2*s;
+  [oy1,oy2].forEach(function(oy){
+    [-2.6,2.6].forEach(function(off){
+      c.beginPath();c.moveTo(x+off,y+ (oy<y?6:-6)*0);c.lineTo(x+off,oy+(oy<y?-6:6));c.stroke();
+    });
+  });
+  // electron cloud (shifts when induced)
+  const cx2=x+(sdx||0)*13*ind, cy2=y+(sdy||0)*13*ind;
+  c.save();c.globalAlpha=0.30+0.12*ind;
+  c.fillStyle='#60A5FA';
+  c.beginPath();c.ellipse(cx2,cy2,60*s,15*s,0,0,7);c.fill();c.restore();
+  // shared electron pairs: 2 per C=O double bond. Symmetric when ind=0;
+  // when water's δ+ H approaches, ALL pairs shift toward it (ind) → charges appear
+  const sh=16*ind*s, hasDir=(sdx||sdy);
+  [1,-1].forEach(function(sd){
+    [16*s,31*s].forEach(function(d){
+      const py0=y+sd*d;
+      const px=x+(sdx||0)*sh, py=py0+(sdy||0)*sh;
+      dot(c,px-4.4*s,py,3*s,'#2563EB');
+      dot(c,px+4.4*s,py,3*s,'#2563EB');
+    });
+  });
+  // ghost of the original (unshifted) pair position + displacement arrow on the near-water pair
+  if(ind>0.04 && hasDir){
+    const nearSd=(sdy>=0)?1:-1, py0=y+nearSd*31*s;
+    c.save();c.globalAlpha=ind*0.55;
+    c.setLineDash([3,3]);c.strokeStyle='#94A3B8';c.lineWidth=1.2;
+    c.beginPath();c.arc(x,py0,7*s,0,7);c.stroke();c.setLineDash([]);c.restore();
+    arrow(c,x-sdx*6,py0-sdy*6,x+sdx*(sh+8),py0+sdy*(sh+8),'#64748B',2,6,ind);
+  }
+  // O's
+  [oy1,oy2].forEach(function(oy){
+    c.fillStyle='#DC2626';c.strokeStyle='#991B1B';c.lineWidth=1.5;
+    c.beginPath();c.arc(x,oy,11.5*s,0,7);c.fill();c.stroke();
+    c.fillStyle='#fff';c.font='bold '+(11*s)+'px system-ui,Segoe UI,sans-serif';c.textAlign='center';c.textBaseline='middle';
+    c.fillText('O',x,oy+0.5);
+  });
+  c.fillStyle='#334155';c.font='bold '+(11*s)+'px system-ui,Segoe UI,sans-serif';
+  c.fillText('C',x,y+0.5);
+  // induced dipole: δ− on the shifted (near water) side, δ+ opposite, dashed purple arrow
+  if(ind>0.02){
+    const d=Math.atan2(sdy,sdx);
+    pill(c,'δ−',x+sdx*76*ind*s,y+sdy*76*ind*s,C_MINUS,'#E6EEFB',11.5*s,Math.min(1,ind*1.3));
+    pill(c,'δ+',x-sdx*70*ind*s,y-sdy*70*ind*s,C_PLUS,'#FDE8E8',11.5*s,Math.min(1,ind*1.3));
+    const a1=pt(x-sdx*20,y-sdy*20,d+Math.PI,0), a2=pt(x,y,d,66*s);
+    c.save();c.globalAlpha=ind;c.setLineDash([5,4]);
+    arrow(c,x-sdx*30,y-sdy*30,a2.x,a2.y,NETP,2.6,8,ind);
+    c.setLineDash([]);c.restore();
+  }
+}
+/* ions */
+function drawIon(c,x,y,na,alpha,r){
+  r=r||16;
+  c.save(); if(alpha!==undefined)c.globalAlpha=alpha;
+  c.fillStyle=na?'#7C3AED':'#16A34A';c.strokeStyle=na?'#5B21B6':'#15803D';c.lineWidth=1.8;
+  c.beginPath();c.arc(x,y,r,0,7);c.fill();c.stroke();
+  c.fillStyle='#fff';c.font='bold 12.5px system-ui,Segoe UI,sans-serif';c.textAlign='center';c.textBaseline='middle';
+  c.fillText(na?'Na⁺':'Cl⁻',x,y+0.5);c.restore();
+}
+
+/* ================= scene 1 : dipole–dipole (HCl dissolving in water) ================= */
+/* cluster: HCl + 4 waters; waters rotate to align then the whole cluster sinks into the solvent */
+const W1=[
+ {sx:655,sy:245,r0: 1.4, rf:0,     fx:618,fy:486},   // right of H(δ+): O faces HCl
+ {sx:305,sy:245,r0:-1.8, rf:0,     fx:342,fy:486},   // left of Cl(δ−): H ends face HCl
+ {sx:610,sy:140,r0: 2.4, rf:-0.72, fx:566,fy:398},   // upper-right
+ {sx:352,sy:338,r0: 0.7, rf:2.37,  fx:394,fy:398}    // lower-left
+];
+const HC0={x:480,y:240}, HC1={x:480,y:470};
+
+function scene1(p,T){
+  // water phase
+  ctx.fillStyle='rgba(147,197,253,0.22)';ctx.fillRect(0,448,W,H-448);
+  ctx.strokeStyle='#60A5FA';ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let x=0;x<=W;x+=8)ctx.lineTo(x,448+Math.sin(x*0.045+T*1.6)*2.4);
+  ctx.stroke();
+  ctx.fillStyle='rgba(59,130,246,0.5)';ctx.font='12.5px system-ui,Segoe UI,sans-serif';
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.fillText('aqueous phase →',18,472);
+
+  const dA=seg(p,0.03,0.14), pA=seg(p,0.14,0.24);
+  const rotK=seg(p,0.52,0.70);
+  const pull=seg(p,0.84,1.0);
+  const hx=lerp(HC0.x,HC1.x,pull), hy=lerp(HC0.y,HC1.y,pull);
+
+  // HCl (dipole + → − pointing left: Cl left, H right)
+  drawHCl(ctx,hx,hy,Math.PI,1.05*PK,{eShift:1,delta:true,dA:dA,dip:true,pA:pA});
+
+  // waters: drift → rotate into alignment → sink with HCl
+  W1.forEach(function(w,i){
+    const x=lerp(w.sx,w.fx,pull), y=lerp(w.sy,w.fy,pull);
+    const rot=lerpAngle(w.r0,w.rf,rotK);
+    drawWater(ctx,x,y,rot,0.92*PK,{delta:true,dA:Math.max(dA,0.5),lp:true,dip:i<2,pA:pA});
+    const tq=seg(p,0.52,0.60)*(1-seg(p,0.72,0.78));
+    if(tq>0.02){
+      ctx.save();ctx.globalAlpha=tq;
+      ctx.strokeStyle='#0A455D';ctx.lineWidth=2.2;
+      ctx.beginPath();ctx.arc(x,y,56,rot-1.1,rot-0.2);ctx.stroke();
+      const ap=pt(x,y,rot-0.2,56);
+      arrow(ctx,ap.x,ap.y,ap.x+Math.cos(rot+1.07)*9,ap.y+Math.sin(rot+1.07)*9,'#0A455D',2.2,6,tq);
+      ctx.restore();
+    }
+  });
+
+  // step 4: dipole–dipole attraction arrows
+  const aA=seg(p,0.74,0.82)*(1-seg(p,0.92,0.97));
+  if(aA>0.02){
+    W1.forEach(function(w){
+      const x=lerp(w.sx,w.fx,pull), y=lerp(w.sy,w.fy,pull);
+      const dx=hx-x, dy=hy-y, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
+      const mx=(x+hx)/2, my=(y+hy)/2, half=14;
+      arrow(ctx,mx-ux*half*2,my-uy*half*2,mx-ux*4,my-uy*4,'#0A455D',2.6,7,aA);
+      arrow(ctx,mx+ux*half*2,my+uy*half*2,mx+ux*4,my+uy*4,'#0A455D',2.6,7,aA);
+    });
+    pill(ctx,'dipole–dipole attraction',480,196,'#0A455D','#EAF3F8',13,aA);
+  }
+
+  const k=stepK(p,4);
+  const chips=['HCl and H₂O — both permanent dipoles','random orientation → forces cancel','O(δ−) → H(δ+) · H(δ+) → Cl(δ−)','HCl dissolves — dipole–dipole attraction'];
+  chip(ctx,chips[k],480,538,'#0A455D','#EAF3F8');
+}
+
+/* ================= scene 2 : ion–dipole (NaCl dissolving) ================= */
+const LAT=(function(){
+  const a=[],cols=4,rows=3,sp=68,cx=480,cy=414;
+  for(let r=0;r<rows;r++)for(let c2=0;c2<cols;c2++)
+    a.push({x:cx+(c2-(cols-1)/2)*sp, y:cy+(r-(rows-1)/2)*sp, na:(r+c2)%2===0});
+  return a;
+})();
+const NA_IDX=0, CL_IDX=7;                                   // corner Na⁺, edge Cl⁻
+const NA_DIRS=[-2.75,-2.0,-1.25], CL_DIRS=[-1.0,-0.35,0.35];
+const W_START=[{x:250,y:150,r:0.7},{x:430,y:112,r:-1.2},{x:610,y:150,r:2.4},
+               {x:775,y:205,r:1.1},{x:180,y:245,r:-0.4},{x:700,y:100,r:-2.0}];
+const NA_OUT={x:206,y:248}, CL_OUT={x:768,y:266};
+const HOUT=[-2.5,-1.57,-0.65];                              // hydration fan (outward-up)
+
+function scene2(p,T){
+  // background water tint
+  ctx.fillStyle='rgba(147,197,253,0.16)';ctx.fillRect(0,300,W,260);
+  ctx.fillStyle='rgba(59,130,246,0.35)';
+  ctx.font='12.5px system-ui,Segoe UI,sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.fillText('aqueous phase →',18,322);
+
+  const k2=seg(p,0.16,0.36), k4=seg(p,0.56,0.80), k5=seg(p,0.84,1.0);
+  const jA=seg(p,0.38,0.46)*(1-seg(p,0.56,0.62));           // lattice jitter during pull
+  const jit=Math.sin(T*26)*2.2*jA;
+
+  // --- waters assigned to ions ---
+  function waterState(i){
+    const st=W_START[i], toNa=i<3;
+    const ion=toNa?LAT[NA_IDX]:LAT[CL_IDX];
+    const dirs=toNa?NA_DIRS:CL_DIRS, dir=dirs[i%3];
+    const appr={x:ion.x+Math.cos(dir)*92, y:ion.y+Math.sin(dir)*92};
+    const out=toNa?NA_OUT:CL_OUT;
+    const fanR=toNa?74:94;                                    // Cl waters keep δ+ pills clear of the ion
+    const fan={x:out.x+Math.cos(HOUT[i%3])*fanR, y:out.y+Math.sin(HOUT[i%3])*fanR};
+    const posMove=toNa?seg(p,0.18,0.38):seg(p,0.20,0.40);    // scatter → approach
+    const posOut=k4;                                          // approach → hydration
+    let x,y;
+    if(posOut>0){ x=lerp(appr.x,fan.x,posOut); y=lerp(appr.y,fan.y,posOut); }
+    else { x=lerp(st.x,appr.x,posMove); y=lerp(st.y,appr.y,posMove); }
+    const r0=st.r, r1=toNa?Math.atan2(fan.y-out.y,fan.x-out.x):Math.atan2(ion.y-fan.y,ion.x-fan.x)+Math.PI;
+    // final rot: O faces ion for Na (H outward); H faces ion for Cl
+    const rFin=toNa?HOUT[i%3]:HOUT[i%3]+Math.PI;
+    const rMid=toNa?dir:dir+Math.PI;
+    const rot=lerpAngle(r0, posOut>0?rFin:rMid, posOut>0?posOut:k2);
+    return {x:x,y:y,rot:rot};
+  }
+  const WS=[0,1,2,3,4,5].map(waterState);
+
+  // --- ions: corner Na & edge Cl leave during k4 ---
+  const naPos={x:lerp(LAT[NA_IDX].x,NA_OUT.x,k4), y:lerp(LAT[NA_IDX].y,NA_OUT.y,k4)};
+  const clPos={x:lerp(LAT[CL_IDX].x,CL_OUT.x,k4), y:lerp(LAT[CL_IDX].y,CL_OUT.y,k4)};
+  const goneA=1-Math.max(k4*1.6-0.6,0);                      // lattice copy fades as ion leaves
+
+  // --- draw lattice ---
+  LAT.forEach(function(ion,idx){
+    if(idx===NA_IDX||idx===CL_IDX){
+      drawIon(ctx,ion.x+jit,ion.y+jit*0.6,ion.na,Math.max(0,goneA),16*PK);
+      return;
+    }
+    let dx=0,dy=0;
+    if(k5>0){
+      const d=Math.atan2(ion.y-414,ion.x-480);
+      dx=Math.cos(d)*16*k5; dy=Math.sin(d)*16*k5;
+    }
+    drawIon(ctx,ion.x+dx+jit*0.5,ion.y+dy+jit*0.4,ion.na,k5>0?1-0.45*k5:1,16*PK);
+  });
+
+  // --- ion–dipole attraction arrows (step 3) ---
+  const aA=seg(p,0.40,0.50)*(1-seg(p,0.60,0.66));
+  if(aA>0.02){
+    WS.forEach(function(ws,i){
+      const ion=i<3?naPos:clPos;
+      const dx=ion.x-ws.x, dy=ion.y-ws.y, L=Math.hypot(dx,dy)||1;
+      const mx=(ws.x+ion.x)/2, my=(ws.y+ion.y)/2;
+      const ux=dx/L, uy=dy/L, half=15;
+      arrow(ctx,mx-ux*half*2,my-uy*half*2,mx-ux*4,my-uy*4,IONDIP,2.6,7,aA);
+      arrow(ctx,mx+ux*half*2,my+uy*half*2,mx+ux*4,my+uy*4,IONDIP,2.6,7,aA);
+    });
+    pill(ctx,'ion–dipole attraction',480,190,IONDIP,'#F3EEFB',13,aA);
+  }
+
+  // --- hydration shells (step 4) ---
+  const sh=seg(p,0.68,0.78);
+  if(sh>0.02){
+    [naPos,clPos].forEach(function(io,ix){
+      ctx.save();ctx.globalAlpha=sh*0.85;
+      ctx.setLineDash([4,5]);ctx.strokeStyle=ix===0?'#7C3AED':'#16A34A';ctx.lineWidth=1.8;
+      ctx.beginPath();ctx.arc(io.x,io.y,ix===0?126:140,0,7);ctx.stroke();
+      ctx.setLineDash([]);ctx.restore();
+    });
+    pill(ctx,'hydration shell',NA_OUT.x,NA_OUT.y+104,IONDIP,'#F3EEFB',12,sh);
+    pill(ctx,'hydration shell',CL_OUT.x,CL_OUT.y+110,'#15803D','#E8F5EE',12,sh);
+  }
+
+  // --- draw leaving ions on top ---
+  drawIon(ctx,naPos.x,naPos.y,true,Math.min(1,k4*3+0.3),16*PK);
+  drawIon(ctx,clPos.x,clPos.y,false,Math.min(1,k4*3+0.3),16*PK);
+
+  // --- waters ---
+  WS.forEach(function(ws,i){
+    const isNa=i<3;
+    drawWater(ctx,ws.x,ws.y,ws.rot,0.92*PK,{delta:true,dA:1,lp:true,
+      dip:(i===0||i===3),pA:0.85});
+  });
+  // hover waters (background presence)
+  drawWater(ctx,486,128+Math.sin(T*1.3)*7,-0.4,0.8*PK,{delta:true,dA:0.55,lp:false});
+  drawWater(ctx,640,225+Math.cos(T*1.1)*6,0.5,0.7*PK,{delta:false,lp:false,dA:0});
+
+  const k=stepK(p,5);
+  const chips=['Na⁺ Cl⁻ lattice + polar H₂O','O(δ−) → Na⁺ · H(δ+) → Cl⁻','ion–dipole attraction pulls surface ions','ions leave → hydration shells','lattice dismantled → dissolved'];
+  chip(ctx,chips[k],480,538,'#0A455D','#EAF3F8');
+}
+
+/* ================= scene 3 : dipole–induced dipole ================= */
+function scene3(p,T){
+  // water phase
+  ctx.fillStyle='rgba(147,197,253,0.30)';ctx.fillRect(0,446,W,H-446);
+  ctx.strokeStyle='#60A5FA';ctx.lineWidth=2;
+  ctx.beginPath();
+  for(let x=0;x<=W;x+=8)ctx.lineTo(x,446+Math.sin(x*0.045+T*1.6)*2.4);
+  ctx.stroke();
+  ctx.fillStyle='rgba(59,130,246,0.5)';ctx.font='12.5px system-ui,Segoe UI,sans-serif';ctx.textAlign='left';
+  ctx.fillText('water (polar solvent)',18,470);
+
+  // main water: rotates its δ+ H side toward the CO₂
+  const wRot=lerpAngle(-0.5,-2.75,seg(p,0.12,0.42));
+  const wx=lerp(688,676,seg(p,0.58,0.74)), wy=lerp(478,470,seg(p,0.58,0.74));
+  drawWater(ctx,wx,wy,wRot,1.05*PK,{delta:true,dA:1,lp:true,dip:true,pA:1});
+
+  // other bulk waters
+  drawWater(ctx,552,508+Math.sin(T*1.2)*4,-1.7,0.85*PK,{delta:true,dA:0.5,lp:true,dip:false});
+  drawWater(ctx,776,506+Math.cos(T*1.4)*4,-2.3,0.85*PK,{delta:true,dA:0.5,lp:true,dip:false});
+  drawWater(ctx,664,534,0.4,0.8*PK,{delta:false,lp:false});
+
+  // floating O2 (also nonpolar) — just drifts, never dissolves
+  const o2y=150+Math.sin(T*1.1)*8;
+  ctx.strokeStyle='#475569';ctx.lineWidth=2.4;
+  ctx.beginPath();ctx.moveTo(206-31,o2y);ctx.lineTo(206+31,o2y);ctx.stroke();
+  [[-31],[31]].forEach(function(a){
+    c_o2atom(206+a[0],o2y);
+  });
+  function c_o2atom(x,y){
+    ctx.fillStyle='#F472B6';ctx.strokeStyle='#BE185D';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(x,y,15.5,0,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#fff';ctx.font='bold 11px system-ui,Segoe UI,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('O',x,y+0.5);
+  }
+  // O2 symmetric cloud
+  ctx.save();ctx.globalAlpha=0.28;ctx.fillStyle='#F472B6';
+  ctx.beginPath();ctx.ellipse(206,o2y,56,15,0,0,7);ctx.fill();ctx.restore();
+  pill(ctx,'O₂ : also nonpolar (net dipole = 0)',206,o2y+46,'#BE185D','#FCE7F3',11.5,0.9);
+
+  // CO₂ #1 : descends, gets induced dipole, held weakly at the surface
+  const kIn=seg(p,0.20,0.45);
+  const c1x=lerp(420,452,kIn), c1y=lerp(168,366,kIn)+Math.sin(T*1.5)*3*(1-kIn);
+  const sdir=Math.atan2(wy-c1y,wx-c1x);
+  const ind=seg(p,0.36,0.60);
+  drawCO2(ctx,c1x,c1y,1.05*PK,ind,Math.cos(sdir),Math.sin(sdir));
+  if(ind>0.05){ pill(ctx,'shared e⁻ pairs shift',c1x-118,c1y+64,'#1D4ED8','#EAF2FC',11.5,ind);
+                pill(ctx,'induced dipole',c1x+96,c1y-84,NETP,'#F3EEFB',12,ind); }
+
+  // step 3 : weak attraction
+  const wA=seg(p,0.58,0.68)*(1-seg(p,0.94,1));
+  if(wA>0.02){
+    const b1=pt(c1x,c1y,sdir,140), b2=pt(wx,wy,sdir+Math.PI,60);
+    arrow(ctx,b2.x,b2.y,b2.x-(b2.x-b1.x)*0.35,b2.y-(b2.y-b1.y)*0.35,'#64748B',2.4,7,wA);
+    arrow(ctx,b1.x,b1.y,b1.x+(b2.x-b1.x)*0.35,b1.y+(b2.y-b1.y)*0.35,'#64748B',2.4,7,wA);
+    pill(ctx,'weak attraction',(b1.x+b2.x)/2+16,(b1.y+b2.y)/2-34,'#475569','#EEF2F6',12,wA);
+    pill(ctx,'much weaker than dipole–dipole / ion–dipole',480,128,'#B45309','#FEF6E7',12,wA);
+  }
+
+  // step 4 : second CO₂ tries, cannot be held, floats back up
+  const down=seg(p,0.80,0.90), up=seg(p,0.90,1.0);
+  const c2y=150+150*(down-up), c2x=lerp(790,732,down);
+  if(down>0.01){
+    const sdir2=Math.atan2(470-c2y,676-c2x);
+    const ind2=Math.max(down-up,0)*0.75;
+    drawCO2(ctx,c2x,c2y,0.92*PK,ind2,Math.cos(sdir2),Math.sin(sdir2));
+    if(up>0.05) pill(ctx,'escapes — attraction too weak',c2x-8,c2y+58,'#B45309','#FEF6E7',11.5,up);
+  }
+
+  const k=stepK(p,4);
+  const chips=['shared e⁻ pairs evenly spread → no dipole','water pulls the pairs → charges appear','weak dipole–induced dipole','weak force → low solubility'];
+  chip(ctx,chips[k],480,60,'#0A455D','#EAF3F8');
+}
+
+/* ================= shared frame ================= */
+function stepK(p,n){return Math.min(n-1,Math.floor(p*n));}
+const TITLES=['Scene 1 · Dipole–dipole — HCl dissolving in water',
+              'Scene 2 · Ion–dipole — NaCl lattice dissolving in water',
+              'Scene 3 · Dipole–induced dipole — CO₂ / O₂ meeting water'];
+function draw(){
+  const T=performance.now()/1000;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,W,H);
+  // header strip
+  ctx.fillStyle='#0A455D';ctx.fillRect(0,0,W,34);
+  ctx.fillStyle='#fff';ctx.font='bold 14.5px system-ui,Segoe UI,sans-serif';
+  ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText(TITLES[S.scene],16,17);
+  // legend (δ charges) top-right
+  ctx.font='bold 12px system-ui,Segoe UI,sans-serif';ctx.textAlign='right';
+  ctx.fillStyle='#FDE8E8';ctx.fillText('δ+ = electron-poor',W-16,13);
+  ctx.fillStyle='#E6EEFB';ctx.fillText('δ− = electron-rich',W-16,27);
+  ctx.textAlign='left';
+  if(S.scene===0)scene1(S.phase);
+  else if(S.scene===1)scene2(S.phase,T);
+  else scene3(S.phase,T);
+}
+
+/* ================= captions & controls ================= */
+const capStep=document.getElementById('capStep'), capT=document.getElementById('capT'),
+      capD=document.getElementById('capD'), forceTag=document.getElementById('forceTag'),
+      dotsEl=document.getElementById('dots');
+function updateCap(){
+  const steps=STEPS[S.scene].steps, k=stepK(S.phase,steps.length);
+  if(k===S.lastK)return; S.lastK=k;
+  capStep.textContent='STEP '+(k+1)+'/'+steps.length;
+  capT.textContent=steps[k][0];
+  capD.textContent=steps[k][1];
+  forceTag.textContent=STEPS[S.scene].force;
+  [...dotsEl.children].forEach(function(d,i){d.className='dot'+(i===k?' on':'');});
+}
+function buildDots(){
+  dotsEl.innerHTML='';
+  STEPS[S.scene].steps.forEach(function(_,i){
+    const b=document.createElement('button');b.className='dot';
+    b.onclick=function(){S.phase=(i+0.015)/STEPS[S.scene].steps.length;S.lastK=-1;draw();updateCap();};
+    dotsEl.appendChild(b);
+  });
+  S.lastK=-1;
+}
+function setScene(i){
+  S.scene=i;S.phase=0;S.lastK=-1;
+  [0,1,2].forEach(function(n){document.getElementById('t'+n).className='tab'+(n===i?' on':'');});
+  buildDots();draw();updateCap();
+}
+document.getElementById('t0').onclick=function(){setScene(0);};
+document.getElementById('t1').onclick=function(){setScene(1);};
+document.getElementById('t2').onclick=function(){setScene(2);};
+const playBtn=document.getElementById('playBtn');
+playBtn.onclick=function(){S.playing=!S.playing;playBtn.textContent=S.playing?'⏸ Pause':'▶ Play';};
+document.getElementById('replayBtn').onclick=function(){S.phase=0;S.lastK=-1;S.playing=true;playBtn.textContent='⏸ Pause';draw();updateCap();};
+
+function tick(ts){
+  const dt=Math.min(0.05,(ts-S.last)/1000||0);S.last=ts;
+  if(S.playing){S.phase+=dt*RATE[S.scene];if(S.phase>=1)S.phase=0;}
+  draw();updateCap();
+  requestAnimationFrame(tick);
+}
+fit();buildDots();updateCap();requestAnimationFrame(tick);
+</script>
+</body>
+</html>

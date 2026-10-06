@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="VHBBf0SuwXlESdzpyq4ICv">
+<head data-page-node-id="0tCEhIXc2d1QLDXvGyR3b7">
+    <meta charset="UTF-8" data-page-node-id="l5YFBR500uteHtTA6HxQJ6">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="FhR0B1zVixxIOMA2oCZWkl">
+    <title>扩散现象 · 微粒视角</title>
+    <style>
+        :root{--teal:#0A455D;--teal2:#4699AA;--blue:#3b82f6;--ink:#0f172a;--bg:#eef2f7;--card:#fff;--muted:#64748b;--line:#e2e8f0;}
+        *{box-sizing:border-box}
+        body{margin:0;font-family:system-ui,'Segoe UI','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--ink);padding:20px;}
+        .wrap{max-width:880px;margin:0 auto;background:var(--card);border-radius:20px;box-shadow:0 8px 28px rgba(0,0,0,.07);padding:24px 28px;border:1px solid var(--line);}
+        h1{margin:0 0 4px;font-size:24px;color:var(--teal);}
+        .sub{color:var(--muted);font-style:italic;font-size:14px;margin-bottom:18px;}
+        .layout{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;justify-content:center;}
+        .panel{display:flex;flex-direction:column;align-items:center;}
+        .panel h3{margin:0 0 6px;font-size:14px;color:var(--teal);font-weight:700;}
+        .panel .sub2{font-size:12px;color:var(--muted);margin-bottom:4px;}
+        canvas{border-radius:12px;background:#F8FAFC;display:block;}
+        .caption{margin-top:10px;background:var(--teal);color:#E2E8F0;border-radius:12px;padding:10px 14px;font-size:13.5px;line-height:1.55;width:100%;max-width:300px;}
+        .caption.hot{background:#064E3B;}
+        .caption .en{display:block;margin-top:4px;color:#94A3B8;font-size:12px;font-style:italic;}
+        .caption.hot .en{color:#A7F3D0;}
+        .controls{background:#EFF6FF;border:2px solid #BFDBFE;border-radius:14px;padding:14px 18px;margin-top:18px;display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:center;}
+        .ctl{display:flex;flex-direction:column;gap:4px;min-width:160px;}
+        .ctl label{font-size:12px;font-weight:800;color:#1E40AF;}
+        .ctl span{color:var(--teal2);font-weight:800;}
+        input[type=range]{height:5px;border-radius:5px;background:#BFDBFE;appearance:none;width:100%;}
+        input[type=range]::-webkit-slider-thumb{appearance:none;width:18px;height:18px;border-radius:50%;background:#2563EB;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3);cursor:pointer;}
+        button{background:var(--teal);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:13px;white-space:nowrap;}
+        button:hover{background:#08384A;}
+        button.alt{background:var(--teal2);}
+        button.alt:hover{background:#0A6B85;}
+        .time-chip{background:#F1F5F9;border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--ink);font-weight:700;}
+        .time-chip b{color:var(--teal);}
+        .legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:12px;color:var(--muted);justify-content:center;}
+        .legend span{display:inline-flex;align-items:center;gap:5px;}
+        .dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1.5px solid;}
+        .explain{margin-top:18px;background:#F8FAFC;border:1px solid var(--line);border-radius:14px;padding:14px 18px;font-size:13.5px;line-height:1.7;color:#334155;}
+        .explain h4{margin:0 0 6px;color:var(--teal);font-size:15px;}
+        .explain b{color:var(--teal);}
+    </style>
+</head>
+<body data-page-node-id="q6io7Ois86BXiRQvMvD1V6">
+    <div class="wrap" data-page-node-id="KJhqsTU6gRqLvj7C7ztyfd">
+        <h1 data-page-node-id="sD7d7ngFe4bG1nxSHi4pAw">扩散现象 · Diffusion (微粒视角)</h1>
+        <p class="sub" data-page-node-id="0bnySZHTZE6S0UTEru1YEc">把蓝色染料微粒加到容器底部 → 通过热运动 + 相互碰撞扩散到上层 → 最终均匀分布</p>
+
+        <div class="layout" data-page-node-id="2OGlvcRV8aHtDGSvKMarnX">
+            <div class="panel" data-page-node-id="moJICFjf7jrM5xCsFBPpkH">
+                <h3 data-page-node-id="wtX5aAOyWC0q8d4bGqehF4">微粒模拟 (Particle simulation)</h3>
+                <div class="sub2" data-page-node-id="Rs02hFFeABq11REd9djBKd">白=A 蓝=B</div>
+                <canvas id="cv" width="280" height="400" data-page-node-id="KoXzbAoJ891WBmfB1Y58YD"></canvas>
+                <div id="caption" class="caption" data-page-node-id="HH3rWhnah6IQFb9l6wzLVh">
+                    <span class="cn" data-page-node-id="loKkzJYxeNwyuXX6N97b4y">初始：A 白色微粒在上、B 蓝色微粒在下，分界面清晰。</span>
+                    <span class="en" data-page-node-id="wKQwVOUmICDIFJM3w53STl">Initial: white A on top, blue B at the bottom — a sharp boundary.</span>
+                </div>
+            </div>
+
+            <div class="panel" data-page-node-id="8Z4PWM7BZu5hZUeHwgLjMJ">
+                <h3 data-page-node-id="vIgamfIm854rfa7mTJxEg2">浓度分布 Concentration</h3>
+                <div class="sub2" data-page-node-id="HQI9KRp5EbQh8qQazgEngo">蓝色占比 (蓝条/灰条)</div>
+                <canvas id="cv2" width="180" height="400" data-page-node-id="p7G1lJ9o7WdUiIlFwSC3up"></canvas>
+                <div class="legend" data-page-node-id="CXraisKDyuSDbcp7DYH2za">
+                    <span data-page-node-id="Cy9zkR4FQxB8JoSE4vXM6J"><i class="dot" style="background:#e2e8f0;border-color:#94a3b8" data-page-node-id="R5MlXnBQHFf1xlmZwtP7mH"></i> A 白色</span>
+                    <span data-page-node-id="OoJFCp078xp37oAr4t65fe"><i class="dot" style="background:#3b82f6;border-color:#1e40af" data-page-node-id="MCDDLnVaPPh8Qu5tzpX62k"></i> B 蓝色</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls" data-page-node-id="EKnxnKynItBu3hKoeAEc1g">
+            <div class="ctl" data-page-node-id="TlJYp9rBkEUD9DOs8K2CCB">
+                <label data-page-node-id="qEKTxrlwjPOAIeHpFC41sy">温度 (Temperature): <span id="tVal" data-page-node-id="RDIH2ls7JpgcW3QH0KPiaw">1.0</span>×</label>
+                <input type="range" id="tSlider" min="0.3" max="2.5" step="0.05" value="1.0" data-page-node-id="qtDP6UN0pX9miBPfzysBM1">
+            </div>
+            <button id="addBtn" class="alt" data-page-node-id="xdvZAH7i2vsBBepsccHYPM">+ 滴加蓝色微粒</button>
+            <button id="resetBtn" data-page-node-id="34GDONVRdsApFM2SUsGZBH">重置</button>
+            <div class="time-chip" data-page-node-id="WC2Vwx2iUBHJZDylNzDbdJ">时间 t = <b data-page-node-id="pYphkKcl1fcO1t3M36UIat"><span id="timeVal" data-page-node-id="lqWlZ23BFGGB9LnA1UTixB">0.00</span></b> s</div>
+        </div>
+
+        <div class="explain" data-page-node-id="wMH3d4COU5sZpkBELee3lm">
+            <h4 data-page-node-id="Y7qBb0Yv5vnP5MOccngmE6">微观解释 / Microscopic interpretation</h4>
+            <p data-page-node-id="2laEPXww9Gg8LUxhoooFQe">
+                液体中所有分子都在做<b data-page-node-id="JuDuDDtZPd1SCXfnVUkJCh">无规则热运动</b>（random thermal motion）。
+                当 <b data-page-node-id="tWIHlT9SmjrUwCIa02rxzk">B 蓝色微粒</b>聚集在容器底部时，<b data-page-node-id="HCtUjguepLIIcytplaYChM">每一颗都在不停碰撞周围其它微粒</b>（collide）。
+                沿各个方向运动概率相等，但<b data-page-node-id="Jx2OzU1EeHjEHTp3b4VKet">下方 B 微粒密度大、上方 B 微粒密度小</b>——
+                因此向上飞出去的 B 微粒不会被等量的 B 微粒从上方撞回来，
+                净效果是 <b data-page-node-id="tNwM51H6FtgcDMdKXj63Z9">B 微粒从高浓度区自发地扩散到低浓度区</b>。
+            </p>
+            <p data-page-node-id="c6dPAddesU43nsfU4aetCO">
+                持续足够时间后，容器内 B 微粒的分布会越来越均匀，<b data-page-node-id="coQ2ze12wM4abk0kLPaopN">浓度梯度消失</b>，净扩散停止，体系达到<b data-page-node-id="UwyZdqLfWsBNynY2Y7hvuR">动态平衡</b>。
+                这就是视频里两层液体颜色逐渐模糊、最终完全混匀的原因。
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const W = 280, H = 400;
+        const PAD = 18;
+        const BOX = { x0: PAD, y0: PAD, x1: W - PAD, y1: H - PAD };
+        const R = 6.5;
+
+        const cv = document.getElementById('cv');
+        const ctx = cv.getContext('2d');
+        const cv2 = document.getElementById('cv2');
+        const ctx2 = cv2.getContext('2d');
+
+        let particles = [];
+        let time = 0;
+        let temperature = 1.0;
+
+        function rand(min, max) { return min + Math.random() * (max - min); }
+
+        function addParticle(x, y, type) {
+            const vMag = 38 * temperature;
+            const ang = Math.random() * 2 * Math.PI;
+            particles.push({
+                x, y,
+                vx: Math.cos(ang) * vMag,
+                vy: Math.sin(ang) * vMag,
+                type, r: R
+            });
+        }
+
+        function init() {
+            particles = [];
+            time = 0;
+            // 初始只有白色 A 微粒（原有液体），充满整个容器
+            for (let i = 0; i < 85; i++) {
+                addParticle(rand(BOX.x0 + R, BOX.x1 - R),
+                            rand(BOX.y0 + R, BOX.y1 - R), 'A');
+            }
+        }
+
+        function addBlueAtBottom(n = 30) {
+            const yMax = BOX.y1 - R;
+            const yMin = BOX.y1 - (BOX.y1 - BOX.y0) / 7;
+            for (let i = 0; i < n; i++) {
+                let x, y, ok = false, tries = 0;
+                while (!ok && tries < 50) {
+                    x = rand(BOX.x0 + R, BOX.x1 - R);
+                    y = rand(yMin, yMax);
+                    ok = true;
+                    for (const p of particles) {
+                        const dx = p.x - x, dy = p.y - y;
+                        if (dx*dx + dy*dy < (R + p.r) * (R + p.r) * 0.9) { ok = false; break; }
+                    }
+                    tries++;
+                }
+                addParticle(x, y, 'B');
+            }
+        }
+
+        function step(dt) {
+            dt = Math.min(dt, 0.033);
+            for (const p of particles) {
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+            }
+            for (const p of particles) {
+                if (p.x - p.r < BOX.x0)  { p.x = BOX.x0 + p.r;   p.vx =  Math.abs(p.vx); }
+                if (p.x + p.r > BOX.x1)  { p.x = BOX.x1 - p.r;   p.vx = -Math.abs(p.vx); }
+                if (p.y - p.r < BOX.y0)  { p.y = BOX.y0 + p.r;   p.vy =  Math.abs(p.vy); }
+                if (p.y + p.r > BOX.y1)  { p.y = BOX.y1 - p.r;   p.vy = -Math.abs(p.vy); }
+            }
+            const n = particles.length;
+            for (let i = 0; i < n; i++) {
+                const a = particles[i];
+                for (let j = i + 1; j < n; j++) {
+                    const b = particles[j];
+                    const dx = b.x - a.x, dy = b.y - a.y;
+                    const d2 = dx*dx + dy*dy;
+                    const rs = a.r + b.r;
+                    if (d2 < rs * rs && d2 > 1e-6) {
+                        const d = Math.sqrt(d2);
+                        const nx = dx / d, ny = dy / d;
+                        const overlap = (rs - d) * 0.5;
+                        a.x -= nx * overlap; a.y -= ny * overlap;
+                        b.x += nx * overlap; b.y += ny * overlap;
+                        const rvx = b.vx - a.vx, rvy = b.vy - a.vy;
+                        const vn = rvx * nx + rvy * ny;
+                        if (vn < 0) {
+                            a.vx += vn * nx; a.vy += vn * ny;
+                            b.vx -= vn * nx; b.vy -= vn * ny;
+                        }
+                    }
+                }
+            }
+            time += dt;
+        }
+
+        function rr(c, x, y, w, h, r) {
+            c.beginPath();
+            c.moveTo(x + r, y);
+            c.arcTo(x + w, y,     x + w, y + h, r);
+            c.arcTo(x + w, y + h, x,     y + h, r);
+            c.arcTo(x,     y + h, x,     y,     r);
+            c.arcTo(x,     y,     x + w, y,     r);
+            c.closePath();
+        }
+
+        function drawSim() {
+            ctx.clearRect(0, 0, W, H);
+            ctx.fillStyle = '#F0F9FF';
+            rr(ctx, BOX.x0, BOX.y0, BOX.x1 - BOX.x0, BOX.y1 - BOX.y0, 18);
+            ctx.fill();
+            ctx.strokeStyle = '#0A455D';
+            ctx.lineWidth = 2;
+            rr(ctx, BOX.x0, BOX.y0, BOX.x1 - BOX.x0, BOX.y1 - BOX.y0, 18);
+            ctx.stroke();
+            // 底部滴加区参考线（蓝色微粒将加在此处）
+            const dropY = BOX.y1 - (BOX.y1 - BOX.y0) / 7;
+            ctx.strokeStyle = 'rgba(245,158,11,0.5)';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([5, 4]);
+            ctx.beginPath();
+            ctx.moveTo(BOX.x0 + 6, dropY);
+            ctx.lineTo(BOX.x1 - 6, dropY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#B45309';
+            ctx.font = '11px system-ui';
+            ctx.textAlign = 'left';
+            ctx.fillText('底部滴加区 Drop zone', BOX.x0 + 6, dropY - 4);
+            for (const p of particles) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                if (p.type === 'A') {
+                    ctx.fillStyle = '#F8FAFC';
+                    ctx.strokeStyle = '#94A3B8';
+                } else {
+                    ctx.fillStyle = '#3B82F6';
+                    ctx.strokeStyle = '#1E40AF';
+                }
+                ctx.lineWidth = 1.2;
+                ctx.fill();
+                ctx.stroke();
+            }
+        }
+
+        function drawConcentration() {
+            const CW = 180, CH = 400;
+            ctx2.clearRect(0, 0, CW, CH);
+            const BINS = 20;
+            const binH = (BOX.y1 - BOX.y0) / BINS;
+            const total = new Array(BINS).fill(0);
+            const blue  = new Array(BINS).fill(0);
+            for (const p of particles) {
+                let b = Math.floor((p.y - BOX.y0) / binH);
+                if (b < 0) b = 0; if (b >= BINS) b = BINS - 1;
+                total[b]++;
+                if (p.type === 'B') blue[b]++;
+            }
+            let maxTotal = 0;
+            for (let i = 0; i < BINS; i++) if (total[i] > maxTotal) maxTotal = total[i];
+            if (maxTotal === 0) maxTotal = 1;
+            const chartX = 36, chartY0 = 18, chartW = 120, chartH = CH - 36;
+            const slot = chartH / BINS;
+            const barH = slot - 1.5;
+            ctx2.fillStyle = '#F1F5F9';
+            rr(ctx2, chartX, chartY0, chartW, chartH, 6);
+            ctx2.fill();
+            ctx2.strokeStyle = '#CBD5E1';
+            ctx2.lineWidth = 1;
+            rr(ctx2, chartX, chartY0, chartW, chartH, 6);
+            ctx2.stroke();
+            for (let i = 0; i < BINS; i++) {
+                const y = chartY0 + i * slot + 1;
+                const wTotal = (chartW - 6) * (total[i] / maxTotal);
+                ctx2.fillStyle = '#E2E8F0';
+                rr(ctx2, chartX + 3, y, wTotal, barH, 2);
+                ctx2.fill();
+                if (total[i] > 0) {
+                    const blueFrac = blue[i] / total[i];
+                    if (blueFrac > 0) {
+                        ctx2.fillStyle = '#3B82F6';
+                        rr(ctx2, chartX + 3, y, wTotal * blueFrac, barH, 2);
+                        ctx2.fill();
+                    }
+                }
+            }
+            ctx2.fillStyle = '#0A455D';
+            ctx2.font = 'bold 12px system-ui';
+            ctx2.textAlign = 'right';
+            ctx2.textBaseline = 'middle';
+            ctx2.fillText('顶', chartX - 4, chartY0 + 6);
+            ctx2.fillText('底', chartX - 4, chartY0 + chartH - 6);
+            ctx2.fillStyle = '#94A3B8';
+            ctx2.font = '10px system-ui';
+            ctx2.textAlign = 'left';
+            ctx2.fillText('密度 →', chartX + chartW + 6, chartY0 + chartH / 2);
+        }
+
+        function updateCaption() {
+            const cap = document.getElementById('caption');
+            const halfY = (BOX.y0 + BOX.y1) / 2;
+            let blueAbove = 0, blueBelow = 0;
+            for (const p of particles) {
+                if (p.type !== 'B') continue;
+                if (p.y < halfY) blueAbove++; else blueBelow++;
+            }
+            const totalB = blueAbove + blueBelow;
+            const aboveFrac = totalB ? blueAbove / totalB : 0;
+            const cn = cap.querySelector('.cn');
+            const en = cap.querySelector('.en');
+            if (aboveFrac < 0.08) {
+                cn.textContent = '初始：容器内只有白色 A 微粒（原有液体），均匀分布。点「+ 滴加蓝色微粒」在底部加入蓝色 B，观察其向上扩散。';
+                en.textContent = 'Initial: only white A particles (the original liquid), uniformly spread. Click "+ 滴加蓝色微粒" to inject blue B at the bottom and watch it diffuse upward.';
+                cap.classList.remove('hot');
+            } else if (aboveFrac < 0.45) {
+                cn.textContent = '滴加后，蓝色微粒在容器底部做热运动，通过与周围微粒的不断碰撞逐渐向上扩散。';
+                en.textContent = 'Blue particles diffuse upward via random thermal motion and collisions — net flow from high to low concentration.';
+                cap.classList.add('hot');
+            } else {
+                cn.textContent = '足够时间后，蓝色微粒在容器内分布趋于均匀，浓度梯度消失，体系达到动态平衡。';
+                en.textContent = 'After enough time, the blue particles spread uniformly. The concentration gradient vanishes — dynamic equilibrium.';
+                cap.classList.add('hot');
+            }
+        }
+
+        let last = performance.now();
+        function frame(now) {
+            const dt = (now - last) / 1000;
+            last = now;
+            step(dt);
+            drawSim();
+            drawConcentration();
+            updateCaption();
+            document.getElementById('timeVal').textContent = time.toFixed(2);
+            requestAnimationFrame(frame);
+        }
+
+        const tSlider = document.getElementById('tSlider');
+        const tVal = document.getElementById('tVal');
+        tSlider.addEventListener('input', () => {
+            const newT = parseFloat(tSlider.value);
+            const ratio = Math.sqrt(newT / temperature);
+            for (const p of particles) { p.vx *= ratio; p.vy *= ratio; }
+            temperature = newT;
+            tVal.textContent = newT.toFixed(2);
+        });
+        document.getElementById('addBtn').addEventListener('click', () => addBlueAtBottom(30));
+        document.getElementById('resetBtn').addEventListener('click', () => init());
+
+        init();
+        tVal.textContent = temperature.toFixed(2);
+        requestAnimationFrame(frame);
+    </script>
+</body>
+</html>

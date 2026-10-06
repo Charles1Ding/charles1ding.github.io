@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en" data-page-node-id="QK8OvDuo6QH6LJbBrN5BqG">
+<head data-page-node-id="u1NdIEZOCGcpNRMMgMIESb">
+<meta charset="utf-8" data-page-node-id="S3kWxyrWkLfIciWcNdPCGa">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="XIvrP7RzDVO85rEQ61me6t">
+<title>Formation of Chemical Bonds</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    background: #EAF1F5;
+    color: #1F3744;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 18px 12px 28px;
+  }
+  h1 { font-size: 22px; color: #0A455D; letter-spacing: .3px; }
+  .sub { color: #5B7684; font-size: 13px; margin-top: 4px; margin-bottom: 14px; }
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-bottom: 12px; }
+  .tab {
+    border: 1px solid #0A455D; background: #fff; color: #0A455D;
+    padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: .15s;
+  }
+  .tab.active { background: #0A455D; color: #fff; }
+  .tab:hover { background: #0E5A78; color: #fff; }
+  .stage {
+    background: #fff; border: 1px solid #C5D2DE; border-radius: 14px;
+    box-shadow: 0 6px 22px rgba(10,69,93,.10); padding: 8px;
+  }
+  canvas { display: block; border-radius: 10px; background: #FAFCFE; width: 920px; max-width: 96vw; height: auto; }
+  .controls {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    justify-content: center; margin-top: 14px;
+  }
+  .btn {
+    border: 1px solid #0A455D; background: #0A455D; color: #fff;
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: .15s;
+  }
+  .btn.ghost { background: #fff; color: #0A455D; }
+  .btn:hover { opacity: .9; }
+  .slider-wrap { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #5B7684; }
+  input[type=range] { width: 280px; accent-color: #0A455D; }
+  .speed { display: flex; gap: 4px; }
+  .speed button { border: 1px solid #9FB9C6; background: #fff; color: #0A455D; border-radius: 6px; padding: 5px 11px; font-size: 12px; cursor: pointer; }
+  .speed button.active { background: #4699AA; color: #fff; border-color: #4699AA; }
+  .subsel { display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-bottom:10px; }
+  .subbtn { border:1px solid #4699AA; background:#fff; color:#0A455D; padding:5px 13px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; transition:.15s; }
+  .subbtn:hover { background:#E3F0F4; }
+  .subbtn.active { background:#4699AA; color:#fff; border-color:#4699AA; }
+  .panel { width: 920px; max-width: 96vw; margin-top: 14px; display: grid; grid-template-columns: 1fr 300px; gap: 12px; }
+  .desc { background: #fff; border: 1px solid #C5D2DE; border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.6; color: #33485A; }
+  .desc b { color: #0A455D; }
+  .key { border-radius: 12px; padding: 14px 16px; font-size: 13px; line-height: 1.55; color: #fff; }
+  .key.ionic { background: linear-gradient(135deg,#0A455D,#1769AA); }
+  .key.metal { background: linear-gradient(135deg,#7A3B12,#C0560F); }
+  .key.cov   { background: linear-gradient(135deg,#1E6B4A,#2E9E6B); }
+  .key h3 { font-size: 14px; margin-bottom: 6px; letter-spacing:.4px; }
+  .key .em { font-style: italic; opacity: .96; }
+  .phase-tag { display:inline-block; background:#0A455D12; color:#0A455D; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700; margin-bottom:8px; }
+  @media (max-width: 760px){ .panel{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body data-page-node-id="IMBGp2GrPKZWwJBN9PbIRO">
+  <h1 data-page-node-id="0j6tSGwU5Jc0mylUD0CR1B">Formation of Chemical Bonds</h1>
+  <div class="sub" data-page-node-id="JDW0i98DfJl7a11suP8JMV">Watch how atoms join together — by transferring, sharing, or pooling their outer electrons.</div>
+
+  <div class="tabs" data-page-node-id="ywZvSOKQcjXVFVnm8i9TeO">
+    <button class="tab active" data-mode="ionic" data-page-node-id="qqScA8BjIHe0HvWRDoyeTV">Ionic &nbsp;MgCl₂</button>
+    <button class="tab" data-mode="metal" data-page-node-id="i3pbDA0hfMKXGuogL4ZCuk">Metallic &nbsp;Mg</button>
+    <button class="tab" data-mode="covalent" data-page-node-id="nBNJtipyemCWt8FVdL67Yo">Covalent &nbsp;Cl\u2082 / CO\u2082</button>
+  </div>
+
+  <div class="subsel" id="subsel" data-page-node-id="Hq8Lsubsel01"></div>
+
+  <div class="stage" data-page-node-id="0WsnmGuZeYoCZr3PL2kNte">
+    <canvas id="cv" width="920" height="520" data-page-node-id="ttGMGoFZxTs8Z24pm7TmTZ"></canvas>
+  </div>
+
+  <div class="controls" data-page-node-id="HmNIy1ij0IzB7wvw0BoukP">
+    <button class="btn" id="btnPlay" data-page-node-id="01sxBHrGpnoJUD6zdZNhJe">▶ Play</button>
+    <button class="btn ghost" id="btnReset" data-page-node-id="PvvQq3f6wT3cEaqmYwxPex">⟲ Reset</button>
+    <div class="slider-wrap" data-page-node-id="pskybjVde7UTxOjYYZETfu">
+      <span data-page-node-id="2yxOgpY0ClSQGYY5n5yetX">Process</span>
+      <input type="range" id="phase" min="0" max="100" value="0" data-page-node-id="odWcUcociMqC17KadxXpsB">
+      <span id="phaseVal" data-page-node-id="Djqygbmavfr1VEtec1oss1">0%</span>
+    </div>
+    <div class="speed" data-page-node-id="pa2fEvm2Au1bgZq98Tf9DI">
+      <button data-spd="0.5" data-page-node-id="8b0DwskEQZ9N9XE1bYd1Td">0.5×</button>
+      <button data-spd="1" class="active" data-page-node-id="KLxrASl3uGSaleRO915GiS">1×</button>
+      <button data-spd="2" data-page-node-id="aR2GAkBcZldVefKQWJzOA7">2×</button>
+    </div>
+  </div>
+
+  <div class="panel" data-page-node-id="fOWoNEi09j97e32ehk2mtx">
+    <div class="desc" id="desc" data-page-node-id="XKatK4IjqzGrsZcYf73GDu"></div>
+    <div class="key ionic" id="key" data-page-node-id="Dd1T15YavpY2qnYnvs7LQQ"></div>
+  </div>
+
+<script>
+const cv = document.getElementById('cv');
+const c  = cv.getContext('2d');
+const W = 920, H = 520;
+// hi-dpi
+const dpr = Math.max(1, Math.min(2, window.devicePixelRatio||1));
+cv.width = W*dpr; cv.height = H*dpr; cv.style.width=W+'px'; cv.style.height=H+'px';
+c.scale(dpr,dpr);
+
+const TEAL='#0A455D', TEAL2='#1769AA', ELEC='#2E7DD1', GREY='#6B7785';
+const COL_CAT='#3B4A57', COL_AN='#E2E8EE';
+const ORANGE='#C0560F', GREEN='#2E9E6B';
+
+const S = { mode:'ionic', phase:0, playing:false, speed:1, t:0, ionicType:'MgCl2', metalType:'Mg' };
+
+// number of valence electrons each metal atom contributes to the "sea"
+const METAL_VALENCE = { Mg:2, Na:1, Al:3 };
+
+// ---------------------------------------------------------------- helpers
+const SC = 1.3; // particle model scale factor (×1.3 = +30% larger)
+function clear(){ c.clearRect(0,0,W,H); }
+function nucleus(cx,cy,r,fill,label,charge){
+  r*=SC;
+  c.save();
+  // soft glow
+  const g=c.createRadialGradient(cx,cy,r*0.3,cx,cy,r*1.9);
+  g.addColorStop(0,fill); g.addColorStop(1,'rgba(0,0,0,0)');
+  c.fillStyle=g; c.beginPath(); c.arc(cx,cy,r*1.9,0,7); c.fill();
+  c.fillStyle=fill; c.beginPath(); c.arc(cx,cy,r,0,7); c.fill();
+  c.fillStyle='#fff'; c.font='bold 16px Segoe UI'; c.textAlign='center'; c.textBaseline='middle';
+  c.fillText(label,cx,cy);
+  if(charge){
+    c.font='bold 13px Segoe UI'; c.textAlign='left';
+    c.fillText(charge, cx+r*0.7, cy-r*0.7);
+  }
+  c.restore();
+}
+function shell(cx,cy,R){
+  R*=SC;
+  c.strokeStyle='#C9D8E2'; c.lineWidth=1.2;
+  c.beginPath(); c.arc(cx,cy,R,0,7); c.stroke();
+}
+function elecDot(cx,cy,r,color){
+  r*=SC;
+  const g=c.createRadialGradient(cx-1.5,cy-1.5,0.5,cx,cy,r);
+  g.addColorStop(0,'#bfe0ff'); g.addColorStop(1,color);
+  c.fillStyle=g; c.beginPath(); c.arc(cx,cy,r,0,7); c.fill();
+  c.strokeStyle='#1c5fa6'; c.lineWidth=.6; c.stroke();
+}
+// place n electrons evenly on an orbit, with a rotating offset (time-based)
+function orbitElectrons(cx,cy,R,n,spin,color){
+  R*=SC;
+  for(let i=0;i<n;i++){
+    const a = (i/n)*2*Math.PI + spin;
+    elecDot(cx+R*Math.cos(a), cy+R*Math.sin(a), 5.2, color||ELEC);
+  }
+}
+// draw an electron moving along a quadratic-bezier arc from (x1,y1) to (x2,y2),
+// with a fading motion trail. k = progress 0..1, arc = bow height (±)
+function movingElectron(x1,y1,x2,y2,k,arc,color){
+  const mx=(x1+x2)/2, my=(y1+y2)/2;
+  const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1;
+  const nx=-dy/len, ny=dx/len;               // perpendicular unit vector
+  const cx=mx+nx*arc, cy=my+ny*arc;          // control point
+  // trail (a few samples behind k)
+  for(let i=1;i<=6;i++){
+    const tt=Math.max(0, k-i*0.045);
+    const u=1-tt;
+    const tx=u*u*x1+2*u*tt*cx+tt*tt*x2;
+    const ty=u*u*y1+2*u*tt*cy+tt*tt*y2;
+    c.globalAlpha = 0.45*(1 - i/7);
+    elecDot(tx,ty, 5.4*(1 - i*0.07), color);
+  }
+  c.globalAlpha = 1;
+  const u=1-k;
+  const x=u*u*x1+2*u*k*cx+k*k*x2;
+  const y=u*u*y1+2*u*k*cy+k*k*y2;
+  elecDot(x,y,5.8,color);
+  return {x,y};
+}
+function arrow(x1,y1,x2,y2,col,w,head){
+  c.strokeStyle=col; c.fillStyle=col; c.lineWidth=w||2;
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  const ang=Math.atan2(y2-y1,x2-x1), h=head||7;
+  c.beginPath();
+  c.moveTo(x2,y2);
+  c.lineTo(x2-h*Math.cos(ang-0.4), y2-h*Math.sin(ang-0.4));
+  c.lineTo(x2-h*Math.cos(ang+0.4), y2-h*Math.sin(ang+0.4));
+  c.closePath(); c.fill();
+}
+function label(txt,x,y,col,size,align){
+  c.fillStyle=col||'#33485A'; c.font=(size||12)+'px Segoe UI';
+  c.textAlign=align||'center'; c.textBaseline='middle';
+  c.fillText(txt,x,y);
+}
+
+// ---------------------------------------------------------------- IONIC  MgCl2 / MgO
+function drawIonic(){
+  const p = S.phase;
+  clear();
+  c.globalAlpha = 1;  // force reset — prevent alpha leak from other modes
+
+  const isMgO = (S.ionicType === 'MgO');
+  const eR = 46;      // valence orbit radius
+  const innerR = 26;  // core (octet) shell radius
+  const mgX = 300, mgY = 260;
+  const mgCore = '#C0560F';
+
+  const transferring = (p >= 0.30 && p < 0.62);
+  const tk = transferring ? (p - 0.30)/(0.62 - 0.30) : (p >= 0.62 ? 1 : 0);
+
+  // --- build the list of counter-ions on the right side ---
+  let ions = [];
+  if(isMgO){
+    // one O atom (group 16, 6 valence e-, gains 2 -> O2-)
+    const oBaseX = 600, oY = 260;
+    let oX = oBaseX;
+    if(p >= 0.62){                       // O2- attracted toward Mg2+
+      const k = Math.min(1, (p-0.62)/0.28);
+      oX = oBaseX - k*130;
+    }
+    ions.push({ type:'O', x:oX, y:oY, val:6, got:p>=0.62 });
+  } else {
+    // two Cl atoms (group 17, 7 valence e-, each gains 1 -> Cl-)
+    const cl1BaseX = 560, cl2BaseX = 760, clY = 260;
+    let cl1X = cl1BaseX, cl2X = cl2BaseX;
+    if(p >= 0.62){                       // Cl- attracted toward Mg2+
+      const k = Math.min(1, (p-0.62)/0.28);
+      const shift = k * 130;
+      cl1X = cl1BaseX - shift;
+      cl2X = cl2BaseX - shift;
+    }
+    ions.push({ type:'Cl', x:cl1X, y:clY, val:7, got:p>=0.62 });
+    ions.push({ type:'Cl', x:cl2X, y:clY, val:7, got:p>=0.62 });
+  }
+
+  // --- draw counter-ions FIRST (so Mg can never cover them) ---
+  ions.forEach(io=>{
+    const col = io.type==='O' ? '#B23A48' : '#3B4A57';
+    const chg = io.got ? (io.type==='O' ? '2−' : '1−') : '';
+    nucleus(io.x, io.y, 28, col, io.type, chg);
+    shell(io.x, io.y, innerR);
+    orbitElectrons(io.x, io.y, innerR, 8, S.t*0.4, '#9FB9C6');
+    const valCount = io.got ? 8 : io.val;     // octet once gained e-
+    orbitElectrons(io.x, io.y, eR, valCount, S.t*0.8 + (io.got?0.3:0));
+  });
+
+  // --- Mg atom + shells + valence electrons ---
+  nucleus(mgX, mgY, 28, mgCore, 'Mg', p >= 0.30 ? '2+' : '');
+  shell(mgX, mgY, innerR);
+  shell(mgX, mgY, eR);            // valence orbit ring always visible
+  orbitElectrons(mgX, mgY, innerR, 8, S.t*0.4, '#7FA9C4');
+  if(p < 0.30){
+    orbitElectrons(mgX, mgY, eR, 2, S.t*0.8);
+  } else if(transferring){
+    c.globalAlpha = Math.max(0, 1 - tk*1.3);
+    orbitElectrons(mgX, mgY, eR, 2, S.t*0.8);
+    c.globalAlpha = 1;
+  }
+
+  // --- the two transferred electrons fly from Mg to the counter-ion(s) ---
+  if(transferring){
+    if(isMgO){
+      const o = ions[0];
+      // both electrons go to the single O (one bowed up, one bowed down)
+      movingElectron(mgX + 38, mgY - 8, o.x - 42, o.y - 12, tk, -70, ELEC);
+      movingElectron(mgX + 38, mgY + 8, o.x - 42, o.y + 12, tk,  70, ELEC);
+    } else {
+      movingElectron(mgX + 38, mgY - 8, ions[0].x - 40, ions[0].y, tk, -80, ELEC);
+      movingElectron(mgX + 38, mgY + 8, ions[1].x - 40, ions[1].y, tk,  80, ELEC);
+    }
+  }
+
+  // --- electrostatic attraction / lattice phase ---
+  if(p >= 0.85){
+    const k = Math.min(1, (p-0.85)/0.15);
+    c.globalAlpha = 0.4 + 0.6*k;
+    c.setLineDash([5,5]); c.strokeStyle = '#C0560F'; c.lineWidth = 2;
+    ions.forEach(io => {
+      c.beginPath(); c.moveTo(mgX, mgY); c.lineTo(io.x, io.y); c.stroke();
+    });
+    c.setLineDash([]);
+    ions.forEach((io,idx)=>{
+      const dyOff = ions.length===1 ? 0 : (idx===0 ? -8 : 8);
+      arrow(io.x-28, io.y, mgX+34, mgY+dyOff, '#C0560F', 2.5, 8);
+    });
+    c.globalAlpha = 1;
+    label('electrostatic attraction', (mgX+ions[0].x)/2, mgY-70, '#C0560F', 12);
+    label('oppositely charged ions → stable ionic compound ' + (isMgO?'MgO':'MgCl₂'), W/2, 470, '#0A455D', 13);
+  } else if(p >= 0.62){
+    label(isMgO
+      ? 'Mg → Mg²⁺  +  2 e⁻        O + 2 e⁻ → O²⁻'
+      : 'Mg → Mg²⁺  +  2 e⁻        2 Cl + 2 e⁻ → 2 Cl⁻', W/2, 470, '#0A455D', 13);
+  } else if(p >= 0.30){
+    label('Mg transfers its 2 outer electrons to ' + (isMgO?'the O atom':'the two Cl atoms'), W/2, 470, '#0A455D', 13);
+  } else {
+    label('Mg atom (2 valence e⁻)  +  ' + (isMgO?'1 O atom (6 valence e⁻)':'2 Cl atoms (7 valence e⁻ each)'), W/2, 470, '#0A455D', 13);
+  }
+}
+
+// ---------------------------------------------------------------- METALLIC  Mg / Na / Al
+let sea = []; // delocalised electrons
+const metalIons = [];
+function initMetal(){
+  sea = [];
+  metalIons.length = 0;
+  // 2 x 3 lattice positions
+  const ox=320, oy=150, gx=140, gy=120;
+  for(let r=0;r<2;r++) for(let col=0;col<3;col++){
+    metalIons.push({ x: ox+col*gx, y: oy+r*gy, ph: Math.random()*6 });
+  }
+  // delocalised electrons = (valence e- per atom) x number of ions.
+  // Each electron is bound to the ion it came from and roams tightly around it
+  // (it belongs to the "sea", but stays local to its own layer of ions).
+  const valE = METAL_VALENCE[S.metalType] || 2;
+  let idx = 0;
+  for(let a=0; a<metalIons.length; a++){
+    for(let e=0; e<valE; e++){
+      const io = metalIons[a];
+      sea.push({
+        fromIon: a, idx: idx++,
+        ax: io.x, ay: io.y,                 // home anchor = the ion it belongs to
+        amp: 22 + Math.random()*20,         // tight local roam radius (22–42 px)
+        ang: Math.random()*Math.PI*2,       // current angle in local orbit
+        w: (Math.random()<0.5?-1:1)*(0.02 + Math.random()*0.03), // angular speed
+        ph: Math.random()*6,
+        r: 4.6
+      });
+    }
+  }
+}
+function drawMetal(){
+  const p = S.phase;
+  clear();
+  c.globalAlpha = 1;
+
+  const sym  = S.metalType;                 // 'Mg' | 'Na' | 'Al'
+  const valE = METAL_VALENCE[sym] || 2;     // valence electrons per atom
+  const charge = '+' + valE;                // Mg2+ / Na+ / Al3+
+
+  // PHASE A (0–0.25): scattered atoms, each with `valE` valence e⁻
+  // PHASE B (0.25–0.60): converge → lattice, each atom sheds its valence e⁻ into the local sea
+  // PHASE C (0.60–0.82): + ions fixed, full sea — each e⁻ roams tightly around its own ion
+  // PHASE D (0.82–1):   highlight electrostatic attraction
+
+  const converge = Math.min(1, Math.max(0, (p-0.0)/0.50));
+  // start positions (scattered wide) -> lattice positions
+  const startPos = metalIons.map((io,i)=>({
+    x: 160 + (i%3)*220 + (i<3?0:0),
+    y: 130 + Math.floor(i/3)*260
+  }));
+
+  // ---- draw + ions (metal nuclei) ----
+  const isIon = p >= 0.25;
+  metalIons.forEach((io,i)=>{
+    const sx = startPos[i].x + (io.x-startPos[i].x)*converge;
+    const sy = startPos[i].y + (io.y-startPos[i].y)*converge;
+    io._sx = sx; io._sy = sy;
+    nucleus(sx,sy,26, isIon?ORANGE:'#3B4A57', sym, isIon?charge:'');
+    shell(sx,sy,18);
+    orbitElectrons(sx,sy,18,8,S.t*0.3,'#9FB9C6');  // inner core (Ne) always visible
+  });
+
+  // ---- valence electrons: on atoms during phase A, then shed into sea ----
+  if(p < 0.25){
+    // Phase A: all valence e⁻ still orbiting each atom
+    metalIons.forEach((io,i)=>{
+      orbitElectrons(io._sx, io._sy, 40, valE, S.t*0.6 + i, GREEN);
+    });
+  } else if(p < 0.60){
+    // Phase B: each atom sheds its valence e⁻ — they fly into the local sea around that same ion
+    const shedK = (p - 0.25)/(0.60 - 0.25);  // 0→1 over this phase
+
+    // valence e⁻ still orbiting each atom fade out as they are released
+    metalIons.forEach((io,i)=>{
+      c.globalAlpha = Math.max(0, 1 - shedK * 1.5);
+      orbitElectrons(io._sx, io._sy, 40, valE, S.t*0.6 + i, GREEN);
+      c.globalAlpha = 1;
+    });
+
+    // each delocalised electron flies from its origin ion and settles around that ion
+    sea.forEach(e=>{
+      const io = metalIons[e.fromIon];
+      const arc = (e.idx%2===0 ? -55 : 55) + Math.sin(e.ph)*10;
+      movingElectron(
+        io._sx + 28, io._sy + (e.idx%2===0?-9:9),  // start near the atom
+        io._sx, io._sy,                              // ends on the ion (its home)
+        shedK, arc, GREEN
+      );
+    });
+  }
+
+  // ---- sea of delocalised electrons: each roams tightly AROUND its own ion (p≥0.60) ----
+  if(p >= 0.60){
+    const seaA = Math.min(1, (p-0.60)/0.06);   // fade in 0.60→0.66
+    sea.forEach(e=>{
+      e.ang += e.w;                              // slow local orbit
+      const wob  = Math.sin(S.t*0.8 + e.ph)*3;  // gentle secondary wobble
+      const wob2 = Math.cos(S.t*0.6 + e.ph)*3;
+      e.x = e.ax + Math.cos(e.ang)*e.amp + wob;
+      e.y = e.ay + Math.sin(e.ang)*e.amp + wob2;
+      c.globalAlpha = seaA;
+      elecDot(e.x,e.y,e.r, GREEN);
+    });
+    c.globalAlpha = 1;
+  }
+
+  // ---- PHASE D: highlight electrostatic attraction ----
+  if(p >= 0.82){
+    const k=Math.min(1,(p-0.82)/0.18);
+    c.globalAlpha = 0.18 + 0.22*k;
+    c.strokeStyle = ORANGE; c.lineWidth=1;
+    metalIons.forEach(io=>{
+      let near = sea.map(e=>({e,d:Math.hypot(e.x-io._sx,e.y-io._sy)}))
+                    .sort((a,b)=>a.d-b.d).slice(0,3);
+      near.forEach(n=>{ c.beginPath(); c.moveTo(io._sx,io._sy); c.lineTo(n.e.x,n.e.y); c.stroke(); });
+    });
+    c.globalAlpha=1;
+    const pr = 30 + 6*Math.sin(S.t*3)*k;
+    c.strokeStyle='rgba(192,86,15,'+(0.5*k)+')'; c.lineWidth=2;
+    metalIons.forEach(io=>{ c.beginPath(); c.arc(io._sx,io._sy,pr,0,7); c.stroke(); });
+    label('electrostatic attraction between the positive', W/2, 470, ORANGE, 13);
+    label('metal ions and a "sea" of delocalised electrons', W/2, 488, ORANGE, 13);
+  } else if(p >= 0.60){
+    label('Valence electrons leave all atoms → a shared "sea" of delocalised electrons', W/2, 478, '#0A455D', 13);
+  } else if(p >= 0.25){
+    label(sym + ' atoms pack into a lattice and each loses its ' + valE + ' valence electron' + (valE>1?'s':''), W/2, 478, '#0A455D', 13);
+  } else {
+    label(sym + ' atoms, each with ' + valE + ' valence electron' + (valE>1?'s':''), W/2, 478, '#0A455D', 13);
+  }
+}
+
+// ---------------------------------------------------------------- COVALENT  C-Cl / C=O
+function drawCovalent(){
+  const p = S.phase;
+  clear();
+  c.globalAlpha = 1;
+
+  // two scenes side by side
+  const sceneA = { cx: 260, y: 250 }; // Cl + Cl -> Cl2 single bond
+  const sceneB = { cx: 660, y: 250 }; // CO2 (O=C=O)
+
+  // ---- Scene A: Cl + Cl -> Cl2 (single bond) ----
+  {
+    const k = Math.min(1, p/0.55);
+    // two Cl atoms approach each other from left and right
+    const dist = 82 + (1-k)*140;   // final centre distance 82px (no overlap after x1.3 scale)
+    const clLeftX  = sceneA.cx - dist/2;
+    const clRightX = sceneA.cx + dist/2;
+
+    // Left Cl nucleus (7 valence e-, core = 10 e- like Ne)
+    nucleus(clLeftX, sceneA.y, 26, '#3B4A57', 'Cl', '');
+    shell(clLeftX, sceneA.y, 18);
+    orbitElectrons(clLeftX, sceneA.y, 18, 8, S.t*0.4, '#9FB9C6');
+
+    // Right Cl nucleus (identical)
+    nucleus(clRightX, sceneA.y, 26, '#3B4A57', 'Cl', '');
+    shell(clRightX, sceneA.y, 18);
+    orbitElectrons(clRightX, sceneA.y, 18, 8, S.t*0.4, '#9FB9C6');
+
+    if(p < 0.38){
+      // Phase 1: two separate Cl atoms approaching, all 7 valence e- on each
+      orbitElectrons(clLeftX, sceneA.y, 42, 7, S.t*0.5, ELEC);
+      orbitElectrons(clRightX, sceneA.y, 42, 7, S.t*0.5 + 0.3, ELEC);
+    } else if(p < 0.75){
+      // Phase 2: one e- from each Cl moves toward centre -> shared pair
+      const sk = (p - 0.38)/(0.75 - 0.38);
+
+      // remaining valence e- on each atom fade out as one leaves to share
+      c.globalAlpha = Math.max(0, 1 - sk*1.8);
+      orbitElectrons(clLeftX, sceneA.y, 42, 7, S.t*0.5, ELEC);
+      orbitElectrons(clRightX, sceneA.y, 42, 7, S.t*0.5 + 0.3, ELEC);
+      c.globalAlpha = 1;
+
+      // left Cl gives 1 e- flying upward toward centre
+      movingElectron(clLeftX+32, sceneA.y-4, sceneA.cx-6, sceneA.y, sk, -38, ELEC);
+      // right Cl gives 1 e- flying downward toward centre
+      movingElectron(clRightX-32, sceneA.y+4, sceneA.cx+6, sceneA.y, sk, 38, ELEC);
+
+      if(sk > 0.5){
+        const bk=(sk-0.5)/0.5;
+        c.strokeStyle='#1E6B4A'; c.setLineDash([4,4]); c.lineWidth=1.5; c.globalAlpha=bk;
+        c.beginPath(); c.moveTo(clLeftX+24,sceneA.y); c.lineTo(clRightX-24,sceneA.y); c.stroke();
+        c.setLineDash([]); c.globalAlpha=1;
+      }
+    } else {
+      // Phase 3: Cl2 formed - single bond with 1 shared pair in the middle
+      // each Cl keeps 6 non-bonding valence e-
+      orbitElectrons(clLeftX, sceneA.y, 42, 6, S.t*0.5, ELEC);
+      orbitElectrons(clRightX, sceneA.y, 42, 6, S.t*0.5 + 0.3, ELEC);
+      // shared pair between nuclei
+      const mx=sceneA.cx, my=sceneA.y;
+      const a=S.t*0.9;
+      elecDot(mx+Math.cos(a)*10, my+Math.sin(a)*10, 5, ELEC);
+      elecDot(mx-Math.cos(a)*10, my-Math.sin(a)*10, 5, ELEC);
+      // bond line
+      c.strokeStyle='#1E6B4A'; c.setLineDash([4,4]); c.lineWidth=1.5;
+      c.beginPath(); c.moveTo(clLeftX+24,my); c.lineTo(clRightX-24,my); c.stroke(); c.setLineDash([]);
+    }
+    label('Cl\u2013Cl  (single bond = 1 shared pair)', sceneA.cx, sceneA.y+100, '#3B4A57', 12);
+  }
+
+  // ---- Scene B: CO2 (O=C=O, linear, two double bonds) ----
+  {
+    const k = Math.min(1, p/0.55);
+    // C in centre, two O atoms approach from left and right
+    const dist = 80 + (1-k)*120;   // final O-C distance 80px (no overlap)
+    const cX = sceneB.cx;
+    const oLeftX  = cX - dist;
+    const oRightX = cX + dist;
+
+    // Carbon nucleus (4 valence e-)
+    nucleus(cX, sceneB.y, 26, '#1E6B4A', 'C', '');
+    shell(cX, sceneB.y, 18);
+    orbitElectrons(cX, sceneB.y, 18, 4, S.t*0.4, '#7FC9A6');
+
+    // Left Oxygen nucleus (6 valence e-)
+    nucleus(oLeftX, sceneB.y, 26, '#B23A48', 'O', '');
+    shell(oLeftX, sceneB.y, 18);
+    orbitElectrons(oLeftX, sceneB.y, 18, 6, S.t*0.4, '#E0A2AB');
+
+    // Right Oxygen nucleus (6 valence e-)
+    nucleus(oRightX, sceneB.y, 26, '#B23A48', 'O', '');
+    shell(oRightX, sceneB.y, 18);
+    orbitElectrons(oRightX, sceneB.y, 18, 6, S.t*0.4, '#E0A2AB');
+
+    if(p < 0.38){
+      // Phase 1: separated atoms, all valence e- on their own atoms
+      orbitElectrons(cX, sceneB.y, 42, 4, S.t*0.5, ELEC);
+      orbitElectrons(oLeftX, sceneB.y, 42, 6, S.t*0.5 + 0.3, ELEC);
+      orbitElectrons(oRightX, sceneB.y, 42, 6, S.t*0.5 + 0.3, ELEC);
+    } else if(p < 0.75){
+      // Phase 2: electrons move to form 2 shared pairs per C=O bond
+      const sk = (p - 0.38)/(0.75 - 0.38);
+
+      // remaining valence e- fade as some leave to share
+      c.globalAlpha = Math.max(0, 1 - sk*1.8);
+      orbitElectrons(cX, sceneB.y, 42, 4, S.t*0.5, ELEC);
+      orbitElectrons(oLeftX, sceneB.y, 42, 6, S.t*0.5 + 0.3, ELEC);
+      orbitElectrons(oRightX, sceneB.y, 42, 6, S.t*0.5 + 0.3, ELEC);
+      c.globalAlpha = 1;
+
+      // --- Left C=O bond: C gives 2e-, O_left gives 2e- ---
+      movingElectron(cX-28, sceneB.y-5, (cX+oLeftX)/2+6, sceneB.y-7, sk, -40, ELEC);
+      movingElectron(cX-28, sceneB.y+5, (cX+oLeftX)/2+6, sceneB.y+7, sk, 40, ELEC);
+      movingElectron(oLeftX+28, sceneB.y-5, (cX+oLeftX)/2-6, sceneB.y-7, sk, -40, ELEC);
+      movingElectron(oLeftX+28, sceneB.y+5, (cX+oLeftX)/2-6, sceneB.y+7, sk, 40, ELEC);
+
+      // --- Right C=O bond: C gives 2e-, O_right gives 2e- ---
+      movingElectron(cX+28, sceneB.y-5, (cX+oRightX)/2-6, sceneB.y-7, sk, -40, ELEC);
+      movingElectron(cX+28, sceneB.y+5, (cX+oRightX)/2-6, sceneB.y+7, sk, 40, ELEC);
+      movingElectron(oRightX-28, sceneB.y-5, (cX+oRightX)/2+6, sceneB.y-7, sk, -40, ELEC);
+      movingElectron(oRightX-28, sceneB.y+5, (cX+oRightX)/2+6, sceneB.y+7, sk, 40, ELEC);
+
+      if(sk > 0.45){
+        const bk=(sk-0.45)/0.55;
+        c.strokeStyle='#1E6B4A'; c.setLineDash([4,4]); c.lineWidth=1.5; c.globalAlpha=bk;
+        // left double bond lines
+        c.beginPath(); c.moveTo(oLeftX+22,sceneB.y); c.lineTo(cX-22,sceneB.y); c.stroke();
+        c.beginPath(); c.moveTo(oLeftX+22,sceneB.y+7); c.lineTo(cX-22,sceneB.y+7); c.stroke();
+        // right double bond lines
+        c.beginPath(); c.moveTo(cX+22,sceneB.y); c.lineTo(oRightX-22,sceneB.y); c.stroke();
+        c.beginPath(); c.moveTo(cX+22,sceneB.y+7); c.lineTo(oRightX-22,sceneB.y+7); c.stroke();
+        c.setLineDash([]); c.globalAlpha=1;
+      }
+    } else {
+      // Phase 3: CO2 formed - two C=O double bonds with shared pairs
+      orbitElectrons(cX, sceneB.y, 42, 0, S.t*0.5, ELEC);  // C's 4 valence e- all shared
+      orbitElectrons(oLeftX, sceneB.y, 42, 4, S.t*0.5 + 0.3, ELEC);  // O keeps 4 non-bonding
+      orbitElectrons(oRightX, sceneB.y, 42, 4, S.t*0.5 + 0.3, ELEC);
+
+      const a=S.t*0.9;
+      // left C=O shared pairs (2 pairs = 4 e-)
+      const lmx=(cX+oLeftX)/2, my=sceneB.y;
+      elecDot(lmx+Math.cos(a)*9,   my-7+Math.sin(a)*9, 5, ELEC);
+      elecDot(lmx-Math.cos(a)*9,   my-7-Math.sin(a)*9, 5, ELEC);
+      elecDot(lmx+Math.cos(a+Math.PI)*9, my+7+Math.sin(a+Math.PI)*9, 5, ELEC);
+      elecDot(lmx-Math.cos(a+Math.PI)*9, my+7-Math.sin(a+Math.PI)*9, 5, ELEC);
+      // right C=O shared pairs (2 pairs = 4 e-)
+      const rmx=(cX+oRightX)/2;
+      elecDot(rmx+Math.cos(a)*9,   my-7+Math.sin(a)*9, 5, ELEC);
+      elecDot(rmx-Math.cos(a)*9,   my-7-Math.sin(a)*9, 5, ELEC);
+      elecDot(rmx+Math.cos(a+Math.PI)*9, my+7+Math.sin(a+Math.PI)*9, 5, ELEC);
+      elecDot(rmx-Math.cos(a+Math.PI)*9, my+7-Math.sin(a+Math.PI)*9, 5, ELEC);
+
+      c.strokeStyle='#1E6B4A'; c.setLineDash([4,4]); c.lineWidth=1.5;
+      // left double bond
+      c.beginPath(); c.moveTo(oLeftX+22,my); c.lineTo(cX-22,my); c.stroke();
+      c.beginPath(); c.moveTo(oLeftX+22,my+7); c.lineTo(cX-22,my+7); c.stroke();
+      // right double bond
+      c.beginPath(); c.moveTo(cX+22,my); c.lineTo(oRightX-22,my); c.stroke();
+      c.beginPath(); c.moveTo(cX+22,my+7); c.lineTo(oRightX-22,my+7); c.stroke();
+      c.setLineDash([]);
+    }
+    label('O=C=O  (two double bonds = 4 shared pairs)', cX, sceneB.y+100, '#1E6B4A', 12);
+  }
+
+  // bottom note
+  if(p >= 0.75){
+    label('Covalent bond: atoms SHARE electron pairs (Cl2, carbon dioxide)', W/2, 470, '#0A455D', 13);
+  } else if(p >= 0.38){
+    label('Valence electrons move into the region between the nuclei => shared pairs', W/2, 470, '#0A455D', 13);
+  } else {
+    label('Two Cl atoms (7 valence e- each) + C (4) and two O (6 each) approach', W/2, 470, '#0A455D', 13);
+  }
+}
+
+// ---------------------------------------------------------------- loop & UI
+const DESC = {
+  ionic:{
+    MgCl2:[
+      ['Isolated atoms','Magnesium has <b>2 valence electrons</b>; each chlorine has <b>7</b> (one short of a full shell).'],
+      ['Electron transfer','Mg <b>transfers</b> its two outer electrons — one to each Cl atom.'],
+      ['Ions form','Mg becomes <b>Mg²⁺</b> (lost 2 e⁻); each Cl becomes <b>Cl⁻</b> (gained 1 e⁻), achieving an octet.'],
+      ['Ionic lattice','Oppositely charged ions attract, building the stable ionic compound <b>MgCl₂</b>.']
+    ],
+    MgO:[
+      ['Isolated atoms','Magnesium has <b>2 valence electrons</b>; oxygen has <b>6</b> (two short of a full shell).'],
+      ['Electron transfer','Mg <b>transfers</b> its two outer electrons to the single O atom.'],
+      ['Ions form','Mg becomes <b>Mg²⁺</b> (lost 2 e⁻); O becomes <b>O²⁻</b> (gained 2 e⁻), achieving an octet.'],
+      ['Ionic lattice','Oppositely charged ions attract, building the stable ionic compound <b>MgO</b>.']
+    ]
+  },
+  metal:{
+    Mg:[
+      ['Metal atoms','Magnesium atoms, each with <b>2 valence electrons</b>.'],
+      ['Packing & shedding','Atoms pack into a lattice; each <b>loses its 2 valence electrons</b>.'],
+      ['Sea of electrons',"The released electrons become <b>delocalised</b> — a mobile “sea” free to move through the lattice."],
+      ['Metallic bond',"<b>Electrostatic attraction</b> between the positive metal ions and the “sea” of delocalised electrons holds the metal together."]
+    ],
+    Na:[
+      ['Metal atoms','Sodium atoms, each with <b>1 valence electron</b>.'],
+      ['Packing & shedding','Atoms pack into a lattice; each <b>loses its 1 valence electron</b>.'],
+      ['Sea of electrons',"The released electrons become <b>delocalised</b> — a mobile “sea” free to move through the lattice."],
+      ['Metallic bond',"<b>Electrostatic attraction</b> between the positive metal ions and the “sea” of delocalised electrons holds the metal together."]
+    ],
+    Al:[
+      ['Metal atoms','Aluminium atoms, each with <b>3 valence electrons</b>.'],
+      ['Packing & shedding','Atoms pack into a lattice; each <b>loses its 3 valence electrons</b>.'],
+      ['Sea of electrons',"The released electrons become <b>delocalised</b> — a mobile “sea” free to move through the lattice."],
+      ['Metallic bond',"<b>Electrostatic attraction</b> between the positive metal ions and the “sea” of delocalised electrons holds the metal together."]
+    ]
+  },
+  covalent:[
+    ['Approach','Two chlorine atoms (7 valence e⁻ each) and carbon (4) with two oxygens (6 each) approach.'],
+    ['Sharing','Instead of transferring, atoms <b>share</b> electron pairs to complete their outer shells.'],
+    ['Bonds formed','Cl–Cl is a <b>single</b> bond (1 shared pair); CO₂ has <b>two C=O double bonds</b> (4 shared pairs).']
+  ]
+};
+const KEY = {
+  ionic:{
+    MgCl2:{cls:'ionic',h:'Ionic Bond',body:'<span class="em">Transfer</span> of electrons → oppositely charged ions. <b>MgCl₂</b>: Mg loses 2 e⁻ — one to each of 2 Cl. Strong electrostatic attraction between cations and anions.'},
+    MgO:{cls:'ionic',h:'Ionic Bond',body:'<span class="em">Transfer</span> of electrons → oppositely charged ions. <b>MgO</b>: Mg loses 2 e⁻ to a single O (O gains 2 → O²⁻). Strong electrostatic attraction between Mg²⁺ and O²⁻.'}
+  },
+  metal:{
+    Mg:{cls:'metal',h:'Metallic Bond (Mg)',body:'Positive Mg²⁺ ions in a lattice held by <span class="em">electrostatic attraction</span> to a mobile “sea” of delocalised electrons (2 per atom). Gives metals conductivity & malleability.'},
+    Na:{cls:'metal',h:'Metallic Bond (Na)',body:'Positive Na⁺ ions in a lattice held by <span class="em">electrostatic attraction</span> to a mobile “sea” of delocalised electrons (1 per atom). Gives metals conductivity & malleability.'},
+    Al:{cls:'metal',h:'Metallic Bond (Al)',body:'Positive Al³⁺ ions in a lattice held by <span class="em">electrostatic attraction</span> to a mobile “sea” of delocalised electrons (3 per atom). Gives metals conductivity & malleability.'}
+  },
+  covalent:{cls:'cov',h:'Covalent Bond',body:'Atoms <span class="em">share</span> electron pairs. Cl–Cl (single) and O=C=O (two double bonds) — no charge separation, just shared pairs.'}
+};
+function updatePanel(){
+  // pick the right description/key set for the current mode + substance
+  const sub = S.mode==='ionic' ? S.ionicType : (S.mode==='metal' ? S.metalType : null);
+  const arr = sub ? DESC[S.mode][sub] : DESC[S.mode];
+  const k   = sub ? KEY[S.mode][sub] : KEY[S.mode];
+
+  let idx;
+  if(S.mode==='ionic') idx = S.phase<0.30?0 : S.phase<0.62?1 : S.phase<0.80?2 : 3;
+  else if(S.mode==='metal') idx = S.phase<0.25?0 : S.phase<0.55?1 : S.phase<0.80?2 : 3;
+  else idx = S.phase<0.5?0 : S.phase<0.6?1 : 2;
+  const d = arr[Math.min(idx,arr.length-1)];
+  document.getElementById('desc').innerHTML =
+    '<span class="phase-tag">STEP '+(idx+1)+' / '+arr.length+'</span><br>'+d[0]+': '+d[1];
+  const ke = document.getElementById('key');
+  ke.className = 'key '+k.cls;
+  ke.innerHTML = '<h3>'+k.h+'</h3>'+k.body;
+}
+
+function draw(){
+  if(S.mode==='ionic') drawIonic();
+  else if(S.mode==='metal') drawMetal();
+  else drawCovalent();
+  updatePanel();
+}
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05,(now-last)/1000); last=now;
+  S.t += dt;
+  if(S.playing){
+    S.phase = Math.min(1, S.phase + dt*0.18*S.speed);
+    if(S.phase>=1){ S.phase=1; S.playing=false; document.getElementById('btnPlay').textContent='▶ Play'; }
+    document.getElementById('phase').value = Math.round(S.phase*100);
+    document.getElementById('phaseVal').textContent = Math.round(S.phase*100)+'%';
+  }
+  try { draw(); }
+  catch(err){ console.error('draw() error (loop kept alive):', err); }
+  requestAnimationFrame(loop);
+}
+
+// UI
+// options shown under each tab (null = no sub-selector)
+const SUBMAP = {
+  ionic: [ {k:'MgCl2', label:'MgCl₂'}, {k:'MgO', label:'MgO'} ],
+  metal: [ {k:'Mg', label:'Mg'}, {k:'Na', label:'Na'}, {k:'Al', label:'Al'} ],
+  covalent: null
+};
+
+// robust reset: returns everything to the very start of the current animation
+function resetAll(){
+  S.phase = 0; S.playing = false; S.t = 0;
+  document.getElementById('btnPlay').textContent = '▶ Play';
+  const ph = document.getElementById('phase');
+  ph.value = 0;
+  document.getElementById('phaseVal').textContent = '0%';
+  if(S.mode === 'metal') initMetal();   // re-seed the delocalised-electron sea
+}
+
+function renderSubsel(){
+  const box = document.getElementById('subsel');
+  const opts = SUBMAP[S.mode];
+  if(!opts){ box.style.display='none'; box.innerHTML=''; return; }
+  box.style.display = 'flex';
+  box.innerHTML = '';
+  const cur = (S.mode === 'ionic') ? S.ionicType : S.metalType;
+  opts.forEach(o=>{
+    const b = document.createElement('button');
+    b.className = 'subbtn' + (o.k === cur ? ' active' : '');
+    b.textContent = o.label;
+    b.addEventListener('click', ()=>{
+      if(S.mode === 'ionic') S.ionicType = o.k; else S.metalType = o.k;
+      resetAll();          // restart animation for the chosen substance
+      renderSubsel();       // refresh the active highlight
+    });
+    box.appendChild(b);
+  });
+}
+
+document.querySelectorAll('.tab').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    S.mode = b.dataset.mode;
+    resetAll();
+    renderSubsel();
+  });
+});
+document.getElementById('btnPlay').addEventListener('click',()=>{
+  S.playing=!S.playing;
+  document.getElementById('btnPlay').textContent = S.playing?'⏸ Pause':'▶ Play';
+});
+document.getElementById('btnReset').addEventListener('click',()=>{
+  resetAll();
+});
+document.getElementById('phase').addEventListener('input',e=>{
+  S.phase = e.target.value/100; S.playing=false;
+  document.getElementById('btnPlay').textContent='▶ Play';
+  document.getElementById('phaseVal').textContent = e.target.value+'%';
+});
+document.querySelectorAll('.speed button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.speed button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); S.speed=parseFloat(b.dataset.spd);
+  });
+});
+
+initMetal();
+renderSubsel();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

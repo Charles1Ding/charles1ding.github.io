@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sneaking Snacks — IGCSE Chemistry 1.4 Diffusion</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0c12;
+  --panel-bg: #1a1f2a;
+  --border: #2c3340;
+  --text: #d9e0eb;
+  --text-dim: #8a9ab0;
+  --accent: #6c9ed6;
+  --accent-warm: #e8a87c;
+  --slider-track: #3a4555;
+  --canvas-bg: #e8f4f8;
+  --canvas-bg-end: #d4e9f0;
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Consolas', 'Cascadia Code', monospace;
+  --shadow: 0 10px 40px rgba(0,0,0,0.35);
+  --shadow-sm: 0 4px 16px rgba(0,0,0,0.25);
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+}
+.app { width: 100%; max-width: 1060px; display: flex; flex-direction: column; gap: 12px; }
+
+.header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 10px;
+}
+.header h1 { font-size: 1.35rem; font-weight: 600; color: #e0e5f0; white-space: nowrap; }
+.header h1 span { color: var(--accent); font-weight: 300; margin-right: 6px; }
+
+.tabs { display: flex; gap: 4px; background: var(--panel-bg); border-radius: 10px; padding: 4px; box-shadow: var(--shadow-sm); }
+.tab {
+  padding: 8px 16px; border: none; background: transparent;
+  color: var(--text-dim); font-family: var(--font); font-size: 0.8rem;
+  font-weight: 500; border-radius: 7px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.tab:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.tab.active { background: var(--accent); color: #fff; }
+
+.canvas-panel {
+  background: var(--canvas-bg);
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 16px; overflow: hidden; position: relative;
+  box-shadow: var(--shadow);
+}
+canvas#mainCanvas {
+  display: block; width: 100%; height: auto;
+  background: linear-gradient(180deg, var(--canvas-bg) 0%, var(--canvas-bg-end) 100%);
+}
+
+.bottom-row { display: flex; gap: 12px; }
+.graph-panel, .data-panel {
+  background: var(--panel-bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.graph-panel { flex: 2; min-width: 0; }
+.data-panel { flex: 1; min-width: 200px; }
+.graph-panel h3, .data-panel h3 {
+  font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em;
+  color: var(--text-dim); margin-bottom: 8px; font-weight: 500;
+}
+canvas#graphCanvas { display: block; width: 100%; height: 80px; }
+
+.data-items { display: flex; flex-direction: column; gap: 6px; }
+.data-item { display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; }
+.data-item .label { color: var(--text-dim); }
+.data-item .value { font-family: var(--font-mono); font-weight: 600; color: var(--text); }
+
+.controls {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: var(--panel-bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+}
+.control-group { display: flex; align-items: center; gap: 8px; }
+.control-group label {
+  font-size: 0.78rem; color: var(--text-dim); white-space: nowrap; min-width: 95px;
+}
+.control-group .val {
+  font-family: var(--font-mono); font-size: 0.78rem; color: var(--text);
+  min-width: 55px; text-align: right;
+}
+
+input[type="range"] {
+  -webkit-appearance: none; appearance: none; height: 6px;
+  border-radius: 3px; background: var(--slider-track); outline: none; width: 120px;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 2px solid var(--panel-bg); transition: transform 0.15s;
+}
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+.btns { display: flex; gap: 6px; margin-left: auto; }
+.btn {
+  padding: 8px 16px; border: 1px solid var(--border); background: transparent;
+  color: var(--text); font-family: var(--font); font-size: 0.82rem;
+  border-radius: 7px; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; gap: 5px;
+}
+.btn:hover { border-color: var(--accent); color: #fff; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #4a8bc5; }
+.btn:active { transform: scale(0.97); }
+
+.guide {
+  background: var(--panel-bg); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: 10px;
+  padding: 12px 18px; font-size: 0.9rem; color: #c8d6f0;
+  font-style: italic; min-height: 42px; transition: all 0.3s;
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 780px) {
+  .bottom-row { flex-direction: column; }
+  .controls { flex-direction: column; align-items: flex-start; }
+  .btns { margin-left: 0; }
+  .header { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <h1><span>&#x1F36C;</span> Sneaking Snacks: Diffusion Explorer</h1>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-mode="0">&#x1F36C; Sneaking Snacks</button>
+      <button class="tab" data-mode="1">&#x1F372;&#x1F366; Hot Pot vs Ice Cream</button>
+      <button class="tab" data-mode="2">&#x1F336;&#x1F96B; Spicy Sticks vs Yogurt</button>
+      <button class="tab" data-mode="3">&#x2615; Sugar in Tea</button>
+    </div>
+  </div>
+
+  <div class="canvas-panel"><canvas id="mainCanvas"></canvas></div>
+
+  <div class="bottom-row">
+    <div class="graph-panel">
+      <h3>&#x1F4C8; Concentration Profile</h3>
+      <canvas id="graphCanvas"></canvas>
+    </div>
+    <div class="data-panel">
+      <h3>&#x1F4CA; Live Data</h3>
+      <div class="data-items" id="dataItems"></div>
+    </div>
+  </div>
+
+  <div class="controls" id="controls">
+    <div class="control-group" id="ctrlTemp">
+      <label>&#x1F321; Temperature</label>
+      <input type="range" id="tempSlider" min="0" max="100" value="80">
+      <span class="val" id="tempVal">80&#xB0;C</span>
+    </div>
+    <div class="control-group" id="ctrlMass">
+      <label>&#x2696; Molecule Size</label>
+      <input type="range" id="massSlider" min="5" max="200" value="120">
+      <span class="val" id="massVal">Large (Yogurt)</span>
+    </div>
+    <div class="btns">
+      <button class="btn" id="btnAir">&#x1F4A8; Realistic Mode</button>
+      <button class="btn primary" id="btnPlay">&#x25B6; Start</button>
+      <button class="btn" id="btnPause">&#x23F8; Pause</button>
+      <button class="btn" id="btnReset">&#x21BB; Reset</button>
+      <button class="btn" id="btnSpeed">&#x23E9; 1&#xD7;</button>
+    </div>
+  </div>
+
+  <div class="guide" id="guide">
+    A student opens a snack at their desk. How far does the smell travel? Why?
+  </div>
+
+</div>
+
+<script>
+// ==================== COLOR PARSER ====================
+function parseRGB(c) {
+  const m = c.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (m) return { r: +m[1], g: +m[2], b: +m[3] };
+  if (c.startsWith('#') && c.length === 7)
+    return { r: parseInt(c.slice(1, 3), 16), g: parseInt(c.slice(3, 5), 16), b: parseInt(c.slice(5, 7), 16) };
+  if (c.startsWith('#') && c.length === 4)
+    return { r: parseInt(c[1] + c[1], 16), g: parseInt(c[2] + c[2], 16), b: parseInt(c[3] + c[3], 16) };
+  return { r: 150, g: 150, b: 150 };
+}
+
+// ==================== PARTICLE CLASS ====================
+class Particle {
+  constructor(x, y, vx, vy, r, color, mass) {
+    this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+    this.r = r; this.color = color; this.mass = mass || 1;
+    this.alive = true; this.frozen = false; this.isAir = false;
+    this.rgb = parseRGB(color);
+  }
+  update(bounds, tempFactor, brownianStr) {
+    if (this.frozen) return;
+    this.vx += (Math.random() - 0.5) * brownianStr;
+    this.vy += (Math.random() - 0.5) * brownianStr;
+    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+    if (speed > 0) {
+      const targetSpeed = tempFactor * 1.6;
+      const factor = targetSpeed / Math.max(speed, 0.1);
+      this.vx *= 1 + (factor - 1) * 0.05;
+      this.vy *= 1 + (factor - 1) * 0.05;
+    }
+    this.x += this.vx; this.y += this.vy;
+    const { x1, y1, x2, y2 } = bounds;
+    if (this.x - this.r < x1) { this.x = x1 + this.r; this.vx *= -0.8; }
+    if (this.x + this.r > x2) { this.x = x2 - this.r; this.vx *= -0.8; }
+    if (this.y - this.r < y1) { this.y = y1 + this.r; this.vy *= -0.8; }
+    if (this.y + this.r > y2) { this.y = y2 - this.r; this.vy *= -0.8; }
+  }
+  draw(ctx) {
+    if (!this.alive) return;
+    const { x, y, vx, vy, r, rgb } = this;
+    // Air particles: visible small disc with a soft halo
+    if (this.isAir) {
+      const halo = ctx.createRadialGradient(x, y, r * 0.3, x, y, r * 2.2);
+      halo.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.18)`);
+      halo.addColorStop(1, `rgba(${rgb.r},${rgb.g},${rgb.b},0)`);
+      ctx.beginPath(); ctx.arc(x, y, r * 2.2, 0, Math.PI * 2);
+      ctx.fillStyle = halo; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.45)`;
+      ctx.fill();
+      return;
+    }
+    const speed = Math.sqrt(vx * vx + vy * vy);
+    // Motion trail (comet-like tail opposite to velocity)
+    if (speed > 0.03) {
+      const tailLen = Math.min(r * 4.5, speed * 14);
+      const nx = -vx / speed, ny = -vy / speed;
+      const steps = 10;
+      for (let i = 1; i <= steps; i++) {
+        const t = i / steps;
+        const tr = r * (1 - t * 0.7);
+        const alpha = 0.45 * (1 - t);
+        const tx = x + nx * tailLen * t;
+        const ty = y + ny * tailLen * t;
+        ctx.beginPath(); ctx.arc(tx, ty, tr, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},${alpha})`;
+        ctx.fill();
+      }
+    }
+    // Soft outer glow
+    const glowR = r * 2.4;
+    const glow = ctx.createRadialGradient(x, y, r * 0.5, x, y, glowR);
+    glow.addColorStop(0, `rgba(${rgb.r},${rgb.g},${rgb.b},0.30)`);
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.beginPath(); ctx.arc(x, y, glowR, 0, Math.PI * 2);
+    ctx.fillStyle = glow; ctx.fill();
+    // 3D sphere gradient (bright upper-left → dark lower-right)
+    const hR = Math.min(255, rgb.r + 90), hG = Math.min(255, rgb.g + 90), hB = Math.min(255, rgb.b + 90);
+    const sR = Math.max(0, rgb.r - 60), sG = Math.max(0, rgb.g - 60), sB = Math.max(0, rgb.b - 60);
+    const grad = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.06, x, y, r);
+    grad.addColorStop(0, `rgb(${hR},${hG},${hB})`);
+    grad.addColorStop(0.45, `rgb(${rgb.r},${rgb.g},${rgb.b})`);
+    grad.addColorStop(1, `rgb(${sR},${sG},${sB})`);
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = grad; ctx.fill();
+    // Specular highlight dot
+    ctx.beginPath(); ctx.arc(x - r * 0.28, y - r * 0.32, r * 0.26, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    ctx.fill();
+  }
+}
+
+function collideParticles(a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const minDist = a.r + b.r;
+  if (dist < minDist && dist > 0) {
+    const overlap = (minDist - dist) / 2;
+    const nx = dx / dist, ny = dy / dist;
+    a.x -= nx * overlap; a.y -= ny * overlap;
+    b.x += nx * overlap; b.y += ny * overlap;
+    const dvx = a.vx - b.vx, dvy = a.vy - b.vy;
+    const dvDotN = dvx * nx + dvy * ny;
+    if (dvDotN > 0) {
+      const totalMass = a.mass + b.mass;
+      const impulse = 1.8 * dvDotN / totalMass;
+      a.vx -= impulse * b.mass * nx; a.vy -= impulse * b.mass * ny;
+      b.vx += impulse * a.mass * nx; b.vy += impulse * a.mass * ny;
+    }
+  }
+}
+
+// ==================== ENGINE SETUP ====================
+const mainCanvas = document.getElementById('mainCanvas');
+const mainCtx = mainCanvas.getContext('2d');
+const graphCanvas = document.getElementById('graphCanvas');
+const graphCtx = graphCanvas.getContext('2d');
+
+function logicalW() { return mainCanvas.width / (window.devicePixelRatio || 1); }
+function logicalH() { return mainCanvas.height / (window.devicePixelRatio || 1); }
+
+function resizeCanvas() {
+  const panel = mainCanvas.parentElement;
+  const w = panel.clientWidth;
+  const ratio = 500 / 960;
+  const h = Math.round(w * ratio);
+  mainCanvas.width = w * (window.devicePixelRatio || 1);
+  mainCanvas.height = h * (window.devicePixelRatio || 1);
+  mainCanvas.style.width = w + 'px';
+  mainCanvas.style.height = h + 'px';
+  mainCtx.setTransform(1, 0, 0, 1, 0, 0);
+  mainCtx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+  const gp = graphCanvas.parentElement;
+  graphCanvas.width = gp.clientWidth * (window.devicePixelRatio || 1);
+  graphCanvas.height = 80 * (window.devicePixelRatio || 1);
+  graphCanvas.style.width = gp.clientWidth + 'px';
+  graphCanvas.style.height = '80px';
+  graphCtx.setTransform(1, 0, 0, 1, 0, 0);
+  graphCtx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// State
+let mode = 0, playing = false, speedMul = 1;
+let realisticMode = false;
+let particles = [];
+let airParticles = [];
+let frameCount = 0, totalFrames = 0, uniformity = 0;
+
+// Bounds helpers — returns a single container for modes 0 & 3, two for modes 1 & 2
+function roomBounds(W, H, side) {
+  // side: 'left' or 'right'
+  const gap = 30, marginX = 30, marginTop = 40, marginBottom = 40;
+  const mid = W / 2;
+  if (side === 'left')  return { x1: marginX, y1: marginTop, x2: mid - gap / 2, y2: H - marginBottom };
+  if (side === 'right') return { x1: mid + gap / 2, y1: marginTop, x2: W - marginX, y2: H - marginBottom };
+  return { x1: marginX, y1: marginTop, x2: W - marginX, y2: H - marginBottom };
+}
+
+function classroomBounds(W, H) {
+  const margin = 45;
+  return { x1: margin, y1: margin + 10, x2: W - margin, y2: H - margin + 10 };
+}
+
+function teaBounds(W, H) {
+  const cupW = Math.min(360, W * 0.45);
+  const cupH = H * 0.55;
+  const cx = W / 2, cy = H / 2 + 15;
+  return { x1: cx - cupW / 2, y1: cy - cupH / 2, x2: cx + cupW / 2, y2: cy + cupH / 2, cx, cy, cupW, cupH };
+}
+
+// Controls
+const tempSlider = document.getElementById('tempSlider');
+const tempVal = document.getElementById('tempVal');
+let temperature = 80; // default to hot pot temp
+tempSlider.addEventListener('input', () => {
+  temperature = parseInt(tempSlider.value);
+  tempVal.textContent = temperature + '\xB0C';
+});
+
+const massSlider = document.getElementById('massSlider');
+const massVal = document.getElementById('massVal');
+let foodMass = 120; // default to yogurt-like mass
+massSlider.addEventListener('input', () => {
+  foodMass = parseInt(massSlider.value);
+  if (foodMass <= 30) massVal.textContent = 'Small (Spicy Sticks)';
+  else if (foodMass <= 70) massVal.textContent = 'Medium';
+  else massVal.textContent = 'Large (Yogurt)';
+});
+
+// Realistic mode toggle
+const btnAir = document.getElementById('btnAir');
+btnAir.addEventListener('click', () => {
+  realisticMode = !realisticMode;
+  if (realisticMode) {
+    btnAir.textContent = '\u2705 Realistic Mode ON';
+    btnAir.style.borderColor = '#6c9ed6';
+    btnAir.style.color = '#fff';
+  } else {
+    btnAir.textContent = '\uD83D\uDCA8 Realistic Mode';
+    btnAir.style.borderColor = '';
+    btnAir.style.color = '';
+  }
+  resetSim();
+  btnPlay.textContent = '\u25B6 Start';
+});
+
+const btnSpeed = document.getElementById('btnSpeed');
+btnSpeed.addEventListener('click', () => {
+  if (speedMul === 1) { speedMul = 2; btnSpeed.textContent = '\u23E9 2\u00D7'; }
+  else if (speedMul === 2) { speedMul = 4; btnSpeed.textContent = '\u23E9 4\u00D7'; }
+  else { speedMul = 1; btnSpeed.textContent = '\u23E9 1\u00D7'; }
+});
+
+const btnPlay = document.getElementById('btnPlay');
+const btnPause = document.getElementById('btnPause');
+const btnReset = document.getElementById('btnReset');
+btnPlay.addEventListener('click', () => { playing = true; btnPlay.textContent = '\u23F8 Running...'; });
+btnPause.addEventListener('click', () => { playing = false; btnPlay.textContent = '\u25B6 Resume'; });
+btnReset.addEventListener('click', () => { resetSim(); btnPlay.textContent = '\u25B6 Start'; });
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    mode = parseInt(tab.dataset.mode);
+    resetSim();
+    btnPlay.textContent = '\u25B6 Start';
+    updateControlVisibility();
+    updateGuideText();
+  });
+});
+
+function updateControlVisibility() {
+  const ctrlTemp = document.getElementById('ctrlTemp');
+  const ctrlMass = document.getElementById('ctrlMass');
+  if (mode === 0) { ctrlTemp.style.display = 'none'; ctrlMass.style.display = 'none'; }
+  else if (mode === 1) {
+    ctrlTemp.style.display = 'flex'; ctrlMass.style.display = 'none';
+    tempSlider.value = 80; temperature = 80; tempVal.textContent = '80\xB0C';
+  }
+  else if (mode === 2) {
+    ctrlTemp.style.display = 'flex'; ctrlMass.style.display = 'flex';
+    tempSlider.value = 25; temperature = 25; tempVal.textContent = '25\xB0C';
+    massSlider.value = 120; foodMass = 120; massVal.textContent = 'Large (Yogurt)';
+  }
+  else if (mode === 3) {
+    ctrlTemp.style.display = 'flex'; ctrlMass.style.display = 'none';
+    tempSlider.value = 80; temperature = 80; tempVal.textContent = '80\xB0C';
+  }
+}
+
+function updateGuideText() {
+  const g = document.getElementById('guide');
+  const texts = [
+    'A student opens a snack at their desk. How far does the smell travel? Why do particles spread out instead of staying together?',
+    'Which smell reaches you first \u2014 steaming hot pot or cold ice cream? How does temperature affect the rate of diffusion?',
+    'Spicy stick smell (small, light molecules) vs yogurt smell (large, heavy molecules). Both at the same temperature \u2014 which spreads faster?',
+    'A sugar cube sits at the bottom of your tea. It takes TWO processes to spread evenly. What are they? (Hint: CAIE 0620 exam question!)'
+  ];
+  g.textContent = texts[mode];
+}
+
+// ==================== INIT EACH MODE ====================
+function randomSpeed(base) {
+  const angle = Math.random() * Math.PI * 2;
+  const speed = base * (0.5 + Math.random());
+  return { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed };
+}
+
+function resetSim() {
+  playing = false; frameCount = 0; totalFrames = 0;
+  particles = []; airParticles = []; uniformity = 0;
+
+  const W = logicalW(), H = logicalH();
+
+  if (mode === 0) initClassroom(W, H);
+  else if (mode === 1) initHotPotIceCream(W, H);
+  else if (mode === 2) initSpicyYogurt(W, H);
+  else if (mode === 3) initTeaSugar(W, H);
+
+  updateDataPanel(); drawGraph();
+}
+
+// Create background air molecules evenly, excluding a circular zone around the food source
+function spawnAir(b, exclude) {
+  const count = 500;
+  const w = b.x2 - b.x1, h = b.y2 - b.y1;
+  let tries = 0;
+  for (let i = 0; i < count; i++) {
+    let x, y;
+    do {
+      x = b.x1 + Math.random() * w;
+      y = b.y1 + Math.random() * h;
+      tries++;
+    } while (exclude && tries < 200 && Math.hypot(x - exclude.cx, y - exclude.cy) < exclude.r);
+    const s = randomSpeed(0.7);
+    const p = new Particle(x, y, s.vx, s.vy, 3, '#7a8a9c', 1);
+    p.isAir = true;
+    airParticles.push(p);
+    tries = 0;
+  }
+}
+
+// --- Mode 0: Sneaking Snacks (Classroom) ---
+function initClassroom(W, H) {
+  const room = classroomBounds(W, H);
+  // The snack desk is at row 1, col 2 (about 30% from left, 35% from top)
+  const desksPerRow = 4, rows = 3;
+  const deskW = (room.x2 - room.x1) / (desksPerRow + 1);
+  const deskH = (room.y2 - room.y1) / (rows + 1);
+  const snackCol = 1, snackRow = 0; // front-left desk
+  const snackX = room.x1 + deskW * (snackCol + 1);
+  const snackY = room.y1 + deskH * (snackRow + 1);
+
+  for (let i = 0; i < 150; i++) {
+    const x = snackX + (Math.random() - 0.5) * 30;
+    const y = snackY + (Math.random() - 0.5) * 20;
+    const s = randomSpeed(1.0);
+    particles.push(new Particle(x, y, s.vx, s.vy, 5.5, '#ff9ea8', 1));
+  }
+
+  // Air molecules everywhere EXCEPT near the snack
+  if (realisticMode) spawnAir(room, { cx: snackX, cy: snackY, r: 35 });
+}
+
+// --- Mode 1: Hot Pot vs Ice Cream ---
+function initHotPotIceCream(W, H) {
+  const leftRoom = roomBounds(W, H, 'left');
+  const rightRoom = roomBounds(W, H, 'right');
+  // Hot pot: center of left room, particles burst from there
+  const hotCX = leftRoom.x1 + (leftRoom.x2 - leftRoom.x1) / 2;
+  const hotCY = leftRoom.y1 + (leftRoom.y2 - leftRoom.y1) * 0.35;
+  const hotSpeed = 4.0;
+  for (let i = 0; i < 90; i++) {
+    const x = hotCX + (Math.random() - 0.5) * 40;
+    const y = hotCY + (Math.random() - 0.5) * 20;
+    const s = randomSpeed(hotSpeed);
+    particles.push(new Particle(x, y, s.vx, s.vy, 6.5, '#f4a261', 1));
+  }
+  // Air in left room — exclude hot pot area
+  if (realisticMode) spawnAir(leftRoom, { cx: hotCX, cy: hotCY, r: 50 });
+
+  // Ice cream: center of right room
+  const coldCX = rightRoom.x1 + (rightRoom.x2 - rightRoom.x1) / 2;
+  const coldCY = rightRoom.y1 + (rightRoom.y2 - rightRoom.y1) * 0.35;
+  const coldSpeed = 0.05;
+  for (let i = 0; i < 90; i++) {
+    const x = coldCX + (Math.random() - 0.5) * 40;
+    const y = coldCY + (Math.random() - 0.5) * 20;
+    const s = randomSpeed(coldSpeed);
+    particles.push(new Particle(x, y, s.vx, s.vy, 6.5, '#8ecae6', 1));
+  }
+  // Air in right room — exclude ice cream area
+  if (realisticMode) spawnAir(rightRoom, { cx: coldCX, cy: coldCY, r: 50 });
+}
+
+// --- Mode 2: Spicy Sticks vs Yogurt ---
+function initSpicyYogurt(W, H) {
+  const leftRoom = roomBounds(W, H, 'left');
+  const rightRoom = roomBounds(W, H, 'right');
+  // Spicy sticks: small, light molecules (Mr ~ 30) — fast
+  const spicyCX = leftRoom.x1 + (leftRoom.x2 - leftRoom.x1) / 2;
+  const spicyCY = leftRoom.y1 + (leftRoom.y2 - leftRoom.y1) * 0.35;
+  const spicySpeed = 6.0;
+  for (let i = 0; i < 90; i++) {
+    const x = spicyCX + (Math.random() - 0.5) * 40;
+    const y = spicyCY + (Math.random() - 0.5) * 20;
+    const s = randomSpeed(spicySpeed);
+    particles.push(new Particle(x, y, s.vx, s.vy, 5, '#e07a7a', 30));
+  }
+  // Air in left room — exclude spicy sticks area
+  if (realisticMode) spawnAir(leftRoom, { cx: spicyCX, cy: spicyCY, r: 50 });
+
+  // Yogurt: large, heavy molecules (Mr ~ foodMass) — slow
+  const yogurtCX = rightRoom.x1 + (rightRoom.x2 - rightRoom.x1) / 2;
+  const yogurtCY = rightRoom.y1 + (rightRoom.y2 - rightRoom.y1) * 0.35;
+  const massRatio = Math.sqrt(foodMass / 30);
+  const yogurtSpeed = 6.0 / massRatio;
+  for (let i = 0; i < 90; i++) {
+    const x = yogurtCX + (Math.random() - 0.5) * 40;
+    const y = yogurtCY + (Math.random() - 0.5) * 20;
+    const s = randomSpeed(yogurtSpeed);
+    particles.push(new Particle(x, y, s.vx, s.vy, 9, '#f5f0ea', foodMass));
+  }
+  // Air in right room — exclude yogurt area
+  if (realisticMode) spawnAir(rightRoom, { cx: yogurtCX, cy: yogurtCY, r: 50 });
+}
+
+// --- Mode 3: Sugar in Tea ---
+function initTeaSugar(W, H) {
+  const b = teaBounds(W, H);
+  // Sugar cube at bottom center, slightly above bottom
+  const cubeCX = b.cx, cubeCY = b.cy + b.cupH * 0.35;
+  const cubeSize = 28;
+  for (let i = 0; i < 100; i++) {
+    const x = cubeCX + (Math.random() - 0.5) * cubeSize;
+    const y = cubeCY + (Math.random() - 0.5) * cubeSize;
+    const p = new Particle(x, y, 0, 0, 4.5, '#d7b894', 1);
+    p.frozen = true;
+    particles.push(p);
+  }
+  // Air in the tea cup — exclude sugar cube area
+  if (realisticMode) spawnAir(b, { cx: cubeCX, cy: cubeCY, r: 30 });
+}
+
+// ==================== UPDATE ====================
+function update() {
+  if (!playing) return;
+  frameCount++;
+  const steps = speedMul;
+  for (let s = 0; s < steps; s++) {
+    totalFrames++;
+    const W = logicalW(), H = logicalH();
+
+    if (mode === 0) {
+      const room = classroomBounds(W, H);
+      const tempF = 1.0;
+      for (const p of particles) p.update(room, tempF, 0.15);
+    }
+    else if (mode === 1) {
+      const left = roomBounds(W, H, 'left'), right = roomBounds(W, H, 'right');
+      const hotF = Math.sqrt((temperature + 273) / 273) * 1.5;
+      const coldF = 0.12;
+      for (const p of particles) {
+        if (p.color === '#f4a261') p.update(left, hotF, 0.15);
+        else p.update(right, coldF, 0.03);
+      }
+    }
+    else if (mode === 2) {
+      const left = roomBounds(W, H, 'left'), right = roomBounds(W, H, 'right');
+      const tempF = Math.sqrt((temperature + 273) / 298);
+      const massRatio = Math.sqrt(foodMass / 30);
+      for (const p of particles) {
+        if (p.mass === 30) p.update(left, tempF, 0.15);
+        else p.update(right, tempF / massRatio / massRatio, 0.03);
+      }
+    }
+    else if (mode === 3) {
+      const b = teaBounds(W, H);
+      const tempF = Math.sqrt((temperature + 273) / 298);
+      const elapsed = totalFrames / (60 / speedMul);
+      // Phase 1: Dissolving (first 5 seconds)
+      if (elapsed < 5) {
+        if (totalFrames % Math.max(1, Math.floor(10 / speedMul)) === 0) {
+          const frozen = particles.filter(p => p.frozen);
+          if (frozen.length > 0) {
+            const cubeCX = b.cx, cubeCY = b.cy + b.cupH * 0.35;
+            frozen.sort((a, b2) => {
+              const da = (a.x - cubeCX) ** 2 + (a.y - cubeCY) ** 2;
+              const db = (b2.x - cubeCX) ** 2 + (b2.y - cubeCY) ** 2;
+              return db - da;
+            });
+            const p = frozen[0]; p.frozen = false;
+            const angle = Math.random() * Math.PI * 2;
+            p.vx = Math.cos(angle) * 0.8;
+            p.vy = Math.sin(angle) * 0.8 - 0.5;
+          }
+        }
+      }
+      for (const p of particles) p.update(b, tempF, 0.12);
+    }
+
+    // Update air particles in the same container(s)
+    if (realisticMode && airParticles.length > 0) {
+      const airBounds = (mode === 0) ? classroomBounds(W, H)
+        : (mode === 3) ? teaBounds(W, H) : roomBounds(W, H);
+      for (const ap of airParticles) ap.update(airBounds, 0.8, 0.08);
+    }
+
+    // Collisions
+    if (mode !== 2) {
+      for (let i = 0; i < particles.length; i++)
+        for (let j = i + 1; j < particles.length; j++)
+          collideParticles(particles[i], particles[j]);
+    }
+    // Target-air collisions
+    if (realisticMode && mode !== 2) {
+      for (let i = 0; i < particles.length; i++)
+        for (let j = 0; j < airParticles.length; j++)
+          collideParticles(particles[i], airParticles[j]);
+    }
+  }
+  if (frameCount % 10 === 0) calcUniformity();
+  updateDataPanel();
+}
+
+// ==================== UNIFORMITY ====================
+function calcUniformity() {
+  const W = logicalW(), H = logicalH();
+  const bins = 20;
+  let counts, b;
+  if (mode === 0) {
+    b = classroomBounds(W, H);
+    counts = new Array(bins).fill(0);
+    for (const p of particles) {
+      const idx = Math.min(bins - 1, Math.max(0, Math.floor((p.x - b.x1) / (b.x2 - b.x1) * bins)));
+      counts[idx]++;
+    }
+  } else if (mode === 1) {
+    b = roomBounds(W, H, 'left');
+    counts = new Array(bins).fill(0);
+    for (const p of particles) {
+      if (p.color !== '#f4a261') continue;
+      const idx = Math.min(bins - 1, Math.max(0, Math.floor((p.x - b.x1) / (b.x2 - b.x1) * bins)));
+      counts[idx]++;
+    }
+  } else if (mode === 2) {
+    b = roomBounds(W, H, 'left');
+    counts = new Array(bins).fill(0);
+    for (const p of particles) {
+      if (p.mass !== 30) continue;
+      const idx = Math.min(bins - 1, Math.max(0, Math.floor((p.x - b.x1) / (b.x2 - b.x1) * bins)));
+      counts[idx]++;
+    }
+  } else {
+    b = teaBounds(W, H);
+    counts = new Array(bins).fill(0);
+    for (const p of particles) {
+      if (p.frozen) continue;
+      const idx = Math.min(bins - 1, Math.max(0, Math.floor((p.x - b.x1) / (b.x2 - b.x1) * bins)));
+      counts[idx]++;
+    }
+  }
+  const mean = counts.reduce((a, c) => a + c, 0) / bins;
+  if (mean === 0) { uniformity = 0; return; }
+  const variance = counts.reduce((a, c) => a + (c - mean) ** 2, 0) / bins;
+  const std = Math.sqrt(variance);
+  uniformity = Math.max(0, Math.min(100, (1 - std / mean) * 100));
+}
+
+// ==================== DATA PANEL ====================
+function updateDataPanel() {
+  const el = document.getElementById('dataItems');
+  let html = '';
+
+  if (mode === 0) {
+    html += dv('Smell particles', particles.length);
+    html += dv('Uniformity', uniformity.toFixed(1) + '%');
+    html += dv('Status', uniformity > 85 ? 'Smell fills the room!' : 'Spreading...');
+  } else if (mode === 1) {
+    const hotP = particles.filter(p => p.color === '#f4a261');
+    html += dv('\uD83C\uDF72 Hot Pot temp', temperature + '\xB0C');
+    html += dv('\uD83C\uDF66 Ice Cream temp', '5\xB0C');
+    html += dv('Hot pot spread', uniformity.toFixed(1) + '%');
+    html += dv('Time elapsed', (totalFrames / 60).toFixed(1) + 's');
+  } else if (mode === 2) {
+    const spicy = particles.filter(p => p.mass === 30);
+    const yogurt = particles.filter(p => p.mass !== 30);
+    const ratio = Math.sqrt(foodMass / 30);
+    html += dv('\uD83C\uDF36 Spicy Sticks M\u1D63', '30 (small)');
+    html += dv('\uD83E\uDD6B Yogurt M\u1D63', foodMass + ' (large)');
+    html += dv('Speed ratio', ratio.toFixed(2) + ' : 1');
+    html += dv('Spicy spread', uniformity.toFixed(1) + '%');
+  } else if (mode === 3) {
+    const frozen = particles.filter(p => p.frozen).length;
+    const active = particles.length - frozen;
+    const phase = frozen > 10 ? '\u2460 Dissolving' : '\u2461 Diffusing';
+    html += dv('Phase', phase);
+    html += dv('Released', active + ' / ' + particles.length);
+    html += dv('Uniformity', uniformity.toFixed(1) + '%');
+  }
+  el.innerHTML = html;
+}
+function dv(label, value) {
+  return '<div class="data-item"><span class="label">' + label + '</span><span class="value">' + value + '</span></div>';
+}
+
+// ==================== DRAW SCENES ====================
+
+function drawClassroomScene(W, H) {
+  const room = classroomBounds(W, H);
+  // Room walls
+  mainCtx.strokeStyle = '#8bb6c4'; mainCtx.lineWidth = 2;
+  mainCtx.strokeRect(room.x1, room.y1, room.x2 - room.x1, room.y2 - room.y1);
+  // Floor tint
+  mainCtx.fillStyle = 'rgba(90,80,70,0.10)';
+  mainCtx.fillRect(room.x1, room.y1, room.x2 - room.x1, room.y2 - room.y1);
+  // "Classroom" label
+  mainCtx.fillStyle = '#556'; mainCtx.font = 'bold 11px ' + getComputedStyle(document.body).fontFamily;
+  mainCtx.textAlign = 'center';
+  mainCtx.fillText('Classroom', room.x1 + (room.x2 - room.x1) / 2, room.y1 - 16);
+
+  // Desks grid: 4 cols x 3 rows
+  const desksPerRow = 4, deskRows = 3;
+  const deskW = (room.x2 - room.x1) / (desksPerRow + 1);
+  const deskH = (room.y2 - room.y1) / (deskRows + 1);
+  const snackCol = 1, snackRow = 0;
+
+  for (let r = 0; r < deskRows; r++) {
+    for (let c = 0; c < desksPerRow; c++) {
+      const dx = room.x1 + deskW * (c + 1);
+      const dy = room.y1 + deskH * (r + 1);
+      const dw = deskW * 0.55, dh = deskH * 0.32;
+      const isSnack = (c === snackCol && r === snackRow);
+      // Desk
+      mainCtx.fillStyle = isSnack ? 'rgba(255,160,120,0.22)' : 'rgba(110,120,135,0.32)';
+      roundRect(mainCtx, dx - dw / 2, dy - dh / 2, dw, dh, 5);
+      mainCtx.fill();
+      mainCtx.strokeStyle = isSnack ? 'rgba(255,140,100,0.5)' : 'rgba(100,110,130,0.35)';
+      mainCtx.lineWidth = isSnack ? 1.5 : 1;
+      roundRect(mainCtx, dx - dw / 2, dy - dh / 2, dw, dh, 5);
+      mainCtx.stroke();
+      // Snack icon
+      if (isSnack) {
+        mainCtx.fillStyle = '#ff6644';
+        mainCtx.font = '18px ' + getComputedStyle(document.body).fontFamily;
+        mainCtx.textAlign = 'center';
+        mainCtx.fillText('\uD83C\uDF6C', dx, dy + 6);
+      }
+    }
+  }
+}
+
+// --- Mode 1: Hot Pot vs Ice Cream ---
+function drawHotPotIceCream(W, H) {
+  const left = roomBounds(W, H, 'left');
+  const right = roomBounds(W, H, 'right');
+
+  // Left room — hot pot kitchen (warm tint)
+  mainCtx.fillStyle = 'rgba(240,160,100,0.07)';
+  mainCtx.fillRect(left.x1, left.y1, left.x2 - left.x1, left.y2 - left.y1);
+  mainCtx.strokeStyle = '#b87850'; mainCtx.lineWidth = 2;
+  mainCtx.strokeRect(left.x1, left.y1, left.x2 - left.x1, left.y2 - left.y1);
+
+  // Hot pot icon
+  const hotCX = left.x1 + (left.x2 - left.x1) / 2;
+  const hotCY = left.y1 + (left.y2 - left.y1) * 0.35;
+  drawHotPot(hotCX, hotCY, 35);
+
+  // Label
+  mainCtx.fillStyle = '#f4a261'; mainCtx.font = 'bold 13px ' + getComputedStyle(document.body).fontFamily;
+  mainCtx.textAlign = 'center';
+  mainCtx.fillText('\uD83C\uDF72 Hot Pot (' + temperature + '\xB0C)', hotCX, left.y1 - 14);
+
+  // Right room — ice cream (cold tint)
+  mainCtx.fillStyle = 'rgba(140,200,230,0.08)';
+  mainCtx.fillRect(right.x1, right.y1, right.x2 - right.x1, right.y2 - right.y1);
+  mainCtx.strokeStyle = '#5a8aa0'; mainCtx.lineWidth = 2;
+  mainCtx.strokeRect(right.x1, right.y1, right.x2 - right.x1, right.y2 - right.y1);
+
+  // Ice cream icon
+  const coldCX = right.x1 + (right.x2 - right.x1) / 2;
+  const coldCY = right.y1 + (right.y2 - right.y1) * 0.35;
+  drawIceCream(coldCX, coldCY, 35);
+
+  mainCtx.fillStyle = '#8ecae6';
+  mainCtx.fillText('\uD83C\uDF66 Ice Cream (5\xB0C)', coldCX, right.y1 - 14);
+}
+
+function drawHotPot(cx, cy, size) {
+  // Pot body
+  mainCtx.fillStyle = '#6b4a3a'; mainCtx.strokeStyle = '#9a7a6a'; mainCtx.lineWidth = 2;
+  mainCtx.beginPath(); mainCtx.ellipse(cx, cy + size * 0.3, size * 0.7, size * 0.35, 0, 0, Math.PI * 2); mainCtx.fill(); mainCtx.stroke();
+  // Pot rim
+  mainCtx.fillStyle = '#8a6a5a';
+  mainCtx.beginPath(); mainCtx.ellipse(cx, cy, size * 0.8, size * 0.25, 0, 0, Math.PI * 2); mainCtx.fill(); mainCtx.stroke();
+  // Soup surface
+  mainCtx.fillStyle = '#d07050';
+  mainCtx.beginPath(); mainCtx.ellipse(cx, cy, size * 0.65, size * 0.18, 0, 0, Math.PI * 2); mainCtx.fill();
+  // Steam wisps
+  mainCtx.strokeStyle = 'rgba(255,210,190,0.55)'; mainCtx.lineWidth = 1.5;
+  for (let i = 0; i < 3; i++) {
+    const sx = cx - size * 0.3 + i * size * 0.3;
+    mainCtx.beginPath(); mainCtx.moveTo(sx, cy - size * 0.2);
+    mainCtx.quadraticCurveTo(sx + (i - 1) * 8, cy - size * 0.7, sx, cy - size * 1.0);
+    mainCtx.stroke();
+  }
+}
+
+function drawIceCream(cx, cy, size) {
+  // Bowl
+  mainCtx.fillStyle = '#e8f0ff'; mainCtx.strokeStyle = '#b8d0e8'; mainCtx.lineWidth = 2;
+  mainCtx.beginPath(); mainCtx.ellipse(cx, cy + size * 0.3, size * 0.65, size * 0.3, 0, Math.PI, 0); mainCtx.fill(); mainCtx.stroke();
+  // Scoop
+  mainCtx.fillStyle = '#ffeff4';
+  mainCtx.beginPath(); mainCtx.arc(cx, cy - size * 0.2, size * 0.55, Math.PI, 0); mainCtx.fill();
+  mainCtx.strokeStyle = '#e8c8d8'; mainCtx.stroke();
+  // Strawberry bits
+  mainCtx.fillStyle = '#e8708a';
+  for (let i = 0; i < 4; i++) {
+    mainCtx.beginPath();
+    mainCtx.arc(cx - size * 0.2 + i * size * 0.15, cy - size * 0.25 + Math.random() * size * 0.2, 3, 0, Math.PI * 2);
+    mainCtx.fill();
+  }
+}
+
+// --- Mode 2: Spicy Sticks vs Yogurt ---
+function drawSpicyYogurt(W, H) {
+  const left = roomBounds(W, H, 'left');
+  const right = roomBounds(W, H, 'right');
+
+  // Left — spicy sticks kitchen (warm red tint)
+  mainCtx.fillStyle = 'rgba(220,120,120,0.07)';
+  mainCtx.fillRect(left.x1, left.y1, left.x2 - left.x1, left.y2 - left.y1);
+  mainCtx.strokeStyle = '#b06050'; mainCtx.lineWidth = 2;
+  mainCtx.strokeRect(left.x1, left.y1, left.x2 - left.x1, left.y2 - left.y1);
+
+  const spicyCX = left.x1 + (left.x2 - left.x1) / 2;
+  const spicyCY = left.y1 + (left.y2 - left.y1) * 0.35;
+  drawSpicySticks(spicyCX, spicyCY, 30);
+
+  mainCtx.fillStyle = '#e07a7a'; mainCtx.font = 'bold 12px ' + getComputedStyle(document.body).fontFamily;
+  mainCtx.textAlign = 'center';
+  mainCtx.fillText('\uD83C\uDF36 Spicy Sticks (M\u1D63 \u2248 30)', spicyCX, left.y1 - 14);
+  mainCtx.fillText('\u2190 light molecules, fast!', spicyCX, left.y2 + 20);
+
+  // Right — yogurt (creamy white tint)
+  mainCtx.fillStyle = 'rgba(245,240,235,0.08)';
+  mainCtx.fillRect(right.x1, right.y1, right.x2 - right.x1, right.y2 - right.y1);
+  mainCtx.strokeStyle = '#9a8a7a'; mainCtx.lineWidth = 2;
+  mainCtx.strokeRect(right.x1, right.y1, right.x2 - right.x1, right.y2 - right.y1);
+
+  const yogurtCX = right.x1 + (right.x2 - right.x1) / 2;
+  const yogurtCY = right.y1 + (right.y2 - right.y1) * 0.35;
+  drawYogurt(yogurtCX, yogurtCY, 30);
+
+  mainCtx.fillStyle = '#b8a080'; mainCtx.font = 'bold 12px ' + getComputedStyle(document.body).fontFamily;
+  mainCtx.fillText('\uD83E\uDD6B Yogurt (M\u1D63 \u2248 ' + foodMass + ')', yogurtCX, right.y1 - 14);
+  mainCtx.fillText('\u2192 heavy molecules, slow!', yogurtCX, right.y2 + 20);
+
+  // Speed ratio annotation between the two rooms
+  const ratio = Math.sqrt(foodMass / 30);
+  mainCtx.fillStyle = '#5a7088'; mainCtx.font = 'italic 11px ' + getComputedStyle(document.body).fontFamily;
+  mainCtx.textAlign = 'center';
+  mainCtx.fillText(
+    'Rate\u221D 1/\u221AM\u1D63 \u2192 Spicy Sticks are ' + ratio.toFixed(1) + '\u00D7 faster',
+    W / 2, H - 8
+  );
+}
+
+function drawSpicySticks(cx, cy, size) {
+  // Bag/container
+  mainCtx.fillStyle = '#d05040'; mainCtx.strokeStyle = '#a03020'; mainCtx.lineWidth = 2;
+  roundRect(mainCtx, cx - size * 0.5, cy - size * 0.6, size, size * 1.2, 6);
+  mainCtx.fill(); mainCtx.stroke();
+  // Chili icon
+  mainCtx.fillStyle = '#ff3322';
+  mainCtx.font = size * 0.9 + 'px ' + getComputedStyle(document.body).fontFamily;
+  mainCtx.textAlign = 'center';
+  mainCtx.fillText('\uD83C\uDF36', cx, cy + size * 0.15);
+}
+
+function drawYogurt(cx, cy, size) {
+  // Cup body
+  mainCtx.fillStyle = '#f5f0e8'; mainCtx.strokeStyle = '#ddd8cc'; mainCtx.lineWidth = 2;
+  mainCtx.beginPath();
+  mainCtx.moveTo(cx - size * 0.45, cy - size * 0.5);
+  mainCtx.lineTo(cx - size * 0.35, cy + size * 0.5);
+  mainCtx.lineTo(cx + size * 0.35, cy + size * 0.5);
+  mainCtx.lineTo(cx + size * 0.45, cy - size * 0.5);
+  mainCtx.closePath(); mainCtx.fill(); mainCtx.stroke();
+  // Lid
+  mainCtx.fillStyle = '#d0c8b8';
+  roundRect(mainCtx, cx - size * 0.5, cy - size * 0.6, size, size * 0.22, 4);
+  mainCtx.fill(); mainCtx.stroke();
+}
+
+// --- Mode 3: Sugar in Tea ---
+function drawTeaScene(W, H) {
+  const b = teaBounds(W, H);
+  const elapsed = totalFrames / (60 / speedMul);
+
+  // Tea cup body (trapezoid)
+  mainCtx.fillStyle = 'rgba(120,90,50,0.20)';
+  mainCtx.strokeStyle = '#9a7a6a'; mainCtx.lineWidth = 2.5;
+  mainCtx.beginPath();
+  const topW = b.cupW * 0.48, botW = b.cupW * 0.32;
+  const topY = b.cy - b.cupH * 0.48;
+  const botY = b.cy + b.cupH * 0.48;
+  mainCtx.moveTo(b.cx - topW, topY);
+  mainCtx.lineTo(b.cx - botW, botY);
+  mainCtx.lineTo(b.cx + botW, botY);
+  mainCtx.lineTo(b.cx + topW, topY);
+  mainCtx.closePath(); mainCtx.fill(); mainCtx.stroke();
+
+  // Tea liquid surface
+  mainCtx.fillStyle = 'rgba(180,120,60,0.12)';
+  mainCtx.beginPath();
+  mainCtx.ellipse(b.cx, topY + 5, topW * 0.9, 8, 0, 0, Math.PI * 2);
+  mainCtx.fill();
+
+  // Cup handle
+  mainCtx.strokeStyle = '#9a7a6a'; mainCtx.lineWidth = 3;
+  mainCtx.beginPath();
+  mainCtx.arc(b.cx + topW + 10, b.cy - 5, 18, -Math.PI * 0.6, Math.PI * 0.6);
+  mainCtx.stroke();
+
+  // Saucer
+  mainCtx.fillStyle = 'rgba(160,140,120,0.12)';
+  mainCtx.strokeStyle = '#7a6a5a'; mainCtx.lineWidth = 1.5;
+  mainCtx.beginPath();
+  mainCtx.ellipse(b.cx, botY + 12, b.cupW * 0.5, 10, 0, 0, Math.PI * 2);
+  mainCtx.fill(); mainCtx.stroke();
+
+  // Sugar cube at bottom center
+  const cubeCX = b.cx, cubeCY = b.cy + b.cupH * 0.35;
+  const cubeSize = 28;
+  const frozen = particles.filter(p => p.frozen).length;
+  const cubeAlpha = Math.max(0.08, frozen / particles.length);
+  mainCtx.fillStyle = 'rgba(215,184,148,' + cubeAlpha + ')';
+  mainCtx.shadowColor = 'rgba(0,0,0,0.3)'; mainCtx.shadowBlur = 4;
+  roundRect(mainCtx, cubeCX - cubeSize / 2, cubeCY - cubeSize / 2, cubeSize, cubeSize, 4);
+  mainCtx.fill();
+  mainCtx.shadowBlur = 0;
+  mainCtx.strokeStyle = 'rgba(180,150,110,' + (cubeAlpha * 0.7) + ')';
+  mainCtx.lineWidth = 1.5;
+  roundRect(mainCtx, cubeCX - cubeSize / 2, cubeCY - cubeSize / 2, cubeSize, cubeSize, 4);
+  mainCtx.stroke();
+
+  // Phase labels
+  if (elapsed < 6 && playing) {
+    mainCtx.fillStyle = '#f0a060'; mainCtx.font = 'bold 14px ' + getComputedStyle(document.body).fontFamily;
+    mainCtx.textAlign = 'center';
+    mainCtx.fillText('\u2460 Dissolving \u2014 particles leave the solid surface', b.cx, b.y2 + 22);
+  } else if (elapsed >= 6 && playing) {
+    mainCtx.fillStyle = '#5b9bd5'; mainCtx.font = 'bold 14px ' + getComputedStyle(document.body).fontFamily;
+    mainCtx.textAlign = 'center';
+    mainCtx.fillText('\u2461 Diffusion \u2014 particles spread through the tea', b.cx, b.y2 + 22);
+  }
+
+  // Cup label
+  mainCtx.fillStyle = '#d7b894'; mainCtx.font = 'bold 12px ' + getComputedStyle(document.body).fontFamily;
+  mainCtx.textAlign = 'center';
+  mainCtx.fillText('\u2615 Hot Tea (' + temperature + '\xB0C)', b.cx, b.y1 - 18);
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+// ==================== MAIN DRAW ====================
+function draw() {
+  const W = logicalW(), H = logicalH();
+  mainCtx.clearRect(0, 0, W, H);
+
+  if (mode === 0) {
+    drawClassroomScene(W, H);
+    if (realisticMode) for (const ap of airParticles) ap.draw(mainCtx);
+    for (const p of particles) p.draw(mainCtx);
+  } else if (mode === 1) {
+    drawHotPotIceCream(W, H);
+    if (realisticMode) for (const ap of airParticles) ap.draw(mainCtx);
+    for (const p of particles) p.draw(mainCtx);
+  } else if (mode === 2) {
+    drawSpicyYogurt(W, H);
+    if (realisticMode) for (const ap of airParticles) ap.draw(mainCtx);
+    for (const p of particles) p.draw(mainCtx);
+  } else if (mode === 3) {
+    drawTeaScene(W, H);
+    if (realisticMode) for (const ap of airParticles) ap.draw(mainCtx);
+    for (const p of particles) { if (!p.frozen) p.draw(mainCtx); }
+  }
+
+  drawGraph();
+}
+
+// ==================== CONCENTRATION GRAPH ====================
+function drawGraph() {
+  const gw = graphCanvas.width / (window.devicePixelRatio || 1);
+  const gh = graphCanvas.height / (window.devicePixelRatio || 1);
+  graphCtx.clearRect(0, 0, gw, gh);
+
+  const W = logicalW(), H = logicalH();
+  const bins = 20;
+  const counts = new Array(bins).fill(0);
+  let b;
+
+  if (mode === 0) b = classroomBounds(W, H);
+  else if (mode === 1) b = roomBounds(W, H, 'left');
+  else if (mode === 2) b = roomBounds(W, H, 'left');
+  else b = teaBounds(W, H);
+
+  let relevantParticles = particles;
+  if (mode === 1) relevantParticles = particles.filter(p => p.color === '#f4a261');
+  if (mode === 2) relevantParticles = particles.filter(p => p.mass === 30);
+
+  for (const p of relevantParticles) {
+    if (p.frozen) continue;
+    const idx = Math.min(bins - 1, Math.max(0, Math.floor((p.x - b.x1) / (b.x2 - b.x1) * bins)));
+    counts[idx]++;
+  }
+  const maxCount = Math.max(1, ...counts);
+
+  // Grid lines
+  graphCtx.strokeStyle = 'rgba(255,255,255,0.06)'; graphCtx.lineWidth = 0.5;
+  for (let i = 1; i < 4; i++) {
+    const y = (gh - 16) * i / 4 + 8;
+    graphCtx.beginPath(); graphCtx.moveTo(10, y); graphCtx.lineTo(gw - 10, y); graphCtx.stroke();
+  }
+
+  // Bars
+  const barW = (gw - 24) / bins;
+  const barColors = [
+    '#ff9ea8',               // mode 0: snack pink
+    '#f4a261',               // mode 1: hot pot orange
+    '#e07a7a',               // mode 2: spicy red
+    '#d7b894'                // mode 3: sugar brown
+  ];
+  const barColor = barColors[mode];
+
+  for (let i = 0; i < bins; i++) {
+    const h = Math.max(1, (counts[i] / maxCount) * (gh - 24));
+    const x = 12 + i * barW, y = gh - 12 - h;
+    const grad = graphCtx.createLinearGradient(x, y, x, gh - 12);
+    grad.addColorStop(0, barColor);
+    grad.addColorStop(1, 'rgba(91,155,213,0.12)');
+    graphCtx.fillStyle = grad;
+    graphCtx.fillRect(x + 1, y, barW - 2, h);
+  }
+
+  // Axes
+  graphCtx.strokeStyle = '#8bb6c4'; graphCtx.lineWidth = 1;
+  graphCtx.beginPath(); graphCtx.moveTo(10, 8); graphCtx.lineTo(10, gh - 12); graphCtx.lineTo(gw - 10, gh - 12); graphCtx.stroke();
+}
+
+// ==================== MAIN LOOP ====================
+function loop() { update(); draw(); requestAnimationFrame(loop); }
+
+function init() {
+  resizeCanvas();
+  updateControlVisibility();
+  updateGuideText();
+  resetSim();
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.code === 'Space') { e.preventDefault(); playing = !playing; btnPlay.textContent = playing ? '\u23F8 Running...' : '\u25B6 Resume'; }
+  if (e.code === 'KeyR') { resetSim(); btnPlay.textContent = '\u25B6 Start'; }
+  if (e.code === 'Digit1') { speedMul = 1; btnSpeed.textContent = '\u23E9 1\u00D7'; }
+  if (e.code === 'Digit2') { speedMul = 2; btnSpeed.textContent = '\u23E9 2\u00D7'; }
+  if (e.code === 'Digit4') { speedMul = 4; btnSpeed.textContent = '\u23E9 4\u00D7'; }
+});
+
+init();
+</script>
+</body>
+</html>

@@ -12,6 +12,8 @@
 window.AP_TOPICS = {
   // Card & button labels shown in AP mode (topic key -> AP unit label)
   labels: {
+    atomic:           "Unit 1 · Atomic Structure",
+    bonding:          "Unit 2 · Bonding & Structure",
     electrochemistry: "Unit 8 · Electrochemistry",
     acids:            "Unit 7 · Acids & Bases",
     metals:           "Unit 4 · Chemical Reactions",
@@ -26,6 +28,8 @@ window.AP_TOPICS = {
     all:             "All",
     en:              "English",
     cn:              "\u4e2d\u6587",
+    atomic:          "Unit 1 Atomic",
+    bonding:         "Unit 2 Bonding",
     electrochemistry:"Unit 8 Electrochem",
     acids:           "Unit 7 Acids/Bases",
     metals:          "Unit 4 Reactions",
@@ -35,6 +39,8 @@ window.AP_TOPICS = {
   },
   // "What to observe" hint in AP mode (topic key -> hint). "" = fall back.
   tips: {
+    atomic:          "",
+    bonding:         "",
     kinetics:        "",
     electrochemistry:"",
     metals:          "",

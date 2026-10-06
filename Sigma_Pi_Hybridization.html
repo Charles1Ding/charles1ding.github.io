@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sigma &amp; Pi Bonds &mdash; hybridization &amp; overlap</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI","Helvetica Neue",Arial,sans-serif; background:#EAF1F5; color:#1F3744;
+         min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:18px 12px 28px; }
+  h1 { font-size:22px; color:#0A455D; letter-spacing:.3px; }
+  .sub { color:#5B7684; font-size:13px; margin-top:4px; margin-bottom:12px; text-align:center; }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:10px; }
+  .tab { border:1px solid #0A455D; background:#fff; color:#0A455D; padding:8px 16px; border-radius:999px;
+         font-size:13px; font-weight:600; cursor:pointer; transition:.15s; }
+  .tab.active { background:#0A455D; color:#fff; }
+  .tab:hover { background:#0E5A78; color:#fff; }
+  .subsel { display:none; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:10px; }
+  .subsel.show { display:flex; }
+  .ss { border:1px solid #9FB9C6; background:#fff; color:#41586A; padding:5px 16px; border-radius:999px;
+        font-size:12.5px; font-weight:600; cursor:pointer; transition:.15s; }
+  .ss.active { background:#4699AA; color:#fff; border-color:#4699AA; }
+  .stage { background:#fff; border:1px solid #C5D2DE; border-radius:14px; box-shadow:0 6px 22px rgba(10,69,93,.10); padding:8px; }
+  canvas { display:block; border-radius:10px; background:#FAFCFE; width:1000px; max-width:98vw; height:auto; }
+  .steps { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
+  .schip { border:1px solid #9FB9C6; background:#fff; color:#41586A; padding:6px 14px; border-radius:8px;
+           font-size:12px; font-weight:600; cursor:pointer; transition:.15s; display:flex; align-items:center; gap:6px; }
+  .schip .num { width:16px; height:16px; border-radius:50%; background:#DCE6ED; color:#41586A; font-size:10px;
+                display:flex; align-items:center; justify-content:center; }
+  .schip.active { border-color:#0A455D; background:#E8F1F6; color:#0A455D; }
+  .schip.active .num { background:#0A455D; color:#fff; }
+  .controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center; margin-top:12px; }
+  .btn { border:1px solid #0A455D; background:#0A455D; color:#fff; padding:8px 16px; border-radius:8px;
+         font-size:13px; font-weight:600; cursor:pointer; transition:.15s; }
+  .btn.ghost { background:#fff; color:#0A455D; }
+  .speed { display:flex; gap:4px; }
+  .speed button { border:1px solid #9FB9C6; background:#fff; color:#0A455D; border-radius:6px; padding:5px 11px; font-size:12px; cursor:pointer; }
+  .speed button.active { background:#4699AA; color:#fff; border-color:#4699AA; }
+  .layers { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:10px; font-size:12px; color:#41586A; }
+  .layers label { display:flex; align-items:center; gap:5px; cursor:pointer; }
+  .layers input { accent-color:#0A455D; }
+  .explain { width:1000px; max-width:98vw; margin-top:14px; display:grid; grid-template-columns:1fr 320px; gap:12px; }
+  .desc { background:#fff; border:1px solid #C5D2DE; border-radius:12px; padding:14px 16px; font-size:13.5px;
+          line-height:1.65; color:#33485A; min-height:110px; }
+  .desc b { color:#0A455D; }
+  .key { border-radius:12px; padding:14px 16px; font-size:13px; line-height:1.55; color:#fff;
+         background:linear-gradient(135deg,#0A455D,#1769AA); }
+  .key h3 { font-size:14px; margin-bottom:6px; letter-spacing:.4px; }
+  @media (max-width:760px){ .explain{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+  <h1>Sigma &amp; Pi Bonds &mdash; hybridization &amp; orbital overlap</h1>
+  <div class="sub">Watch how s and p orbitals hybridize into new shapes, then meet <b>head-on</b> to make a &sigma; bond or <b>side-by-side</b> to make a &pi; bond.</div>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="sigma">&sigma; bond &middot; head-on</button>
+    <button class="tab" data-mode="pi">&pi; bond &middot; side-by-side</button>
+    <button class="tab" data-mode="hybrid">Hybridization</button>
+    <button class="tab" data-mode="double">C=C &middot; &sigma; + &pi;</button>
+  </div>
+
+  <div class="subsel" id="subsel">
+    <button class="ss active" data-hyb="sp">sp &middot; linear</button>
+    <button class="ss" data-hyb="sp2">sp&sup2; &middot; trigonal planar</button>
+    <button class="ss" data-hyb="sp3">sp&sup3; &middot; tetrahedral</button>
+  </div>
+
+  <div class="stage">
+    <canvas id="cv" width="1000" height="560"></canvas>
+  </div>
+
+  <div class="steps" id="steps"></div>
+
+  <div class="controls">
+    <button class="btn" id="btnPlay">&#9654; Play</button>
+    <button class="btn ghost" id="btnReset">&#8635; Reset</button>
+    <div class="speed">
+      <button data-spd="0.5">0.5&times;</button>
+      <button data-spd="1" class="active">1&times;</button>
+      <button data-spd="2">2&times;</button>
+      <button data-spd="4">4&times;</button>
+    </div>
+  </div>
+
+  <div class="layers">
+    <label><input type="checkbox" data-layer="phases" checked> Orbital phases (+/&minus;)</label>
+    <label><input type="checkbox" data-layer="angles" checked> Bond angles</label>
+    <label><input type="checkbox" data-layer="labels" checked> Labels</label>
+  </div>
+
+  <div class="explain">
+    <div class="desc" id="desc"></div>
+    <div class="key" id="key"></div>
+  </div>
+
+<script>
+var cv = document.getElementById('cv');
+var c  = cv.getContext('2d');
+var W = 1000, H = 560;
+var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+cv.width = W*dpr; cv.height = H*dpr; cv.style.width = W+'px'; cv.style.height = H+'px';
+c.scale(dpr, dpr);
+
+var T1 = '#0A455D', T2 = '#4699AA';
+var S_COL  = '#4A90C2';   // s orbital
+var P_POS  = '#E2483B';   // p orbital + lobe
+var P_NEG  = '#2E7DD1';   // p orbital - lobe
+var HYB_BIG  = '#4699AA'; // hybrid big lobe
+var HYB_SML  = '#0A455D'; // hybrid small lobe
+var SIGMA  = '#E8A33D';   // sigma overlap (amber)
+var PI     = '#C0552F';   // pi overlap (orange-brown)
+var NUC    = '#3F5566';
+
+var S = {
+  mode: 'sigma', hyb: 'sp3', phase: 0, playing: false, speed: 1, t: 0,
+  layers: { phases: true, angles: true, labels: true }
+};
+
+var STEPS = {
+  sigma: [
+    ['Two orbitals, head-on', 'Two atoms each bring one orbital (shown here as an sp hybrid) whose big lobe points straight at the other atom, along the bond axis.'],
+    ['They approach end-to-end', 'The two lobes move towards each other along one straight line - the bond axis.'],
+    ['Head-on overlap', 'The two lobes overlap in the middle, and the electron cloud concentrates BETWEEN the two nuclei, right along the axis.'],
+    ['A \u03C3 bond forms', 'The overlap is head-on, so the electron density is symmetric all around the bond axis (like a cylinder). This is a sigma (\u03C3) bond - the first, and only, bond in a single bond.']
+  ],
+  pi: [
+    ['Two p orbitals, parallel', 'Two atoms each bring a p orbital (two lobes, + and \u2212). The two p orbitals sit parallel to each other.'],
+    ['They approach side-by-side', 'The two p orbitals move together, staying parallel - this is the side-by-side approach.'],
+    ['Side-by-side overlap', 'The top lobes overlap above the axis and the bottom lobes overlap below it. There is NO electron density sitting on the axis itself.'],
+    ['A \u03C0 bond forms', 'Electron density now sits above and below the bond axis - a pi (\u03C0) bond. It is weaker than a \u03C3 bond, and it only ever forms AFTER a \u03C3 bond is already there.']
+  ],
+  hybrid: [
+    ['The valence orbitals', 'One s orbital and the p orbitals of the same atom are the raw building blocks.'],
+    ['They mix', 'The s and p orbitals blend together (hybridize). The number of orbitals is conserved: N in, N out.'],
+    ['Hybrid orbitals form', 'The mixture gives new, identical hybrid orbitals that point in fixed directions around the atom.'],
+    ['Geometry', 'The number of hybrids sets the shape - and the angle between them.']
+  ],
+  double: [
+    ['Two sp\u00B2 carbons', 'Each carbon is sp\u00B2 hybridized: three sp\u00B2 orbitals in one plane, plus one unhybridized p orbital sticking up and down.'],
+    ['sp\u00B2 meet head-on', 'The two facing sp\u00B2 orbitals overlap head-on along the axis.'],
+    ['p orbitals meet side-by-side', 'The two leftover p orbitals overlap side-by-side, above and below the axis.'],
+    ['C=C: one \u03C3 + one \u03C0', 'A double bond = one \u03C3 bond (head-on) + one \u03C0 bond (side-by-side).']
+  ]
+};
+
+var KEY = {
+  sigma: { h:'Sigma (\u03C3) bond',
+    b:'<b>Head-on</b> overlap along the bond axis. Electron density concentrates between the two nuclei and is symmetric around the axis. <b>Every single bond is one \u03C3 bond.</b>' },
+  pi: { h:'Pi (\u03C0) bond',
+    b:'<b>Side-by-side</b> overlap of two p orbitals. Electron density sits above and below the axis, never on it. <b>\u03C0 bonds are weaker</b>, and only form after a \u03C3 bond.' },
+  hybrid: { h:'Hybridization',
+    b:'Atomic <b>s</b> and <b>p</b> orbitals blend into new hybrid orbitals. Count is conserved; the number of hybrids sets the shape: <b>sp = linear 180\u00B0</b>, <b>sp\u00B2 = trigonal planar 120\u00B0</b>, <b>sp\u00B3 = tetrahedral 109.5\u00B0</b>.' },
+  double: { h:'Double bond',
+    b:'<b>C=C = one \u03C3 + one \u03C0.</b> The \u03C3 (sp\u00B2-sp\u00B2 head-on) holds the atoms together; the \u03C0 (p-p side-by-side) locks the molecule flat.' }
+};
+
+var HYB_GEO = {
+  sp:  { n:2, angle:'180\u00B0',  name:'linear',          pCount:1 },
+  sp2: { n:3, angle:'120\u00B0',  name:'trigonal planar', pCount:2 },
+  sp3: { n:4, angle:'109.5\u00B0',name:'tetrahedral',     pCount:3 }
+};
+
+function clamp01(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); }
+function lerp(a,b,k){ return a + (b-a)*k; }
+function ease(k){ k = clamp01(k); return k*k*(3-2*k); }
+function seg(p,a,b){ return clamp01((p-a)/(b-a)); }
+function rad(d){ return d*Math.PI/180; }
+function stepIndex(){ return Math.max(0, Math.min(3, Math.floor(S.phase/0.25 + 1e-9))); }
+
+function clear(){ c.clearRect(0,0,W,H); }
+function rr(x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+function label(txt,x,y,col,size,align){
+  c.fillStyle = col || '#33485A'; c.font = 'bold ' + (size||12) + 'px Segoe UI';
+  c.textAlign = align || 'center'; c.textBaseline = 'middle';
+  c.fillText(txt, x, y);
+}
+function arrow(x1,y1,x2,y2,col,w,head){
+  c.strokeStyle = col; c.fillStyle = col; c.lineWidth = w || 2;
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  var ang = Math.atan2(y2-y1, x2-x1), h = head || 7;
+  c.beginPath();
+  c.moveTo(x2,y2);
+  c.lineTo(x2-h*Math.cos(ang-0.4), y2-h*Math.sin(ang-0.4));
+  c.lineTo(x2-h*Math.cos(ang+0.4), y2-h*Math.sin(ang+0.4));
+  c.closePath(); c.fill();
+}
+
+/* ---------------- orbital primitives ----------------
+   A "lobe" is a teardrop, narrow at the nucleus, round at the far end.
+   - s orbital : a sphere (radial-gradient circle)
+   - p orbital : two lobes back-to-back, opposite phase (+ and -)
+   - sp hybrid : one BIG lobe (the bonding direction) + one small lobe       */
+function lobe(cx, cy, ang, len, wid, col, alpha){
+  if(alpha <= 0.01) return;
+  c.save();
+  c.globalAlpha = clamp01(alpha);
+  c.translate(cx, cy); c.rotate(ang);
+  c.beginPath();
+  c.moveTo(0, 0);
+  c.bezierCurveTo(len*0.42, -wid, len*0.80, -wid*0.62, len, 0);
+  c.bezierCurveTo(len*0.80,  wid*0.62, len*0.42, wid, 0, 0);
+  c.closePath();
+  c.fillStyle = col; c.fill();
+  c.strokeStyle = 'rgba(0,0,0,0.16)'; c.lineWidth = 1; c.stroke();
+  c.restore();
+}
+function orbS(cx, cy, r, col, alpha){
+  if(alpha <= 0.01) return;
+  c.save(); c.globalAlpha = clamp01(alpha);
+  var g = c.createRadialGradient(cx-r*0.35, cy-r*0.35, r*0.1, cx, cy, r);
+  g.addColorStop(0, 'rgba(255,255,255,0.95)');
+  g.addColorStop(0.45, col);
+  g.addColorStop(1, 'rgba(20,40,55,0.30)');
+  c.beginPath(); c.arc(cx, cy, r, 0, 7); c.fillStyle = g; c.fill();
+  c.restore();
+}
+function orbP(cx, cy, ang, len, wid, colPos, colNeg, alpha){
+  lobe(cx, cy, ang, len, wid, colPos, alpha);
+  lobe(cx, cy, ang + Math.PI, len, wid, colNeg, alpha);
+}
+function orbSP(cx, cy, ang, lenB, lenS, widB, colB, colS, alpha){
+  lobe(cx, cy, ang, lenB, widB, colB, alpha);
+  lobe(cx, cy, ang + Math.PI, lenS, widB*0.55, colS, alpha);
+}
+function nucleus(x, y, r){
+  c.beginPath(); c.arc(x, y, r, 0, 7);
+  c.fillStyle = NUC; c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.65)'; c.lineWidth = 1.2; c.stroke();
+}
+function phaseSign(x, y, sign, col, size){
+  label(sign, x, y, col, size || 14);
+}
+
+/* ---------------- hybrid directions + angle helpers ---------------- */
+function hybDirs(hyb){
+  if(hyb === 'sp')  return [0, Math.PI];
+  if(hyb === 'sp2') return [Math.PI/2, Math.PI/2 + 2*Math.PI/3, Math.PI/2 + 4*Math.PI/3];
+  return [0, Math.PI/2, Math.PI, 3*Math.PI/2];   // sp3: tetrahedral (cross in 2D)
+}
+function angleArc(cx, cy, r, a0, a1, txt, lr){
+  c.save();
+  c.beginPath(); c.arc(cx, cy, r, a0, a1);
+  c.strokeStyle = '#7A3B12'; c.lineWidth = 1.6; c.stroke();
+  var am = (a0 + a1)/2;
+  label(txt, cx + Math.cos(am)*lr, cy + Math.sin(am)*lr, '#7A3B12', 13);
+  c.restore();
+}
+
+/* =================== Scene 1 : sigma bond (head-on) =================== */
+function sceneSigma(){
+  var k = stepIndex(), p = S.phase;
+  var cy = 268;
+  var closeK  = seg(p, 0.22, 0.55);    // step 2: approach
+  var overlapK= seg(p, 0.50, 0.68);    // step 3: head-on overlap
+  var sep = lerp(360, 216, ease(closeK));
+  var xL = 500 - sep/2, xR = 500 + sep/2;
+
+  // two sp hybrids, big lobes facing each other (head-on)
+  orbSP(xL, cy, 0,          62, 20, 28, HYB_BIG, HYB_SML, 1);
+  orbSP(xR, cy, Math.PI,    62, 20, 28, HYB_BIG, HYB_SML, 1);
+
+  // the sigma overlap cloud: concentrated along the bond axis
+  if(overlapK > 0.01){
+    var mx = (xL + xR)/2;
+    c.save(); c.globalAlpha = overlapK*0.9;
+    var g = c.createRadialGradient(mx, cy, 3, mx, cy, 48);
+    g.addColorStop(0, 'rgba(232,163,61,0.90)');
+    g.addColorStop(1, 'rgba(232,163,61,0)');
+    c.beginPath(); c.ellipse(mx, cy, 50, 29, 0, 0, 7);
+    c.fillStyle = g; c.fill();
+    c.restore();
+  }
+
+  nucleus(xL, cy, 9); nucleus(xR, cy, 9);
+
+  // phase signs
+  if(S.layers.phases){
+    phaseSign(xL + 40, cy - 30, '+', P_POS, 15);
+    phaseSign(xR - 40, cy - 30, '+', P_POS, 15);
+  }
+  // labels
+  if(S.layers.labels){
+    label('sp', xL, cy + 44, HYB_SML, 12);
+    label('sp', xR, cy + 44, HYB_SML, 12);
+    if(overlapK > 0.5) label('\u03C3 bond (head-on)', mx, cy + 60, '#B5781E', 14);
+  }
+  if(k === 0)      chip('two orbitals facing each other', 500, 412, '#5B7684', '#F2F6F9');
+  else if(k === 1) chip('approaching head-on',            500, 412, '#5B7684', '#F2F6F9');
+  else if(k === 2) chip('head-on overlap',                500, 412, '#B5781E', '#FDF3E4');
+  else             chip('a \u03C3 bond (cylindrical)',    500, 412, '#B5781E', '#FDF3E4');
+}
+
+/* =================== Scene 2 : pi bond (side-by-side) =================== */
+function scenePi(){
+  var k = stepIndex(), p = S.phase;
+  var cy = 268;
+  var closeK  = seg(p, 0.22, 0.55);
+  var overlapK= seg(p, 0.50, 0.68);
+  var sep = lerp(340, 188, ease(closeK));
+  var xL = 500 - sep/2, xR = 500 + sep/2;
+
+  // two p orbitals, vertical (side-by-side). Both: top lobe +, bottom lobe -.
+  orbP(xL, cy, Math.PI/2, 58, 24, P_POS, P_NEG, 1);
+  orbP(xR, cy, Math.PI/2, 58, 24, P_POS, P_NEG, 1);
+
+  // two overlap regions: above and below the bond axis (never on it)
+  if(overlapK > 0.01){
+    var mx = (xL + xR)/2;
+    c.save(); c.globalAlpha = overlapK*0.85;
+    c.beginPath(); c.ellipse(mx, cy - 33, 31, 25, 0, 0, 7);
+    c.fillStyle = 'rgba(192,85,47,0.70)'; c.fill();
+    c.beginPath(); c.ellipse(mx, cy + 33, 31, 25, 0, 0, 7);
+    c.fillStyle = 'rgba(192,85,47,0.70)'; c.fill();
+    c.restore();
+  }
+
+  nucleus(xL, cy, 9); nucleus(xR, cy, 9);
+
+  if(S.layers.phases){
+    phaseSign(xL - 14, cy - 52, '\u2212', P_NEG, 15);
+    phaseSign(xL - 14, cy + 52, '+',    P_POS, 15);
+    phaseSign(xR + 14, cy - 52, '\u2212', P_NEG, 15);
+    phaseSign(xR + 14, cy + 52, '+',    P_POS, 15);
+  }
+  if(S.layers.labels){
+    label('p', xL, cy + 92, P_NEG, 12);
+    label('p', xR, cy + 92, P_NEG, 12);
+    if(overlapK > 0.5) label('\u03C0 bond (side-by-side)', mx, cy + 116, '#9A431F', 14);
+  }
+  if(k === 0)      chip('two parallel p orbitals',     500, 412, '#5B7684', '#F2F6F9');
+  else if(k === 1) chip('approaching side-by-side',    500, 412, '#5B7684', '#F2F6F9');
+  else if(k === 2) chip('side-by-side overlap',        500, 412, '#9A431F', '#FFF1EA');
+  else             chip('a \u03C0 bond (above & below)', 500, 412, '#9A431F', '#FFF1EA');
+}
+
+/* =================== Scene 3 : hybridization (sp / sp2 / sp3) =================== */
+function sceneHybrid(){
+  var k = stepIndex(), p = S.phase;
+  var cx = 500, cy = 262;
+  var hyb = S.hyb, geo = HYB_GEO[hyb];
+  var mixK = seg(p, 0.25, 0.50);    // step 2: the s + p blend together
+  var atomA = 1 - mixK;             // raw atomic orbitals fade out
+  var hybA  = mixK;                 // hybrid orbitals fade in
+
+  // --- step 1: the raw valence orbitals ---
+  if(atomA > 0.01){
+    orbS(cx, cy, 20, S_COL, atomA);
+    if(geo.pCount >= 1) orbP(cx, cy, 0,           48, 20, P_POS, P_NEG, atomA*0.92);  // px
+    if(geo.pCount >= 2) orbP(cx, cy, Math.PI/2,   48, 20, P_POS, P_NEG, atomA*0.92);  // py
+    if(geo.pCount >= 3){  // pz sticks out of the page -> a small circled dot
+      c.save(); c.globalAlpha = atomA*0.92;
+      c.beginPath(); c.arc(cx, cy, 15, 0, 7);
+      c.strokeStyle = P_NEG; c.lineWidth = 2; c.stroke();
+      c.fillStyle = P_NEG; c.beginPath(); c.arc(cx, cy, 2.2, 0, 7); c.fill();
+      c.restore();
+    }
+  }
+  if(S.layers.labels && atomA > 0.4){
+    label('s', cx - 34, cy - 34, S_COL, 12);
+    if(geo.pCount >= 1) label('p\u2093', cx + 66, cy - 10, P_NEG, 12);
+    if(geo.pCount >= 2) label('p\u1D67', cx + 10, cy - 66, P_NEG, 12);
+    if(geo.pCount >= 3) label('p\u1D63', cx + 26, cy - 26, P_NEG, 12);
+  }
+
+  // --- step 2-3: the hybrid orbitals ---
+  if(hybA > 0.01){
+    hybDirs(hyb).forEach(function(ang){
+      orbSP(cx, cy, ang, 58, 18, 25, HYB_BIG, HYB_SML, hybA);
+    });
+  }
+
+  nucleus(cx, cy, 10);
+
+  // phase/sign on hybrid: the big lobe is the positive (bonding) end
+  if(S.layers.phases && hybA > 0.6){
+    hybDirs(hyb).forEach(function(ang){
+      phaseSign(cx + Math.cos(ang)*40, cy + Math.sin(ang)*40 - 8, '+', HYB_BIG, 13);
+    });
+  }
+
+  // labels + geometry (step 3-4)
+  if(S.layers.labels && hybA > 0.6){
+    label(hyb, cx, cy + 82, HYB_SML, 14);
+  }
+  if(S.layers.angles && p > 0.5){
+    if(hyb === 'sp'){
+      label('180\u00B0', cx, cy - 92, '#7A3B12', 14);
+    } else if(hyb === 'sp2'){
+      angleArc(cx, cy, 96, Math.PI/2, Math.PI/2 + 2*Math.PI/3, '120\u00B0', 126);
+    } else {
+      angleArc(cx, cy, 92, 0, Math.PI/2, '109.5\u00B0', 130);
+    }
+  }
+
+  var geoLine = geo.name + '  \u00B7  ' + geo.angle;
+  if(k === 0)      chip('one s + p orbitals',       500, 412, '#5B7684', '#F2F6F9');
+  else if(k === 1) chip('the s and p mix',          500, 412, '#5B7684', '#F2F6F9');
+  else if(k === 2) chip(geo.n + ' identical hybrids', 500, 412, '#2E7DD1', '#EAF2FC');
+  else             chip(geoLine,                     500, 412, '#2E7DD1', '#EAF2FC');
+}
+
+/* =================== Scene 4 : C=C double bond (sigma + pi) =================== */
+function sceneDouble(){
+  var k = stepIndex(), p = S.phase;
+  var cy = 268;
+  var closeK = seg(p, 0.20, 0.50);   // approach
+  var sigK   = seg(p, 0.48, 0.62);   // sigma (head-on) overlap
+  var piK    = seg(p, 0.58, 0.74);   // pi (side-by-side) overlap
+  var sep = lerp(360, 196, ease(closeK));
+  var xL = 500 - sep/2, xR = 500 + sep/2;
+
+  // each C: three sp2 (trigonal planar) + one unhybridized p (vertical)
+  // left carbon
+  orbSP(xL, cy, 0,             55, 16, 24, HYB_BIG, HYB_SML, 1);            // -> other C (sigma)
+  orbSP(xL, cy, 2*Math.PI/3,   42, 12, 19, HYB_BIG, HYB_SML, 0.55);         // up-left
+  orbSP(xL, cy, 4*Math.PI/3,   42, 12, 19, HYB_BIG, HYB_SML, 0.55);         // down-left
+  orbP (xL, cy, Math.PI/2,     52, 20, P_POS, P_NEG, piK);                  // pi (fades in)
+
+  // right carbon (mirror)
+  orbSP(xR, cy, Math.PI,            55, 16, 24, HYB_BIG, HYB_SML, 1);
+  orbSP(xR, cy, Math.PI - 2*Math.PI/3, 42, 12, 19, HYB_BIG, HYB_SML, 0.55);
+  orbSP(xR, cy, Math.PI - 4*Math.PI/3, 42, 12, 19, HYB_BIG, HYB_SML, 0.55);
+  orbP (xR, cy, Math.PI/2,          52, 20, P_POS, P_NEG, piK);
+
+  // sigma overlap (along the axis)
+  if(sigK > 0.01){
+    var mx = (xL + xR)/2;
+    c.save(); c.globalAlpha = sigK*0.85;
+    var g = c.createRadialGradient(mx, cy, 3, mx, cy, 42);
+    g.addColorStop(0, 'rgba(232,163,61,0.88)');
+    g.addColorStop(1, 'rgba(232,163,61,0)');
+    c.beginPath(); c.ellipse(mx, cy, 44, 26, 0, 0, 7);
+    c.fillStyle = g; c.fill();
+    c.restore();
+  }
+  // pi overlap (above and below)
+  if(piK > 0.01){
+    var mxx = (xL + xR)/2;
+    c.save(); c.globalAlpha = piK*0.8;
+    c.beginPath(); c.ellipse(mxx, cy - 30, 27, 22, 0, 0, 7);
+    c.fillStyle = 'rgba(192,85,47,0.72)'; c.fill();
+    c.beginPath(); c.ellipse(mxx, cy + 30, 27, 22, 0, 0, 7);
+    c.fillStyle = 'rgba(192,85,47,0.72)'; c.fill();
+    c.restore();
+  }
+
+  nucleus(xL, cy, 9); nucleus(xR, cy, 9);
+
+  if(S.layers.labels){
+    label('C', xL, cy - 40, NUC, 13);
+    label('C', xR, cy - 40, NUC, 13);
+    if(sigK > 0.5 && piK < 0.5) label('\u03C3 (head-on)', mx, cy + 62, '#B5781E', 13);
+    if(piK  > 0.5) label('\u03C0 (side-by-side)', mx, cy + 62, '#9A431F', 13);
+    if(piK  > 0.5) label('\u03C3', mx, cy + 86, '#B5781E', 12);
+  }
+  if(k === 0)      chip('two sp\u00B2 carbons',             500, 412, '#5B7684', '#F2F6F9');
+  else if(k === 1) chip('sp\u00B2 orbitals meet head-on',   500, 412, '#B5781E', '#FDF3E4');
+  else if(k === 2) chip('p orbitals meet side-by-side',     500, 412, '#9A431F', '#FFF1EA');
+  else             chip('C=C : one \u03C3 + one \u03C0',     500, 412, '#9A431F', '#FFF1EA');
+}
+
+function chip(txt,x,y,col,bg){
+  c.save();
+  c.font = 'bold 12px Segoe UI';
+  var w = c.measureText(txt).width + 20, h = 23;
+  rr(x-w/2, y-h/2, w, h, h/2);
+  c.fillStyle = bg; c.fill();
+  c.strokeStyle = col; c.lineWidth = 1; c.stroke();
+  c.fillStyle = col; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(txt, x, y+0.5);
+  c.restore();
+}
+
+var TITLES = {
+  sigma:  'Sigma (\u03C3) bond \u2014 head-on overlap',
+  pi:     'Pi (\u03C0) bond \u2014 side-by-side overlap',
+  hybrid: 'Hybridization \u2014 s + p \u2192 sp / sp\u00B2 / sp\u00B3',
+  double: 'Double bond \u2014 one \u03C3 + one \u03C0'
+};
+
+function bg(){
+  var g = c.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#F6FAFC'); g.addColorStop(1,'#EAF3F8');
+  c.fillStyle = g; c.fillRect(0,0,W,H);
+  c.fillStyle = '#DCE6ED'; rr(40,24,W-80,6,3); c.fill();
+  c.fillStyle = '#0A455D'; rr(40,24,Math.max(2,(W-80)*S.phase),6,3); c.fill();
+  for(var i=1;i<4;i++){
+    c.beginPath(); c.arc(40+(W-80)*i/4, 27, 3.1, 0, 7);
+    c.fillStyle = '#FFFFFF'; c.fill();
+    c.strokeStyle = '#9FB9C6'; c.lineWidth = 1; c.stroke();
+  }
+  label(TITLES[S.mode], W/2, 54, T1, 16);
+}
+
+function legend(){
+  var y = H - 30, x = 40;
+  c.save();
+  lobe(x, y, 0, 20, 9, SIGMA, 1);
+  label('head-on overlap = \u03C3', x + 30, y, '#5B7684', 11, 'left'); x += 168;
+  c.beginPath(); c.ellipse(x, y, 12, 9, 0, 0, 7);
+  c.fillStyle = 'rgba(192,85,47,0.8)'; c.fill();
+  label('side-by-side overlap = \u03C0', x + 22, y, '#5B7684', 11, 'left'); x += 200;
+  c.beginPath(); c.arc(x, y, 10, 0, 7); c.fillStyle = S_COL; c.fill();
+  label('s orbital', x + 20, y, '#5B7684', 11, 'left'); x += 98;
+  lobe(x, y, 0, 18, 8, P_POS, 1); lobe(x, y, Math.PI, 12, 8, P_NEG, 1);
+  label('p orbital (\u00B1 phase)', x + 24, y, '#5B7684', 11, 'left'); x += 142;
+  lobe(x, y, 0, 20, 9, HYB_BIG, 1);
+  label('hybrid', x + 20, y, '#5B7684', 11, 'left');
+  c.restore();
+}
+
+function caption(k){
+  c.save();
+  c.font = 'bold 19px Segoe UI';
+  var t = STEPS[S.mode][k][0];
+  var w = c.measureText(t).width;
+  rr(W/2 - w/2 - 20, 436, w + 40, 32, 16);
+  c.fillStyle = 'rgba(255,255,255,.9)'; c.fill();
+  c.strokeStyle = '#C5D2DE'; c.lineWidth = 1; c.stroke();
+  c.restore();
+  label(t, W/2, 453, T1, 19);
+  label('step ' + (k+1) + ' of 4', W - 78, 453, '#8AA3B2', 12);
+}
+
+function draw(){
+  clear();
+  bg();
+  if(S.mode === 'sigma')      sceneSigma();
+  else if(S.mode === 'pi')    scenePi();
+  else if(S.mode === 'hybrid')sceneHybrid();
+  else                        sceneDouble();
+  caption(stepIndex());
+  legend();
+}
+
+/* ------------------------------ UI ------------------------------ */
+function buildSteps(){
+  var host = document.getElementById('steps');
+  host.innerHTML = '';
+  STEPS[S.mode].forEach(function(st,i){
+    var b = document.createElement('button');
+    b.className = 'schip';
+    b.innerHTML = '<span class="num">' + (i+1) + '</span>' + st[0];
+    b.onclick = function(){ S.phase = i*0.25 + 0.001; S.playing = false; syncUI(); draw(); };
+    host.appendChild(b);
+  });
+}
+
+function syncUI(){
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.mode === S.mode);
+  });
+  document.getElementById('subsel').classList.toggle('show', S.mode === 'hybrid');
+  document.querySelectorAll('.ss').forEach(function(b){
+    b.classList.toggle('active', b.dataset.hyb === S.hyb);
+  });
+  var k = stepIndex();
+  document.querySelectorAll('.schip').forEach(function(ch,i){
+    ch.classList.toggle('active', i === k);
+  });
+  var st = STEPS[S.mode][k];
+  document.getElementById('desc').innerHTML =
+    '<b>' + (k+1) + '. ' + st[0] + '</b><br>' + st[1];
+  var kk = KEY[S.mode];
+  document.getElementById('key').innerHTML = '<h3>' + kk.h + '</h3>' + kk.b;
+  document.getElementById('btnPlay').innerHTML =
+    S.playing ? '&#10074;&#10074; Pause' : '&#9654; Play';
+}
+
+document.querySelectorAll('.tab').forEach(function(t){
+  t.onclick = function(){
+    S.mode = t.dataset.mode; S.phase = 0; S.t = 0; S.playing = false;
+    buildSteps(); syncUI(); draw();
+  };
+});
+document.querySelectorAll('.ss').forEach(function(b){
+  b.onclick = function(){
+    S.hyb = b.dataset.hyb; syncUI(); draw();
+  };
+});
+document.getElementById('btnPlay').onclick = function(){
+  if(S.phase >= 1){ S.phase = 0; S.t = 0; }
+  S.playing = !S.playing; syncUI();
+};
+document.getElementById('btnReset').onclick = function(){
+  S.phase = 0; S.t = 0; S.playing = false; syncUI(); draw();
+};
+document.querySelectorAll('.speed button').forEach(function(b){
+  b.onclick = function(){
+    S.speed = parseFloat(b.dataset.spd);
+    document.querySelectorAll('.speed button').forEach(function(o){
+      o.classList.toggle('active', o === b);
+    });
+  };
+});
+document.querySelectorAll('.layers input').forEach(function(cb){
+  cb.onchange = function(){ S.layers[cb.dataset.layer] = cb.checked; draw(); };
+});
+
+/* ------------------------------ loop ------------------------------ */
+var lastT = performance.now(), lastStep = -1;
+function loop(now){
+  var dt = (now - lastT)/1000; lastT = now;
+  if(!(dt > 0)) dt = 0; else if(dt > 0.05) dt = 0.05;
+  S.t += dt * (S.playing ? S.speed : 1);
+  if(S.playing){
+    S.phase = Math.min(1, S.phase + dt * 0.16 * S.speed);
+    if(S.phase >= 1){ S.phase = 1; S.playing = false; }
+  }
+  var k = stepIndex();
+  if(k !== lastStep){ lastStep = k; syncUI(); }
+  try { draw(); } catch(e) { /* never let one bad frame freeze the demo */ }
+  requestAnimationFrame(loop);
+}
+
+buildSteps();
+syncUI();
+draw();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

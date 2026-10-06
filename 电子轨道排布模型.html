@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Electron Orbital Configuration — Three Rules &amp; up to 4f</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#EEF3F5;font-family:'Segoe UI',Arial,'Microsoft YaHei',sans-serif;color:#16323F;padding:18px 12px 40px;}
+.wrap{max-width:1100px;margin:0 auto;}
+h1{color:#0A455D;font-size:22px;letter-spacing:.2px;}
+.sub{color:#5B7684;font-size:13px;margin:4px 0 14px;}
+.card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(10,69,93,.08);padding:12px;}
+.modetabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.mtab{flex:1 1 200px;padding:10px 8px;border-radius:12px;border:2px solid #0A455D;background:#fff;color:#0A455D;
+      font-size:14px;font-weight:600;cursor:pointer;text-align:center;transition:all .15s;}
+.mtab.active{background:#0A455D;color:#fff;}
+.duo{display:flex;gap:14px;flex-wrap:wrap;align-items:stretch;}
+.panel{flex:1 1 340px;min-width:320px;display:flex;flex-direction:column;gap:10px;}
+canvas{display:block;border-radius:10px;}
+.ctlrow{display:flex;align-items:center;gap:10px;font-size:13px;}
+.ctlrow label{width:110px;color:#0A455D;font-weight:600;flex-shrink:0;}
+.ctlrow input[type=range]{flex:1;accent-color:#0A455D;}
+.val{min-width:56px;text-align:center;background:#EAF3F7;color:#0A455D;border-radius:8px;
+     padding:3px 6px;font-weight:600;font-size:12.5px;}
+.chip{display:inline-block;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;}
+.chip.aufbau{background:#E8F4F8;color:#0A455D;}
+.chip.pauli{background:#FCE8DD;color:#B3441E;}
+.chip.hund{background:#FFF3D6;color:#9A6B08;}
+.datarow{display:flex;justify-content:space-between;font-size:13px;padding:4px 2px;border-bottom:1px dashed #DDE8ED;}
+.datarow b{color:#0A455D;font-family:Consolas,'Courier New',monospace;}
+.formula{font-family:Consolas,'Courier New',monospace;background:#F2F7F9;border-left:4px solid #0A455D;
+         border-radius:6px;padding:8px 12px;font-size:13px;color:#0A455D;line-height:1.6;word-break:break-all;}
+.causal{background:#E4EEF2;border-radius:10px;padding:10px 14px;font-size:13px;color:#0A455D;margin-top:12px;}
+.causal b{color:#B3441E;}
+.think{margin-top:12px;background:#fff;border-radius:10px;border:1.5px dashed #9FB9C6;
+       padding:10px 14px;font-size:13px;color:#33586B;}
+.think b{color:#0A455D;}
+.btn{padding:6px 14px;border-radius:9px;border:1.5px solid #0A455D;background:#fff;color:#0A455D;
+     font-size:13px;font-weight:600;cursor:pointer;}
+.btn:hover{background:#EAF3F7;}
+.btn.active{background:#0A455D;color:#fff;}
+.btn:disabled{opacity:.4;cursor:default;}
+.stepper{display:flex;align-items:center;gap:8px;}
+.stepper button{width:34px;height:30px;font-size:17px;padding:0;}
+.elbtn{padding:5px 10px;border-radius:8px;border:1.5px solid #4699AA;background:#fff;color:#4699AA;
+       font-size:12px;font-weight:600;cursor:pointer;}
+.elbtn:hover{background:#EDF5F8;}
+.elbtn.on{background:#4699AA;color:#fff;}
+.hint{font-size:11.5px;color:#8FA9B7;margin-top:2px;}
+.sec-title{color:#0A455D;font-size:15px;font-weight:700;margin:6px 0 4px;}
+.foot{margin-top:22px;text-align:center;font-size:11.5px;color:#8FA9B7;}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:#33586B;margin-top:8px;}
+.legend span{display:inline-flex;align-items:center;gap:6px;}
+.sw{width:14px;height:14px;border-radius:4px;display:inline-block;}
+.rule-sub{display:flex;gap:8px;margin-bottom:10px;}
+.rsub{flex:1;padding:8px 10px;border-radius:10px;border:2px solid #DDE8ED;background:#fff;
+     font-size:13px;font-weight:600;color:#5B7684;cursor:pointer;text-align:center;transition:all .15s;}
+.rsub.active{border-color:#0A455D;background:#0A455D;color:#fff;}
+/* quiz */
+.qcard{margin-bottom:14px;}
+.qcard h3{color:#0A455D;font-size:15px;margin-bottom:10px;}
+.qopts{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.qopt{flex:1 1 150px;padding:12px;border-radius:10px;border:2px solid #0A455D;background:#fff;color:#0A455D;
+      font-size:15px;font-weight:700;cursor:pointer;text-align:center;}
+.qopt:hover{background:#EAF3F7;}
+.qopt.picked{background:#0A455D;color:#fff;}
+.qopt.correct{background:#16A34A;color:#fff;border-color:#16A34A;}
+.qopt.wrong{background:#DC2626;color:#fff;border-color:#DC2626;}
+.reasons{margin:8px 0;display:none;}
+.reasons.show{display:block;}
+.reason{display:block;width:100%;text-align:left;margin:6px 0;padding:9px 12px;border-radius:9px;
+       border:1.5px solid #9FB9C6;background:#F7FAFB;color:#16323F;font-size:13px;cursor:pointer;}
+.reason:hover{background:#EAF3F7;}
+.reason.picked-ok{background:#E3F4E8;color:#1F6B3A;border-color:#7FC79A;}
+.reason.picked-bad{background:#FCE8DD;color:#B3441E;border-color:#E8A48C;}
+.qfb{margin-top:8px;padding:10px 14px;border-radius:10px;font-size:13.5px;display:none;}
+.qfb.ok{display:block;background:#E3F4E8;color:#1F6B3A;border:1.5px solid #7FC79A;}
+.qfb.bad{display:block;background:#FCE8DD;color:#B3441E;border:1.5px solid #E8A48C;}
+/* element quick buttons */
+.elgrid{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Electron Orbital Configuration</h1>
+<p class="sub">Three Rules of Electron Filling — Aufbau, Pauli Exclusion, Hund's Rule — orbitals up to <b>4f</b></p>
+
+<div class="modetabs" id="modeTabs"></div>
+
+<div class="card duo" id="mainCard">
+  <div class="panel" style="flex:1 1 72%;min-width:560px;">
+    <canvas id="cvMain"></canvas>
+  </div>
+  <div class="panel" style="flex:1 1 26%;min-width:260px;" id="rightPanel"></div>
+</div>
+
+<div class="foot">Electron Configuration Model &mdash; Interactive Teaching Tool | Orbitals 1s &rarr; 4f</div>
+</div>
+
+<script>
+// ============================================================
+// ORBITAL DATA — energy order from 1s to 4f (and beyond for completeness)
+// E = relative energy level (lower = fills first)
+// count = number of degenerate orbitals in this subshell
+// ============================================================
+const ORBS = [
+  {label:'1s', n:1,l:0, E:1, count:1},
+  {label:'2s', n:2,l:0, E:2, count:1},
+  {label:'2p', n:2,l:1, E:3, count:3},
+  {label:'3s', n:3,l:0, E:4, count:1},
+  {label:'3p', n:3,l:1, E:5, count:3},
+  {label:'4s', n:4,l:0, E:6, count:1},   // key crossover: 4s < 3d
+  {label:'3d', n:3,l:2, E:7, count:5},
+  {label:'4p', n:4,l:1, E:8, count:3},
+  {label:'5s', n:5,l:0, E:9, count:1},
+  {label:'4d', n:4,l:2, E:10,count:5},
+  {label:'5p', n:5,l:1, E:11,count:3},
+  {label:'6s', n:6,l:0, E:12,count:1},
+  {label:'4f', n:4,l:3, E:13,count:7},   // ★ 4f — 7 degenerate orbitals, max 14 e⁻
+];
+
+// Element data for quick-select (Z → symbol)
+const ELSYM = 'H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn'.split(' ');
+
+// Anomalous configurations (override default Aufbau fill)
+// format: [Z, configOverride] where configOverride is array of per-orbital electron counts matching ORBS order
+const ANOMALOUS = {
+  // Cr: [Ar] 4s¹ 3d⁵ instead of 4s² 3d⁴
+  24: null, // handled specially in fill algorithm
+  // Cu: [Ar] 4s¹ 3d¹⁰ instead of 4s² 3d⁹
+  29: null,
+};
+
+// ============================================================
+// STATE
+// ============================================================
+const S = {
+  mode: 0,          // 0=Builder, 1=Rules, 2=Configurator, 3=Quiz
+  Z: 7,             // atomic number (electrons to place)
+  targetZ: 7,       // target for animation
+  showCore: true,   // show noble-gas core abbreviation
+  highlightRule: true, // show which rule is being applied
+  animating: false, // currently animating electrons
+  animT: 0,         // animation timer
+  animStartZ: 0,    // Z at animation start
+  animEndZ: 0,      // Z at animation end
+  // mode 1 sub-rules
+  ruleSub: 0,       // 0=Aufbau, 1=Pauli, 2=Hund
+  ruleStep: 0,      // step within rule demo
+  ruleTimer: 0,
+  // mode 2
+  selectedEl: -1,
+  // mode 3 quiz
+  quizIdx: 0,
+  quizDone: false,
+  quizPick: -1,
+};
+
+// Electron distribution: for each orbital index, array of electrons [{spin:'up'|'down'}]
+let dist = [];
+
+// ============================================================
+// CANVAS SETUP
+// ============================================================
+const cv = document.getElementById('cvMain');
+const ctx = cv.getContext('2d');
+function setupCanvas(c){
+  const r = c.parentElement.getBoundingClientRect();
+  const dpr = window.devicePixelRatio||1;
+  c.width = Math.round(r.width*dpr); c.height = 780*dpr;   // was 520 — enlarged for 4f visibility
+  c.style.width = r.width+'px'; c.style.height='780px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+setupCanvas(cv);
+
+// ============================================================
+// HELPERS
+// ============================================================
+function pill(c,text,x,y,opt){
+  opt=opt||{};
+  const f=opt.font||'bold 12px Segoe UI';
+  ctx.font=f;
+  const m=ctx.measureText(text);
+  const w=m.width+(opt.pad||0)*2;
+  const h=opt.h||22;
+  if(c.__w) c.__w=w;
+  ctx.fillStyle=opt.bg||'rgba(255,255,255,.85)';
+  ctx.strokeStyle='#C5D2DE';
+  ctx.lineWidth=.8;
+  rrect(c,x-w/2,y,w,h,6,true,true);
+  ctx.fillStyle=opt.fg||'#0A455D';
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(text,x,y+h/2);
+  return w;
+}
+
+function rrect(c,x,y,w,h,r,fill,stroke){
+  if(fill){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();c.fill();}
+  if(stroke){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();c.stroke();}
+}
+
+function drawArrowUp(c,x,y,size,color){
+  // Clean vertical UP arrow: shaft + triangular head
+  c.fillStyle=color||'#2563EB';
+  c.strokeStyle=color||'#2563EB';
+  const s=size, w=s*.22, hw=s*.5;  // shaft width, half head width
+  c.beginPath();
+  // arrowhead triangle pointing UP
+  c.moveTo(x, y-s);
+  c.lineTo(x+hw, y);
+  c.lineTo(x+w, y);
+  c.lineTo(x+w, y+s*.6);
+  c.lineTo(x-w, y+s*.6);
+  c.lineTo(x-w, y);
+  c.lineTo(x-hw, y);
+  c.closePath();
+  c.fill();
+}
+
+function drawArrowDown(c,x,y,size,color){
+  // Clean vertical DOWN arrow: shaft + triangular head
+  c.fillStyle=color||'#DC2626';
+  c.strokeStyle=color||'#DC2626';
+  const s=size, w=s*.22, hw=s*.5;
+  c.beginPath();
+  // arrowhead triangle pointing DOWN
+  c.moveTo(x, y+s);
+  c.lineTo(x-hw, y);
+  c.lineTo(x-w, y);
+  c.lineTo(x-w, y-s*.6);
+  c.lineTo(x+w, y-s*.6);
+  c.lineTo(x+w, y);
+  c.lineTo(x+hw, y);
+  c.closePath();
+  c.fill();
+}
+
+// ============================================================
+// FILLING ALGORITHM — given Z, return electron distribution
+// Enforces all three rules:
+//   1) Aufbau: fill by increasing E (energy level)
+//   2) Pauli: max 2 per orbital, opposite spins
+//   3) Hund: fill degenerate orbitals singly first (parallel spins), then pair
+// ============================================================
+function computeDist(z){
+  let d = ORBS.map(()=>[]);
+  let remaining = z;
+
+  // Anomaly overrides for Cr and Cu
+  if(z === 24){
+    // Cr: [Ar] 4s¹ 3d⁵ — fill Ar core with Hund's rule, then special 4s+3d
+    for(let i=0;i<ORBS.length && remaining>0;i++){
+      const orb = ORBS[i];
+      if(i <= 4){ // 1s through 3p: Hund-compliant fill (Ar core = 18e)
+        if(orb.count > 1){
+          for(let j=0;j<orb.count && remaining>0;j++){ d[i].push({spin:'up'}); remaining--; }
+          for(let j=0;j<orb.count && remaining>0;j++){ d[i].push({spin:'down'}); remaining--; }
+        } else {
+          while(d[i].length < 2 && remaining>0){ d[i].push({spin:d[i].length===0?'up':'down'}); remaining--; }
+        }
+      } else if(i === 5){ // 4s: only 1 electron
+        d[5].push({spin:'up'}); remaining--;
+      } else if(i === 6 && remaining > 0){ // 3d: 5 electrons (half-filled)
+        for(let k=0;k<5&&remaining>0;k++){ d[6].push({spin:'up'}); remaining--; }
+      }
+    }
+    return d;
+  }
+  if(z === 29){
+    // Cu: [Ar] 4s¹ 3d¹⁰ — fill Ar core with Hund's rule, then special 4s+3d
+    for(let i=0;i<ORBS.length && remaining>0;i++){
+      const orb = ORBS[i];
+      if(i <= 4){ // Ar core: Hund-compliant fill
+        if(orb.count > 1){
+          for(let j=0;j<orb.count && remaining>0;j++){ d[i].push({spin:'up'}); remaining--; }
+          for(let j=0;j<orb.count && remaining>0;j++){ d[i].push({spin:'down'}); remaining--; }
+        } else {
+          while(d[i].length < 2 && remaining>0){ d[i].push({spin:d[i].length===0?'up':'down'}); remaining--; }
+        }
+      } else if(i === 5){ // 4s: only 1 electron
+        d[5].push({spin:'up'}); remaining--;
+      } else if(i === 6 && remaining > 0){ // 3d: 10 electrons (full) — Hund-compliant
+        for(let k=0;k<5&&remaining>0;k++){ d[6].push({spin:'up'}); remaining--; }
+        for(let k=0;k<5&&remaining>0;k++){ d[6].push({spin:'down'}); remaining--; }
+      }
+    }
+    return d;
+  }
+
+  // Standard Aufbau + Pauli + Hund
+  for(let i=0;i<ORBS.length && remaining>0;i++){
+    const orb = ORBS[i];
+    // For degenerate orbitals (count > 1): apply Hund's rule
+    if(orb.count > 1){
+      // Phase 1: fill each orbital singly with spin UP
+      for(let j=0;j<orb.count && remaining>0;j++){
+        d[i].push({spin:'up'});
+        remaining--;
+      }
+      // Phase 2: now pair them with spin DOWN
+      for(let j=0;j<orb.count && remaining>0;j++){
+        d[i].push({spin:'down'});
+        remaining--;
+      }
+    }else{
+      // s orbital (count=1): just fill up to 2
+      while(d[i].length < 2 && remaining > 0){
+        d[i].push({spin:d[i].length===0?'up':'down'});
+        remaining--;
+      }
+    }
+  }
+  return d;
+}
+
+// Get configuration string from distribution
+function getConfigString(d){
+  let parts = [];
+  for(let i=0;i<ORBS.length;i++){
+    if(d[i].length > 0){
+      parts.push(ORBS[i].label + sup(d[i].length));
+    }
+  }
+  return parts.join(' ');
+}
+
+function getNobleGasCore(z){
+  if(z <= 2) return '';
+  if(z <= 10) return '[He]';
+  if(z <= 18) return '[Ne]';
+  if(z <= 36) return '[Ar]';
+  if(z <= 54) return '[Kr]';
+  if(z <= 86) return '[Xe]';
+  return '[Rn]';
+}
+
+function getNobleGasConfigString(d,z){
+  const core = getNobleGasCore(z);
+  if(!core) return getConfigString(d);
+  // Find where core ends
+  let coreZ = 0;
+  if(z<=2) coreZ=0;
+  else if(z<=10) coreZ=2;
+  else if(z<=18) coreZ=10;
+  else if(z<=36) coreZ=18;
+  else if(z<=54) coreZ=36;
+  else if(z<=86) coreZ=54;
+  else coreZ=86;
+
+  let parts = [];
+  for(let i=0;i<ORBS.length;i++){
+    if(d[i].length > 0){
+      // Count electrons after core
+      // Simplified: just show full config after core
+      parts.push(ORBS[i].label + sup(d[i].length));
+    }
+  }
+  return core + ' ' + parts.join(' ');
+}
+
+function sup(n){
+  const m={0:'\u2070',1:'\u00B9',2:'\u00B2',3:'\u00B3',4:'\u2074',5:'\u2075',
+             6:'\u2076',7:'\u2077',8:'\u2078',9:'\u2079'};
+  if(n<=9) return m[n]||String(n);
+  return String(n);
+}
+
+// ============================================================
+// MODE TABS
+// ============================================================
+const MODES = ['Orbital Builder','Configurator','Quiz'];
+const tabs = document.getElementById('modeTabs');
+MODES.forEach((m,i)=>{
+  const b=document.createElement('button'); b.className='mtab'+(i===0?' active':'');
+  b.textContent=m; b.dataset.mode=i;
+  b.onclick=()=>setMode(i); tabs.appendChild(b);
+});
+
+function setMode(m){
+  S.mode=m;
+  document.querySelectorAll('.mtab').forEach(t=>t.classList.toggle('active',+t.dataset.mode===m));
+  buildPanel();
+  if(m===3) buildQuiz();
+  requestAnimationFrame(draw);
+}
+
+// ============================================================
+// DRAW — main dispatch
+// ============================================================
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  switch(S.mode){
+    case 0: drawBuilder(); break;
+    case 1: drawConfigurator(); break;
+    case 2: drawQuizView(); break;
+  }
+}
+
+// ============================================================
+// MODE 0: ORBITAL BUILDER
+// ============================================================
+function drawBuilder(){
+  const W=cv.clientWidth, H=cv.clientHeight;
+  dist = computeDist(S.Z);
+
+  // Background gradient
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#FAFCFD'); bg.addColorStop(1,'#EEF3F5');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  // Energy axis
+  ctx.save();
+  ctx.translate(42,H-28);
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-H+60);
+  ctx.strokeStyle='#0A455D'; ctx.lineWidth=2; ctx.stroke();
+  // arrow head
+  ctx.beginPath(); ctx.moveTo(-6,-H+66); ctx.lineTo(0,-H+76); ctx.lineTo(6,-H+66); ctx.closePath(); ctx.fillStyle='#0A455D'; ctx.fill();
+  ctx.fillStyle='#0A455D'; ctx.font='bold 18px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText('E',0,-H+52);
+  ctx.fillText('Energy \u2191',0,-H+34);
+  ctx.restore();
+
+  // Layout orbitals — scaled up 30%
+  const startX = 80;
+  const startY = H - 55;
+  const boxW = 44, boxH = 65;          // was 34×50, +30%
+  const gapX = 8, gapY = 10;            // was 6×8, +30%
+  const labelGapX = 5;                  // was 4
+
+  // Group by energy level for staggered layout
+  let yCursor = startY;
+  let maxRowW = 0;
+
+  // Find the highest occupied orbital to know how far to draw
+  let maxOrbIdx = 0;
+  for(let i=0;i<ORBS.length;i++){
+    if(dist[i].length > 0) maxOrbIdx = i;
+  }
+  // Always draw at least up to 4f
+  maxOrbIdx = Math.max(maxOrbIdx, 12); // 4f is index 12
+
+  // Draw each orbital row
+  let xCursor = startX;
+  let currentE = -1;
+  let rowBoxes = [];
+
+  for(let i=0;i<=maxOrbIdx;i++){
+    const orb = ORBS[i];
+    if(orb.E !== currentE){
+      // New energy level — move to next row
+      if(currentE >= 0) yCursor -= (boxH + gapY);
+      xCursor = startX;
+      currentE = orb.E;
+    }
+
+    const nBoxes = orb.count;
+    const rowW = nBoxes * (boxW + gapX) - gapX;
+
+    // Draw subshell background band for degenerate groups
+    if(nBoxes > 1){
+      ctx.fillStyle=i<=maxOrbIdx ? 'rgba(70,153,170,.06)' : 'rgba(200,210,218,.08)';
+      rrect(ctx, xCursor-4, yCursor-boxH, rowW+8, boxH+4, 5, true, false);
+    }
+
+    // Draw each orbital box
+    for(let j=0;j<nBoxes;j++){
+      const bx = xCursor + j*(boxW+gapX);
+      const by = yCursor - boxH;
+
+      // Box
+      const isFilled = dist[i] && dist[i].length > j;
+      const isHighlight = S.highlightRule && isFilled && i === findCurrentFillOrb();
+
+      ctx.fillStyle='#fff';
+      ctx.lineWidth = isHighlight ? 2.5 : 1.5;
+      ctx.strokeStyle = isHighlight ? '#4699AA' : '#0A455D';
+      rrect(ctx,bx,by,boxW,boxH,4,true,true);
+
+      // Draw electrons in this orbital box
+      // Pauli: paired e⁻ in same orbital MUST have opposite spins (↑↓ never ↑↑ or ↓↓)
+      if(dist[i] && dist[i].length > 0){
+        const isS = (orb.count === 1);
+        // Electrons belonging to this specific orbital box
+        const boxElectrons = isS
+          ? dist[i]                                                      // s-orbital: all electrons in this single box
+          : [dist[i][j], dist[i][orb.count + j]].filter(e => e);       // p/d/f: j-th orbital's both e⁻ (1st at j, 2nd at count+j)
+        const hasDown = isS
+          ? dist[i].length >= 2                                         // s-orbital: 2nd e⁻ exists
+          : dist[i].length > orb.count + j;                             // p/d/f: pairing phase reached this orbital
+
+        // Horizontal offset for parallel placement — ALL orbitals when paired
+        const cx = bx + boxW / 2;
+        const offX = hasDown ? 9 : 0;   // split left/right when any box has 2 e⁻ (was 7)
+        const arrowSize = 20;             // was 15, scaled with boxes
+
+        // First electron — draw its ACTUAL spin direction
+        if(boxElectrons.length >= 1){
+          const e = boxElectrons[0];
+          if(e.spin === 'up'){
+            drawArrowUp(ctx, cx - offX, by + boxH / 2, arrowSize, '#2563EB');
+          } else {
+            drawArrowDown(ctx, cx - offX, by + boxH / 2, arrowSize, '#DC2626');
+          }
+        }
+        // Second electron — draw its ACTUAL spin direction (must be opposite of first)
+        if(hasDown && boxElectrons.length >= 2){
+          const e = boxElectrons[1];
+          if(e.spin === 'up'){
+            drawArrowUp(ctx, cx + offX, by + boxH / 2, arrowSize, '#2563EB');
+          } else {
+            drawArrowDown(ctx, cx + offX, by + boxH / 2, arrowSize, '#DC2626');
+          }
+        }
+      }
+    }
+
+    // Label
+    ctx.fillStyle='#5B7684'; ctx.font='bold 16px Consolas,"Courier New",monospace';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(orb.label, xCursor + rowW + labelGapX, yCursor - boxH/2);
+
+    xCursor += rowW + gapX + ctx.measureText(orb.label).width + labelGapX + 12;
+  }
+
+  // Animation overlay
+  if(S.animating){
+    drawAnimOverlay(W,H);
+  }
+}
+
+// Find which orbital would be filled next (for highlighting)
+function findCurrentFillOrb(){
+  const d = computeDist(S.Z);
+  for(let i=0;i<ORBS.length;i++){
+    const orb = ORBS[i];
+    const cap = orb.count * 2;
+    if(d[i].length < cap) return i;
+  }
+  return -1;
+}
+
+function drawAnimOverlay(W,H){
+  // Flash effect on the most recently added electron
+  const alpha = 0.3 + 0.3*Math.sin(Date.now()/120);
+  ctx.fillStyle = `rgba(250,204,21,${alpha})`;
+  ctx.fillRect(0,0,W,H);
+}
+
+// ============================================================
+// MODE 1: THREE RULES DEEP-DIVE
+// ============================================================
+function drawRules(){
+  const W=cv.clientWidth, H=cv.clientHeight;
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#FAFCFD'); bg.addColorStop(1,'#EEF3F5');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  switch(S.ruleSub){
+    case 0: drawRuleAufbau(W,H); break;
+    case 1: drawRulePauli(W,H); break;
+    case 2: drawRuleHund(W,H); break;
+  }
+}
+
+function drawRuleAufbau(W,H){
+  // Title
+  ctx.fillStyle='#0A455D'; ctx.font='bold 18px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText('Rule 1: Aufbau Principle',W/2,32);
+  ctx.font='14px Segoe UI'; ctx.fillStyle='#5B7684';
+  ctx.fillText('"Electrons fill orbitals from lowest energy upward"',W/2,54);
+
+  // Draw a simplified diagram showing filling order
+  const startX=90, startY=H-70, boxW=32, boxH=46, gapX=6, gapY=8;
+  const showOrbs = ORBS.slice(0,10); // 1s through 4p
+
+  // Energy axis
+  ctx.save(); ctx.translate(36,H-28);
+  ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-H+80);
+  ctx.strokeStyle='#0A455D'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-5,-H+84); ctx.lineTo(0,-H+94); ctx.lineTo(5,-H+84); ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#0A455D'; ctx.font='bold 12px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText('E',0,-H+72); ctx.restore();
+
+  let yc=startY;
+  showOrbs.forEach((orb,oi)=>{
+    const nw=orb.count*(boxW+gapX)-gapX;
+    let xc=startX;
+    if(orb.count>1){
+      ctx.fillStyle='rgba(70,153,170,.07)';
+      rrect(ctx,xc-3,yc-boxH,nw+6,boxH+3,4,true,false);
+    }
+    for(let j=0;j<orb.count;j++){
+      ctx.fillStyle='#fff'; ctx.strokeStyle='#0A455D'; ctx.lineWidth=1.2;
+      rrect(ctx,xc,yc-boxH,boxW,boxH,3,true,true);
+      // Show filled based on step
+      const step=S.ruleStep;
+      let filled=false;
+      let eCount=0;
+      // Compute cumulative electrons up to this point
+      let cum=0;
+      for(let k=0;k<showOrbs.length;k++){
+        const so=showOrbs[k];
+        const cap=so.count*2;
+        const add=Math.min(step,cap);
+        if(k<oi) cum+=cap;
+        else if(k===oi){
+          // Within this subshell
+          if(so.count>1){
+            // Hund: single first
+            const singles=Math.min(step-cum>0?step-cum:0,so.count);
+            const pairs=Math.max(0,(step-cum)-so.count);
+            eCount=singles+(j<singles?1:0)+(pairs>(j-so.count)?(j>=so.count&&j-so.count<pairs?1:0):0);
+            filled=eCount>0;
+          }else{
+            eCount=Math.min(step-cum,2);
+            filled=j===0&&eCount>0;
+          }
+        }
+      }
+      if(filled){
+        if(!(orb.count>1&&j>=Math.min(step,orb.count))){
+          drawArrowUp(ctx,xc+boxW/2,yc-boxH/2-6,16,'#2563EB');
+        }
+        if(orb.count===1&&eCount>=2){
+          drawArrowDown(ctx,xc+boxW/2,yc-boxH/2+7,16,'#DC2626');
+        }
+        if(orb.count>1&&step>cum+orb.count&&(step-cum-orb.count)>j-orb.count&&j>=orb.count){
+          drawArrowDown(ctx,xc+boxW/2,yc-boxH/2+7,16,'#DC2626');
+        }
+      }
+      xc+=boxW+gapX;
+    }
+    ctx.fillStyle='#5B7684'; ctx.font='bold 11.5px Consolas,monospace';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillText(orb.label,xc+4,yc-boxH/2);
+    yc-=boxH+gapY+2;
+  });
+
+  // Highlight 4s < 3d crossover
+  const crossY = startY - 6*(boxH+gapY+2) - (boxH+gapY)/2;
+  ctx.save();
+  ctx.setLineDash([5,3]); ctx.strokeStyle='#F59E0B'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(startX-20,crossY+15); ctx.lineTo(startX+180,crossY-25);
+  ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#9A6B08'; ctx.font='bold 11.5px Segoe UI'; ctx.textAlign='left';
+  ctx.fillText('\u2191 4s fills BEFORE 3d!',startX+185,crossY-5);
+  ctx.restore();
+
+  // Step indicator
+  ctx.fillStyle='#0A455D'; ctx.font='13px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText(`Adding electron #${Math.min(S.ruleStep,30)} \u2014 watch it go to lowest available E`,W/2,76);
+}
+
+function drawRulePauli(W,H){
+  ctx.fillStyle='#0A455D'; ctx.font='bold 18px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText("Rule 2: Pauli Exclusion Principle",W/2,32);
+  ctx.font='14px Segoe UI'; ctx.fillStyle='#5B7684';
+  ctx.fillText('"Max 2 electrons per orbital, opposite spins"',W/2,54);
+
+  // Zoom into ONE orbital (2s)
+  const cx=W/2, cy=H/2-10;
+  const bw=56, bh=80;
+
+  // Big orbital box
+  ctx.fillStyle='#fff'; ctx.strokeStyle='#0A455D'; ctx.lineWidth=3;
+  rrect(ctx,cx-bw/2,cy-bh/2,bw,bh,8,true,true);
+  ctx.fillStyle='#5B7684'; ctx.font='bold 14px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillText('one orbital',cx,cy+bh/2+22);
+
+  const step=S.ruleStep%6;
+
+  // Step 0: empty
+  // Step 1: e1 arrives (up)
+  // Step 2: e2 arrives (down)
+  // Step 3-4: e3 tries to enter -> REJECTED flash
+  // Step 5: reset
+
+  if(step >= 1){
+    const t=Math.min(1,(step>=1?(step===1?S.ruleTimer%60/60:1):0));
+    const ey1=cy-8-t*12;
+    drawArrowUp(ctx,cx,ey1,22,'#2563EB');
+    if(step>=1) ctx.fillStyle='#2563EB'; else ctx.fillStyle='#5B7684';
+    ctx.font='11.5px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText('e\u2071: spin +\u00BD (\u2191)',cx,ey1-18);
+  }
+  if(step >= 2){
+    const t=Math.min(1,(step===2?(S.ruleTimer%60)/60:1));
+    const ey2=cy+8+t*12;
+    drawArrowDown(ctx,cx,ey2,22,'#DC2626');
+    ctx.fillStyle='#DC2626'; ctx.font='11.5px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText('e\u00B2: spin \u2212\u00BD (\u2193)',cx,ey2+20);
+  }
+  if(step >= 3 && step <= 4){
+    // REJECTED!
+    const shake = Math.sin(S.ruleTimer*0.4)*4;
+    ctx.strokeStyle='#EF4444'; ctx.lineWidth=3;
+    rrect(ctx,cx-bw/2+shake,cy-bh/2,bw,bh,8,false,true);
+    ctx.fillStyle='#EF4444'; ctx.font='bold 16px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText('\u2717 REJECTED',cx,cy- bh/2 - 16);
+    ctx.font='13px Segoe UI';
+    ctx.fillText('Max 2 e\u2070 per orbital!',cx,cy- bh/2 + 2);
+  }
+
+  // Info panel
+  ctx.fillStyle='#FCE8DD'; 
+  const pw=260,ph=90;
+  rrect(ctx,cx-pw/2,H-ph-20,pw,ph,10,true,false);
+  ctx.fillStyle='#B3441E'; ctx.font='13px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText('No two electrons share all 4 quantum numbers',cx,H-ph-2);
+  ctx.font='12px Segoe UI'; ctx.fillStyle='#16323F';
+  ctx.fillText('n, l, m\u2113 must be same (same orbital)',cx,H-ph+18);
+  ctx.fillText('But ms must differ: +\u00BD vs \u2212\u00BD',cx,H-ph+38);
+  ctx.fillText('\u2192 Opposite spins required',cx,H-ph+58);
+}
+
+function drawRuleHund(W,H){
+  ctx.fillStyle='#0A455D'; ctx.font='bold 18px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText("Rule 3: Hund's Rule",W/2,32);
+  ctx.font='14px Segoe UI'; ctx.fillStyle='#5B7684';
+  ctx.fillText('"Degenerate orbitals: fill singly, parallel spins, then pair"',W/2,54);
+
+  // Use 2p (3 orbitals) or 3d (5) or 4f (7) depending on sub-step
+  const subStep = Math.floor(S.ruleStep / 8) % 3; // 0=2p, 1=3d, 2=4f
+  const demos = [
+    {label:'2p', count:3, max:6, startE:3},
+    {label:'3d', count:5, max:10, startE:7},
+    {label:'4f', count:7, max:14, startE:13},
+  ];
+  const demo=demos[subStep];
+
+  const cx=W/2, cy=H/2-20;
+  const boxW=48, boxH=68, gapX=10;
+
+  const totalW=demo.count*(boxW+gapX)-gapX;
+  let sx=cx-totalW/2;
+
+  // Subshell band
+  ctx.fillStyle='rgba(245,158,11,.06)';
+  rrect(ctx,sx-6,cy-boxH/2-8,totalW+12,boxH+16,8,true,false);
+
+  // Label
+  ctx.fillStyle='#9A6B08'; ctx.font='bold 14px Consolas,monospace'; ctx.textAlign='center';
+  ctx.fillText(`${demo.label} subshell (${demo.count} degenerate orbitals, max ${demo.max}e\u2070)`,cx,cy-boxH/2-22);
+
+  // Draw orbitals
+  const localStep = S.ruleStep % 8;
+  for(let j=0;j<demo.count;j++){
+    const bx=sx+j*(boxW+gapX);
+    const by=cy-boxH/2;
+    ctx.fillStyle='#fff'; ctx.strokeStyle='#0A455D'; ctx.lineWidth=1.8;
+    rrect(ctx,bx,by,boxW,boxH,5,true,true);
+
+    const hasUp = localStep > j;
+    const hasDown = localStep > demo.count + j;
+
+    // Paired electrons drawn side by side (↑ left, ↓ right)
+    const cx = bx + boxW / 2;
+    const offX = hasDown ? 8 : 0;
+    if(hasUp) drawArrowUp(ctx, cx - offX, by + boxH / 2, 19, '#2563EB');
+    if(hasDown) drawArrowDown(ctx, cx + offX, by + boxH / 2, 19, '#DC2626');
+
+    // If this shows Hund violation (paired before all singles filled)
+    if(localStep > 0 && localStep <= demo.count && j >= localStep){
+      // These are empty — correct
+    }
+    if(localStep > demo.count && j < localStep - demo.count && !hasDown){
+      // Should have down but doesn't yet in transition
+    }
+  }
+
+  // Status text
+  ctx.fillStyle='#0A455D'; ctx.font='13px Segoe UI'; ctx.textAlign='center';
+  const eCount = Math.min(localStep, demo.max);
+  let statusText='';
+  if(localStep === 0) statusText = `Empty ${demo.label} subshell`;
+  else if(localStep <= demo.count) statusText = `p${eCount}: ${eCount} electrons, each in separate orbital, all \u2191 parallel`;
+  else if(localStep <= demo.max) statusText = `p${eCount}: first ${demo.count} singly filled, now pairing (e${eCount} pairs in orbital ${localStep-demo.count})`;
+  else statusText = `Full: ${demo.label}${sup(demo.max)} — half/full filled = extra stable!`;
+
+  ctx.fillText(statusText,cx,cy+boxH/2+28);
+
+  // Wrong-way comparison (what happens if you violate Hund)
+  if(localStep > 1 && localStep <= demo.count){
+    ctx.save();
+    ctx.globalAlpha=0.35;
+    ctx.fillStyle='#FCE8DD';
+    rrect(ctx,cx-140,cy+boxH/2+46,280,52,8,true,false);
+    ctx.globalAlpha=1;
+    ctx.fillStyle='#B3441E'; ctx.font='bold 11.5px Segoe UI';
+    ctx.fillText('\u2718 WRONG: Don\u2019t pair early! (would be higher energy)',cx,cy+boxH/2+72);
+    ctx.restore();
+  }
+
+  // Special callout for 4f
+  if(subStep === 2){
+    ctx.fillStyle='#FFF3D6';
+    rrect(ctx,cx-160,H-64,320,48,8,true,false);
+    ctx.fillStyle='#9A6B08'; ctx.font='bold 12px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText('\u2605 4f\u2077 (half-filled) and 4f\u00B9\u2074 (fully filled) are exceptionally stable!',cx,H-40);
+    ctx.fillText('This explains Lanthanide chemistry (elements 57\u201371)',cx,H-24);
+  }
+
+  // Sub-selector hint
+  ctx.fillStyle='#8FA9B7'; ctx.font='11.5px Segoe UI';
+  ctx.fillText(`Demo: ${demo.label}  |  Click \u201CHund\u201D tab again to cycle: 2p \u2192 3d \u2192 4f`,W/2,H-8);
+}
+
+// ============================================================
+// MODE 2: CONFIGURATOR
+// ============================================================
+function drawConfigurator(){
+  const W=cv.clientWidth, H=cv.clientHeight;
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#FAFCFD'); bg.addColorStop(1,'#EEF3F5');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  dist = computeDist(S.Z);
+
+  // Title
+  ctx.fillStyle='#0A455D'; ctx.font='bold 17px Segoe UI'; ctx.textAlign='center';
+  const sym = S.Z>0 && S.Z<=ELSYM.length ? ELSYM[S.Z-1] : '?';
+  ctx.fillText(`${sym} (Z=${S.Z}) — Electron Configuration`,W/2,28);
+
+  // Draw compact orbital diagram
+  const boxW=30, boxH=42, gapX=5, gapY=6;
+  const startX=65, startY=H-45;
+
+  // Proper layout: group orbitals by energy level
+  let rows=[], maxI=12; // up to 4f
+  let rowMap={};
+  for(let i=0;i<=maxI;i++){
+    const orb=ORBS[i];
+    if(!rowMap[orb.E]){rowMap[orb.E]={orbs:[],E:orb.E};rows.push(rowMap[orb.E]);}
+    rowMap[orb.E].orbs.push({...orb,idx:i});
+  }
+  rows.sort((a,b)=>a.E-b.E);
+
+  yc=startY;
+  rows.forEach(row=>{
+    let xc=startX;
+    row.orbs.forEach(orb=>{
+      const nw=orb.count*(boxW+gapX)-gapX;
+      if(orb.count>1){
+        ctx.fillStyle='rgba(70,153,170,.05)';
+        rrect(ctx,xc-3,yc-boxH,nw+6,boxH+3,4,true,false);
+      }
+      for(let j=0;j<orb.count;j++){
+        const bx=xc+j*(boxW+gapX),by=yc-boxH;
+        ctx.fillStyle='#fff';ctx.strokeStyle='#0A455D';ctx.lineWidth=1.3;
+        rrect(ctx,bx,by,boxW,boxH,3,true,true);
+        if(dist[orb.idx]&&dist[orb.idx].length>0){
+          // s-orbital: all e⁻ in one box; p/d/f: j-th orbital's both e⁻
+          const isS = orb.count === 1;
+          const boxEls = isS ? dist[orb.idx] : [dist[orb.idx][j], dist[orb.idx][orb.count+j]].filter(e=>e);
+          const hasDown = isS
+            ? dist[orb.idx].length >= 2
+            : dist[orb.idx].length > orb.count + j;
+          // Parallel side-by-side for ALL paired electrons (s/p/d/f) — draw ACTUAL spin
+          const cx = bx + boxW / 2;
+          const offX = hasDown ? 7 : 0;
+          if(boxEls.length >= 1){
+            if(boxEls[0].spin==='up') drawArrowUp(ctx, cx - offX, by + boxH / 2, 15, '#2563EB');
+            else drawArrowDown(ctx, cx - offX, by + boxH / 2, 15, '#DC2626');
+          }
+          if(hasDown && boxEls.length >= 2){
+            if(boxEls[1].spin==='up') drawArrowUp(ctx, cx + offX, by + boxH / 2, 15, '#2563EB');
+            else drawArrowDown(ctx, cx + offX, by + boxH / 2, 15, '#DC2626');
+          }
+        }
+      }
+      ctx.fillStyle='#5B7684';ctx.font='bold 11px Consolas,monospace';ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText(orb.label,xc+nw+4,yc-boxH/2);
+      xc+=nw+gapX+ctx.measureText(orb.label).width+10;
+    });
+    yc-=(boxH+gapY+4);
+  });
+
+  // Anomaly warning
+  if(S.Z===24||S.Z===29){
+    ctx.fillStyle='#FFF3D6';
+    rrect(ctx,W/2-150,40,300,36,8,true,false);
+    ctx.fillStyle='#9A6B08'; ctx.font='bold 12px Segoe UI'; ctx.textAlign='center';
+    const anMsg = S.Z===24 ?
+      '\u26A0 Cr anomaly: [Ar] 4s\u00B9 3d\u2075 (half-full d = stable)' :
+      '\u26A0 Cu anomaly: [Ar] 4s\u00B9 3d\u00B9\u2070 (full d = stable)';
+    ctx.fillText(anMsg,W/2,58);
+  }
+}
+
+// ============================================================
+// MODE 3: QUIZ
+// ============================================================
+const QUIZ = [
+  {
+    q: 'What is the correct electron configuration for Nitrogen (Z=7)?',
+    opts: ['1s\u00B2 2s\u00B2 2p\u00B3','1s\u00B2 2s\u00B2 2p\u00B2 2p\u00B9','1s\u00B2 2s\u00B9 2p\u2074','1s\u00B9 2s\u00B9 2p\u2075'],
+    ans: 0,
+    reason: 'Hund\u2019s Rule: 2p\u00B3 means one electron in EACH of the three 2p orbitals, all with parallel spins (\u2191\u2191\u2191). Never pair before filling all degenerate orbitals.',
+    explain: 'Nitrogen has 7 electrons: 1s\u00B2 (2) + 2s\u00B2 (2) + 2p\u00B3 (3). The three 2p electrons occupy separate p-orbitals with parallel spins (Hund\u2019s Rule). Option B violates Hund (pairs too early); C/D violate Aufbau.'
+  },
+  {
+    q: 'A student draws this: 2p [\u2191\u2193 \u00A0 \u00A0]. Which rule is violated?',
+    opts: ['Aufbau Principle','Pauli Exclusion Principle','Hund\u2019s Rule','No violation'],
+    ans: 2,
+    reason: 'Hund\u2019s Rule requires that degenerate orbitals be filled singly with parallel spins before any pairing occurs. The student paired the first two electrons instead of spreading them across orbitals.',
+    explain: 'Correct answer: Hund\u2019s Rule. With only 2 electrons in 2p, they should occupy TWO DIFFERENT p-orbitals both with \u2191 spin: [\u2191 \u00A0 \u2191]. Pairing (\u2191\u2193) only happens when the 3rd electron arrives.'
+  },
+  {
+    q: 'How many orbitals are in the 4f subshell? What is its maximum electron capacity?',
+    opts: ['5 orbitals / 10 e\u2070','7 orbitals / 14 e\u2070','3 orbitals / 6 e\u2070','9 orbitals / 18 e\u2070'],
+    ans: 1,
+    reason: 'The f subshell has azimuthal quantum number l=3, giving magnetic quantum numbers m\u2113 = -3,-2,-1,0,+1,+2,+3 \u2192 7 orbitals. Each holds 2e\u2070 (Pauli) \u2192 max 14e\u2070.',
+    explain: 'f subshell: l=3 \u2192 2l+1 = 7 orbitals. Max electrons = 7 \u00D7 2 = 14. This is why the lanthanide series (Ce to Yb) has 14 elements, plus La makes 15 total lanthanides.'
+  },
+  {
+    q: 'Which statement correctly explains why 4s fills before 3d?',
+    opts: ['4s is closer to the nucleus','4s has lower energy than 3d (orbital penetration/shielding)','3d holds more electrons so it waits','4s electrons are lighter'],
+    ans: 1,
+    reason: 'Aufbau Principle: electrons fill the available orbital with the LOWEST energy first. 4s electrons penetrate closer to the nucleus (less shielded) giving 4s lower energy than 3d despite n being larger.',
+    explain: 'The 4s orbital has a lower principal energy than 3d due to greater nuclear penetration and less shielding from inner electrons. This is called \u201Corbital energy crossing\u201D and is critical for understanding transition metal configurations (Sc-Zn).'
+  },
+  {
+    q: 'Why does Chromium (Z=24) have the anomalous config [Ar] 4s\u00B9 3d\u2075 instead of [Ar] 4s\u00B2 3d\u2074?',
+    opts: ['It was measured wrong','Half-filled d-subshell (d\u2075) has extra stability','Full-filled s-subshell is always preferred','Chromium is magnetic'],
+    ans: 1,
+    reason: 'A half-filled (d\u2075) or fully-filled (d\u00B9\u2070) d-subshell has extra exchange energy stability. Moving one electron from 4s to 3d gives Cr a half-filled d\u2075 configuration, lowering total energy.',
+    explain: 'Exchange energy: electrons with parallel spins in degenerate orbitals stabilize the atom. d\u2075 (half-filled) and d\u00B9\u2070 (full) are especially stable. Same logic applies to Cu (4s\u00B9 3d\u00B9\u2070).'
+  }
+];
+
+let QZ = [];
+
+function buildQuiz(){
+  QZ = QUIZ.map(q=>({...q,pick:-1,done:false,ok:false}));
+}
+
+function drawQuizView(){
+  const W=cv.clientWidth, H=cv.clientHeight;
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#FAFCFD'); bg.addColorStop(1,'#EEF3F5');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  if(QZ.length===0||S.quizIdx>=QZ.length){
+    ctx.fillStyle='#0A455D'; ctx.font='bold 18px Segoe UI'; ctx.textAlign='center';
+    ctx.fillText('Quiz Complete!',W/2,H/2-20);
+    return;
+  }
+
+  const q=QZ[S.quizIdx];
+  ctx.fillStyle='#0A455D'; ctx.font='bold 15px Segoe UI'; ctx.textAlign='center';
+  ctx.fillText(`Q${S.quizIdx+1}/${QZ.length}`,W/2,28);
+
+  // Question wrap
+  ctx.font='14px Segoe UI'; ctx.fillStyle='#16323F';
+  wrapText(ctx,q.q,W-60,55,18);
+}
+
+function wrapText(c,text,x,maxW,lineH){
+  const words=text.split(' '); let line=''; let y=x;
+  words.forEach(w=>{
+    const test=line+w+' ';
+    if(c.measureText(test).width>maxW&&line!==''){
+      c.textAlign='center';c.fillText(text,(x+c.canvas.width)/2,y);line=w;y+=lineH;
+    }else{line=test;}
+  });
+  c.textAlign='center';c.fillText(line,(x+c.canvas.width)/2,y);
+}
+
+// ============================================================
+// RIGHT PANEL BUILDERS
+// ============================================================
+function buildPanel(){
+  const p=document.getElementById('rightPanel');
+  p.innerHTML='';
+  switch(S.mode){
+    case 0: buildPanelBuilder(p); break;
+    case 1: buildPanelConfig(p); break;
+    case 2: buildPanelQuiz(p); break;
+  }
+}
+
+function buildPanelBuilder(p){
+  dist=computeDist(S.Z);
+  const sym=S.Z>0&&S.Z<=ELSYM.length?ELSYM[S.Z-1]:'?';
+
+  // Z control
+  p.innerHTML=`<div class="sec-title">${sym} (Z=<span id="zVal">${S.Z}</span>)</div>
+<div class="ctlrow"><label>Z:</label><input type="range" id="zSlider" min="1" max="86" value="${S.Z}">
+<span class="val" id="zDisp">${S.Z}</span></div>
+<div class="stepper" style="justify-content:center;margin:6px 0;">
+<button class="btn" id="btnMinus">\u2212</button>
+<button class="btn" id="btnPlus">+</button>
+<span style="font-size:12px;color:#5B7684;margin:0 8px;">Add/Remove e\u2070</span>
+</div>
+<div class="formula" id="configStr">${getNobleGasConfigString(dist,S.Z)}</div>
+<div class="chip aufbau" id="ruleChip" style="text-align:center;margin:6px 0;">Aufbau: filling lowest E</div>
+<div class="causal"><b>Cause \u2192 Effect:</b><br>Higher Z \u2192 more electrons \u2192 fill next orbital per rules</div>
+<div class="think"><b>Key insight:</b> Watch how electrons NEVER violate the three rules when filling.</div>
+<div class="sec-title" style="margin-top:10px;">Legend</div>
+<div class="legend"><span><span class="sw" style="background:#2563EB;"></span>\u2191 spin up (+\u00BD)</span>
+<span><span class="sw" style="background:#DC2626;"></span>\u2193 spin down (\u2212\u00BD)</span></div>`;
+
+  document.getElementById('zSlider').oninput=function(){S.Z=+this.value;document.getElementById('zVal').textContent=S.Z;document.getElementById('zDisp').textContent=S.Z;document.getElementById('configStr').textContent=getNobleGasConfigString(computeDist(S.Z),S.Z);requestAnimationFrame(draw);};
+  document.getElementById('btnMinus').onclick=function(){if(S.Z>1){S.Z--;syncZControls();}};
+  document.getElementById('btnPlus').onclick=function(){if(S.Z<86){S.Z++;syncZControls();}};
+}
+
+function syncZControls(){
+  const sl=document.getElementById('zSlider');const vd=document.getElementById('zDisp');const vv=document.getElementById('zVal');const cs=document.getElementById('configStr');
+  if(sl)sl.value=S.Z;if(vd)vd.textContent=S.Z;if(vv)vv.textContent=S.Z;if(cs)cs.textContent=getNobleGasConfigString(computeDist(S.Z),S.Z);
+  requestAnimationFrame(draw);
+}
+
+function buildPanelRules(p){
+  p.innerHTML=`<div class="sec-title">Rule Demo Selector</div>
+<div class="rule-sub">
+<button class="rsub${S.ruleSub===0?' active':''}" id="rs0">Aufbau</button>
+<button class="rsub${S.ruleSub===1?' active':''}" id="rs1">Pauli</button>
+<button class="rsub${S.ruleSub===2?' active':''}" id="rs2">Hund</button>
+</div>
+<div class="ctlrow"><label>Step:</label><input type="range" id="ruleStepSlider" min="0" max="23" value="${S.ruleStep}">
+<span class="val" id="ruleStepVal">${S.ruleStep}</span></div>
+<div class="stepper" style="justify-content:center;margin:6px 0;">
+<button class="btn" id="rulePrev">\u25C0</button>
+<button class="btn" id="ruleNext">\u25B6 Step</button>
+<button class="btn" id="ruleAuto">Auto \u25B6</button>
+</div>
+<div class="causal" id="ruleExpl"></div>`;
+
+  document.querySelectorAll('.rsub').forEach(b=>b.onclick=function(){S.ruleSub=+this.id.substr(2);buildPanel();requestAnimationFrame(draw);});
+  document.getElementById('ruleStepSlider').oninput=function(){S.ruleStep=+this.value;document.getElementById('ruleStepVal').textContent=S.ruleStep;requestAnimationFrame(draw);};
+  document.getElementById('rulePrev').onclick=function(){if(S.ruleStep>0){S.ruleStep--;document.getElementById('ruleStepSlider').value=S.ruleStep;document.getElementById('ruleStepVal').textContent=S.ruleStep;requestAnimationFrame(draw);}};
+  document.getElementById('ruleNext').onclick=function(){if(S.ruleStep<23){S.ruleStep++;document.getElementById('ruleStepSlider').value=S.ruleStep;document.getElementById('ruleStepVal').textContent=S.ruleStep;requestAnimationFrame(draw);}};
+  updateRuleExpl();
+}
+
+function updateRuleExpl(){
+  const el=document.getElementById('ruleExpl');
+  if(!el)return;
+  const texts=[
+    ['Electrons fill from bottom (low E) to top (high E).','Notice 4s (E=6) fills BEFORE 3d (E=7)! This "crossover" is crucial for transition metals.'],
+    ['One orbital holds max 2 electrons with opposite spins.','Think of it like magnets: same pole repels, opposite attracts. A third electron is rejected!'],
+    ['In degenerate orbitals (p/d/f), spread out first!\u2191\u2191\u2191 then pair.\u2191\u2193','4f has 7 orbitals \u2192 first 7 e\u2070 each get their own orbital (f\u2077 half-filled = super stable!).']
+  ];
+  const t=texts[S.ruleSub];
+  el.innerHTML=`<b>${t[0]}</b><br><span style="font-size:12px;">${t[1]}</span>`;
+}
+
+function buildPanelConfig(p){
+  dist=computeDist(S.Z);
+  const sym=S.Z>0&&S.Z<=ELSYM.length?ELSYM[S.Z-1]:'?';
+
+  // Quick element buttons (rows by period)
+  let btnHTML='<div class="sec-title">Quick Select</div><div class="elgrid">';
+  const quickZ=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,24,26,29,30,36,47,54,56,72,86];
+  quickZ.forEach(z=>{
+    const s=ELSYM[z-1];const on=z===S.Z;
+    btnHTML+=`<button class="elbtn${on?' on':''}" data-z="${z}">${s}${z}</button>`;
+  });
+  btnHTML+='</div>';
+
+  p.innerHTML=`${btnHTML}
+<div class="ctlrow" style="margin-top:8px;"><label>Z:</label><input type="range" id="czSlider" min="1" max="86" value="${S.Z}">
+<span class="val" id="czDisp">${S.Z}</span></div>
+<div class="formula" id="cfgFull">${getConfigString(dist)}</div>
+<div class="formula" style="border-left-color:#4699AA;background:#F2F7F9;" id="cfgCore">${getNobleGasConfigString(dist,S.Z)}</div>
+<div class="datarow"><span>Element</span><b>${sym}</b></div>
+<div class="datarow"><span>Total e\u2070</span><b>${S.Z}</b></div>
+<div class="causal"><b>Check:</b> Does this config follow all 3 rules? ${(S.Z===24||S.Z===29)?'<br>\u26A0 See anomaly note on diagram':''}</div>`;
+
+  document.getElementById('czSlider').oninput=function(){S.Z=+this.value;document.getElementById('czDisp').textContent=S.Z;buildPanel();requestAnimationFrame(draw);};
+  document.querySelectorAll('.elbtn').forEach(b=>b.onclick=function(){S.Z=+this.dataset.z;buildPanel();requestAnimationFrame(draw);});
+}
+
+function buildPanelQuiz(p){
+  if(QZ.length===0) buildQuiz();
+  if(S.quizIdx>=QZ.length){
+    p.innerHTML=`<div style="text-align:center;padding:20px;"><div style="font-size:24px;margin-bottom:10px;">\uD83C\uDF89</div><div style="color:#16A34A;font-weight:bold;font-size:16px;">Quiz Complete!</div><button class="btn" id="qRetry" style="margin-top:12px;">Try Again</button></div>`;
+    document.getElementById('qRetry')?.addEventListener('click',()=>{S.quizIdx=0;QZ=[];buildQuiz();buildPanel();requestAnimationFrame(draw);});
+    return;
+  }
+
+  const q=QZ[S.quizIdx];
+  let optsHTML='';
+  q.opts.forEach((o,i)=>{
+    const cls=q.pick===i?(q.ok?'picked-ok':'picked-bad'):'';
+    optsHTML+=`<div class="qopt${q.pick===i?' picked':''}${q.done&&(i===q.ans)?' correct':(q.done&&q.pick===i&&i!==q.ans)?' wrong':''}" data-i="${i}">${String.fromCharCode(65+i)}. ${o}</div>`;
+  });
+
+  let reasonsHTML='', fbHTML='';
+  if(q.done){
+    reasonsHTML=`<div class="reasons show">${q.reasons.map((r,i)=>`<div class="reason${q.pick===i?(q.ok?' picked-ok':' picked-bad'):''}">${String.fromCharCode(97+i)}) ${r}</div>`).join('')}</div>`;
+    fbHTML=`<div class="qfb ${q.ok?'ok':'bad'}">${q.explain}</div>`;
+  }
+
+  p.innerHTML=`<div class="qcard"><h3>Q${S.quizIdx+1}/${QZ.length}</h3><div style="font-size:13.5px;color:#16323F;margin-bottom:10px;line-height:1.5;">${q.q}</div>
+<div class="qopts">${optsHTML}</div>${reasonsHTML}${fbHTML}
+<div style="display:flex;gap:8px;margin-top:10px;">
+<button class="btn" id="qPrev"${S.quizIdx<=0?' disabled':''}>Previous</button>
+<button class="btn" id="qNext"${S.quizIdx>=QZ.length-1?' disabled':''}>Next</button>
+</div></div>`;
+
+  document.querySelectorAll('.qopt').forEach(o=>o.onclick=function(){
+    if(QZ[S.quizIdx].done)return;
+    QZ[S.quizIdx].pick=+this.dataset.i;
+    QZ[S.quizIdx].done=true;
+    QZ[S.quizIdx].ok=(QZ[S.quizIdx].pick===QZ[S.quizIdx].ans);
+    QZ[S.quizIdx].reasons=['Correct! '+QZ[S.quizIdx].reason,'Not quite \u2014 review the rule.','Close, but not the best answer.','This violates one or more rules.'];
+    buildPanel();requestAnimationFrame(draw);
+  });
+  document.getElementById('qPrev')?.addEventListener('click',()=>{if(S.quizIdx>0){S.quizIdx--;buildPanel();requestAnimationFrame(draw);}});
+  document.getElementById('qNext')?.addEventListener('click',()=>{if(S.quizIdx<QZ.length-1){S.quizIdx++;buildPanel();requestAnimationFrame(draw);}});
+}
+
+// ============================================================
+// ANIMATION LOOP
+// ============================================================
+let lastTs=0;
+function loop(ts){
+  const dt=ts-lastTs;lastTs=ts;
+  S.ruleTimer++;
+  // Auto-advance removed (Three Rules mode deleted)
+  if(S.mode===1){}  // Configurator — no auto-advance
+  draw();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ============================================================
+// INIT
+// ============================================================
+dist=computeDist(S.Z);
+buildPanel();
+window.addEventListener('resize',()=>{setupCanvas(cv);requestAnimationFrame(draw);});
+
+// Keyboard shortcuts
+window.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'&&S.Z<86){S.Z++;syncZControls();}
+  if(e.key==='ArrowLeft'&&S.Z>1){S.Z--;syncZControls();}
+  if(e.key==='r'||e.key==='R'){if(S.mode!==2){S.Z=7;syncZControls();}}
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Energy Level Builder</title>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:#f1f5f9; color:#0f172a; min-height:100vh; padding:28px 18px;
+    font-family:system-ui,"Segoe UI","Microsoft YaHei",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1000px; margin:0 auto; background:#fff; border:1px solid #e2e8f0; border-radius:26px;
+    padding:32px 40px 42px; box-shadow:0 25px 50px -12px rgba(15,23,42,.25);}
+  @media(max-width:640px){ .wrap{padding:22px 18px 30px;} }
+  .hdr{text-align:center; margin-bottom:26px;}
+  .hdr h1{margin:0 0 7px; font-size:31px; line-height:1.15; font-weight:900; letter-spacing:-.02em; color:#0f172a;}
+  .hdr .sub{margin:0; font-size:16px; font-style:italic; color:#64748b;}
+  @media(max-width:640px){ .hdr h1{font-size:24px;} }
+  .legend{display:flex; flex-wrap:wrap; justify-content:center; gap:20px; margin-bottom:24px; font-size:13.5px; font-weight:700; color:#475569;}
+  .legend .it{display:inline-flex; align-items:center; gap:8px;}
+  .legend .dot{width:15px; height:15px; border-radius:9999px; border:1px solid #334155; display:inline-block;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:18px; align-items:center; justify-content:center;
+    background:#eff6ff; border:2px solid #dbeafe; border-radius:18px; padding:18px 22px;
+    box-shadow:0 4px 6px -1px rgba(15,23,42,.06); margin-bottom:26px;}
+  .slider-wrap{display:inline-flex; align-items:center; gap:10px;}
+  .slider-wrap .ctl-label{font-weight:800; color:#1e40af; font-size:14px;}
+  .slider-wrap .val{font-size:13px; font-weight:800; color:#1e40af; min-width:30px; text-align:right;}
+  input[type=range]{-webkit-appearance:none; appearance:none; height:8px; border-radius:8px; background:#bfdbfe; outline:none; width:150px;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; height:22px; width:22px; border-radius:50%; background:#2563eb; border:3px solid #fff; cursor:pointer; box-shadow:0 1px 4px rgba(0,0,0,.3); margin-top:-7px;}
+  input[type=range]::-moz-range-thumb{height:22px; width:22px; border:none; border-radius:50%; background:#2563eb; cursor:pointer;}
+  button.btn{border:none; border-radius:12px; padding:11px 20px; font-size:14px; font-weight:800;
+    cursor:pointer; transition:background .18s,color .18s,transform .18s,box-shadow .18s;}
+  button.btn:hover{transform:translateY(-1px);}
+  button.btn.ghost{background:#fff; color:#1d4ed8; border:1.5px solid #bfdbfe;}
+  button.btn.ghost:hover{background:#eff6ff;}
+  .stage{position:relative; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:18px; padding:10px; margin-bottom:26px;}
+  .stage svg{width:100%; height:auto; display:block;}
+  .picker{position:absolute; top:16px; left:16px; z-index:2; width:236px; background:rgba(255,255,255,.94);
+    border:1px solid #e2e8f0; border-radius:14px; padding:11px 12px; box-shadow:0 10px 24px -12px rgba(15,23,42,.35);}
+  .picker .pk-t{font-size:10.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#94a3b8; margin:0 0 7px 2px;}
+  .picker button{display:block; width:100%; text-align:left; background:#fff; border:1.5px solid #e2e8f0; border-radius:10px;
+    padding:7px 10px; margin-bottom:6px; font-weight:700; font-size:12.5px; color:#334155; cursor:pointer;
+    font-family:inherit; transition:background .15s,color .15s,border-color .15s;}
+  .picker button:last-child{margin-bottom:0;}
+  .picker button:hover{border-color:#bfdbfe;}
+  .picker button.active{background:#1d4ed8; color:#fff; border-color:#1d4ed8;}
+  .summary{background:#0f172a; color:#e2e8f0; border-radius:18px; padding:22px 26px; font-size:15.5px; line-height:1.65; transition:background .35s;}
+  .summary .em{color:#7dd3fc; font-weight:800;}
+  .summary.hot{background:#064e3b;}
+  .summary.hot .em{color:#a7f3d0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="hdr">
+    <h1>Energy Level Builder</h1>
+    <p class="sub">IG CIE 0620 · Chapter 8.1–8.2 · Build an energy-level diagram</p>
+  </header>
+  <div class="legend" id="legend"></div>
+  <div class="ctrl" id="controls"></div>
+  <div class="stage">
+    <div class="picker" id="picker"><p class="pk-t">Choose the reaction</p></div>
+    <svg id="scene" viewBox="0 0 560 380" preserveAspectRatio="xMidYMid meet" aria-label="energy level diagram">
+      <defs>
+        <marker id="ahRed" markerWidth="11" markerHeight="11" refX="7.5" refY="3" orient="auto"><path d="M0,0 L7.5,3 L0,6 z" fill="#ef4444"/></marker>
+        <marker id="ahBlue" markerWidth="11" markerHeight="11" refX="7.5" refY="3" orient="auto"><path d="M0,0 L7.5,3 L0,6 z" fill="#3b82f6"/></marker>
+      </defs>
+      <rect x="0" y="320" width="560" height="60" fill="#94a3b8" fill-opacity="0.10"/>
+      <line x1="40" y1="110" x2="40" y2="300" stroke="#cbd5e1" stroke-width="2"/>
+      <rect id="platR" fill="#94a3b8" fill-opacity="0.16"/>
+      <rect id="platP" fill="#94a3b8" fill-opacity="0.16"/>
+      <line id="lineR" stroke="#3b82f6" stroke-width="3.5" stroke-linecap="round"/>
+      <line id="lineP" stroke="#ef4444" stroke-width="3.5" stroke-linecap="round"/>
+      <g id="pR"><circle r="14" fill="#3b82f6" stroke="#1e3a8a" stroke-width="1.5"/></g>
+      <g id="pP"><circle r="14" fill="#ef4444" stroke="#991b1b" stroke-width="1.5"/></g>
+      <line id="dh" stroke="#ef4444" stroke-width="3.5" marker-end="url(#ahRed)"/>
+      <line id="tr" stroke="#ef4444" stroke-width="3" stroke-dasharray="6,4" marker-end="url(#ahRed)"/>
+    </svg>
+  </div>
+  <div class="summary" id="summary"></div>
+</div>
+<script>
+const NS='http://www.w3.org/2000/svg';
+const platR=document.getElementById('platR'), platP=document.getElementById('platP');
+const lineR=document.getElementById('lineR'), lineP=document.getElementById('lineP');
+const pR=document.getElementById('pR'), pP=document.getElementById('pP');
+const dh=document.getElementById('dh'), tr=document.getElementById('tr');
+const _legend=document.getElementById('legend'), _controls=document.getElementById('controls');
+const _summary=document.getElementById('summary'), _picker=document.getElementById('picker');
+
+let E_R=82, E_P=32, rxn='cao';
+const xL=55, xMid=290, xR=520, top=110, bot=300;
+const yOf=E=>bot-(E/100)*(bot-top);
+
+const RX={
+  cao:{ eq:'CaO + H₂O → Ca(OH)₂', R:82, P:32 },
+  ice:{ eq:'CO₂(s) → CO₂(g)', R:32, P:82 },
+  amm:{ eq:'NH₄⁺ + H₂O → NH₃·H₂O + H⁺', R:40, P:78 }
+};
+
+function addSlider(text,min,max,val,onInput){
+  const wrap=document.createElement('div'); wrap.className='slider-wrap';
+  const lab=document.createElement('span'); lab.className='ctl-label'; lab.textContent=text;
+  const inp=document.createElement('input'); inp.type='range'; inp.min=min; inp.max=max; inp.value=val;
+  const v=document.createElement('span'); v.className='val'; v.textContent=val;
+  inp.addEventListener('input',e=>{ const x=parseFloat(e.target.value); v.textContent=x; onInput(x); });
+  wrap.appendChild(lab); wrap.appendChild(inp); wrap.appendChild(v); _controls.appendChild(wrap);
+  return {wrap:wrap,inp:inp,set:vv=>{ inp.value=vv; v.textContent=vv; }};
+}
+function addButton(text,onClick,cls){ const b=document.createElement('button'); b.className='btn '+cls; b.textContent=text; b.addEventListener('click',()=>onClick(b)); _controls.appendChild(b); return b; }
+const sR=addSlider('Reactants energy',10,100,82,v=>{ E_R=v; render(); });
+const sP=addSlider('Products energy',10,100,32,v=>{ E_P=v; render(); });
+addButton('Reset', ()=>{ E_R=RX[rxn].R; E_P=RX[rxn].P; sR.set(E_R); sP.set(E_P); render(); }, 'ghost');
+
+const pkBtns={};
+Object.keys(RX).forEach(k=>{ const b=document.createElement('button'); b.textContent=RX[k].eq;
+  b.addEventListener('click',()=>setRxn(k)); _picker.appendChild(b); pkBtns[k]=b; });
+function setRxn(k){
+  if(!RX[k]) return;
+  rxn=k;
+  E_R=RX[k].R; E_P=RX[k].P; sR.set(E_R); sP.set(E_P);
+  Object.keys(pkBtns).forEach(x=>pkBtns[x].classList.toggle('active', x===k));
+  render();
+}
+
+_legend.innerHTML='';
+[['#3b82f6','reactants level'],['#ef4444','products level']].forEach(it=>{ const s=document.createElement('span'); s.className='it';
+  s.innerHTML='<i class="dot" style="background:'+it[0]+'"></i><span>'+it[1]+'</span>'; _legend.appendChild(s); });
+
+function setSummary(exo){
+  const eq=RX[rxn].eq;
+  if(exo){
+    _summary.innerHTML='<b>'+eq+'</b> — reactants are <span class="em">higher</span> in energy than products → <span class="em">exothermic</span>, ΔH negative. The energy difference is released to the surroundings.';
+    _summary.classList.add('hot');
+  } else {
+    _summary.innerHTML='<b>'+eq+'</b> — products are <span class="em">higher</span> in energy than reactants → <span class="em">endothermic</span>, ΔH positive. The energy difference is absorbed from the surroundings.';
+    _summary.classList.remove('hot');
+  }
+}
+function render(){
+  const yR=yOf(E_R), yP=yOf(E_P), exo=(E_R>E_P);
+
+  platR.setAttribute('x',xL); platR.setAttribute('y',yR); platR.setAttribute('width',xMid-12-xL); platR.setAttribute('height',bot-yR);
+  platP.setAttribute('x',xMid+12); platP.setAttribute('y',yP); platP.setAttribute('width',xR-(xMid+12)); platP.setAttribute('height',bot-yP);
+  lineR.setAttribute('x1',xL); lineR.setAttribute('y1',yR); lineR.setAttribute('x2',xMid-12); lineR.setAttribute('y2',yR);
+  lineP.setAttribute('x1',xMid+12); lineP.setAttribute('y1',yP); lineP.setAttribute('x2',xR); lineP.setAttribute('y2',yP);
+  pR.setAttribute('transform','translate('+((xL+xMid-12)/2)+','+(yR-24)+')');
+  pP.setAttribute('transform','translate('+((xMid+12+xR)/2)+','+(yP-24)+')');
+
+  const c = exo?'#ef4444':'#3b82f6', m = exo?'url(#ahRed)':'url(#ahBlue)';
+  dh.setAttribute('x1',xMid); dh.setAttribute('y1',yR); dh.setAttribute('x2',xMid); dh.setAttribute('y2',yP);
+  dh.setAttribute('stroke',c); dh.setAttribute('marker-end',m);
+  const xS=xR-45;
+  if(exo){ tr.setAttribute('x1',xS); tr.setAttribute('y1',Math.min(yR,yP)-30); tr.setAttribute('x2',xS); tr.setAttribute('y2',324); }
+  else   { tr.setAttribute('x1',xS); tr.setAttribute('y1',324); tr.setAttribute('x2',xS); tr.setAttribute('y2',Math.max(yR,yP)-30); }
+  tr.setAttribute('stroke',c); tr.setAttribute('marker-end',m);
+  setSummary(exo);
+}
+setRxn('cao');
+</script>
+</body>
+</html>

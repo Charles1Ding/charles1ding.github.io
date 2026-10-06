@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>原子同位素质谱与丰度偏转模拟器 (以硼 B-10 / B-11 为例)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        canvas {
+            touch-action: none;
+        }
+        .glow-blue {
+            box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+        }
+        .glow-green {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col p-3 md:p-4 overflow-hidden">
+    <!-- 头部标题 -->
+    <header class="mb-2 flex justify-between items-center px-2">
+        <h1 class="text-xl md:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
+            原子同位素质谱与相对丰度偏转模拟器 (以硼同位素 <sup>10</sup>B / <sup>11</sup>B 为例)
+        </h1>
+        <div id="chamberStateTag" class="text-xs font-semibold px-3 py-1 rounded bg-slate-800 text-red-400 border border-slate-700">
+            设备关闭 (OFF)
+        </div>
+    </header>
+
+    <!-- 主体布局 -->
+    <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 h-[calc(100vh-65px)]">
+        <!-- 左侧控制面板 & 同位素相对丰度物理化学解释 -->
+        <div class="lg:col-span-4 bg-slate-800/80 border border-slate-700 rounded-xl p-3 flex flex-col justify-between overflow-y-auto gap-3">
+            <div class="space-y-3">
+                <!-- 电源开关 -->
+                <button id="powerBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-lg text-sm transition glow-green flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>启动质谱仪电源</span>
+                </button>
+
+                <div id="controlsContainer" class="space-y-3 opacity-50 pointer-events-none transition-opacity duration-300">
+                    <!-- 选择同位素样品元素 -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">检测同位素元素系统：</label>
+                        <select id="compoundSelect" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-sm text-slate-200 focus:outline-none focus:border-teal-500">
+                            <option value="boron">天然硼同位素系统 (B-10: 19.9%, B-11: 80.1%)</option>
+                            <option value="chlorine">天然氯同位素系统 (Cl-35: 75.8%, Cl-37: 24.2%)</option>
+                            <option value="bromine">天然溴同位素系统 (Br-79: 50.7%, Br-81: 49.3%)</option>
+                        </select>
+                    </div>
+
+                    <!-- 磁场强度调节 -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-semibold text-slate-300">偏转磁场强度 (B)：</label>
+                            <span id="bFieldDisplay" class="text-base font-mono text-teal-400 font-bold">1.00 T</span>
+                        </div>
+                        <input type="range" id="bFieldSlider" min="0.4" max="2.2" step="0.02" value="1.0" class="w-full accent-teal-500 bg-slate-700 rounded h-2">
+                    </div>
+
+                    <!-- 脉冲进样按钮 -->
+                    <button id="injectBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs py-2.5 rounded transition glow-blue">
+                        脉冲原子束进样 (Inject Atom Beam)
+                    </button>
+                </div>
+            </div>
+
+            <!-- 电荷状态面板 (新增) -->
+            <div id="chargePanel" class="bg-slate-900/90 p-3 rounded-lg border border-slate-700 space-y-2 text-xs">
+                <h3 class="font-bold text-sky-400 border-b border-slate-800 pb-1.5 flex justify-between text-sm">
+                    <span>⚡ 电离与电荷变化 (Ionization & Charge)</span>
+                </h3>
+                <p class="text-slate-300 text-xs leading-relaxed">
+                    中性原子经 <b class="text-sky-300">高能电子轰击</b> 失去 1 个电子 → 成为
+                    <b class="text-emerald-300">阳离子 M⁺ (q = +1e)</b>，随后被磁场偏转、在检测器记录为 m/z 峰。
+                </p>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-slate-950/70 rounded p-2">
+                        <div class="text-[10px] text-slate-400">中性 (q=0)</div>
+                        <div id="statNeutral" class="text-lg font-bold text-slate-300 font-mono">0</div>
+                    </div>
+                    <div class="bg-slate-950/70 rounded p-2">
+                        <div class="text-[10px] text-slate-400">阳离子 (+1e)</div>
+                        <div id="statCharged" class="text-lg font-bold text-emerald-400 font-mono">0</div>
+                    </div>
+                    <div class="bg-slate-950/70 rounded p-2">
+                        <div class="text-[10px] text-slate-400">累计失去 e⁻</div>
+                        <div id="statLost" class="text-lg font-bold text-amber-400 font-mono">0</div>
+                    </div>
+                </div>
+                <div class="text-[11px] text-slate-400 font-mono text-center">原子(0) --e⁻ 轰击--> M⁺(+1e) + e⁻(自由)</div>
+            </div>
+
+            <!-- 同位素相对丰度与偏转原理面板 -->
+            <div id="fragmentationPanel" class="bg-slate-900/90 p-3 rounded-lg border border-slate-700 space-y-2 text-xs">
+                <h3 class="font-bold text-amber-400 border-b border-slate-800 pb-1.5 flex justify-between text-sm">
+                    <span>💡 同位素相对丰度 (Relative Abundance) 原理</span>
+                </h3>
+                <p class="text-slate-300 text-xs leading-relaxed">
+                    同位素具有相同的质子数但不同的中子数。在质谱中，由于其质量不同（如 <sup>10</sup>B 与 <sup>11</sup>B），在相同加速电压和垂直磁场 $B$ 作用下偏转半径不同 ($r \propto \sqrt{m/z}$)，其峰高严格正比于自然界的相对丰度百分比。
+                </p>
+                <div id="fragmentDetails" class="space-y-2 text-xs text-slate-300">
+                    <!-- 动态注入同位素详细说明 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧展示区 (微观电离与偏转腔体 + 大面积相对丰度质谱图) -->
+        <div class="lg:col-span-8 flex flex-col gap-3 h-full">
+            <!-- 质谱仪微观腔体动画区 -->
+            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3 flex flex-col flex-1 relative overflow-hidden">
+                <div class="text-sm font-bold text-slate-200 mb-1 flex justify-between items-center">
+                    <span>原子电子轰击电离与同位素轨迹偏转腔体</span>
+                    <span id="detectedIonDisplay" class="font-mono text-sm text-blue-400 font-bold">击中检测器: --</span>
+                </div>
+                <div class="flex-1 w-full h-full min-h-0">
+                    <canvas id="chamberCanvas" class="w-full h-full bg-slate-950 rounded-lg border border-slate-800"></canvas>
+                </div>
+                <!-- 图例 (新增) -->
+                <div class="absolute left-3 bottom-2 flex gap-3 text-[10px] text-slate-400 bg-slate-950/60 rounded px-2 py-1">
+                    <span><span class="inline-block w-2.5 h-2.5 rounded-full align-middle" style="background:#64748b"></span> 中性原子 (q=0)</span>
+                    <span><span class="inline-block w-2.5 h-2.5 rounded-full align-middle" style="background:#38bdf8"></span> 阳离子 +1e</span>
+                    <span><span class="inline-block w-2.5 h-2.5 rounded-full align-middle" style="background:#38bdf8"></span> 入射高能 e⁻</span>
+                    <span><span class="inline-block w-2.5 h-2.5 rounded-full align-middle" style="background:#fde047"></span> 弹出自由 e⁻</span>
+                </div>
+            </div>
+
+            <!-- 相对丰度质谱图区 (重点突出丰度百分比) -->
+            <div class="bg-slate-800/80 border border-slate-700 rounded-xl p-3 flex flex-col flex-[1.3] relative overflow-hidden">
+                <div class="text-sm font-bold text-slate-200 mb-1 flex justify-between items-center">
+                    <span>同位素相对丰度质谱图 (Relative Abundance Spectrum)</span>
+                    <span class="text-slate-400 text-xs">X: 质荷比 m/z | Y: 相对丰度 (%)</span>
+                </div>
+                <div class="flex-1 w-full h-full min-h-0">
+                    <canvas id="spectrumCanvas" class="w-full h-full bg-slate-950 rounded-lg border border-slate-800"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 同位素系统与丰度数据
+        const ISOTOPE_SYSTEMS = {
+            'boron': {
+                name: '天然硼同位素 (Boron Isotopes)',
+                details: [
+                    { mz: 10, abundance: 19.9, desc: '<b>m/z = 10 (<sup>10</sup>B)</b>: 相对丰度 <b>19.9%</b> (轻同位素，偏转半径较小，受磁场偏转大)', color: '#38bdf8' },
+                    { mz: 11, abundance: 100.0, desc: '<b>m/z = 11 (<sup>11</sup>B 基准峰)</b>: 相对丰度 <b>80.1%</b> (对应归一化 100% 相对丰度基峰)', color: '#10b981' }
+                ],
+                peaks: [
+                    { mz: 10, intensity: 24.8, abundanceLabel: '19.9%', label: '¹⁰B⁺', color: '#38bdf8' },
+                    { mz: 11, intensity: 100, abundanceLabel: '80.1%', label: '¹¹B⁺', color: '#10b981' }
+                ],
+                maxMz: 15
+            },
+            'chlorine': {
+                name: '天然氯同位素 (Chlorine Isotopes)',
+                details: [
+                    { mz: 35, abundance: 100.0, desc: '<b>m/z = 35 (<sup>35</sup>Cl 基准峰)</b>: 相对丰度 <b>75.8%</b> (丰度最高基峰)', color: '#38bdf8' },
+                    { mz: 37, abundance: 31.9, desc: '<b>m/z = 37 (<sup>37</sup>Cl)</b>: 相对丰度 <b>24.2%</b> (约为 35 号峰的三分之一)', color: '#f59e0b' }
+                ],
+                peaks: [
+                    { mz: 35, intensity: 100, abundanceLabel: '75.8%', label: '³⁵Cl⁺', color: '#38bdf8' },
+                    { mz: 37, intensity: 32, abundanceLabel: '24.2%', label: '³⁷Cl⁺', color: '#f59e0b' }
+                ],
+                maxMz: 45
+            },
+            'bromine': {
+                name: '天然溴同位素 (Bromine Isotopes)',
+                details: [
+                    { mz: 79, abundance: 100.0, desc: '<b>m/z = 79 (<sup>79</sup>Br 基准峰)</b>: 相对丰度 <b>50.7%</b>', color: '#ec4899' },
+                    { mz: 81, abundance: 97.2, desc: '<b>m/z = 81 (<sup>81</sup>Br)</b>: 相对丰度 <b>49.3%</b> (丰度几乎 1:1 等高)', color: '#8b5cf6' }
+                ],
+                peaks: [
+                    { mz: 79, intensity: 100, abundanceLabel: '50.7%', label: '⁷⁹Br⁺', color: '#ec4899' },
+                    { mz: 81, intensity: 97, abundanceLabel: '49.3%', label: '⁸¹Br⁺', color: '#8b5cf6' }
+                ],
+                maxMz: 95
+            }
+        };
+
+        let isPowerOn = false;
+        let currentSystemKey = 'boron';
+        let bFieldStrength = 1.0;
+        let atoms = [];            // 中性原子 + 阳离子（统一粒子）
+        let beamElectrons = [];    // 入射高能电子（电子枪向下发射）
+        let freeElectrons = [];    // 被轰击弹出的自由电子（飞离）
+        let hitGlows = [];         // 检测器击中光晕
+        let ionizeFlashes = [];    // 电离瞬间闪光
+        let stats = { neutral: 0, charged: 0, lost: 0 };
+
+        const chamberCanvas = document.getElementById('chamberCanvas');
+        const chamberCtx = chamberCanvas.getContext('2d');
+        const specCanvas = document.getElementById('spectrumCanvas');
+        const specCtx = specCanvas.getContext('2d');
+
+        const powerBtn = document.getElementById('powerBtn');
+        const controlsContainer = document.getElementById('controlsContainer');
+        const chamberStateTag = document.getElementById('chamberStateTag');
+
+        const compoundSelect = document.getElementById('compoundSelect');
+        const bFieldSlider = document.getElementById('bFieldSlider');
+        const bFieldDisplay = document.getElementById('bFieldDisplay');
+        const injectBtn = document.getElementById('injectBtn');
+
+        const fragmentDetails = document.getElementById('fragmentDetails');
+        const detectedIonDisplay = document.getElementById('detectedIonDisplay');
+        const statNeutral = document.getElementById('statNeutral');
+        const statCharged = document.getElementById('statCharged');
+        const statLost = document.getElementById('statLost');
+
+        function resizeCanvases() {
+            chamberCanvas.width = chamberCanvas.clientWidth * window.devicePixelRatio;
+            chamberCanvas.height = chamberCanvas.clientHeight * window.devicePixelRatio;
+            specCanvas.width = specCanvas.clientWidth * window.devicePixelRatio;
+            specCanvas.height = specCanvas.clientHeight * window.devicePixelRatio;
+        }
+
+        // ============== 粒子：中性原子 → 被轰击 → 阳离子 (+1e) ==============
+        class Particle {
+            constructor(x, y, mz, label, color) {
+                this.x = x;
+                this.y = y;
+                this.vx = 2.6 * window.devicePixelRatio; // 离子飞行初速（较慢）
+                this.vy = 0;
+                this.mz = mz;
+                this.label = label;
+                this.color = color;
+                this.radius = Math.max(11.0, Math.min(20.0, mz / 2.6)) * window.devicePixelRatio;
+                this.charged = false;       // 初始为中性 (q=0)
+                this.charge = 0;
+                this.trail = [];
+                this.isDead = false;
+                this.justIonized = 0;       // 电离动画计时（帧）
+                this.born = Date.now();
+            }
+
+            // 被高能电子击中：失去 1 个电子，电荷 0 → +1e
+            ionize() {
+                if (this.charged) return;
+                this.charged = true;
+                this.charge = 1;
+                this.justIonized = 55; // 约 1 秒动画
+                stats.charged++;
+                stats.lost++;
+                // 弹出 1 个自由电子（向上飞离）
+                freeElectrons.push(new FreeElectron(this.x, this.y - this.radius));
+                ionizeFlashes.push({ x: this.x, y: this.y, r: this.radius, alpha: 1 });
+            }
+
+            update(magnetLeft, magnetRight, detectorRegion) {
+                if (this.isDead) return;
+
+                if (this.trail.length > 32) this.trail.shift();
+                this.trail.push({ x: this.x, y: this.y });
+
+                // 仅带电粒子受磁场偏转（中性原子不被偏转）
+                if (this.charged && this.x >= magnetLeft && this.x <= magnetRight) {
+                    const deflectionRate = (0.008 * bFieldStrength) / (this.mz / 18);
+                    const speed = Math.hypot(this.vx, this.vy);
+                    const currentAngle = Math.atan2(this.vy, this.vx);
+                    const newAngle = currentAngle - deflectionRate;
+                    this.vx = Math.cos(newAngle) * speed;
+                    this.vy = Math.sin(newAngle) * speed;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.justIonized > 0) this.justIonized--;
+
+                const distToDetectorCenter = Math.hypot(this.x - detectorRegion.x, this.y - detectorRegion.y);
+                if ((distToDetectorCenter < detectorRegion.radius || (this.x >= detectorRegion.x - 45 * window.devicePixelRatio && this.y <= detectorRegion.y + 55 * window.devicePixelRatio)) && !this.isDead) {
+                    this.isDead = true;
+                    detectedIonDisplay.innerText = `击中检测器: ${this.label} (m/z=${this.mz}, +${this.charge}e)`;
+                    hitGlows.push({
+                        x: this.x, y: this.y, color: this.charged ? this.color : '#94a3b8',
+                        radius: 8 * window.devicePixelRatio, maxRadius: 32 * window.devicePixelRatio, alpha: 1.0
+                    });
+                }
+            }
+
+            draw(ctx) {
+                if (this.isDead) return;
+                const tSize = Math.max(10, this.radius * 0.55); // 文字随微粒放大
+
+                // 轨迹
+                if (this.trail.length > 1) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(this.trail[0].x, this.trail[0].y);
+                    for (let i = 1; i < this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+                    ctx.strokeStyle = this.charged ? this.color : '#64748b';
+                    ctx.globalAlpha = 0.5;
+                    ctx.lineWidth = 3.5 * window.devicePixelRatio;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                const fill = this.charged ? this.color : '#64748b';
+                ctx.save();
+                ctx.fillStyle = fill;
+                ctx.shadowBlur = 12 * window.devicePixelRatio;
+                ctx.shadowColor = fill;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+
+                // 中性原子：画 2 个装饰性束缚电子（环）
+                if (!this.charged) {
+                    ctx.save();
+                    ctx.strokeStyle = 'rgba(226,232,240,0.55)';
+                    ctx.lineWidth = 1.4 * window.devicePixelRatio;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius + 8 * window.devicePixelRatio, 0, Math.PI * 2);
+                    ctx.stroke();
+                    const t = (Date.now() - this.born) / 600;
+                    for (let k = 0; k < 2; k++) {
+                        const a = t + k * Math.PI;
+                        const ex = this.x + (this.radius + 8 * window.devicePixelRatio) * Math.cos(a);
+                        const ey = this.y + (this.radius + 8 * window.devicePixelRatio) * Math.sin(a);
+                        ctx.fillStyle = '#e2e8f0';
+                        ctx.beginPath();
+                        ctx.arc(ex, ey, 3.2 * window.devicePixelRatio, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.restore();
+                }
+
+                // 中心符号
+                ctx.fillStyle = '#ffffff';
+                ctx.font = `bold ${tSize}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.charged ? '+' : '0', this.x, this.y);
+
+                // 电荷徽章
+                const badge = this.charged ? 'q = +1e' : 'q = 0';
+                ctx.font = `bold ${tSize}px sans-serif`;
+                ctx.fillStyle = this.charged ? '#34d399' : '#cbd5e1';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                ctx.fillText(badge, this.x, this.y - this.radius - 6 * window.devicePixelRatio);
+
+                // 电离瞬间：浮动显示 “0 → +1e”
+                if (this.justIonized > 0) {
+                    const k = 1 - this.justIonized / 55;
+                    ctx.save();
+                    ctx.globalAlpha = Math.max(0, 1 - k);
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.font = `bold ${tSize + 2 * window.devicePixelRatio}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText('0 → +1e', this.x, this.y - this.radius - (10 + k * 26) * window.devicePixelRatio);
+                    ctx.restore();
+                }
+            }
+        }
+
+        // 入射高能电子（电子枪向下发射）
+        class Electron {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vy = (2.5 + Math.random() * 2) * window.devicePixelRatio;
+            }
+            update() { this.y += this.vy; }
+            draw(ctx) {
+                ctx.fillStyle = '#38bdf8';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3.4 * window.devicePixelRatio, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // 被轰击弹出的自由电子（向上飞离并淡出）
+        class FreeElectron {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                const ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
+                const sp = (2.0 + Math.random() * 1.5) * window.devicePixelRatio;
+                this.vx = Math.cos(ang) * sp;
+                this.vy = Math.sin(ang) * sp;
+                this.alpha = 1.0;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.vy += 0.02 * window.devicePixelRatio; // 轻微重力
+                this.alpha -= 0.02;
+            }
+            draw(ctx) {
+                if (this.alpha <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.fillStyle = '#fde047';
+                ctx.shadowBlur = 8 * window.devicePixelRatio;
+                ctx.shadowColor = '#fde047';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 4.2 * window.devicePixelRatio, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function togglePower() {
+            isPowerOn = !isPowerOn;
+            if (isPowerOn) {
+                powerBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <span>关闭质谱仪电源</span>
+                `;
+                powerBtn.className = "w-full bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-3 rounded-lg text-sm transition glow-blue flex items-center justify-center gap-2";
+                chamberStateTag.innerText = "状态: 运行中 (ON)";
+                chamberStateTag.className = "text-xs font-semibold px-3 py-1 rounded bg-emerald-950 text-emerald-400 border border-emerald-700";
+                controlsContainer.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                powerBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    <span>启动质谱仪电源</span>
+                `;
+                powerBtn.className = "w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 px-3 rounded-lg text-sm transition glow-green flex items-center justify-center gap-2";
+                chamberStateTag.innerText = "设备关闭 (OFF)";
+                chamberStateTag.className = "text-xs font-semibold px-3 py-1 rounded bg-slate-800 text-red-400 border border-slate-700";
+                controlsContainer.classList.add('opacity-50', 'pointer-events-none');
+                atoms = [];
+                beamElectrons = [];
+                freeElectrons = [];
+                hitGlows = [];
+                ionizeFlashes = [];
+                stats = { neutral: 0, charged: 0, lost: 0 };
+                detectedIonDisplay.innerText = '击中检测器: --';
+            }
+        }
+
+        // 进样：先发射中性原子 (q=0)
+        function injectSample() {
+            if (!isPowerOn) return;
+            const system = ISOTOPE_SYSTEMS[currentSystemKey];
+            const startX = 60 * window.devicePixelRatio;
+            const startY = chamberCanvas.height * 0.62;
+
+            let spawnIdx = 0;
+            system.peaks.forEach(peak => {
+                const count = Math.min(2, Math.max(1, Math.round(peak.intensity / 30)));
+                for (let i = 0; i < count; i++) {
+                    const ox = spawnIdx * 44 * window.devicePixelRatio;
+                    const oy = (spawnIdx % 2 === 0 ? -9 : 9) * window.devicePixelRatio + (Math.random() - 0.5) * 5 * window.devicePixelRatio;
+                    atoms.push(new Particle(startX + ox, startY + oy, peak.mz, peak.label, peak.color));
+                    stats.neutral++;
+                    spawnIdx++;
+                }
+            });
+        }
+
+        function updateDataDisplays() {
+            const system = ISOTOPE_SYSTEMS[currentSystemKey];
+            fragmentDetails.innerHTML = system.details.map(item => `
+                <div class="p-2 rounded bg-slate-950/70 border-l-4 font-sans leading-relaxed" style="border-color: ${item.color}">
+                    ${item.desc}
+                </div>
+            `).join('');
+        }
+
+        function animate() {
+            drawChamberView(chamberCanvas.width, chamberCanvas.height);
+            drawSpectrumView();
+            requestAnimationFrame(animate);
+        }
+
+        function drawChamberView(w, h) {
+            chamberCtx.clearRect(0, 0, w, h);
+
+            const scale = window.devicePixelRatio;
+
+            const inletX = 20 * scale;
+            const inletY = h * 0.62;
+
+            const ionizeX = 280 * scale;
+            const plate1X = 180 * scale;
+            const plate2X = 230 * scale;
+
+            const magnetLeft = 310 * scale;
+            const magnetRight = 380 * scale;
+            const bendCenterX = 440 * scale;
+
+            const detectorX = w - 70 * scale;
+            const detectorY = 70 * scale;
+            const detectorRadius = 65 * scale;
+
+            // 玻璃真空偏转管腔
+            chamberCtx.save();
+            chamberCtx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+            chamberCtx.fillStyle = 'rgba(30, 41, 59, 0.25)';
+            chamberCtx.lineWidth = 2.5 * scale;
+
+            chamberCtx.beginPath();
+            chamberCtx.moveTo(inletX, inletY - 12 * scale);
+            chamberCtx.lineTo(ionizeX - 40 * scale, inletY - 12 * scale);
+            chamberCtx.arc(ionizeX - 10 * scale, inletY, 35 * scale, Math.PI * 1.3, Math.PI * 0.7, true);
+            chamberCtx.lineTo(magnetLeft, inletY + 28 * scale);
+            chamberCtx.arc((magnetLeft + magnetRight) / 2, inletY, 42 * scale, Math.PI * 0.6, Math.PI * 1.4, true);
+
+            chamberCtx.quadraticCurveTo(bendCenterX + 40 * scale, inletY + 30 * scale, detectorX - 20 * scale, detectorY + 65 * scale);
+            chamberCtx.lineTo(detectorX + 45 * scale, detectorY - 5 * scale);
+            chamberCtx.lineTo(detectorX - 45 * scale, detectorY - 55 * scale);
+
+            chamberCtx.quadraticCurveTo(bendCenterX, inletY - 50 * scale, magnetRight, inletY - 42 * scale);
+            chamberCtx.lineTo(ionizeX + 20 * scale, inletY - 30 * scale);
+            chamberCtx.lineTo(inletX, inletY - 12 * scale);
+
+            chamberCtx.fill();
+            chamberCtx.stroke();
+            chamberCtx.restore();
+
+            // 原子进样喷嘴
+            chamberCtx.save();
+            chamberCtx.strokeStyle = '#f59e0b';
+            chamberCtx.lineWidth = 2.5 * scale;
+            chamberCtx.beginPath();
+            for (let i = 0; i < 4; i++) {
+                const cx = inletX + 15 * scale + i * 12 * scale;
+                chamberCtx.ellipse(cx, inletY, 5 * scale, 12 * scale, 0, 0, Math.PI * 2);
+            }
+            chamberCtx.stroke();
+            chamberCtx.restore();
+
+            // 电子轰击电离室（电子枪）
+            chamberCtx.save();
+            chamberCtx.fillStyle = '#a855f7';
+            chamberCtx.fillRect(ionizeX - 15 * scale, inletY - 30 * scale, 30 * scale, 6 * scale);
+
+            chamberCtx.strokeStyle = '#cbd5e1';
+            chamberCtx.lineWidth = 1.5 * scale;
+            for (let i = -12; i <= 12; i += 6) {
+                chamberCtx.beginPath();
+                chamberCtx.moveTo(ionizeX + i * scale, inletY - 24 * scale);
+                chamberCtx.lineTo(ionizeX + i * scale, inletY + 15 * scale);
+                chamberCtx.stroke();
+            }
+            chamberCtx.restore();
+
+            // 电子枪发射入射高能电子（向下）
+            if (isPowerOn) {
+                if (Math.random() < 0.6) {
+                    beamElectrons.push(new Electron(ionizeX + (Math.random() - 0.5) * 20 * scale, inletY - 24 * scale));
+                }
+            }
+            for (let i = beamElectrons.length - 1; i >= 0; i--) {
+                const e = beamElectrons[i];
+                e.update();
+                e.draw(chamberCtx);
+                if (e.y > inletY + 20 * scale) beamElectrons.splice(i, 1);
+            }
+
+            // 高能电子 ↔ 中性原子 碰撞检测 → 电离
+            for (let i = beamElectrons.length - 1; i >= 0; i--) {
+                const e = beamElectrons[i];
+                for (let j = 0; j < atoms.length; j++) {
+                    const a = atoms[j];
+                    if (a.isDead || a.charged) continue;
+                    const rr = (a.radius + 6 * scale);
+                    if (Math.hypot(e.x - a.x, e.y - a.y) < rr) {
+                        a.ionize();
+                        beamElectrons.splice(i, 1); // 入射电子被吸收/散射
+                        break;
+                    }
+                }
+            }
+
+            const drawDiscPlate = (px) => {
+                chamberCtx.save();
+                chamberCtx.strokeStyle = '#94a3b8';
+                chamberCtx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+                chamberCtx.lineWidth = 2 * scale;
+
+                chamberCtx.beginPath();
+                chamberCtx.ellipse(px, inletY, 8 * scale, 32 * scale, 0, 0, Math.PI * 2);
+                chamberCtx.fill();
+                chamberCtx.stroke();
+
+                chamberCtx.fillStyle = '#0f172a';
+                chamberCtx.beginPath();
+                chamberCtx.ellipse(px, inletY, 3 * scale, 8 * scale, 0, 0, Math.PI * 2);
+                chamberCtx.fill();
+                chamberCtx.restore();
+            };
+
+            drawDiscPlate(plate1X);
+            drawDiscPlate(plate2X);
+
+            // 垂直偏转永磁体
+            const magnetMidX = (magnetLeft + magnetRight) / 2;
+            chamberCtx.save();
+            chamberCtx.fillStyle = '#b45309';
+            chamberCtx.strokeStyle = '#f59e0b';
+            chamberCtx.lineWidth = 2 * scale;
+
+            chamberCtx.beginPath();
+            chamberCtx.ellipse(magnetMidX, inletY - 22 * scale, 18 * scale, 8 * scale, 0, 0, Math.PI * 2);
+            chamberCtx.fill();
+            chamberCtx.stroke();
+
+            chamberCtx.beginPath();
+            chamberCtx.ellipse(magnetMidX, inletY + 22 * scale, 18 * scale, 8 * scale, 0, 0, Math.PI * 2);
+            chamberCtx.fill();
+            chamberCtx.stroke();
+            chamberCtx.restore();
+
+            // 大面积检测器
+            chamberCtx.save();
+            chamberCtx.fillStyle = '#10b981';
+            chamberCtx.strokeStyle = '#34d399';
+            chamberCtx.lineWidth = 3 * scale;
+            chamberCtx.shadowBlur = 12 * scale;
+            chamberCtx.shadowColor = '#10b981';
+
+            chamberCtx.beginPath();
+            chamberCtx.ellipse(detectorX, detectorY, detectorRadius * 0.9, detectorRadius * 0.3, -Math.PI / 4, 0, Math.PI * 2);
+            chamberCtx.fill();
+            chamberCtx.stroke();
+
+            chamberCtx.fillStyle = '#ffffff';
+            chamberCtx.font = `bold ${12 * scale}px sans-serif`;
+            chamberCtx.textAlign = 'center';
+            chamberCtx.fillText('大面积同位素检测器 Detector Plate', detectorX - 5 * scale, detectorY - 12 * scale);
+            chamberCtx.restore();
+
+            // 离子流脉冲注入
+            if (isPowerOn && Math.random() < 0.08) {
+                injectSample();
+            }
+
+            const detectorRegion = { x: detectorX, y: detectorY, radius: detectorRadius };
+
+            for (let i = atoms.length - 1; i >= 0; i--) {
+                const a = atoms[i];
+                a.update(magnetLeft, magnetRight, detectorRegion);
+                a.draw(chamberCtx);
+                if (a.isDead || a.x > w + 30 * scale || a.y < -30 * scale || a.y > h + 30 * scale) {
+                    atoms.splice(i, 1);
+                }
+            }
+
+            // 自由电子（弹出的）
+            for (let i = freeElectrons.length - 1; i >= 0; i--) {
+                const fe = freeElectrons[i];
+                fe.update();
+                fe.draw(chamberCtx);
+                if (fe.alpha <= 0) freeElectrons.splice(i, 1);
+            }
+
+            // 电离闪光
+            for (let i = ionizeFlashes.length - 1; i >= 0; i--) {
+                const g = ionizeFlashes[i];
+                chamberCtx.save();
+                chamberCtx.strokeStyle = '#fbbf24';
+                chamberCtx.globalAlpha = g.alpha;
+                chamberCtx.lineWidth = 3 * scale;
+                chamberCtx.beginPath();
+                chamberCtx.arc(g.x, g.y, g.r + (1 - g.alpha) * 22 * scale, 0, Math.PI * 2);
+                chamberCtx.stroke();
+                chamberCtx.restore();
+                g.alpha -= 0.04;
+                if (g.alpha <= 0) ionizeFlashes.splice(i, 1);
+            }
+
+            for (let i = hitGlows.length - 1; i >= 0; i--) {
+                const g = hitGlows[i];
+                chamberCtx.save();
+                chamberCtx.strokeStyle = g.color;
+                chamberCtx.globalAlpha = g.alpha;
+                chamberCtx.lineWidth = 3 * scale;
+                chamberCtx.beginPath();
+                chamberCtx.arc(g.x, g.y, g.radius, 0, Math.PI * 2);
+                chamberCtx.stroke();
+                chamberCtx.restore();
+
+                g.radius += 2.2 * scale;
+                g.alpha -= 0.04;
+                if (g.alpha <= 0) hitGlows.splice(i, 1);
+            }
+
+            // 实时更新电荷计数
+            statNeutral.innerText = atoms.filter(a => !a.charged && !a.isDead).length;
+            statCharged.innerText = atoms.filter(a => a.charged && !a.isDead).length;
+            statLost.innerText = stats.lost;
+        }
+
+        // 绘制质谱图，清晰高亮展示相对丰度百分比
+        function drawSpectrumView() {
+            const w = specCanvas.width;
+            const h = specCanvas.height;
+            specCtx.clearRect(0, 0, w, h);
+
+            const scale = window.devicePixelRatio;
+            const system = ISOTOPE_SYSTEMS[currentSystemKey];
+
+            const paddingLeft = 60 * scale;
+            const paddingRight = 30 * scale;
+            const paddingTop = 35 * scale;
+            const paddingBottom = 40 * scale;
+
+            const graphW = w - paddingLeft - paddingRight;
+            const graphH = h - paddingTop - paddingBottom;
+
+            const maxMz = system.maxMz;
+
+            // 坐标轴
+            specCtx.strokeStyle = '#94a3b8';
+            specCtx.lineWidth = 2 * scale;
+            specCtx.beginPath();
+            specCtx.moveTo(paddingLeft, paddingTop);
+            specCtx.lineTo(paddingLeft, paddingTop + graphH);
+            specCtx.lineTo(paddingLeft + graphW, paddingTop + graphH);
+            specCtx.stroke();
+
+            // X 轴刻度 (m/z)
+            specCtx.fillStyle = '#cbd5e1';
+            specCtx.font = `bold ${12 * scale}px sans-serif`;
+            specCtx.textAlign = 'center';
+
+            const step = maxMz > 60 ? 15 : 5;
+            for (let mz = 0; mz <= maxMz; mz += step) {
+                const x = paddingLeft + (mz / maxMz) * graphW;
+                specCtx.beginPath();
+                specCtx.moveTo(x, paddingTop + graphH);
+                specCtx.lineTo(x, paddingTop + graphH + 6 * scale);
+                specCtx.stroke();
+                specCtx.fillText(mz, x, paddingTop + graphH + 20 * scale);
+            }
+
+            // Y 轴刻度 (%)
+            specCtx.textAlign = 'right';
+            [0, 25, 50, 75, 100].forEach(percent => {
+                const y = paddingTop + (1 - percent / 100) * graphH;
+                specCtx.fillText(`${percent}%`, paddingLeft - 10 * scale, y + 4 * scale);
+
+                specCtx.save();
+                specCtx.strokeStyle = '#334155';
+                specCtx.setLineDash([3, 4]);
+                specCtx.beginPath();
+                specCtx.moveTo(paddingLeft, y);
+                specCtx.lineTo(paddingLeft + graphW, y);
+                specCtx.stroke();
+                specCtx.restore();
+            });
+
+            if (!isPowerOn) return;
+
+            // 绘制同位素丰度峰
+            system.peaks.forEach(peak => {
+                const x = paddingLeft + (peak.mz / maxMz) * graphW;
+                const peakHeight = (peak.intensity / 100) * graphH;
+                const y = paddingTop + graphH - peakHeight;
+
+                specCtx.save();
+                specCtx.strokeStyle = peak.color;
+                specCtx.lineWidth = 8 * scale;
+                specCtx.shadowBlur = 14 * scale;
+                specCtx.shadowColor = peak.color;
+
+                specCtx.beginPath();
+                specCtx.moveTo(x, paddingTop + graphH);
+                specCtx.lineTo(x, y);
+                specCtx.stroke();
+
+                // 突出显示相对丰度百分比数字
+                specCtx.fillStyle = '#ffffff';
+                specCtx.font = `bold ${13 * scale}px sans-serif`;
+                specCtx.textAlign = 'center';
+                specCtx.fillText(`丰度: ${peak.abundanceLabel}`, x, y - 22 * scale);
+
+                specCtx.fillStyle = peak.color;
+                specCtx.font = `bold ${12 * scale}px sans-serif`;
+                specCtx.fillText(`${peak.label} (m/z ${peak.mz}, +1e)`, x, y - 6 * scale);
+
+                specCtx.restore();
+            });
+        }
+
+        powerBtn.addEventListener('click', togglePower);
+
+        compoundSelect.addEventListener('change', (e) => {
+            currentSystemKey = e.target.value;
+            updateDataDisplays();
+            atoms = [];
+            stats = { neutral: 0, charged: 0, lost: 0 };
+        });
+
+        bFieldSlider.addEventListener('input', (e) => {
+            bFieldStrength = parseFloat(e.target.value);
+            bFieldDisplay.innerText = `${bFieldStrength.toFixed(2)} T`;
+            updateDataDisplays();
+        });
+
+        injectBtn.addEventListener('click', () => {
+            injectSample();
+        });
+
+        window.addEventListener('resize', resizeCanvases);
+
+        resizeCanvases();
+        updateDataDisplays();
+        animate();
+    </script>
+</body>
+</html>

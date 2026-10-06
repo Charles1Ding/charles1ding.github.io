@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en" data-page-node-id="5EsZOxBDnhNIcdy5a1rd9F">
+<head data-page-node-id="EB7qswep29xH2df2n1wjGX">
+<meta charset="utf-8" data-page-node-id="hzwiPlP7qSMyLxXWFzYFaT">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="tHTEZz1iDpakEAh5sMWQ5U">
+<title>Intermolecular Forces — charge distribution &amp; attraction</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: "Segoe UI","Helvetica Neue",Arial,sans-serif; background:#EAF1F5; color:#1F3744;
+         min-height:100vh; display:flex; flex-direction:column; align-items:center; padding:18px 12px 28px; }
+  h1 { font-size:22px; color:#0A455D; letter-spacing:.3px; }
+  .sub { color:#5B7684; font-size:13px; margin-top:4px; margin-bottom:12px; text-align:center; }
+  .tabs { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:12px; }
+  .tab { border:1px solid #0A455D; background:#fff; color:#0A455D; padding:8px 18px; border-radius:999px;
+         font-size:13px; font-weight:600; cursor:pointer; transition:.15s; }
+  .tab.active { background:#0A455D; color:#fff; }
+  .tab:hover { background:#0E5A78; color:#fff; }
+  .stage { background:#fff; border:1px solid #C5D2DE; border-radius:14px; box-shadow:0 6px 22px rgba(10,69,93,.10); padding:8px; }
+  canvas { display:block; border-radius:10px; background:#FAFCFE; width:1000px; max-width:98vw; height:auto; }
+  .steps { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-top:14px; }
+  .schip { border:1px solid #9FB9C6; background:#fff; color:#41586A; padding:6px 14px; border-radius:8px;
+           font-size:12px; font-weight:600; cursor:pointer; transition:.15s; display:flex; align-items:center; gap:6px; }
+  .schip .num { width:16px; height:16px; border-radius:50%; background:#DCE6ED; color:#41586A; font-size:10px;
+                display:flex; align-items:center; justify-content:center; }
+  .schip.active { border-color:#0A455D; background:#E8F1F6; color:#0A455D; }
+  .schip.active .num { background:#0A455D; color:#fff; }
+  .controls { display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center; margin-top:12px; }
+  .btn { border:1px solid #0A455D; background:#0A455D; color:#fff; padding:8px 16px; border-radius:8px;
+         font-size:13px; font-weight:600; cursor:pointer; transition:.15s; }
+  .btn.ghost { background:#fff; color:#0A455D; }
+  .speed { display:flex; gap:4px; }
+  .speed button { border:1px solid #9FB9C6; background:#fff; color:#0A455D; border-radius:6px; padding:5px 11px; font-size:12px; cursor:pointer; }
+  .speed button.active { background:#4699AA; color:#fff; border-color:#4699AA; }
+  .layers { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:10px; font-size:12px; color:#41586A; }
+  .layers label { display:flex; align-items:center; gap:5px; cursor:pointer; }
+  .layers input { accent-color:#0A455D; }
+  .explain { width:1000px; max-width:98vw; margin-top:14px; display:grid; grid-template-columns:1fr 320px; gap:12px; }
+  .desc { background:#fff; border:1px solid #C5D2DE; border-radius:12px; padding:14px 16px; font-size:13.5px;
+          line-height:1.65; color:#33485A; min-height:110px; }
+  .desc b { color:#0A455D; }
+  .key { border-radius:12px; padding:14px 16px; font-size:13px; line-height:1.55; color:#fff;
+         background:linear-gradient(135deg,#0A455D,#1769AA); }
+  .key h3 { font-size:14px; margin-bottom:6px; letter-spacing:.4px; }
+  @media (max-width:760px){ .explain{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body data-page-node-id="U3YuvF3yvyWGOGSCkDGhqK">
+  <h1 data-page-node-id="A6HOPceGMeeN18e6riyOwG">Intermolecular Forces &mdash; charge distribution &amp; attraction</h1>
+  <div class="sub" data-page-node-id="ZEcdh7IYKRJtRhHjhCuDHC">Pick a force. HCl and HF are polar from the start; O&#8322; begins with an evenly spread cloud and gains a dipole only for an instant. Then watch the opposite charges pull on each other.</div>
+
+  <div class="tabs" data-page-node-id="gfgoKBPSCHe3aZQKugaWDk">
+    <button class="tab active" data-mode="orientation" data-page-node-id="OgdoQXwY62qRmSgq0Ojfmv">Orientation &nbsp;HCl</button>
+    <button class="tab" data-mode="dispersion" data-page-node-id="ATRrmTovfIdJhz4lWVqLZf">Dispersion &nbsp;O&#8322;</button>
+    <button class="tab" data-mode="hydrogen" data-page-node-id="zuyzfMHgCbh7zHkTPA3BqS">Hydrogen bond &nbsp;HF</button>
+  </div>
+
+  <div class="stage" data-page-node-id="ZkQ9GTgLubrjeFvqYRVoWD">
+    <canvas id="cv" width="1000" height="560" data-page-node-id="T8Ym5NrJ4BepA87HdQDAQz"></canvas>
+  </div>
+
+  <div class="steps" id="steps" data-page-node-id="PNbt6ZHEU060IAGFl3d4SS"></div>
+
+  <div class="controls" data-page-node-id="fG9v6S5gahVFSlwMt1ceBR">
+    <button class="btn" id="btnPlay" data-page-node-id="ztfM55X2FYUEaPWnwHq5pd">&#9654; Play</button>
+    <button class="btn ghost" id="btnReset" data-page-node-id="ujH0HGHiDlK369Z9hqvnH6">&#8635; Reset</button>
+    <div class="speed" data-page-node-id="Mw1El2ach2cqMkH3PdG8wH">
+      <button data-spd="0.5" data-page-node-id="rSAOZzjTtIv627nOhfzfcd">0.5&times;</button>
+      <button data-spd="1" class="active" data-page-node-id="bCZi0qHjBGETDSlH42yA4b">1&times;</button>
+      <button data-spd="2" data-page-node-id="CJZHOEYSqhmAYOGV0ZqNKt">2&times;</button>
+      <button data-spd="4" data-page-node-id="1I6v4N0ACkUhbqGiMvGbOf">4&times;</button>
+    </div>
+  </div>
+
+  <div class="layers" data-page-node-id="ykJKQRqxTVmr9M1z5aYkIE">
+    <label data-page-node-id="9Rnd5E7gvkpGtxJQu8E2Pr"><input type="checkbox" data-layer="electrons" checked data-page-node-id="MNKEzttzrqxunk4GZ7CM6L"> Electron arrangement</label>
+    <label data-page-node-id="nhCUhqLntcg23kOgxDESCL"><input type="checkbox" data-layer="cloud" checked data-page-node-id="yN4461tkRVvtD2BkeJj5sD"> Electron cloud</label>
+    <label data-page-node-id="0rnTlcIBudd70iULruJZMf"><input type="checkbox" data-layer="charges" checked data-page-node-id="2JVJwcgTSBv8QdGbrbJoVl"> Partial charges</label>
+    <label data-page-node-id="XHUMaVIE22766tl3bMgMx4"><input type="checkbox" data-layer="dipole" checked data-page-node-id="GP3DoJ4CD9nnhl9BBeOvAE"> Dipole arrow</label>
+  </div>
+
+  <div class="explain" data-page-node-id="3AMJPcHO9IvOrLmu73ug4F">
+    <div class="desc" id="desc" data-page-node-id="FbTM3rjX7ui8hNEq49ZS5M"></div>
+    <div class="key" id="key" data-page-node-id="FBocsU7uBKsY03jb0KrSqZ"></div>
+  </div>
+
+<script>
+var cv = document.getElementById('cv');
+var c  = cv.getContext('2d');
+var W = 1000, H = 560;
+var dpr = Math.max(1, Math.min(2, window.devicePixelRatio || 1));
+cv.width = W*dpr; cv.height = H*dpr; cv.style.width = W+'px'; cv.style.height = H+'px';
+c.scale(dpr, dpr);
+
+var T1 = '#0A455D';
+var RED = '#E2483B', BLUE = '#2E7DD1';
+var ECOL = '#E8A33D';
+var NUC = '#3F5566', NUCH = '#6E8CA8';
+var BONDC = '#44586B';
+var CLOUDF = 'rgba(110,140,168,0.16)', CLOUDS = 'rgba(110,140,168,0.45)';
+
+var S = {
+  mode: 'orientation', phase: 0, playing: false, speed: 1, t: 0,
+  layers: { electrons: true, cloud: true, charges: true, dipole: true }
+};
+
+var STEPS = {
+  orientation: [
+    ['Two molecules: both already dipoles', 'Two identical HCl molecules, side by side. In <b>each</b> one, Cl pulls the bonding electrons towards itself far more strongly than H, so the Cl end is <b>&#948;&minus;</b> and the H end is <b>&#948;+</b>. An uneven electron distribution <b>is</b> a dipole - so both molecules have one from the start; it never has to be switched on.'],
+    ['Identical dipoles, lined up', 'The two molecules are identical, so they carry exactly the same charge distribution. Each one presents its <b>&#948;+</b> end to the other&#8217;s <b>&#948;&minus;</b> end - this is the orientation that attracts.'],
+    ['Opposite charges attract', 'The <b>&#948;+</b> end of one molecule pulls on the <b>&#948;&minus;</b> end of the other. The attraction hauls the two molecules together.'],
+    ['Orientation force', 'Held together by the pull between two permanent dipoles - the <b>orientation force</b> (permanent dipole-dipole attraction).']
+  ],
+  dispersion: [
+    ['Electrons spread evenly', 'Two identical O&#8322; molecules. In each one the electrons are spread evenly around the two O atoms and simply keep moving, so the cloud is symmetrical: <b>no + end and no &minus; end</b>. Neither molecule has a dipole - this is what &#8220;non-polar&#8221; means.'],
+    ['A momentary uneven spread', 'The electrons never stop moving. For one instant they happen to bunch up at one end of the <b>first</b> molecule, so that end becomes <b>&#948;&minus;</b> and the far end <b>&#948;+</b>. That molecule alone now carries a <b>temporary (instantaneous) dipole</b> - it has appeared out of the electrons&#8217; own motion.'],
+    ['It polarises its neighbour', 'The <b>&#948;+</b> end of the first molecule pulls on the electrons of the second. Its evenly-spread cloud is dragged across towards that end, so the second molecule <b>gains</b> a dipole as well - an <b>induced dipole</b>, lined up to attract.'],
+    ['Dispersion force', 'Now the <b>&#948;+</b> of one faces the <b>&#948;&minus;</b> of the other, and the two temporary dipoles attract. This is the <b>dispersion force</b>: the weakest of the three, but it acts between <b>every</b> pair of molecules.']
+  ],
+  hydrogen: [
+    ['Two molecules: both already dipoles', 'Two identical HF molecules. In <b>each</b> one, F pulls the bonding electrons so strongly that the H is left strongly <b>&#948;+</b> while the F is <b>&#948;&minus;</b> - and each F carries <b>three lone pairs</b>, ringed in blue: the electron-rich spots. The dipole is already there in <b>both</b> molecules.'],
+    ['Identical charge distributions', 'The two molecules are identical: the same strongly <b>&#948;+</b> hydrogen, the same electron-rich F carrying its three lone pairs. Each presents exactly the same charge pattern to the other.'],
+    ['\u03B4+ H seeks the lone pair', 'The strongly <b>&#948;+</b> hydrogen is drawn straight towards <b>one lone pair</b> - the &#948;&minus; region - on the F of the other molecule. The electrons are drawn still on purpose, so the lone pairs stand out: that fixed pair of dots is exactly where the hydrogen bonds.'],
+    ['Hydrogen bond', 'The attraction locks into a <b>hydrogen bond</b>: F&#8211;H&#183;&#183;&#183;F. It is much stronger than the other two forces, and strongly <b>directional</b> - it points in a straight line, straight at the lone pair.']
+  ]
+};
+
+var KEY = {
+  orientation: { h:'Orientation force',
+    b:'An uneven electron distribution <b>is</b> a dipole - it is there from the start. The bonding electrons sit closer to the more electronegative atom, so one end is &#948;+ and the other &#948;&minus;. <b>&#948;+ meets &#948;&minus;</b> &rarr; attraction.' },
+  dispersion: { h:'Dispersion force',
+    b:'The electrons never stop moving, so <b>every</b> molecule has a momentary dipole. It induces a matching dipole in the neighbour, and the two opposite ends attract. <b>Present in all molecules</b>; stronger for larger molecules with more electrons.' },
+  hydrogen: { h:'Hydrogen bond',
+    b:'A strongly &#948;+ H (bonded to <b>N, O or F</b>) is attracted to a lone pair on N/O/F. Much stronger than the others, and <b>directional</b>.' }
+};
+
+function clamp01(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); }
+function lerp(a,b,k){ return a + (b-a)*k; }
+function ease(k){ k = clamp01(k); return k*k*(3-2*k); }
+function seg(p,a,b){ return clamp01((p-a)/(b-a)); }   // 0 before a, 1 after b
+function rad(d){ return d*Math.PI/180; }
+function stepIndex(){ return Math.max(0, Math.min(3, Math.floor(S.phase/0.25 + 1e-9))); }
+
+function clear(){ c.clearRect(0,0,W,H); }
+function rr(x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+function edot(x,y,r,col){
+  c.beginPath(); c.arc(x,y,r,0,7);
+  c.fillStyle = col; c.fill();
+  c.strokeStyle = 'rgba(0,0,0,.28)'; c.lineWidth = 0.6; c.stroke();
+}
+function nuc(x,y,r,sym,col){
+  c.beginPath(); c.arc(x,y,r,0,7);
+  c.fillStyle = col; c.fill();
+  c.strokeStyle = 'rgba(255,255,255,.6)'; c.lineWidth = 1.3; c.stroke();
+  c.fillStyle = '#fff'; c.font = 'bold ' + (r*1.08) + 'px Segoe UI';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(sym, x, y+0.5);
+}
+function arrow(x1,y1,x2,y2,col,w,head){
+  c.strokeStyle = col; c.fillStyle = col; c.lineWidth = w || 2;
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  var ang = Math.atan2(y2-y1, x2-x1), h = head || 7;
+  c.beginPath();
+  c.moveTo(x2,y2);
+  c.lineTo(x2-h*Math.cos(ang-0.4), y2-h*Math.sin(ang-0.4));
+  c.lineTo(x2-h*Math.cos(ang+0.4), y2-h*Math.sin(ang+0.4));
+  c.closePath(); c.fill();
+}
+function label(txt,x,y,col,size,align){
+  c.fillStyle = col || '#33485A'; c.font = 'bold ' + (size||12) + 'px Segoe UI';
+  c.textAlign = align || 'center'; c.textBaseline = 'middle';
+  c.fillText(txt, x, y);
+}
+function wpt(cx,cy,th,s,lx,ly){
+  var cs = Math.cos(th), sn = Math.sin(th);
+  return { x: cx + (lx*cs - ly*sn)*s, y: cy + (lx*sn + ly*cs)*s };
+}
+function dipoleArrow(pPos,pNeg,col,alpha){
+  if(alpha <= 0.01) return;
+  c.save(); c.globalAlpha = clamp01(alpha);
+  c.strokeStyle = col; c.fillStyle = col; c.lineWidth = 2.2;
+  c.beginPath(); c.moveTo(pPos.x,pPos.y); c.lineTo(pNeg.x,pNeg.y); c.stroke();
+  var ang = Math.atan2(pNeg.y-pPos.y, pNeg.x-pPos.x), h = 9;
+  c.beginPath();
+  c.moveTo(pNeg.x,pNeg.y);
+  c.lineTo(pNeg.x-h*Math.cos(ang-0.42), pNeg.y-h*Math.sin(ang-0.42));
+  c.lineTo(pNeg.x-h*Math.cos(ang+0.42), pNeg.y-h*Math.sin(ang+0.42));
+  c.closePath(); c.fill();
+  var tx = Math.cos(ang+Math.PI/2), ty = Math.sin(ang+Math.PI/2);
+  c.beginPath();
+  c.moveTo(pPos.x - tx*7, pPos.y - ty*7);
+  c.lineTo(pPos.x + tx*7, pPos.y + ty*7);
+  c.stroke();
+  c.restore();
+}
+/* ============ the attraction, made concrete ============
+   The two opposite partial charges are drawn as real, glowing + and - charges
+   sitting on the molecules. A taut "pull" band runs from + to -, and each
+   whole molecule gets a force arrow showing that it is being hauled in.     */
+function chargeGlyph(x,y,pos,alpha){
+  if(alpha <= 0.01) return;
+  c.save(); c.globalAlpha = clamp01(alpha);
+  var g = c.createRadialGradient(x,y,1,x,y,23);
+  g.addColorStop(0, pos ? 'rgba(46,125,209,0.50)' : 'rgba(226,72,59,0.50)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  c.beginPath(); c.arc(x,y,23,0,7); c.fillStyle = g; c.fill();
+  c.beginPath(); c.arc(x,y,11.5,0,7);
+  c.fillStyle = '#fff'; c.fill();
+  c.strokeStyle = pos ? BLUE : RED; c.lineWidth = 2.2; c.stroke();
+  c.fillStyle = pos ? BLUE : RED; c.font = 'bold 16px Segoe UI';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(pos ? '+' : '\u2212', x, y+0.5);
+  c.restore();
+}
+
+function pullBand(pA,pB,alpha){
+  if(alpha <= 0.01) return;
+  var dx = pB.x-pA.x, dy = pB.y-pA.y, L = Math.sqrt(dx*dx+dy*dy) || 1;
+  var ux = dx/L, uy = dy/L;
+  c.save(); c.globalAlpha = clamp01(alpha);
+  c.setLineDash([7,6]); c.strokeStyle = '#C0552F'; c.lineWidth = 2.4;
+  c.beginPath();
+  c.moveTo(pA.x+ux*15, pA.y+uy*15);
+  c.lineTo(pB.x-ux*15, pB.y-uy*15);
+  c.stroke();
+  c.setLineDash([]);
+  for(var i=1;i<=3;i++){                       // the pull runs + -> -
+    var t = i/4;
+    var qx = lerp(pA.x,pB.x,t), qy = lerp(pA.y,pB.y,t);
+    arrow(qx-ux*6, qy-uy*6, qx+ux*6, qy+uy*6, '#C0552F', 2.2, 7);
+  }
+  c.restore();
+}
+
+// each whole molecule is visibly being dragged towards the other one
+function pullArrows(xL,xR,y,alpha){
+  if(alpha <= 0.01) return;
+  c.save(); c.globalAlpha = clamp01(alpha);
+  arrow(xL-56, y, xL-8, y, '#C0552F', 3.2, 11);
+  arrow(xR+56, y, xR+8, y, '#C0552F', 3.2, 11);
+  label('attraction', (xL+xR)/2, y+18, '#C0552F', 12);
+  c.restore();
+}
+
+/* ================= electron ORBIT machinery =================
+   Every valence electron is a particle that visibly travels round a CIRCLE.
+     - a lone-pair electron circles the NUCLEUS it belongs to, on a shell of
+       its own radius -> the atom really does have electrons going round it;
+     - a shared (bonding) pair circles the bond centre, i.e. the region
+       BETWEEN the two nuclei, because that is where a shared pair lives.
+   The dipole is still computed from where the bonding electrons sit, so the
+   arrow keeps following them.                                             */
+var ORB_R    = 6.2;    // fallback radius, replaced by assignOrbits()
+var BOND_ORB = 20;     // orbit radius of a shared pair (local units)
+
+function mkE(sx,sy,sp,ph,w){ return { sx:sx, sy:sy, orr:ORB_R, sp:sp, ph:ph, w:w }; }
+
+// draw one orbiting electron: orbit path + motion trail + the electron itself.
+// (ox,oy) = how far this electron's orbit centre has been pulled by the bias.
+function orbDot(e,t,ox,oy,col){
+  var cx = e.pvx + ox*e.w, cy = e.pvy + oy*e.w;      // the centre it circles
+  var a  = t*e.sp + e.oth;
+  // trail length is kept roughly constant on screen, so a wide shell orbit does
+  // not smear into one long streak
+  var sw = Math.max(0.35, Math.min(1.4, 14/(e.orr || 1)));
+  var bx = a - (e.sp > 0 ? sw : -sw);
+  if(e.ring){                                        // the orbit path itself, once per shell
+    c.save();
+    c.beginPath(); c.arc(cx, cy, e.orr, 0, 7);
+    c.globalAlpha = 0.30; c.strokeStyle = col; c.lineWidth = 1.3;
+    c.stroke();
+    c.restore();
+  }
+  c.save();
+  c.beginPath();
+  c.arc(cx, cy, e.orr, Math.min(a,bx), Math.max(a,bx));
+  c.globalAlpha = 0.40; c.strokeStyle = col; c.lineWidth = 2.6; c.stroke();
+  c.restore();
+  edot(cx + Math.cos(a)*e.orr, cy + Math.sin(a)*e.orr, 4.2, col);
+}
+
+/* Give every electron its orbit: which centre it goes round, how wide, and the
+   angle it starts from (so a still frame still matches the intended layout). */
+function assignOrbits(mol){
+  var seen = {};
+  var rings = function(key){ var first = !seen[key]; seen[key] = true; return first; };
+
+  // --- lone pairs: one shell around each nucleus -------------------------
+  mol.lone.forEach(function(e){
+    var best = mol.nuclei[0], bd = Infinity;
+    mol.nuclei.forEach(function(n){
+      var d = Math.sqrt((e.sx-n.x)*(e.sx-n.x) + (e.sy-n.y)*(e.sy-n.y));
+      if(d < bd){ bd = d; best = n; }
+    });
+    e.pvx = best.x; e.pvy = best.y;
+    e.oth = Math.atan2(e.sy - best.y, e.sx - best.x);
+  });
+  // a common radius per atom -> one clean shell instead of a ragged cluster
+  mol.nuclei.forEach(function(n){
+    var sum = 0, cnt = 0;
+    mol.lone.forEach(function(e){
+      if(e.pvx === n.x && e.pvy === n.y){
+        sum += Math.sqrt((e.sx-n.x)*(e.sx-n.x) + (e.sy-n.y)*(e.sy-n.y)); cnt++;
+      }
+    });
+    if(!cnt) return;
+    var r = sum/cnt;
+    mol.lone.forEach(function(e){
+      if(e.pvx !== n.x || e.pvy !== n.y) return;
+      e.orr  = r;
+      e.ring = rings(n.x.toFixed(1)+':'+n.y.toFixed(1)+':'+r.toFixed(1));
+    });
+  });
+
+  // --- shared pair: a circle over the bond centre -------------------------
+  mol.bonds.forEach(function(bd){
+    bd.es.forEach(function(e){
+      e.pvx = bd.mx; e.pvy = bd.my;
+      e.orr = BOND_ORB;
+      e.oth = Math.atan2(e.sy - bd.my, e.sx - bd.mx);
+      e.ring = rings('b'+bd.mx.toFixed(1)+':'+bd.my.toFixed(1));
+    });
+  });
+}
+
+// ---------------- molecule definitions ----------------
+// A bond owns its bonding electrons (weight w=1: they respond to the bias).
+// Lone pairs have w=0: they orbit their atom but are not pulled by the bias.
+var MOL = {};
+
+(function buildMolecules(){
+  var HL = 54;
+  var Hd = { x: HL*Math.cos(rad(0)),   y: HL*Math.sin(rad(0))   };   // (54, 0)
+  var Ho = { x: HL*Math.cos(rad(104)), y: HL*Math.sin(rad(104)) };   // (-13.1, 52.4)
+
+  function muRef(bonds, amp){
+    var x = 0, y = 0;
+    bonds.forEach(function(b){ x += b.dx; y += b.dy; });
+    return amp * Math.sqrt(x*x + y*y);
+  }
+
+  // --- HCl : Cl(-34,0) - H(34,0).  8 valence e- = 2 bonding + 3 Cl lone pairs
+  var bH = [ mkE(0,-8, 1.9, 0.00, 1), mkE(0, 8, 2.2, 2.00, 1) ];
+  var lH = [];
+  [[-58,-11],[-58,11],[-41,-25],[-27,-25],[-41,25],[-27,25]].forEach(function(p,i){
+    lH.push(mkE(p[0], p[1], 1.55 + 0.14*i, i*1.03, 0));
+  });
+  var bondsH = [ { a:{x:-34,y:0}, b:{x:34,y:0}, mx:0, my:0, dx:-1, dy:0, es:bH } ];
+  MOL.hcl = {
+    nuclei: [ {x:-34,y:0,r:15,s:'Cl',col:NUC}, {x:34,y:0,r:10,s:'H',col:NUCH} ],
+    bonds: bondsH, lone: lH,
+    cloud: { x:0, y:0, rx:60, ry:33 },
+    biasAmp: 16, muRef: muRef(bondsH,16),
+    dipLen: 88, dipOrigin: { x:-12, y:-64 },
+    pos0: { x:46, y:44 }, neg0: { x:-50, y:44 }, shiftOff: 40
+  };
+
+  // --- O2 : O(-42,0) = O(42,0).  12 valence e- = 4 bonding + 4 lone pairs
+  var bO = [ mkE(-8,-9, 1.8, 0.00, 1), mkE(8,-9, 2.1, 1.60, 1),
+             mkE(-8, 9, 2.4, 3.10, 1), mkE(8, 9, 1.6, 4.60, 1) ];
+  var lO = [];
+  [[-50,-30],[-34,-30],[-50,30],[-34,30],[34,-30],[50,-30],[34,30],[50,30]].forEach(function(p,i){
+    lO.push(mkE(p[0], p[1], 1.5 + 0.15*i, i*0.97, 0));
+  });
+  var bondsO = [ { a:{x:-42,y:0}, b:{x:42,y:0}, mx:0, my:0, dx:-1, dy:0, es:bO } ];
+  MOL.o2 = {
+    nuclei: [ {x:-42,y:0,r:15,s:'O',col:NUC}, {x:42,y:0,r:15,s:'O',col:NUC} ],
+    bonds: bondsO, lone: lO,
+    cloud: { x:0, y:0, rx:74, ry:37 },
+    biasAmp: 15, muRef: muRef(bondsO,15),
+    // O2's dipole is TEMPORARY: the cloud starts perfectly even, and the
+    // unevenness is driven step by step by the scene (no free sloshing).
+    muFloor: 0,
+    dipLen: 106, dipOrigin: { x:-13, y:-68 },
+    pos0: { x:66, y:50 }, neg0: { x:-66, y:50 }, shiftOff: 42
+  };
+
+  // --- H2O : O at origin, Hd at 0 deg, Ho at 104 deg.  8 valence e- = 4 bonding + 4 lone
+  var m1 = { x:(0+Hd.x)/2, y:(0+Hd.y)/2 };
+  var m2 = { x:(0+Ho.x)/2, y:(0+Ho.y)/2 };
+  function unit(ax,ay){ var L = Math.sqrt(ax*ax+ay*ay)||1; return { x:ax/L, y:ay/L }; }
+  var d1 = unit(0-m1.x, 0-m1.y);          // bond midpoint -> O  (where electrons shift)
+  var d2 = unit(0-m2.x, 0-m2.y);
+  var n1 = { x:-d1.y, y:d1.x }, n2 = { x:-d2.y, y:d2.x };   // perpendiculars
+  var bW = [
+    mkE(m1.x - n1.x*8, m1.y - n1.y*8, 1.9, 0.00, 1),
+    mkE(m1.x + n1.x*8, m1.y + n1.y*8, 2.3, 2.10, 1),
+    mkE(m2.x - n2.x*8, m2.y - n2.y*8, 2.0, 1.05, 1),
+    mkE(m2.x + n2.x*8, m2.y + n2.y*8, 1.7, 3.20, 1)
+  ];
+  var lp1 = { x:31*Math.cos(rad(180)), y:31*Math.sin(rad(180)) };
+  var lp2 = { x:31*Math.cos(rad(284)), y:31*Math.sin(rad(284)) };
+  var q1 = { x:-Math.sin(rad(180)), y:Math.cos(rad(180)) };
+  var q2 = { x:-Math.sin(rad(284)), y:Math.cos(rad(284)) };
+  var lW = [
+    mkE(lp1.x - q1.x*7, lp1.y - q1.y*7, 1.6, 0.40, 0),
+    mkE(lp1.x + q1.x*7, lp1.y + q1.y*7, 1.9, 2.50, 0),
+    mkE(lp2.x - q2.x*7, lp2.y - q2.y*7, 2.2, 1.30, 0),
+    mkE(lp2.x + q2.x*7, lp2.y + q2.y*7, 1.7, 3.60, 0)
+  ];
+  var bondsW = [
+    { a:{x:0,y:0}, b:Hd, mx:m1.x, my:m1.y, dx:d1.x, dy:d1.y,
+      es:[ bW[0], bW[1] ] },
+    { a:{x:0,y:0}, b:Ho, mx:m2.x, my:m2.y, dx:d2.x, dy:d2.y,
+      es:[ bW[2], bW[3] ] }
+  ];
+  MOL.h2o = {
+    nuclei: [ {x:0,y:0,r:17,s:'O',col:NUC},
+              {x:Hd.x,y:Hd.y,r:10,s:'H',col:NUCH},
+              {x:Ho.x,y:Ho.y,r:10,s:'H',col:NUCH} ],
+    bonds: bondsW, lone: lW,
+    cloud: { x:0, y:4, rx:66, ry:54 },
+    biasAmp: 15, muRef: muRef(bondsW,15),
+    // the dipole arrow sits clear of the (large) water molecule, down-left of
+    // the O where the charge is richest; dipLabSign pushes its label further out
+    dipLen: 74, dipOrigin: { x:-58, y:34 }, dipLabSign: -1,
+    pos0: { x:Hd.x+18, y:Hd.y-14 }, pos0b: { x:Ho.x-4, y:Ho.y+28 },
+    neg0: { x:-34, y:26 }, shiftOff: 22, markAt: { x:Hd.x+10, y:Hd.y-40 }
+  };
+
+  // --- HF : F(-30,0) - H(30,0).  8 valence e- = 2 bonding + 6 lone (3 pairs on F)
+  // STATIC electrons: the lone pairs are the star of this scene, so every
+  // electron is drawn as a fixed dot - no orbiting, nothing distracting.
+  var bF2 = [ mkE(-10,-7, 1.9, 0.00, 1), mkE(-10, 7, 2.2, 2.00, 1) ];
+  var lF2 = [];
+  [[-30,-30],[-44,-30], [-60,-7],[-60,7], [-30,30],[-44,30]].forEach(function(p,i){
+    lF2.push(mkE(p[0], p[1], 1.55 + 0.14*i, i*1.03, 0));
+  });
+  var bondsF = [ { a:{x:-30,y:0}, b:{x:30,y:0}, mx:0, my:0, dx:-1, dy:0, es:bF2 } ];
+  MOL.hf = {
+    nuclei: [ {x:-30,y:0,r:17,s:'F',col:NUC}, {x:30,y:0,r:10,s:'H',col:NUCH} ],
+    bonds: bondsF, lone: lF2,
+    cloud: { x:-6, y:0, rx:56, ry:31 },
+    biasAmp: 16, muRef: muRef(bondsF,16),
+    stat: true,                              // electrons do not move in this scene
+    lpMarks: [ {x:-37,y:-30}, {x:-60,y:0}, {x:-37,y:30} ],   // lone-pair midpoints
+    dipLen: 84, dipOrigin: { x:-14, y:-60 },
+    pos0: { x:44, y:44 }, neg0: { x:-52, y:52 }, shiftOff: 26,
+    markAt: { x:32, y:-30 }
+  };
+
+  // every electron gets told which centre it circles (see assignOrbits)
+  [MOL.hcl, MOL.o2, MOL.h2o, MOL.hf].forEach(assignOrbits);
+})();
+
+/* Draw a molecule.  k (0..1) is how strongly the bonding electrons are pulled
+   toward the more electronegative atom - the single driver of everything:
+   electron positions -> charge separation -> dipole direction + magnitude.  */
+function renderMol(mol, cx, cy, th, s, k, show, opts){
+  opts = opts || {};
+  var kk   = clamp01(k);
+  var amp  = mol.biasAmp;
+  // per-molecule clock: two identical molecules side by side must NOT move in
+  // lockstep, otherwise their flickering dipoles would look scripted
+  var tt   = S.t + (opts.tOff || 0);
+  // Where the bonding electrons sit is decided entirely by `kk` (how far they
+  // have been pulled) - the scene drives that, step by step. Nothing here
+  // moves on its own, so a molecule whose kk is 0 really is evenly spread.
+
+  // mean pull on the cloud (for the cloud centre)
+  var off = { x:0, y:0 };
+  mol.bonds.forEach(function(bd){ off.x += bd.dx*amp*kk; off.y += bd.dy*amp*kk; });
+  off.x /= mol.bonds.length; off.y /= mol.bonds.length;
+
+  // ---- the dipole is DERIVED from where the bonding electrons sit ----
+  var mux = 0, muy = 0;
+  mol.bonds.forEach(function(bd){
+    var n = bd.es.length; if(!n) return;
+    var bx = bd.dx*amp*kk, by = bd.dy*amp*kk;
+    var ex = 0, ey = 0;
+    bd.es.forEach(function(e){ ex += e.sx; ey += e.sy; });
+    ex = ex/n + bx;                      // mean electron position along this bond
+    ey = ey/n + by;
+    mux += ex - bd.mx;                   // = displacement of charge off the bond centre
+    muy += ey - bd.my;
+  });
+  var muMag = Math.sqrt(mux*mux + muy*muy);
+  var muRaw = mol.muRef > 1e-6 ? clamp01(muMag/mol.muRef) : 0;
+  // Is this molecule ALREADY polar, or is its cloud still even?
+  //   permanent dipole (HCl, H2O) - an uneven distribution is a dipole, it never
+  //     has to be switched on, so muFloor keeps the arrow and the delta labels
+  //     on screen from the very first frame.
+  //   temporary dipole (O2) - the whole point is that it STARTS even, so muFloor
+  //     is 0 and `dipOn` fades the display in only once the electrons bunch up.
+  var dipOn   = opts.dipOn == null ? 1 : clamp01(opts.dipOn);
+  var muFloor = mol.muFloor == null ? 0.58 : mol.muFloor;
+  var muK     = muFloor > 0 ? Math.max(muRaw, muFloor)
+                            : clamp01(muRaw * dipOn * 1.6);
+  var labK  = muK;
+  var ux = muMag > 1e-6 ? mux/muMag : 0;
+  var uy = muMag > 1e-6 ? muy/muMag : 0;
+
+  c.save();
+  c.translate(cx,cy); c.rotate(th); c.scale(s,s);
+
+  if(show.cloud){
+    c.beginPath();
+    c.ellipse(mol.cloud.x+off.x, mol.cloud.y+off.y, mol.cloud.rx, mol.cloud.ry, 0, 0, 7);
+    c.fillStyle = CLOUDF; c.fill();
+    c.strokeStyle = CLOUDS; c.lineWidth = 1.1; c.stroke();
+  }
+  if(show.charges && muK > 0.01){
+    c.save(); c.globalAlpha = muK;
+    var g = c.createLinearGradient(
+      mol.cloud.x+off.x - ux*mol.cloud.rx, mol.cloud.y+off.y - uy*mol.cloud.rx,
+      mol.cloud.x+off.x + ux*mol.cloud.rx, mol.cloud.y+off.y + uy*mol.cloud.rx);
+    g.addColorStop(0,'rgba(46,125,209,0.34)');    // electron-poor end  -> delta+
+    g.addColorStop(1,'rgba(226,72,59,0.46)');     // electron-rich end  -> delta-
+    c.beginPath();
+    c.ellipse(mol.cloud.x+off.x, mol.cloud.y+off.y, mol.cloud.rx, mol.cloud.ry, 0, 0, 7);
+    c.fillStyle = g; c.fill();
+    c.restore();
+  }
+
+  // bonds - the order is taken from how many bonding electrons are drawn
+  c.strokeStyle = BONDC; c.lineWidth = 2.2;
+  mol.bonds.forEach(function(bd){
+    var ord = bd.es.length >= 4 ? 2 : 1;
+    for(var i=0;i<ord;i++){
+      var o = ord === 2 ? (i===0 ? -5.5 : 5.5) : 0;
+      c.beginPath(); c.moveTo(bd.a.x, bd.a.y+o); c.lineTo(bd.b.x, bd.b.y+o); c.stroke();
+    }
+  });
+
+  if(show.electrons){
+    if(mol.stat){
+      // static molecule (HF): every electron sits at its designed spot as a
+      // fixed dot - the three lone pairs on F stay clearly visible
+      mol.lone.forEach(function(e){ edot(e.sx, e.sy, 4.2, ECOL); });
+      mol.bonds.forEach(function(bd){
+        bd.es.forEach(function(e){ edot(e.sx, e.sy, 4.2, ECOL); });
+      });
+    } else {
+      mol.lone.forEach(function(e){ orbDot(e, tt, 0, 0, ECOL); });
+      mol.bonds.forEach(function(bd){
+        var ox = bd.dx*amp*kk, oy = bd.dy*amp*kk;
+        bd.es.forEach(function(e){ orbDot(e, tt, ox, oy, ECOL); });
+      });
+    }
+    // which way the electrons have actually shifted - the arrow follows them
+    mol.bonds.forEach(function(bd){
+      var sxo = bd.dx*amp*kk, syo = bd.dy*amp*kk;
+      var sm  = Math.sqrt(sxo*sxo + syo*syo);
+      if(sm < 3) return;
+      var uxx = sxo/sm, uyy = syo/sm;
+      var ax = bd.mx + (-bd.dy)*mol.shiftOff, ay = bd.my + bd.dx*mol.shiftOff;
+      var L = 15;
+      c.save();
+      c.globalAlpha = clamp01(0.25 + sm/(mol.biasAmp || 15))*0.9;
+      arrow(ax - uxx*L, ay - uyy*L, ax + uxx*L, ay + uyy*L, '#B5651D', 2.2, 6);
+      c.restore();
+    });
+  }
+  mol.nuclei.forEach(function(n){ nuc(n.x, n.y, n.r, n.s, n.col); });
+  c.restore();
+
+  // ---- dipole arrow: direction AND length come from the electrons ----
+  if(show.dipole && muK > 0.02){
+    var L2 = mol.dipLen*(0.80 + 0.20*muK);
+    dipoleArrow(
+      wpt(cx,cy,th,s, mol.dipOrigin.x - ux*L2/2, mol.dipOrigin.y - uy*L2/2),
+      wpt(cx,cy,th,s, mol.dipOrigin.x + ux*L2/2, mol.dipOrigin.y + uy*L2/2),
+      '#7A3B12', muK*0.95);
+    var labS = mol.dipLabSign || 1;      // which side of the arrow carries its label
+    var pm = wpt(cx,cy,th,s, mol.dipOrigin.x - uy*22*labS, mol.dipOrigin.y + ux*22*labS);
+    c.save(); c.globalAlpha = labK*0.95;
+    label('dipole', pm.x, pm.y, '#7A3B12', 11);
+    c.restore();
+  }
+  // ---- partial charges: which end is which also follows the dipole ----
+  if(show.charges && muK > 0.02 && labK > 0.01){
+    var along = ux*(mol.neg0.x-mol.pos0.x) + uy*(mol.neg0.y-mol.pos0.y);
+    var sA = along >= 0 ? '\u03B4+' : '\u03B4\u2212';
+    var sB = along >= 0 ? '\u03B4\u2212' : '\u03B4+';
+    c.save(); c.globalAlpha = labK;
+    var pA = wpt(cx,cy,th,s, mol.pos0.x, mol.pos0.y);
+    label(sA, pA.x, pA.y, sA === '\u03B4+' ? BLUE : RED, 15);
+    if(mol.pos0b){
+      var pAb = wpt(cx,cy,th,s, mol.pos0b.x, mol.pos0b.y);
+      label(sA, pAb.x, pAb.y, sA === '\u03B4+' ? BLUE : RED, 15);
+    }
+    var pB = wpt(cx,cy,th,s, mol.neg0.x, mol.neg0.y);
+    label(sB, pB.x, pB.y, sB === '\u03B4+' ? BLUE : RED, 15);
+    c.restore();
+  }
+  if(show.electrons && opts.markDonor && labK > 0.01 && mol.markAt){
+    var hp = wpt(cx,cy,th,s, mol.markAt.x, mol.markAt.y);
+    c.save(); c.globalAlpha = labK;
+    label('donor H', hp.x, hp.y, BLUE, 11);
+    c.restore();
+  }
+}
+
+/* O2 and H2O are now data-driven through MOL.o2 / MOL.h2o + renderMol() above. */
+
+/* H2O is now data-driven through MOL.h2o + renderMol() above. */
+
+
+/* ===================== PART 3 : scenes, UI, animation ===================== */
+
+var TITLES = {
+  orientation: 'Orientation force \u2014 permanent dipole\u2013dipole   (HCl)',
+  dispersion:  'Dispersion force \u2014 instantaneous & induced dipoles   (O\u2082)',
+  hydrogen:    'Hydrogen bond \u2014 F\u2013H\u00B7\u00B7\u00B7F   (HF)'
+};
+
+function chip(txt,x,y,col,bg){
+  c.save();
+  c.font = 'bold 12px Segoe UI';
+  var w = c.measureText(txt).width + 20, h = 23;
+  rr(x-w/2, y-h/2, w, h, h/2);
+  c.fillStyle = bg; c.fill();
+  c.strokeStyle = col; c.lineWidth = 1; c.stroke();
+  c.fillStyle = col; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillText(txt, x, y+0.5);
+  c.restore();
+}
+
+function bg(){
+  var g = c.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#F6FAFC'); g.addColorStop(1,'#EAF3F8');
+  c.fillStyle = g; c.fillRect(0,0,W,H);
+
+  c.fillStyle = '#DCE6ED'; rr(40,24,W-80,6,3); c.fill();
+  c.fillStyle = '#0A455D'; rr(40,24,Math.max(2,(W-80)*S.phase),6,3); c.fill();
+  for(var i=1;i<4;i++){
+    c.beginPath(); c.arc(40+(W-80)*i/4, 27, 3.1, 0, 7);
+    c.fillStyle = '#FFFFFF'; c.fill();
+    c.strokeStyle = '#9FB9C6'; c.lineWidth = 1; c.stroke();
+  }
+  label(TITLES[S.mode], W/2, 54, T1, 16);
+}
+
+function legend(){
+  var y = H - 30, x = 62;
+  c.save();
+  arrow(x, y, x+24, y, '#B5651D', 2.2, 6);
+  label('bonding electrons shift', x+32, y, '#5B7684', 11, 'left');
+  x += 226;
+  dipoleArrow({x:x, y:y}, {x:x+24, y:y}, '#7A3B12', 1);
+  label('dipole', x+32, y, '#5B7684', 11, 'left');
+  x += 100;
+  c.setLineDash([5,5]); c.strokeStyle = '#C0552F'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(x,y); c.lineTo(x+24,y); c.stroke(); c.setLineDash([]);
+  label('attraction', x+32, y, '#5B7684', 11, 'left');
+  x += 118;
+  c.setLineDash([6,5]); c.strokeStyle = '#0A455D'; c.lineWidth = 2.6;
+  c.beginPath(); c.moveTo(x,y); c.lineTo(x+24,y); c.stroke(); c.setLineDash([]);
+  label('hydrogen bond', x+32, y, '#5B7684', 11, 'left');
+  c.restore();
+}
+
+function caption(k){
+  c.save();
+  c.font = 'bold 19px Segoe UI';
+  var t = STEPS[S.mode][k][0];
+  var w = c.measureText(t).width;
+  rr(W/2 - w/2 - 20, 436, w + 40, 32, 16);
+  c.fillStyle = 'rgba(255,255,255,.9)'; c.fill();
+  c.strokeStyle = '#C5D2DE'; c.lineWidth = 1; c.stroke();
+  c.restore();
+  label(t, W/2, 453, T1, 19);
+  label('step ' + (k+1) + ' of 4', W - 78, 453, '#8AA3B2', 12);
+}
+
+/* ---------------- Scene 1 : orientation force (HCl) ---------------- */
+function sceneOrientation(){
+  var k = stepIndex(), p = S.phase;
+  var cy = 280, s = 1.68;
+  var alignK = seg(p, 0.50, 0.66);             // step 3: swing round head-to-tail
+  var closeK = seg(p, 0.56, 0.88);             // step 3-4: hauled together
+  var sep = lerp(340, 262, ease(alignK));
+  sep = lerp(sep, 215, ease(closeK));
+
+  var xL = 500 - sep/2, xR = 500 + sep/2;
+  // the molecules themselves stay put (no wobble). Only the electrons inside
+  // them move - that motion is what makes each molecule a dipole.
+  var thL = 0, thR = 0;
+
+  // TWO identical molecules, both on screen from the very first frame
+  renderMol(MOL.hcl, xL, cy, thL, s, 1, S.layers, { tOff: 0 });
+  renderMol(MOL.hcl, xR, cy, thR, s, 1, S.layers, { tOff: 1.7 });
+
+  // ---- step 3: staged attraction (delta+ -> delta- -> pull), persisting into step 4 ----
+  var fP = wpt(xL, cy, thL, s,  52, 0);      // delta+ (H) face
+  var fN = wpt(xR, cy, thR, s, -52, 0);      // delta- (Cl) face
+  var aPlus  = seg(p, 0.52, 0.58);           // (a) the positive charge shows itself
+  var aMinus = seg(p, 0.55, 0.61);           // (b) the negative charge + its lone pairs
+  var aPull  = seg(p, 0.58, 0.65);           // (c) then the pull between them
+  if(aPlus > 0.01)  chargeGlyph(fP.x, fP.y, true,  aPlus);
+  if(aMinus > 0.01){
+    chargeGlyph(fN.x, fN.y, false, aMinus);
+    // the electron-rich Cl lone pairs being reached for (blue dashed shell around Cl)
+    var clP = wpt(xR, cy, thR, s, -34, 0);
+    c.save(); c.globalAlpha = aMinus*0.8;
+    c.beginPath(); c.arc(clP.x, clP.y, 26*s, 0, 7);
+    c.strokeStyle = '#2E7DD1'; c.lineWidth = 2.0;
+    c.setLineDash([3,4]); c.stroke(); c.setLineDash([]);
+    c.restore();
+  }
+  if(aPull > 0.01){
+    pullBand(fP, fN, aPull);
+    pullArrows(xL, xR, 372, aPull);
+  }
+  if(k === 0)      chip('two identical molecules \u2014 each already a dipole', 500, 414, '#7A3B12', '#FDF3E4');
+  else if(k === 1) chip('identical dipoles facing each other',  500, 414, '#2E7DD1', '#EAF2FC');
+  else if(k === 2) chip('\u03B4+ pulled towards \u03B4\u2212',  500, 414, '#C0552F', '#FFF1EA');
+  else             chip('held together: orientation force',     500, 414, '#C0552F', '#FFF1EA');
+}
+
+/* ---------------- Scene 2 : dispersion force (O2) ----------------
+   Staged exactly as the force comes into being:
+     step 1  BOTH molecules have an even cloud - electrons spread evenly, no dipole
+     step 2  the electrons' own endless motion bunches them up at one end of
+             molecule A -> A ALONE gains a temporary dipole (delta+ / delta-)
+     step 3  A's delta+ drags the evenly-spread electrons of B across
+             -> B gains an induced dipole too, lined up to attract
+     step 4  the two temporary dipoles attract - the dispersion force          */
+function sceneDispersion(){
+  var k = stepIndex(), p = S.phase;
+  var cy = 280, s = 1.62;
+  var aK     = seg(p, 0.27, 0.47);   // step 2: A's own electrons bunch up
+  var bK     = seg(p, 0.53, 0.71);   // step 3: A's charge drags B's electrons
+  var gateA  = seg(p, 0.26, 0.31);   // fade A's charge in once it has started
+  var gateB  = seg(p, 0.52, 0.59);   // ... and B's, once it has been polarised
+  var pullK  = seg(p, 0.76, 0.86);
+  var closeK = seg(p, 0.78, 0.97);
+  var sep    = lerp(350, 312, ease(closeK));
+
+  var xL = 500 - sep/2, xR = 500 + sep/2;
+  // no wobble: the molecules hold still, their electrons do the moving
+  var thA = 0, thB = 0;
+
+  // TWO identical molecules from frame one. At first both clouds are even, so
+  // neither shows a dipole at all; each one's charge then appears in turn.
+  renderMol(MOL.o2, xL, cy, thA, s, aK, S.layers, { tOff: 0,   dipOn: gateA });
+  renderMol(MOL.o2, xR, cy, thB, s, bK, S.layers, { tOff: 2.6, dipOn: gateB });
+
+  // ---- step 3: A's delta+ literally drags the neighbour's electrons LEFT ----
+  var indK  = seg(p, 0.53, 0.61)*(1 - seg(p, 0.70, 0.78));
+  var fP = wpt(xL, cy, thA, s,  64, 0);        // delta+ face of molecule A
+  var fN = wpt(xR, cy, thB, s, -64, 0);        // delta- face of molecule B
+  if(indK > 0.01){
+    // (a) the positive charge that is doing the attracting - show it clearly
+    chargeGlyph(fP.x, fP.y, true, indK);
+    // (b) it hauls B's electrons leftwards: blue pull-arrows sweep towards A
+    var aPull = seg(p, 0.55, 0.63)*(1 - seg(p, 0.70, 0.78));
+    if(aPull > 0.01){
+      c.save(); c.globalAlpha = clamp01(aPull*0.95);
+      for(var i = -2; i <= 2; i++){
+        var yy = cy + i*16;
+        var gx = (fP.x + fN.x)/2;              // the gap between the two molecules
+        arrow(gx + 26, yy, gx - 26, yy, '#2E7DD1', 2.3, 8);
+      }
+      c.restore();
+    }
+    // (c) those dragged electrons pile up on B's left end -> that end turns delta-
+    var aPile = seg(p, 0.57, 0.66)*(1 - seg(p, 0.72, 0.78));
+    if(aPile > 0.01){
+      c.save(); c.globalAlpha = clamp01(aPile*0.9);
+      c.beginPath();
+      c.arc(fN.x, fN.y, 16 + 7*aPile, Math.PI/2, 3*Math.PI/2);
+      c.strokeStyle = '#E2483B'; c.lineWidth = 2.0;
+      c.setLineDash([3,4]); c.stroke(); c.setLineDash([]);
+      c.restore();
+    }
+  }
+  if(pullK > 0.01){
+    pullBand(fP, fN, pullK);
+    chargeGlyph(fP.x, fP.y, true,  pullK);
+    chargeGlyph(fN.x, fN.y, false, pullK);
+    pullArrows(xL, xR, 372, pullK);
+  }
+  if(k === 0)      chip('electrons spread evenly \u2014 no dipole on either molecule', 500, 414, '#5B7684', '#F2F6F9');
+  else if(k === 1) chip('a momentary bunching \u2014 molecule A gains a dipole', 500, 414, '#7A3B12', '#FDF3E4');
+  else if(k === 2) chip('that drags the neighbour\u2019s electrons over', 500, 414, '#2E7DD1', '#EAF2FC');
+  else             chip('two temporary dipoles attract', 500, 414, '#C0552F', '#FFF1EA');
+}
+
+/* ---------------- Scene 3 : hydrogen bond (HF) ----------------
+   F-H is linear, so no alignment swing is needed. The electrons are drawn
+   STATIC on purpose: the three lone pairs on each F are the whole point of
+   this scene, so they are ringed in blue and one of them is named.          */
+function sceneHydrogen(){
+  var k = stepIndex(), p = S.phase;
+  var cy = 278, base = 1.40;
+  var s      = base;
+  var closeK = seg(p, 0.56, 0.88);
+  var sepBond = 216;                         // keeps a clear H...F contact gap
+  var sep = lerp(340, sepBond, ease(closeK));
+
+  var xL = 500 - sep/2, xR = 500 + sep/2;
+  // molecules stay still AND their electrons stay put: the lone pairs are the
+  // star of the show, drawn as fixed, ringed pairs of dots
+  var thL = 0, thR = 0;
+
+  // TWO identical HF molecules, both present from frame one
+  renderMol(MOL.hf, xL, cy, thL, s, 1, S.layers, { markDonor: k >= 2 });
+  renderMol(MOL.hf, xR, cy, thR, s, 1, S.layers, { });
+
+  // lone-pair halos: every lone pair on every F is ringed in dashed blue
+  if(S.layers.electrons){
+    [xL, xR].forEach(function(xM){
+      MOL.hf.lpMarks.forEach(function(m){
+        var q = wpt(xM, cy, 0, s, m.x, m.y);
+        c.save();
+        c.beginPath(); c.arc(q.x, q.y, 17, 0, 7);
+        c.fillStyle = 'rgba(46,125,209,0.10)'; c.fill();
+        c.strokeStyle = 'rgba(46,125,209,0.55)'; c.lineWidth = 1.4;
+        c.setLineDash([3,4]); c.stroke(); c.setLineDash([]);
+        c.restore();
+      });
+    });
+  }
+  // one explicit name tag, so "halo" becomes "lone pair" in students' minds
+  if(k >= 1){
+    var tq = wpt(xR, cy, 0, s, -60, 0);
+    c.save(); c.globalAlpha = 0.9;
+    c.strokeStyle = 'rgba(46,125,209,.6)'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(tq.x, tq.y-26); c.lineTo(tq.x-20, tq.y-64); c.stroke();
+    label('lone pair', tq.x-32, tq.y-76, '#2E7DD1', 11);
+    c.restore();
+  }
+
+  var fP = wpt(xL, cy, thL, s,  44, 0);   // delta+ H face (donor)
+  var fN = wpt(xR, cy, thR, s, -60, 0);   // the lone pair (delta-) face of the acceptor F
+  // ---- step 3: staged attraction (delta+ -> lone pair -> pull) ----
+  var aPlus  = seg(p, 0.52, 0.58);        // (a) the delta+ hydrogen shows itself
+  var aLp    = seg(p, 0.55, 0.61);        // (b) the lone pair it is reaching for
+  var aPull  = seg(p, 0.58, 0.65);        // (c) then the pull
+  if(aPlus > 0.01)  chargeGlyph(fP.x, fP.y, true,  aPlus);
+  if(aLp > 0.01){
+    c.save(); c.globalAlpha = aLp*0.95;
+    c.beginPath(); c.arc(fN.x, fN.y, 17 + 2*aLp, 0, 7);
+    c.strokeStyle = '#2E7DD1'; c.lineWidth = 2.2;
+    c.setLineDash([3,4]); c.stroke(); c.setLineDash([]);
+    c.restore();
+    chargeGlyph(fN.x, fN.y, false, aLp);
+  }
+  if(k < 3 && aPull > 0.01){
+    pullBand(fP, fN, aPull);              // how the charges are pulling, step by step
+  }
+  if(k === 3){                            // step 4: the bond itself has locked in
+    var on = seg(p, 0.75, 0.82);
+    c.save(); c.globalAlpha = on;
+    c.setLineDash([6,5]); c.strokeStyle = '#0A455D'; c.lineWidth = 2.6;
+    c.beginPath(); c.moveTo(fP.x, fP.y); c.lineTo(fN.x, fN.y); c.stroke();
+    c.setLineDash([]); c.restore();
+  }
+  if(aPull > 0.01){
+    pullArrows(xL, xR, 372, aPull);
+  }
+  if(k === 0)        chip('two identical molecules \u2014 each already a dipole', 500, 414, '#7A3B12', '#FDF3E4');
+  else if(k === 1)   chip('identical \u03B4+ H and lone pairs',   500, 414, '#2E7DD1', '#EAF2FC');
+  else if(k === 2)   chip('\u03B4+ H drawn to the lone pair',     500, 414, '#2E7DD1', '#EAF2FC');
+  else               chip('F\u2013H \u00B7\u00B7\u00B7 F',        500, 414, '#0A455D', '#EAF3F8');
+}
+
+function draw(){
+  clear();
+  bg();
+  if(S.mode === 'orientation')      sceneOrientation();
+  else if(S.mode === 'dispersion')  sceneDispersion();
+  else                              sceneHydrogen();
+  caption(stepIndex());
+  legend();
+}
+
+/* ------------------------------ UI ------------------------------ */
+function buildSteps(){
+  var host = document.getElementById('steps');
+  host.innerHTML = '';
+  STEPS[S.mode].forEach(function(st,i){
+    var b = document.createElement('button');
+    b.className = 'schip';
+    b.innerHTML = '<span class="num">' + (i+1) + '</span>' + st[0];
+    b.onclick = function(){ S.phase = i*0.25 + 0.001; S.playing = false; syncUI(); draw(); };
+    host.appendChild(b);
+  });
+}
+
+function syncUI(){
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.classList.toggle('active', t.dataset.mode === S.mode);
+  });
+  var k = stepIndex();
+  document.querySelectorAll('.schip').forEach(function(ch,i){
+    ch.classList.toggle('active', i === k);
+  });
+  var st = STEPS[S.mode][k];
+  document.getElementById('desc').innerHTML =
+    '<b>' + (k+1) + '. ' + st[0] + '</b><br>' + STEPS[S.mode][k][1];
+  var kk = KEY[S.mode];
+  document.getElementById('key').innerHTML = '<h3>' + kk.h + '</h3>' + kk.b;
+  document.getElementById('btnPlay').innerHTML =
+    S.playing ? '&#10074;&#10074; Pause' : '&#9654; Play';
+}
+
+document.querySelectorAll('.tab').forEach(function(t){
+  t.onclick = function(){
+    S.mode = t.dataset.mode; S.phase = 0; S.t = 0; S.playing = false;
+    buildSteps(); syncUI(); draw();
+  };
+});
+document.getElementById('btnPlay').onclick = function(){
+  if(S.phase >= 1){ S.phase = 0; S.t = 0; }
+  S.playing = !S.playing; syncUI();
+};
+document.getElementById('btnReset').onclick = function(){
+  S.phase = 0; S.t = 0; S.playing = false; syncUI(); draw();
+};
+document.querySelectorAll('.speed button').forEach(function(b){
+  b.onclick = function(){
+    S.speed = parseFloat(b.dataset.spd);
+    document.querySelectorAll('.speed button').forEach(function(o){
+      o.classList.toggle('active', o === b);
+    });
+  };
+});
+document.querySelectorAll('.layers input').forEach(function(cb){
+  cb.onchange = function(){ S.layers[cb.dataset.layer] = cb.checked; draw(); };
+});
+
+/* ------------------------------ loop ------------------------------ */
+var lastT = performance.now(), lastStep = -1;
+function loop(now){
+  var dt = (now - lastT)/1000; lastT = now;
+  if(!(dt > 0)) dt = 0; else if(dt > 0.05) dt = 0.05;   // guard vs clock jumps / backgrounded tab
+  S.t += dt * (S.playing ? S.speed : 1);
+  if(S.playing){
+    S.phase = Math.min(1, S.phase + dt * 0.16 * S.speed);
+    if(S.phase >= 1){ S.phase = 1; S.playing = false; }
+  }
+  var k = stepIndex();
+  if(k !== lastStep){ lastStep = k; syncUI(); }
+  try { draw(); } catch(e) { /* never let one bad frame freeze the demo */ }
+  requestAnimationFrame(loop);
+}
+
+buildSteps();
+syncUI();
+draw();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en" data-page-node-id="Ap1Be87CIvgOdVBipQt77H">
+<head data-page-node-id="3thQN2bvU6KDVTEPJawOj2">
+    <meta charset="UTF-8" data-page-node-id="FBsRCVyrsWK82IcRCAFho6">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="xQrA3CGWqtlnkKmK2NRyTV">
+    <title>Two Types of Alloys — Solid Solution Models</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .atom {
+            transition: cx 0.4s cubic-bezier(0.25, 0.1, 0.25, 1.0);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            background: #cbd5e1;
+            border-radius: 8px;
+            height: 12px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            background: #1e3a8a;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -6px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 p-6 min-h-screen font-sans" data-page-node-id="CDebYuk68EEP2EkWpENLWs">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl p-6 md:p-10 border border-slate-200" data-page-node-id="zlTZxE9JQNKCzJlPVTfM7A">
+        <!-- Header -->
+        <header class="text-center mb-8" data-page-node-id="Ntd85msLouon7vEfpH5ufB">
+            <h1 class="text-3xl md:text-4xl font-black text-slate-900 mb-2" data-page-node-id="TP1FuQ6MOSV0UnuVPVJf9A">Two Types of Alloy — Solid Solution Models</h1>
+            <p class="text-slate-500 text-lg italic" data-page-node-id="WneTdLmL9m1de83wYfE337">Substitutional vs Interstitial — different atom sites, same solid-solution strengthening</p>
+        </header>
+
+        <!-- Shared legend -->
+        <div class="flex flex-wrap justify-center gap-6 mb-6 text-sm font-bold" data-page-node-id="dnUxRDrLBmRIAq5bpzQTT9">
+            <span class="flex items-center gap-2" data-page-node-id="RmkxCKIHLUzfhhFnrphbaC"><span class="inline-block w-4 h-4 rounded-full bg-blue-500 border border-slate-700" data-page-node-id="XuoBSTvt0qqyD2wwJDiFiz"></span>Host atom (e.g. Cu / Fe)</span>
+            <span class="flex items-center gap-2" data-page-node-id="UQ3pCQFTeSG6xuGjOKsY7f"><span class="inline-block w-4 h-4 rounded-full bg-orange-500 border border-slate-700" data-page-node-id="tFNweP7Uuz1iGcsR8S7u8J"></span>Substitutional atom (lattice site, e.g. Zn)</span>
+            <span class="flex items-center gap-2" data-page-node-id="Ydxye79uUD2PcDqwGkq2iC"><span class="inline-block w-3 h-3 rounded-full bg-slate-800 border border-slate-400" data-page-node-id="VJ5lHKmgoTNzepE96itBp0"></span>Interstitial atom (in gaps, e.g. C)</span>
+        </div>
+
+        <!-- Control slider -->
+        <div class="mb-10 w-full max-w-lg mx-auto bg-blue-50 p-6 md:p-8 rounded-2xl border-2 border-blue-100 shadow-md" data-page-node-id="mS0APDdsYGNphSrv1NKXFT">
+            <label class="block text-blue-900 font-black mb-4 text-center text-xl" data-page-node-id="aH5sUOSwShZ8CZNoKawpOo">
+                Increase Shear Force: <span id="forceValue" class="text-blue-600" data-page-node-id="5rpRJ1a9B8byvqxAGGipaq">0%</span>
+            </label>
+            <input
+                id="forceSlider"
+                type="range"
+                min="0"
+                max="2.5"
+                step="0.01"
+                value="0"
+                class="w-full h-4 bg-transparent appearance-none cursor-pointer" data-page-node-id="pJARgUVC5usgDhNZQBEC8e"
+            >
+            <div class="flex justify-between text-sm font-bold text-blue-400 mt-4 px-2" data-page-node-id="VveXcLRbqvcWwSzQ0sHJN9">
+                <span data-page-node-id="BlSVFN5PoR0QMVMaHNAcNn">Rest</span>
+                <span data-page-node-id="CXOi1J2l2MB0aawApHYUo8">Max force</span>
+            </div>
+        </div>
+
+        <!-- Three-panel comparison -->
+        <div class="flex flex-col lg:flex-row gap-8 justify-center items-start" data-page-node-id="kvwHKuwNWKvXOo94hHGUL3">
+
+            <!-- Pure metal (reference) -->
+            <div class="flex flex-col items-center bg-white p-4 rounded-xl shadow-inner border border-slate-200 w-full lg:w-1/3" data-page-node-id="vD9nGnWgEY8gqcR24tb5Ec">
+                <h3 class="text-lg font-bold mb-3 text-blue-700" data-page-node-id="YPs0ZunyxXZLpzzNjyiz5l">Pure Metal</h3>
+                <div class="relative overflow-hidden border border-dashed border-slate-300 rounded-lg p-2 bg-slate-50 w-full" data-page-node-id="yifHXnbMVUrSKxCEQbqgue">
+                    <svg id="pureSvg" width="100%" height="280" viewBox="0 0 520 280" class="overflow-visible" data-page-node-id="mE2nuBl5OEvBUZeoXizLkT">
+                        <line x1="10" y1="113" x2="500" y2="113" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,5" data-page-node-id="Z2q7rvtXEUvDwPCFCD4AyI" />
+                        <text x="10" y="105" fill="#f39c12" font-size="12" font-weight="bold" data-page-node-id="exWa33Tdooizt5KN9NFiWa">Slip Plane</text>
+                        <g id="pureAtomsGroup" data-page-node-id="dDJNLjt2LBFBKydPlaMZcG"></g>
+                        <g id="pureForceArrow" style="display:none" data-page-node-id="PqfVPCChnvUIuCL07I9vE0">
+                            <path d="" fill="none" stroke="#e67e22" stroke-width="3" data-page-node-id="tNbE14nVGMRsFVbPHTN59c" />
+                            <text x="0" y="5" fill="#e67e22" font-size="13" font-weight="bold" data-page-node-id="cNt7jdEGOOTX8bTokA3faw">Shear</text>
+                        </g>
+                    </svg>
+                </div>
+                <p id="pureLabel" class="mt-3 text-sm text-slate-500 text-center h-16" data-page-node-id="GxzF11G1C1DoA8erQA82yF">Atom layers slide freely like a stack of cards — excellent ductility.</p>
+            </div>
+
+            <!-- Substitutional alloy -->
+            <div class="flex flex-col items-center bg-white p-4 rounded-xl shadow-inner border-2 border-orange-300 w-full lg:w-1/3" data-page-node-id="2yMIeq6S6qZKHt0fV9xkAT">
+                <h3 class="text-lg font-bold mb-3 text-orange-600" data-page-node-id="vJJi1M6YBIFWpaFXQsywgP">Substitutional Alloy</h3>
+                <div class="relative overflow-hidden border border-dashed border-slate-300 rounded-lg p-2 bg-slate-50 w-full" data-page-node-id="HJBudxoYWb9uy7GjugwDLO">
+                    <svg id="substSvg" width="100%" height="280" viewBox="0 0 520 280" class="overflow-visible" data-page-node-id="2vYm9TtHFuCgdUb60iAUtp">
+                        <line x1="10" y1="113" x2="500" y2="113" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,5" data-page-node-id="DGnFfXy2xOpD15bAtVK50g" />
+                        <text x="10" y="105" fill="#f39c12" font-size="12" font-weight="bold" data-page-node-id="pWbwfbRrErqs9GrfE1TL5j">Slip Plane</text>
+                        <g id="substAtomsGroup" data-page-node-id="Bfo4YdSEvinDxHKCyBQeE5"></g>
+                        <g id="substForceArrow" style="display:none" data-page-node-id="SWmUY3SdLdboGbawPgxu1g">
+                            <path d="" fill="none" stroke="#e67e22" stroke-width="3" data-page-node-id="mKHoGObVSatPNnrDbGDR1T" />
+                            <text x="0" y="5" fill="#e67e22" font-size="13" font-weight="bold" data-page-node-id="SXODpMH8tC4LAyESfMHsWZ">Shear</text>
+                        </g>
+                    </svg>
+                </div>
+                <p id="substLabel" class="mt-3 text-sm text-slate-500 text-center h-16" data-page-node-id="au7rQphSIGimjbI0ZZRxJj">Solute atoms replace host atoms at lattice sites; size mismatch distorts the lattice and partly blocks slip.</p>
+            </div>
+
+            <!-- Interstitial alloy -->
+            <div class="flex flex-col items-center bg-white p-4 rounded-xl shadow-inner border-2 border-indigo-300 w-full lg:w-1/3" data-page-node-id="m4W2YrXDkkE8U6k06Yiq58">
+                <h3 class="text-lg font-bold mb-3 text-indigo-600" data-page-node-id="ekQCxGLJ7yjV9w7TOApBbD">Interstitial Alloy</h3>
+                <div class="relative overflow-hidden border border-dashed border-slate-300 rounded-lg p-2 bg-slate-50 w-full" data-page-node-id="DeVUl12LR7diwpJqtHmy4R">
+                    <svg id="interSvg" width="100%" height="280" viewBox="0 0 520 280" class="overflow-visible" data-page-node-id="6wlmohrnGu8FdFBPhP3897">
+                        <line x1="10" y1="113" x2="500" y2="113" stroke="#f39c12" stroke-width="2" stroke-dasharray="5,5" data-page-node-id="Js3XdcroUAS5C3e7i6Axd3" />
+                        <text x="10" y="105" fill="#f39c12" font-size="12" font-weight="bold" data-page-node-id="y3x3hB7SLWtNfY0yNmCgKu">Slip Plane</text>
+                        <g id="interAtomsGroup" data-page-node-id="ch4TahsXv9n1Ehm1jC9h04"></g>
+                        <g id="interForceArrow" style="display:none" data-page-node-id="tqUEJtJEZFqJvZcGWRrxwg">
+                            <path d="" fill="none" stroke="#e67e22" stroke-width="3" data-page-node-id="4y3bDRi5nfyP0t9EmmOuGG" />
+                            <text x="0" y="5" fill="#e67e22" font-size="13" font-weight="bold" data-page-node-id="HrLshdyasDIaDOjBodBJCY">Shear</text>
+                        </g>
+                    </svg>
+                </div>
+                <p id="interLabel" class="mt-3 text-sm text-slate-500 text-center h-16" data-page-node-id="5qrPlA2ZkazCtnvprjfulo">Tiny atoms fill the gaps between host atoms, strongly pin dislocations — slip is almost locked.</p>
+            </div>
+
+        </div>
+
+        <!-- Explanation: two solid-solution types -->
+        <div class="mt-12 grid md:grid-cols-2 gap-6" data-page-node-id="m5PmBp5HiJGrxzdcSV79tM">
+            <div class="p-6 bg-orange-50 rounded-2xl border border-orange-200" data-page-node-id="8qNhE1MQdJrPeRFGW8cKy5">
+                <h4 class="text-xl font-bold mb-2 text-orange-700" data-page-node-id="d5jhnEgZcjEo2i0egrtgX0">Substitutional Alloy</h4>
+                <p class="text-sm leading-relaxed text-slate-700 mb-3" data-page-node-id="l3U7yNvz99YtReDmEZ5KRe">
+                    <b data-page-node-id="7cmDS8sOvTdv6vwnxqLBGO">Mechanism:</b> Solute atoms have a radius close to the host (difference usually &lt; 15%) and <b data-page-node-id="j6axBDmSMk1NgJRlKf4DaN">directly replace</b> host atoms at normal lattice sites.
+                </p>
+                <p class="text-sm leading-relaxed text-slate-700 mb-3" data-page-node-id="gL2VhFRZMQ3751I9KkAAkF">
+                    <b data-page-node-id="e32iZpUWGMcHweiFFR2hzU">Examples:</b> Brass (Cu–Zn), Bronze (Cu–Sn), solder (Sn–Pb).
+                </p>
+                <p class="text-sm leading-relaxed text-slate-700" data-page-node-id="IWXtrgWmSMCcJRfiBqPWqI">
+                    <b data-page-node-id="Gfi5L4BtC863bwTB19foHs">Strengthening:</b> Size/electronegativity differences elastically distort the nearby lattice and impede dislocation motion → strength↑, ductility still good.
+                </p>
+            </div>
+            <div class="p-6 bg-indigo-50 rounded-2xl border border-indigo-200" data-page-node-id="J6yY08SU6kb85J9sAzLqfu">
+                <h4 class="text-xl font-bold mb-2 text-indigo-700" data-page-node-id="whtezg0ljNwDUzFCmZnjHF">Interstitial Alloy</h4>
+                <p class="text-sm leading-relaxed text-slate-700 mb-3" data-page-node-id="rfH2jBIOl0RmCSVn2MqUNy">
+                    <b data-page-node-id="PVUrV6CYSrAlmdbEYKSK6H">Mechanism:</b> Solute atoms are <b data-page-node-id="3XkTScd8aWv7VJLuTK5DyP">very small</b> (e.g. C, N, B); they cannot replace large atoms, so they slip into the <b data-page-node-id="VcNLIibaw7TL9nvvph20uU">interstitial gaps</b> between host atoms.
+                </p>
+                <p class="text-sm leading-relaxed text-slate-700 mb-3" data-page-node-id="vyxjrvyzQcrNJAE4irN4yM">
+                    <b data-page-node-id="yLXXxEsGFxdWyKGnnHGrfV">Examples:</b> Steel (Fe–C), tungsten carbide (W–C). Just ~1/50 carbon atoms can vastly harden iron.
+                </p>
+                <p class="text-sm leading-relaxed text-slate-700" data-page-node-id="tOQxT2lVD6yRMsY9EmJVoa">
+                    <b data-page-node-id="mgiKiJom8ucdLEiFGCUtuB">Strengthening:</b> Tiny atoms wedge into the gaps, creating strong local strain fields that "pin" dislocations → hardness↑↑, more brittle.
+                </p>
+            </div>
+        </div>
+
+        <!-- Comparison summary -->
+        <div class="mt-8 p-6 bg-slate-900 text-white rounded-2xl" data-page-node-id="fLBz9ZhzDZqEWlnb353RxW">
+            <h4 class="text-xl font-bold mb-3 text-blue-400" data-page-node-id="NnDsw8UKUYG0BWnMoCaeod">What is the difference between the two?</h4>
+            <p class="leading-relaxed opacity-90" data-page-node-id="o3Ry35DsiizdlEKzsl5VHu">
+                Both are forms of <b data-page-node-id="iaySAPO3PQZHz416ZiHO1J">solid-solution strengthening</b>, but the atoms "sit" in different places: a substitutional atom takes a <b data-page-node-id="jv8KGA3BzzzNQoWONIGcJk">normal lattice site</b> (swaps a seat), while an interstitial atom crams into the <b data-page-node-id="BDCRrLVtsXiGDOQRNjkIIb">gap between sites</b> (squeezes into the void). Because interstitial atoms are so small and wedge in so tightly, even a tiny amount produces very strong hardening — that is why a little carbon turns soft wrought iron into hard steel.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const slider = document.getElementById('forceSlider');
+        const forceValueText = document.getElementById('forceValue');
+
+        const ROWS = 5;
+        const COLS = 8;
+        const SPACING = 42;
+        const ATOM_R = 20;
+        const OX = 50;
+        const OY = 50;
+
+        const HOST_COLOR = '#3b82f6';
+        const SUB_COLOR  = '#f97316';   // substitutional atom
+        const INTER_COLOR = '#1e293b';  // interstitial atom
+
+        // Per-panel config: positions of substitutional / interstitial atoms
+        const panels = {
+            pure: {
+                groupId: 'pureAtomsGroup',
+                arrowId: 'pureForceArrow',
+                subs: [], inters: [],
+                slipFactor: 100, cap: 130,
+                labelId: 'pureLabel'
+            },
+            subst: {
+                groupId: 'substAtomsGroup',
+                arrowId: 'substForceArrow',
+                // occupy lattice sites (same positions as host), slightly larger to show size mismatch
+                subs: [
+                    {r:1,c:3},{r:2,c:6},{r:3,c:2},{r:0,c:5},
+                    {r:4,c:4},{r:1,c:1},{r:3,c:6}
+                ],
+                inters: [],
+                slipFactor: 38, cap: 34,
+                labelId: 'substLabel'
+            },
+            inter: {
+                groupId: 'interAtomsGroup',
+                arrowId: 'interForceArrow',
+                subs: [],
+                // sit at cell centers = gaps between host atoms (interstitial sites)
+                inters: [
+                    {r:0,c:0},{r:0,c:3},{r:1,c:2},{r:2,c:1},
+                    {r:3,c:3},{r:1,c:5},{r:3,c:5},{r:2,c:4},{r:4,c:2}
+                ],
+                slipFactor: 6, cap: 9,
+                labelId: 'interLabel'
+            }
+        };
+
+        // Build atom array for each panel
+        function initPanel(key) {
+            const cfg = panels[key];
+            const group = document.getElementById(cfg.groupId);
+            cfg.atoms = [];
+
+            // host atoms (all sites)
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const baseX = OX + c * SPACING;
+                    const baseY = OY + r * SPACING;
+                    const isSub = cfg.subs.some(s => s.r === r && s.c === c);
+                    addAtom(group, cfg.atoms, {
+                        baseX, baseY, row: r, type: isSub ? 'sub' : 'host',
+                        radius: isSub ? 24 : ATOM_R,
+                        color: isSub ? SUB_COLOR : HOST_COLOR
+                    });
+                }
+            }
+
+            // interstitial atoms (at cell centers = gaps between host atoms)
+            cfg.inters.forEach(it => {
+                const baseX = OX + (it.c + 0.5) * SPACING;
+                const baseY = OY + (it.r + 0.5) * SPACING;
+                addAtom(group, cfg.atoms, {
+                    baseX, baseY, row: it.r, type: 'inter',
+                    radius: 9, color: INTER_COLOR
+                });
+            });
+        }
+
+        function addAtom(group, arr, {baseX, baseY, row, type, radius, color}) {
+            const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            circle.setAttribute("cx", baseX);
+            circle.setAttribute("cy", baseY);
+            circle.setAttribute("r", radius);
+            circle.setAttribute("fill", color);
+            circle.setAttribute("stroke", type === 'inter' ? '#94a3b8' : '#1e293b');
+            circle.setAttribute("stroke-width", type === 'inter' ? '1' : '1.5');
+            circle.setAttribute("class", "atom");
+            group.appendChild(circle);
+            arr.push({ el: circle, baseX, baseY, row, type });
+        }
+
+        Object.keys(panels).forEach(initPanel);
+
+        function update(force) {
+            forceValueText.innerText = (force * 100).toFixed(0) + '%';
+
+            Object.keys(panels).forEach(key => {
+                const cfg = panels[key];
+                const xShift = Math.min(force * cfg.slipFactor, cfg.cap);
+
+                cfg.atoms.forEach(a => {
+                    // only upper layers (row < 2) slide under shear
+                    if (a.row < 2) {
+                        a.el.setAttribute("cx", a.baseX + xShift);
+                    }
+                });
+
+                updateArrow(cfg, force);
+                updateLabel(cfg, force, xShift);
+            });
+        }
+
+        function updateArrow(cfg, force) {
+            const arrowGroup = document.getElementById(cfg.arrowId);
+            if (force <= 0) {
+                arrowGroup.style.display = 'none';
+                return;
+            }
+            arrowGroup.style.display = 'block';
+            const path = arrowGroup.querySelector('path');
+            const text = arrowGroup.querySelector('text');
+            const len = 30 + force * 90;
+            arrowGroup.setAttribute("transform", "translate(20, 22)");
+            path.setAttribute("d", `M0,0 L${len},0 L${len-6},-5 M${len},0 L${len-6},5`);
+            text.setAttribute("x", len + 6);
+        }
+
+        function updateLabel(cfg, force, xShift) {
+            const el = document.getElementById(cfg.labelId);
+            let txt = '';
+            if (cfg === panels.pure) {
+                txt = force < 0.05 ? 'Atom layers slide freely like a stack of cards — excellent ductility.'
+                    : (xShift > 80 ? 'The upper layer has shifted far — showing the pure metal’s great ductility.'
+                                  : 'Under shear the upper layer begins to move with almost no resistance.');
+            } else if (cfg === panels.subst) {
+                txt = force < 0.05 ? 'Solute atoms replace host atoms at lattice sites; size mismatch distorts the lattice and partly blocks slip.'
+                    : (xShift > 25 ? 'Slip is limited: substitutional atoms cause distortion, stronger yet still ductile.'
+                                  : 'Under shear only slight slip occurs — substitutional atoms already resist.');
+            } else {
+                txt = force < 0.05 ? 'Tiny atoms fill the gaps between host atoms, strongly pinning dislocations — slip almost locked.'
+                    : (xShift > 7 ? 'Slip is nearly locked: interstitial atoms wedge the gaps, very hard and brittle.'
+                                 : 'Even with more shear the upper layer barely moves — the gaps are pinned tight.');
+            }
+            el.innerText = txt;
+        }
+
+        slider.addEventListener('input', (e) => {
+            update(parseFloat(e.target.value));
+        });
+
+        update(0);
+    </script>
+</body>
+</html>

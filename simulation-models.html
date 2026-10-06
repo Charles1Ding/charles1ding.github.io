@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="curriculum.css">
   <script src="ap-models.js"></script>
   <script src="curriculum.js?v=6"></script>
+  <script src="extra-models.js"></script>
   <style>
     :root {
       --bg: #f0f4f8;
@@ -286,7 +287,7 @@
   <div class="logo">⚗️</div>
   <h1>Chemistry Interactive Models</h1>
   <p>Interactive simulations for IGCSE &amp; A-Level Chemistry teaching</p>
-  <span class="badge">57 Models · IGCSE & A-Level</span>
+  <span class="badge">108 Models · IGCSE & A-Level</span>
 </header>
 
 <div class="back-link" style="text-align:center;margin-bottom:20px;">
@@ -308,6 +309,8 @@
     <button class="active" data-filter="all" data-label-alig="All" onclick="setFilter('all', this)">All</button>
     <button data-filter="en" data-label-alig="English" onclick="setFilter('en', this)">English</button>
     <button data-filter="cn" data-label-alig="中文" onclick="setFilter('cn', this)">中文</button>
+    <button data-filter="atomic" data-label-alig="Atomic Structure" onclick="setFilter('atomic', this)">Atomic Structure</button>
+    <button data-filter="bonding" data-label-alig="Bonding &amp; Structure" onclick="setFilter('bonding', this)">Bonding &amp; Structure</button>
     <button data-filter="electrochemistry" data-label-alig="Electrochemistry" onclick="setFilter('electrochemistry', this)">Electrochemistry</button>
     <button data-filter="acids" data-label-alig="Acids &amp; Salts" onclick="setFilter('acids', this)">Acids &amp; Salts</button>
     <button data-filter="metals" data-label-alig="Metals" onclick="setFilter('metals', this)">Metals</button>
@@ -317,7 +320,7 @@
   </div>
 </div>
 
-<div class="stats" id="statsBar">Showing all 63 models</div>
+<div class="stats" id="statsBar">Showing all 108 models</div>
 
 <div class="grid" id="cardGrid"></div>
 
@@ -327,6 +330,8 @@
 
 <script>
 const topicTips = {
+  atomic: "Watch how nuclear charge and electron shielding shift the periodic trends. 观察核电荷与屏蔽效应如何改变周期性趋势。",
+  bonding: "See how electron pairs and lattice forces decide structure and properties. 观察电子对与晶格力如何决定结构与性质。",
   kinetics: "Observe how changing temperature/concentration affects the rate curve. 观察温度/浓度如何影响反应速率曲线。",
   electrochemistry: "Watch ion movement and electron flow at electrodes. 观察离子移动和电极上的电子流动。",
   metals: "See how metals are extracted from their ores. 观察金属如何从矿石中提取。",
@@ -783,15 +788,6 @@ const models = [
     desc: "General cracking process — long-chain hydrocarbons to shorter alkenes."
   },
   {
-    file: "Addtion reaction of ethene (16.4).html",
-    title: "Addition Rxn of Ethene (v2)",
-    icon: "➕",
-    lang: "en",
-    topic: "organic",
-    topicLabel: "Organic Chemistry",
-    desc: "Alternative addition reaction model — polymerisation context."
-  },
-  {
     file: "Fermentation.html",
     title: "Fermentation",
     icon: "🍺",
@@ -914,12 +910,19 @@ const models = [
   }
 ];
 
+// 合并 IG (CIE 0620) 与 AP 课堂同步过来的模型（数据见 extra-models.js）
+if (window.EXTRA_MODELS && window.EXTRA_MODELS.length) {
+  models.push.apply(models, window.EXTRA_MODELS);
+}
+
 let currentFilter = 'all';
 
 function topicInFilter(topic, filter) {
   if (filter === 'all') return true;
   if (filter === 'en' || filter === 'cn') return false; // handled by lang
   const topicMap = {
+    atomic: ['atomic'],
+    bonding: ['bonding'],
     electrochemistry: ['electrochemistry'],
     acids: ['acids', 'equilibrium'],
     metals: ['metals'],

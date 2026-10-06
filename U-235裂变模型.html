@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>U-235 Fission → I-131 / Cs-137 / ⁹⁰Sr</title>
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{background:#EEF3F5;font-family:Inter,system-ui,"Segoe UI",sans-serif;color:#0A455D;}
+  .wrap{max-width:1040px;margin:0 auto;padding:18px 16px 40px;}
+  h1{font-size:22px;margin:0 0 2px;color:#0A455D;font-weight:800;}
+  .sub{font-size:13px;color:#5b7484;margin:0 0 14px;}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:#0A455D;border-radius:14px;padding:10px 12px;margin-bottom:14px;}
+  .mtab{background:rgba(255,255,255,.12);color:#dbeef5;border:none;padding:7px 13px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;}
+  .mtab.active{background:#fff;color:#0A455D;}
+  .sep{width:1px;height:24px;background:rgba(255,255,255,.25);margin:0 2px;}
+  .ctl{background:rgba(255,255,255,.16);color:#eaf6fb;border:none;padding:7px 12px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;}
+  .ctl:hover{background:rgba(255,255,255,.28);}
+  .ctl.on{background:#4699AA;color:#fff;}
+  .ctl.fire{background:#EA580C;color:#fff;}
+  .ctl.all{background:#7C3AED;color:#fff;}
+  .ctl.reset{background:#94A3B8;color:#fff;}
+  .chip{display:inline-block;background:#fff;color:#0A455D;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;margin-left:auto;}
+  .hidden{display:none!important;}
+  #cv{width:100%;height:540px;display:block;background:#fff;border-radius:16px;box-shadow:0 6px 22px rgba(10,69,93,.10);}
+  .panel{background:#fff;border-radius:16px;box-shadow:0 6px 22px rgba(10,69,93,.10);padding:18px;}
+  .pcards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .pcard{background:#F4F8FA;border-radius:14px;padding:14px;border:1px solid #E2ECF1;text-align:center;}
+  .pcard h3{margin:0 0 6px;font-size:16px;color:#0A455D;}
+  .pcv{width:100%;height:170px;display:block;}
+  .pmeta{font-size:12px;color:#5b7484;margin:6px 0 2px;}
+  .pstate{font-size:12.5px;color:#0A455D;font-weight:700;min-height:18px;margin-bottom:8px;}
+  .quizq{font-size:15px;font-weight:700;margin:0 0 12px;color:#0A455D;}
+  .qopt{display:block;width:100%;text-align:left;background:#F4F8FA;border:1px solid #E2ECF1;border-radius:10px;padding:10px 12px;margin:7px 0;font-size:13.5px;color:#0A455D;cursor:pointer;transition:.12s;}
+  .qopt:hover{background:#E8F1F5;}
+  .qopt.right{background:#DCFCE7;border-color:#16A34A;color:#166534;}
+  .qopt.wrong{background:#FEE2E2;border-color:#DC2626;color:#991B1B;}
+  .qopt:disabled{cursor:default;}
+  .qwhy{font-size:12.5px;color:#5b7484;margin:8px 0 14px;padding:8px 10px;background:#F4F8FA;border-radius:8px;}
+  .qnav{display:flex;gap:10px;align-items:center;margin-top:6px;}
+  .qprog{font-size:13px;font-weight:700;color:#0A455D;}
+  .foot{font-size:12px;color:#7c93a1;margin-top:14px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>U-235 Nuclear Fission</h1>
+  <p class="sub">How ²³⁵U splits into fission fragments — and how the <b>proton number (Z)</b> changes yet stays conserved.</p>
+
+  <div class="toolbar">
+    <button class="mtab active" data-mode="0">Fission Lab</button>
+    <button class="mtab" data-mode="1">Proton Ledger</button>
+    <button class="mtab" data-mode="2">Products</button>
+    <button class="mtab" data-mode="3">Quiz</button>
+    <span class="sep"></span>
+    <span id="chanCtl">
+      <button class="ctl on" data-ch="0">I-131</button>
+      <button class="ctl" data-ch="1">Cs-137</button>
+      <button class="ctl" data-ch="2">⁹⁰Sr</button>
+    </span>
+    <span class="sep" id="sepFire"></span>
+    <button class="ctl fire" id="btnFire">▶ Fire neutron</button>
+    <button class="ctl all" id="btnAll">💥 Fire all 3</button>
+    <button class="ctl reset" id="btnReset">↺ Reset</button>
+    <button class="ctl" id="btnExpand">🔍 Expand protons</button>
+    <button class="ctl on" id="btnNeut">Show neutrons</button>
+    <button class="ctl" id="btnCmp">Compare 3</button>
+    <span class="chip" id="chip">²³⁵U · Z = 92</span>
+  </div>
+
+  <canvas id="cv"></canvas>
+  <div id="m2" class="panel hidden"></div>
+  <div id="m3" class="panel hidden"></div>
+
+  <p class="foot">One fission event yields <b>two</b> fragments + ~2–3 neutrons. I-131, Cs-137 and ⁹⁰Sr are three <i>different</i> fission channels, each with its real complementary fragment. Hit <b>“Fire all 3”</b> to watch all three channels split at once. Proton total is always conserved: <b>92 = Z₁ + Z₂</b>; emitted neutrons carry Z = 0.</p>
+</div>
+
+<script>
+// ---------- helpers ----------
+function lerp(a,b,t){return a+(b-a)*t;}
+function clamp(v,a,b){return v<a?a:v>b?b:v;}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+
+function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+
+function pill(c,text,x,y,opt){
+  opt=opt||{};c.font=opt.font||'bold 13px system-ui';
+  const w=c.measureText(text).width+(opt.pad||14), h=opt.h||26;
+  const rx = opt.anchor==='left'? x : x - w/2;
+  rrect(c,rx,y-h/2,w,h,opt.r||13);
+  c.fillStyle=opt.bg||'rgba(10,69,93,.10)';c.fill();
+  c.fillStyle=opt.fg||'#0A455D';c.textAlign='center';c.textBaseline='middle';
+  c.fillText(text,rx+w/2,y);return w;
+}
+
+function protonDot(c,x,y,r){
+  c.beginPath();c.arc(x,y,r,0,7);c.fillStyle='#EF4444';c.fill();
+  c.lineWidth=1;c.strokeStyle='rgba(255,255,255,.9)';c.stroke();
+  c.fillStyle='#fff';c.font='bold '+(r*1.05)+'px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText('+',x,y+0.5);
+}
+function neutronDot(c,x,y,r){
+  c.beginPath();c.arc(x,y,r,0,7);c.fillStyle='#94A3B8';c.fill();
+  c.lineWidth=1;c.strokeStyle='rgba(255,255,255,.8)';c.stroke();
+  c.fillStyle='#fff';c.font='bold '+(r*0.85)+'px system-ui';c.textAlign='center';c.textBaseline='middle';c.fillText('n',x,y);
+}
+
+// packed nucleus dots
+const clusterCache={};
+function getCluster(A,P,seedKey){
+  const key=A+'_'+seedKey;
+  if(clusterCache[key])return clusterCache[key];
+  const N=A, golden=Math.PI*(3-Math.sqrt(5)), base=[];
+  for(let i=0;i<N;i++){const t=(i+0.5)/N;const r=Math.sqrt(t);const a=i*golden;base.push({x:Math.cos(a)*r,y:Math.sin(a)*r});}
+  const types=new Array(N).fill(false);
+  for(let i=0;i<P;i++)types[i]=true;
+  const rnd=mulberry32(hashStr(seedKey));
+  for(let i=N-1;i>0;i--){const j=Math.floor(rnd()*(i+1));const tmp=types[i];types[i]=types[j];types[j]=tmp;}
+  const dots=base.map((p,i)=>({x:p.x,y:p.y,t:types[i]}));
+  clusterCache[key]=dots;return dots;
+}
+
+function drawNucleus(c,cx,cy,A,P,scale,wobble,t,ang){
+  const dots=getCluster(A,P,'A'+A+'P'+P);
+  const dr=Math.max(2.6, scale*0.085);
+  const ca=Math.cos(ang||0), sa=Math.sin(ang||0);
+  for(const d of dots){
+    let x=d.x*scale, y=d.y*scale;
+    if(wobble){x+=Math.sin(t*0.05+d.y*4)*wobble; y+=Math.cos(t*0.05+d.x*4)*wobble;}
+    if(ang){const rx=x*ca - y*sa, ry=x*sa + y*ca; x=rx; y=ry;}
+    if(d.t)protonDot(c,cx+x,cy+y,dr); else neutronDot(c,cx+x,cy+y,dr);
+  }
+}
+
+// ---------- data ----------
+const CH=[
+  {target:'I-131',Z1:53,A1:131,comp:'Y-103',Z2:39,A2:103,n:2,col1:'#7C3AED',col2:'#4699AA'},
+  {target:'Cs-137',Z1:55,A1:137,comp:'Rb-97',Z2:37,A2:97,n:2,col1:'#0E9F6E',col2:'#4699AA'},
+  {target:'⁹⁰Sr',Z1:38,A1:90,comp:'Xe-144',Z2:54,A2:144,n:2,col1:'#EA580C',col2:'#4699AA'}
+];
+const PD=[
+  {name:'I-131',disp:'碘-131',Z:53,A:131,half:'8.0 d',steps:[{sym:'Xe-131',Z:54}]},
+  {name:'Cs-137',disp:'铯-137',Z:55,A:137,half:'30.2 y',steps:[{sym:'Ba-137',Z:56}]},
+  {name:'⁹⁰Sr',disp:'锶-90',Z:38,A:90,half:'28.8 y',steps:[{sym:'Y-90',Z:39},{sym:'Zr-90',Z:40}]}
+];
+PD.forEach(p=>{p.curZ=p.Z;p.curSym=p.name;p.step=0;});
+
+const QZ=[
+  {q:'²³⁵U + ¹n → ¹³¹I + ? + 2n.  What is the complementary fragment’s proton number (Z)?',
+   opts:['39  (Yttrium)','53  (Iodine)','92  (Uranium)','0  (neutron)'],ans:0,
+   why:'Charge is conserved: 92 = 53 + Z₂ → Z₂ = 39. The partner is ¹⁰³Y.'},
+  {q:'The neutrons emitted during fission carry how many protons?',
+   opts:['0','1','2','92'],ans:0,
+   why:'Neutrons are neutral (Z = 0). Only the two fragments share the original 92 protons.'},
+  {q:'¹³⁷Cs decays by β⁻.  What is the daughter’s atomic number Z?',
+   opts:['56  (Ba)','55  (Cs)','54  (Xe)','137'],ans:0,
+   why:'β⁻ decay turns a neutron into a proton, so Z increases by 1: 55 → 56 (Ba-137).'},
+  {q:'Total proton number — before vs after fission:',
+   opts:['92 → 92  (conserved)','92 → 46','235 → 131','92 → 0'],ans:0,
+   why:'All 92 protons are redistributed between the two fragments; neutrons add none. 92 = Z₁ + Z₂.'},
+  {q:'⁹⁰Sr → ⁹⁰Y → ⁹⁰Zr: how many β⁻ decays, and final Z?',
+   opts:['2 decays, Z = 40','1 decay, Z = 39','0 decays','3 decays, Z = 41'],ans:0,
+   why:'Sr(Z38) → Y(Z39) → Zr(Z40): two β⁻ decays, final Z = 40.'}
+];
+
+// ---------- state ----------
+const S={mode:0,ch:0,all:false,expand:false,showNeut:true,compare:false,
+  evts:[],flash:0,shake:0,debris:[],t:0,quizIdx:0,pick:-1,ok:false};
+
+// ---------- canvas setup ----------
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function sizeCanvas(){
+  const r=cv.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  if(Math.abs(r.width-W)<1 && Math.abs(r.height-H)<1 && dpr===DPR)return;
+  W=r.width;H=r.height;DPR=dpr;
+  cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+
+// ---------- fission events ----------
+function makeEvent(ch,cx,cy,delay,big){
+  return {ch,cx,cy,delay,big,sep:big?200:110,R:big?64:42,phase:'wait',pt:0,doneT:0,dispZ1:0,dispZ2:0,flash:0,spin:0,spinv:0};
+}
+function fireSingle(){
+  S.all=false;
+  const e=makeEvent(S.ch,W/2,H/2-10,0,true);
+  e.phase='absorb';e.pt=0;
+  S.evts=[e];S.flash=0;S.shake=0;S.debris=[];
+  document.getElementById('chip').textContent=CH[S.ch].target+'  ·  splitting…';
+}
+function fireAll(){
+  S.all=true;const cy=H/2-44,xs=[W*0.18,W*0.5,W*0.82];
+  S.evts=[0,1,2].map(i=>{const e=makeEvent(i,xs[i],cy,i*0.35,false);e.phase='absorb';e.pt=0;return e;});
+  S.flash=0;S.shake=0;S.debris=[];
+  document.getElementById('chip').textContent='All 3 fission channels firing';
+}
+function resetAll(){S.all=false;S.evts=[];S.flash=0;S.shake=0;S.debris=[];
+  document.getElementById('chip').textContent=CH[S.ch].target+'  ·  pick a product';}
+function triggerSplit(e){
+  e.flash=1;e.spinv=(Math.random()<0.5?-1:1)*(2.5+Math.random()*2.5);
+  const n=e.big?28:16;
+  for(let i=0;i<n;i++){const a=Math.random()*7,sp=130+Math.random()*230;
+    S.debris.push({x:e.cx,y:e.cy,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:0.5+Math.random()*0.7,
+      col:i%3===0?'#EF4444':(i%3===1?'#94A3B8':'#F59E0B')});}
+  S.flash=Math.max(S.flash,0.9);S.shake=Math.max(S.shake,e.big?13:8);
+}
+
+// ---------- mode 0 : Fission Lab drawing ----------
+function drawIdleNucleus(cx,cy,R,wob){
+  const g=ctx.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.25);
+  g.addColorStop(0,'rgba(245,158,11,.30)');g.addColorStop(1,'rgba(245,158,11,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.25,0,7);ctx.fill();
+  drawNucleus(ctx,cx,cy,235,92,R,wob?0.8:0,S.t);
+}
+function drawNeutronTrail(x,y,r){
+  for(let i=1;i<=8;i++){const tx=x-i*5,a=0.3*(1-i/9);
+    ctx.fillStyle='rgba(148,163,184,'+a+')';ctx.beginPath();ctx.arc(tx,y,r*(1-i/12),0,7);ctx.fill();}
+}
+function drawRipples(cx,cy,R,p){
+  for(let k=0;k<3;k++){const rr=R+(k*20)+(p*60);
+    ctx.strokeStyle='rgba(245,158,11,'+Math.max(0,0.6-k*0.17)+')';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(cx,cy,rr,0,7);ctx.stroke();}
+}
+function drawFlash(cx,cy,a){
+  if(a<=0)return;const R=130;
+  const g=ctx.createRadialGradient(cx,cy,0,cx,cy,R);
+  g.addColorStop(0,'rgba(255,255,255,'+(0.9*a)+')');
+  g.addColorStop(0.45,'rgba(255,238,196,'+(0.55*a)+')');
+  g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.fill();
+}
+function drawShockwaves(cx,cy,R,p){
+  for(let k=0;k<2;k++){const rr=R*0.6+(p*R*2.4)+k*34;
+    const a=Math.max(0,0.5-p*0.5);
+    ctx.strokeStyle='rgba(234,88,12,'+a+')';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(cx,cy,rr,0,7);ctx.stroke();}
+}
+function drawEmittedNeutrons(cx,cy,p,ch,big){
+  if(!S.showNeut)return;const nr=big?24:16;
+  for(let k=0;k<ch.n;k++){
+    const ang=-Math.PI/2+(k-(ch.n-1)/2)*0.6;
+    const dist=p*(big?140:90+k*14);
+    const x=cx+Math.cos(ang)*dist,y=cy+Math.sin(ang)*dist;
+    drawNeutronTrail(x,y,nr*0.6);neutronDot(ctx,x,y,nr*0.5);
+  }
+}
+function drawDebris(){
+  for(const d of S.debris){ctx.globalAlpha=clamp(d.life,0,1);ctx.fillStyle=d.col;
+    ctx.beginPath();ctx.arc(d.x,d.y,2.6,0,7);ctx.fill();}
+  ctx.globalAlpha=1;
+}
+function drawEvent(e){
+  const cx=e.cx,cy=e.cy,R=e.R,sep=e.sep,ch=CH[e.ch];
+  if(e.phase==='wait'){
+    drawIdleNucleus(cx,cy,R,true);
+    const nx=cx-190,ny=cy;
+    drawNeutronTrail(nx+22,ny,R*0.5*0.7);neutronDot(ctx,nx,ny,R*0.5);
+    pill(ctx,'²³⁵U  Z = 92',cx,cy+R+22,{font:'bold 14px system-ui',bg:'rgba(10,69,93,.10)',fg:'#0A455D'});
+    return;
+  }
+  if(e.phase==='absorb'){
+    const p=clamp(e.pt/0.5,0,1);const nx=lerp(cx-200,cx,p),ny=cy;
+    drawNeutronTrail(nx,ny,R*0.5);neutronDot(ctx,nx,ny,R*0.5);
+    drawIdleNucleus(cx,cy,R,false);
+    pill(ctx,'²³⁶U* compound nucleus',cx,cy+R+22,{font:'bold 14px system-ui',bg:'rgba(10,69,93,.10)',fg:'#0A455D'});
+    return;
+  }
+  if(e.phase==='excited'){
+    const p=clamp(e.pt/0.8,0,1);
+    drawRipples(cx,cy,R,p);
+    drawNucleus(ctx,cx,cy,236,92,R*1.03,2.6,S.t);
+    pill(ctx,'²³⁶U* EXCITED — unstable!',cx,cy+R+22,{font:'bold 14px system-ui',bg:'rgba(245,158,11,.16)',fg:'#B45309'});
+    return;
+  }
+  if(e.phase==='split'){
+    const p=clamp(e.pt/0.8,0,1),pe=1-Math.pow(1-p,2);
+    const lx=lerp(cx,cx-sep,pe),rx=lerp(cx,cx+sep,pe);
+    const fR1=R*Math.cbrt(ch.A1/235),fR2=R*Math.cbrt(ch.A2/235);
+    drawFlash(cx,cy,e.flash);drawShockwaves(cx,cy,R,p);
+    drawNucleus(ctx,lx,cy,ch.A1,ch.Z1,fR1,1.3,S.t,e.spin);
+    drawNucleus(ctx,rx,cy,ch.A2,ch.Z2,fR2,1.3,S.t,-e.spin);
+    drawEmittedNeutrons(cx,cy,pe,ch,e.big);
+    pill(ctx,ch.target+'  Z='+ch.Z1,lx,cy+fR1+22,{font:'bold 13px system-ui',bg:'rgba(10,69,93,.10)',fg:ch.col1});
+    pill(ctx,ch.comp+'  Z='+ch.Z2,rx,cy+fR2+22,{font:'bold 13px system-ui',bg:'rgba(10,69,93,.10)',fg:ch.col2});
+    return;
+  }
+  // done
+  const lx=cx-sep,rx=cx+sep,fR1=R*Math.cbrt(ch.A1/235),fR2=R*Math.cbrt(ch.A2/235);
+  drawNucleus(ctx,lx,cy,ch.A1,ch.Z1,fR1,0,S.t,e.spin*0.3);
+  drawNucleus(ctx,rx,cy,ch.A2,ch.Z2,fR2,0,S.t,-e.spin*0.3);
+  drawEmittedNeutrons(cx,cy,1,ch,e.big);
+  pill(ctx,ch.target+'  Z='+ch.Z1,lx,cy+fR1+22,{font:'bold 13px system-ui',bg:'rgba(10,69,93,.10)',fg:ch.col1});
+  pill(ctx,ch.comp+'  Z='+ch.Z2,rx,cy+fR2+22,{font:'bold 13px system-ui',bg:'rgba(10,69,93,.10)',fg:ch.col2});
+  const z1=Math.round(e.dispZ1),z2=Math.round(e.dispZ2);
+  const sc=1+(1-clamp(e.doneT/0.5,0,1))*0.45;
+  ctx.save();ctx.translate(cx,cy-R-66);ctx.scale(sc,sc);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='bold '+(e.big?32:21)+'px system-ui';ctx.fillStyle='#0A455D';
+  ctx.fillText('92 ⟶ '+z1+' + '+z2,0,0);ctx.restore();
+  pill(ctx,'total protons = 92  ✓',cx,cy-R-38,{font:'bold 11px system-ui',bg:'rgba(22,163,74,.14)',fg:'#166534'});
+  pill(ctx,'emitted '+ch.n+'n  (0 p⁺)',cx,cy-R-14,{font:'bold 11px system-ui',bg:'rgba(148,163,184,.18)',fg:'#475569'});
+}
+function drawIdleSingle(){
+  const cx=W/2,cy=H/2-10,R=64,ch=CH[S.ch];
+  if(S.expand){
+    const cols=10,cell=25,gx=cx-(cols*cell)/2+cell/2,gy=cy-(10*cell)/2+cell/2;
+    for(let i=0;i<92;i++){protonDot(ctx,gx+(i%cols)*cell,gy+Math.floor(i/cols)*cell,9);}
+    pill(ctx,'92 protons (in ²³⁵U)',cx,gy-34,{font:'bold 16px system-ui',bg:'rgba(239,68,68,.12)',fg:'#DC2626'});
+    pill(ctx,'+ 143 neutrons (neutral)',cx,gy+10*cell+18,{font:'bold 13px system-ui',bg:'rgba(148,163,184,.18)',fg:'#475569'});
+  }else{
+    drawIdleNucleus(cx,cy,R,false);
+    const nx=cx-220,ny=cy;
+    drawNeutronTrail(nx+30,ny,R*0.5);neutronDot(ctx,nx,ny,R*0.5);
+    pill(ctx,'thermal neutron ¹n',nx,ny-R*0.5-18,{font:'bold 12px system-ui',bg:'rgba(148,163,184,.18)',fg:'#475569'});
+    ctx.strokeStyle='#94A3B8';ctx.lineWidth=2;ctx.setLineDash([6,5]);
+    ctx.beginPath();ctx.moveTo(nx+R*0.5,ny);ctx.lineTo(cx-R-6,ny);ctx.stroke();ctx.setLineDash([]);
+  }
+}
+function drawLab(){
+  let sx=0,sy=0;
+  if(S.shake>0){sx=(Math.random()*2-1)*S.shake;sy=(Math.random()*2-1)*S.shake;}
+  ctx.save();ctx.translate(sx,sy);
+  if(S.evts.length===0) drawIdleSingle();
+  else for(const e of S.evts) drawEvent(e);
+  drawDebris();
+  ctx.restore();
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='13px system-ui';ctx.fillStyle='#5b7484';
+  let cap;
+  if(S.evts.length===0) cap='Pick a product, then Fire neutron — or hit “Fire all 3” to watch every channel split at once.';
+  else if(S.all) cap='Three fission channels: ²³⁵U → ¹³¹I+Y , ¹³⁷Cs+Rb , ⁹⁰Sr+Xe. Each conserves all 92 protons.';
+  else cap='Fission! Fragments fly apart + neutrons emitted. Charge is conserved: 92 = Z₁ + Z₂.';
+  ctx.fillText(cap, W/2, H-22);
+}
+
+// ---------- mode 1 : Proton Ledger ----------
+function block(c,x,y,w,h,col,title,z,sub){
+  c.beginPath();rrect(c,x,y,w,h,12);c.fillStyle=col;c.globalAlpha=0.16;c.fill();c.globalAlpha=1;
+  c.lineWidth=2;c.strokeStyle=col;c.stroke();
+  c.fillStyle=col;c.font='bold 22px system-ui';c.textAlign='center';c.textBaseline='middle';
+  c.fillText(z, x+w/2, y+h/2-8);
+  c.font='bold 12px system-ui';c.fillStyle='#0A455D';
+  c.fillText(title, x+w/2, y+14);
+  c.font='11px system-ui';c.fillStyle='#5b7484';
+  c.fillText(sub, x+w/2, y+h-12);
+}
+function drawLedger(){
+  const ch=CH[S.ch];
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.font='bold 17px system-ui';ctx.fillStyle='#0A455D';
+  ctx.fillText(S.compare?'Proton Ledger — every channel sums to 92':'Proton Ledger — 92 = Z₁ + Z₂', W/2, 34);
+
+  if(S.compare){
+    const rowH=120, top=64, vw=Math.min(W-60,820), x0=(W-vw)/2;
+    for(let i=0;i<3;i++){
+      const c=CH[i], y=top+i*rowH;
+      ctx.textAlign='left';ctx.font='bold 14px system-ui';ctx.fillStyle='#0A455D';
+      ctx.fillText(c.target+'  +  '+c.comp, x0, y+16);
+      ctx.textAlign='center';
+      const bw=120,bh=78,gap=24, total=bw*2+gap+90, sx=x0+(vw-total)/2;
+      block(ctx,sx,y+30,bw,bh,c.col1,c.target,c.Z1,'p⁺ in fragment 1');
+      block(ctx,sx+bw+gap,y+30,bw,bh,c.col2,c.comp,c.Z2,'p⁺ in fragment 2');
+      ctx.beginPath();rrect(ctx,sx+bw*2+gap*2,y+30,90,bh,12);ctx.fillStyle='rgba(148,163,184,.18)';ctx.fill();
+      ctx.fillStyle='#475569';ctx.font='bold 20px system-ui';ctx.fillText(c.n+'n',sx+bw*2+gap*2+45,y+30+bh/2-6);
+      ctx.font='10px system-ui';ctx.fillStyle='#5b7484';ctx.fillText('0 p⁺',sx+bw*2+gap*2+45,y+30+bh-12);
+      ctx.fillStyle='#0A455D';ctx.font='bold 16px system-ui';ctx.textAlign='center';
+      ctx.fillText('= 92 ✓', sx+bw*2+gap*2+45, y+30+bh+18);
+    }
+  }else{
+    const bw=170,bh=110,gap=40, nw=120, total=bw*2+gap+nw, x0=(W-total)/2, y=H/2-70;
+    block(ctx,x0,y,bw,bh,ch.col1,ch.target,ch.Z1,'p⁺ fragment 1');
+    block(ctx,x0+bw+gap,y,bw,bh,ch.col2,ch.comp,ch.Z2,'p⁺ fragment 2');
+    ctx.beginPath();rrect(ctx,x0+bw*2+gap,y,nw,bh,12);ctx.fillStyle='rgba(148,163,184,.18)';ctx.fill();
+    ctx.fillStyle='#475569';ctx.font='bold 26px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(ch.n+'n',x0+bw*2+gap+nw/2,y+bh/2-8);
+    ctx.font='11px system-ui';ctx.fillText('0 protons',x0+bw*2+gap+nw/2,y+bh-14);
+    ctx.fillStyle='#0A455D';ctx.font='bold 22px system-ui';
+    ctx.fillText('92  =  '+ch.Z1+'  +  '+ch.Z2, W/2, y+bh+40);
+    ctx.font='13px system-ui';ctx.fillStyle='#5b7484';
+    ctx.fillText('All 92 protons are redistributed between the two fragments. Emitted neutrons add none.', W/2, y+bh+68);
+  }
+}
+
+// ---------- mode 2 : Products (DOM) ----------
+const m2=document.getElementById('m2');
+function buildProducts(){
+  m2.innerHTML='<div class="pcards"></div>';
+  const wrap=m2.querySelector('.pcards');
+  PD.forEach((p,i)=>{
+    const card=document.createElement('div');card.className='pcard';
+    card.innerHTML='<h3>'+p.name+' <span style="font-weight:500;color:#5b7484;font-size:12px">'+p.disp+'</span></h3>'+
+      '<canvas class="pcv" id="pcv'+i+'"></canvas>'+
+      '<div class="pmeta">Z = <span id="pz'+i+'">'+p.Z+'</span> · A = '+p.A+' · β⁻ · t½ '+p.half+'</div>'+
+      '<div class="pstate" id="pst'+i+'">Daughter: '+p.steps[0].sym+' (Z='+p.steps[0].Z+')</div>'+
+      '<button class="ctl" id="pbtn'+i+'">▶ Decay (β⁻)</button>';
+    wrap.appendChild(card);
+    document.getElementById('pbtn'+i).addEventListener('click',()=>decay(i));
+  });
+}
+function decay(i){
+  const p=PD[i];
+  if(p.step>=p.steps.length)return;
+  p.curZ=p.steps[p.step].Z;p.curSym=p.steps[p.step].sym;p.step++;
+  document.getElementById('pz'+i).textContent=p.curZ;
+  const st=document.getElementById('pst'+i);
+  if(p.step<p.steps.length) st.textContent='Next daughter: '+p.steps[p.step].sym+' (Z='+p.steps[p.step].Z+')';
+  else st.textContent='Stable end product: '+p.curSym+' (Z='+p.curZ+')';
+  const btn=document.getElementById('pbtn'+i);
+  if(p.step>=p.steps.length){btn.textContent='✓ fully decayed';btn.disabled=true;btn.classList.remove('on');}
+}
+function drawProducts(now){
+  PD.forEach((p,i)=>{
+    const cvs=document.getElementById('pcv'+i);if(!cvs)return;
+    const r=cvs.getBoundingClientRect();const dpr=window.devicePixelRatio||1;
+    if(cvs.width!==Math.round(r.width*dpr)||cvs.height!==Math.round(r.height*dpr)){cvs.width=Math.round(r.width*dpr);cvs.height=Math.round(r.height*dpr);}
+    const c=cvs.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);
+    const w=r.width,h=r.height,cx=w/2,cy=h/2-6;
+    c.clearRect(0,0,w,h);
+    const pulse=1+Math.sin(now*0.004+i)*0.03;
+    const R=46*pulse;
+    const glow=c.createRadialGradient(cx,cy,R*0.2,cx,cy,R*1.3);
+    glow.addColorStop(0,'rgba(245,158,11,.30)');glow.addColorStop(1,'rgba(245,158,11,0)');
+    c.fillStyle=glow;c.beginPath();c.arc(cx,cy,R*1.3,0,7);c.fill();
+    drawNucleus(c,cx,cy,p.A,p.curZ,R,0,now);
+    pill(c,p.curSym+'  Z='+p.curZ,cx,cy+R+22,{font:'bold 13px system-ui',bg:'rgba(10,69,93,.10)',fg:'#0A455D'});
+  });
+}
+
+// ---------- mode 3 : Quiz (DOM) ----------
+const m3=document.getElementById('m3');
+function buildQuiz(){
+  renderQuiz();
+}
+function renderQuiz(){
+  const q=QZ[S.quizIdx];
+  let html='<div class="quizq">Q'+(S.quizIdx+1)+'. '+q.q+'</div>';
+  q.opts.forEach((o,i)=>{
+    let cls='qopt';
+    if(S.pick>=0){ if(i===q.ans)cls+=' right'; else if(i===S.pick)cls+=' wrong'; }
+    html+='<button class="'+cls+'" data-i="'+i+'" '+(S.pick>=0?'disabled':'')+'>'+o+'</button>';
+  });
+  if(S.pick>=0) html+='<div class="qwhy">'+q.why+'</div>';
+  html+='<div class="qnav"><span class="qprog">'+(S.quizIdx+1)+' / '+QZ.length+'</span>'+
+        (S.pick>=0 && S.quizIdx<QZ.length-1?'<button class="ctl on" id="qnext">Next →</button>':'')+
+        (S.quizIdx===QZ.length-1 && S.pick>=0?'<button class="ctl on" id="qrestart">↺ Restart</button>':'')+'</div>';
+  m3.innerHTML=html;
+  m3.querySelectorAll('.qopt').forEach(b=>b.addEventListener('click',()=>{
+    S.pick=+b.dataset.i;S.ok=(S.pick===QZ[S.quizIdx].ans);renderQuiz();
+  }));
+  const nx=m3.querySelector('#qnext');if(nx)nx.addEventListener('click',()=>{S.quizIdx++;S.pick=-1;renderQuiz();});
+  const rs=m3.querySelector('#qrestart');if(rs)rs.addEventListener('click',()=>{S.quizIdx=0;S.pick=-1;renderQuiz();});
+}
+
+// ---------- main loop ----------
+function setMode(m){
+  S.mode=m;
+  document.querySelectorAll('.mtab').forEach(b=>b.classList.toggle('active',+b.dataset.mode===m));
+  cv.classList.toggle('hidden',!(m===0||m===1));
+  m2.classList.toggle('hidden',m!==2);
+  m3.classList.toggle('hidden',m!==3);
+  const chan=document.getElementById('chanCtl'),sep=document.getElementById('sepFire');
+  const bf=document.getElementById('btnFire'),br=document.getElementById('btnReset');
+  const be=document.getElementById('btnExpand'),bn=document.getElementById('btnNeut'),bc=document.getElementById('btnCmp'),ba=document.getElementById('btnAll');
+  const show01=(m===0||m===1);
+  chan.style.display=show01?'':'none';sep.style.display=show01?'':'none';
+  bf.style.display=m===0?'':'none';br.style.display=m===0?'':'none';
+  ba.style.display=m===0?'':'none';be.style.display=m===0?'':'none';bn.style.display=m===0?'':'none';
+  bc.style.display=m===1?'':'none';
+  document.getElementById('chip').textContent = m===2? 'β⁻ decay: neutron → proton (Z +1)'
+    : m===3? 'Quiz: conservation & Z changes'
+    : (CH[S.ch].target+'  ·  pick a product');
+  if(m===2)buildProducts();
+  if(m===3)buildQuiz();
+}
+function update(dt){
+  S.t+=dt;
+  S.flash=Math.max(0,S.flash-dt*2.0);
+  S.shake=Math.max(0,S.shake-dt*20);
+  for(const d of S.debris){d.x+=d.vx*dt;d.y+=d.vy*dt;d.vx*=0.95;d.vy*=0.95;d.life-=dt;}
+  if(S.debris.length) S.debris=S.debris.filter(d=>d.life>0);
+  for(const e of S.evts){
+    e.flash=Math.max(0,e.flash-dt*2.0);
+    if(e.phase==='wait'){e.delay-=dt;if(e.delay<=0){e.phase='absorb';e.pt=0;}continue;}
+    if(e.phase==='absorb'){e.pt+=dt;if(e.pt>=0.5){e.phase='excited';e.pt=0;}}
+    else if(e.phase==='excited'){e.pt+=dt;if(e.pt>=0.8){e.phase='split';e.pt=0;triggerSplit(e);}}
+    else if(e.phase==='split'){e.pt+=dt;e.spin+=e.spinv*dt;if(e.pt>=0.8){e.phase='done';e.pt=0;e.doneT=0;e.dispZ1=0;e.dispZ2=0;}}
+    else if(e.phase==='done'){e.doneT+=dt;const k=clamp(e.doneT/0.5,0,1);e.dispZ1=lerp(0,CH[e.ch].Z1,k);e.dispZ2=lerp(0,CH[e.ch].Z2,k);e.spin+=e.spinv*0.4*dt;}
+  }
+}
+function drawMain(){
+  ctx.clearRect(0,0,W,H);
+  if(S.mode===0)drawLab(); else drawLedger();
+}
+function frame(now){
+  const dt=Math.min(0.05,(now-(frame._last||now))/1000);frame._last=now;
+  update(dt);
+  if(S.mode===0||S.mode===1){sizeCanvas();drawMain();}
+  else if(S.mode===2){drawProducts(now);}
+  requestAnimationFrame(frame);
+}
+
+// ---------- events ----------
+document.querySelectorAll('.mtab').forEach(b=>b.addEventListener('click',()=>setMode(+b.dataset.mode)));
+document.querySelectorAll('[data-ch]').forEach(b=>b.addEventListener('click',()=>{
+  S.ch=+b.dataset.ch;resetAll();
+  document.querySelectorAll('[data-ch]').forEach(x=>x.classList.toggle('on',x===b));
+}));
+document.getElementById('btnFire').addEventListener('click',()=>{ fireSingle(); });
+document.getElementById('btnAll').addEventListener('click',()=>{ fireAll(); });
+document.getElementById('btnReset').addEventListener('click',()=>{ resetAll(); });
+document.getElementById('btnExpand').addEventListener('click',e=>{S.expand=!S.expand;e.target.classList.toggle('on',S.expand);});
+document.getElementById('btnNeut').addEventListener('click',e=>{S.showNeut=!S.showNeut;e.target.classList.toggle('on',S.showNeut);});
+document.getElementById('btnCmp').addEventListener('click',e=>{S.compare=!S.compare;e.target.classList.toggle('on',S.compare);e.target.textContent=S.compare?'Single':'Compare 3';});
+
+setMode(0);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

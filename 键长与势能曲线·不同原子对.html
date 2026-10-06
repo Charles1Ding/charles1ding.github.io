@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bond Length &amp; Potential Energy — Atomic Interactions</title>
+<style>
+* { box-sizing: border-box; }
+html,body { margin:0; padding:0; }
+body {
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background:#EEF3F5; color:#1f2937; min-height:100vh;
+  display:flex; align-items:flex-start; justify-content:center; padding:16px;
+}
+.card {
+  width:100%; max-width:1200px; background:#fff; border-radius:22px;
+  box-shadow:0 22px 48px -18px rgba(10,69,93,.35); overflow:hidden;
+  border:1px solid #dbe7ec;
+}
+.head { padding:15px 22px 12px; background:linear-gradient(135deg,#0A455D,#1c6a85); color:#fff; position:relative; }
+.head h1 { margin:0; font-size:21px; font-weight:800; letter-spacing:.3px; }
+.head .sub { margin-top:3px; font-size:12.5px; opacity:.85; }
+.head .badge {
+  position:absolute; right:22px; top:16px; background:rgba(255,255,255,.16); color:#fff;
+  font-size:11.5px; font-weight:700; padding:5px 11px; border-radius:999px;
+  border:1px solid rgba(255,255,255,.35);
+}
+.body { padding:13px 18px 17px; }
+.controls { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+.ctl-row { display:flex; flex-wrap:wrap; gap:7px; align-items:center; }
+.ctl-label { font-size:12px; font-weight:800; color:#0A455D; letter-spacing:.4px;
+  text-transform:uppercase; min-width:0; margin-right:1px; }
+button.btn {
+  border:none; cursor:pointer; font-size:12.5px; font-weight:700; padding:7px 11px;
+  border-radius:11px; background:#EAF2F5; color:#0A455D; transition:all .13s ease;
+  border:1px solid #cfe1e8; white-space:nowrap;
+}
+button.btn:hover { transform:translateY(-1px); }
+button.btn.active { background:#0A455D; color:#fff; border-color:#0A455D; box-shadow:0 7px 16px -6px rgba(10,69,93,.55); }
+button.btn.vdw.active { background:#7C5CBF; border-color:#7C5CBF; box-shadow:0 7px 16px -6px rgba(124,92,191,.55); }
+button.btn.util { background:#F1F5F9; color:#475569; border-color:#dbe3ea; }
+button.btn.util.active { background:#475569; color:#fff; border-color:#475569; box-shadow:0 7px 16px -6px rgba(71,85,105,.5); }
+canvas { display:block; width:100%; height:520px; background:#F8FAFC; border-radius:14px; border:1px solid #e3ebf0; }
+.readout { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.stat {
+  flex:1 1 0; min-width:104px; background:#F4F8FA; border:1px solid #dde8ee;
+  border-radius:12px; padding:7px 11px 8px;
+}
+.stat .k { font-size:10.5px; font-weight:800; color:#64748b; letter-spacing:.5px; text-transform:uppercase; }
+.stat .v { font-size:17px; font-weight:800; color:#0A455D; line-height:1.25; font-variant-numeric:tabular-nums; }
+.stat .v small { font-size:11px; font-weight:700; color:#7b8b99; margin-left:2px; }
+.stat.wide { flex:1.35 1 0; }
+.stat.state .v { font-size:14.5px; }
+.stat.neg .v { color:#0E7490; }
+.stat.pos .v { color:#B91C1C; }
+.caption {
+  margin-top:10px; padding:10px 14px; border-radius:12px; font-size:13px; line-height:1.5;
+  background:#FEF3C7; color:#92400E; font-weight:600;
+}
+.caption .em { color:#0A455D; font-weight:800; }
+.caption .emr { color:#B91C1C; font-weight:800; }
+.caption .emp { color:#7C5CBF; font-weight:800; }
+.caption .emo { color:#B45309; font-weight:800; }
+.caption .emb { color:#1D4ED8; font-weight:800; }
+.legend { display:flex; flex-wrap:wrap; gap:13px; margin-top:9px; font-size:11.5px; color:#64748b; }
+.legend .it { display:flex; align-items:center; gap:5px; }
+.legend .ln { width:17px; height:0; border-top:2.5px solid #888; display:inline-block; border-radius:2px; }
+.legend .ln.dash { border-top-style:dashed; }
+.legend .dot { width:12px; height:12px; border-radius:50%; display:inline-block; border:1.5px solid #fff; box-shadow:0 0 0 1px #cbd5e1; }
+.forcekey {
+  display:flex; flex-wrap:wrap; align-items:center; gap:5px 20px; margin-top:9px;
+  padding:8px 12px; font-size:11.5px; color:#475569;
+  background:#F8FAFC; border:1px solid #e3ebf0; border-radius:11px;
+}
+.forcekey .hd { font-weight:800; color:#64748b; letter-spacing:.5px;
+  text-transform:uppercase; font-size:10.5px; }
+.forcekey .k { display:flex; align-items:center; gap:6px; }
+.forcekey .k i { width:10px; height:10px; border-radius:50%; display:inline-block; flex:none; }
+.forcekey .k b { color:#0A455D; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="head">
+    <span class="badge">PhET-style · Interactive</span>
+    <h1>Bond Length &amp; Potential Energy</h1>
+    <div class="sub">How the potential energy between two atoms depends on their separation — compared across different bonded pairs</div>
+  </div>
+  <div class="body">
+    <div class="controls" id="controls"></div>
+    <canvas id="micro"></canvas>
+    <div class="forcekey" id="forcekey"></div>
+    <div class="readout" id="readout"></div>
+    <div class="caption" id="caption"></div>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+<script>
+/* ============================================================
+   SECTION 1 — physical core
+   Morse potential for covalent bonds, Lennard-Jones for van der Waals.
+   Every constant is taken from spectroscopy (D0, re, we) so the curve
+   SHAPE is derived, never hand-fitted.
+     V(r) = De [ (1 - e^(-a(r-re)))^2 - 1 ]      covalent
+     V(r) = 4e [ (s/r)^12 - (s/r)^6 ]            van der Waals
+   r in pm, V in kJ/mol.
+   ============================================================ */
+var C_LIGHT = 2.99792458e10;          // cm/s
+var CM1_KJMOL = 0.0119627;            // 1 cm^-1 -> kJ/mol
+var T_H2 = 1 / (C_LIGHT * 4401.2);    // H2 vibrational period, 7.58 fs
+var ATOM_M = 1.660539e-27;            // amu -> kg
+// Morse already has a hard core — for H2 the curve reaches +9.4 De as r -> 0 —
+// so no extra short-range term is added. Well position, depth and curvature all
+// come from spectroscopy alone.
+
+// alpha (Angstrom^-1) = 0.0188365 * we * sqrt(mu / (2 De))
+// derived from the Morse relation  we = (a/2pi) sqrt(2De/mu)
+var RAW = [
+  // id      label     A    B    model  re/pm   D0/(kJ/mol) we/cm-1   mu/amu
+  ['HH',   'H\u2013H',   'H', 'H', 'M',  74.14,  432.1, 4401.2,  0.50391],
+  ['HF',   'H\u2013F',   'H', 'F', 'M',  91.68,  568.6, 4138.3,  0.95706],
+  ['HCl',  'H\u2013Cl',  'H', 'Cl','M', 127.46,  431.4, 2990.9,  0.97959],
+  ['HBr',  'H\u2013Br',  'H', 'Br','M', 141.45,  366.0, 2648.9,  0.99512],
+  ['CC',   'C\u2013C',   'C', 'C', 'M', 154.20,  345.6, 1854.7,  6.00000],
+  ['NN',   'N\u2261N',   'N', 'N', 'M', 109.76,  944.7, 2358.6,  7.00000],
+  ['OO',   'O=O',        'O', 'O', 'M', 120.74,  498.4, 1580.2,  8.00000],
+  ['FF',   'F\u2013F',   'F', 'F', 'M', 141.19,  158.8,  916.6,  9.50000],
+  ['ClCl', 'Cl\u2013Cl', 'Cl','Cl','M', 198.80,  242.6,  559.7, 17.72500],
+  ['BrBr', 'Br\u2013Br', 'Br','Br','M', 228.10,  193.9,  325.3, 39.95000],
+  ['II',   'I\u2013I',   'I', 'I', 'M', 266.70,  152.5,  214.5, 63.45000],
+  // van der Waals: D0 IS the well depth eps, r_m IS re
+  ['HeHe', 'He\u2013He', 'He','He','L', 297.00, 0.0944, 0, 2.00160],
+  ['NeNe', 'Ne\u2013Ne', 'Ne','Ne','L', 310.00, 0.2970, 0, 10.09000],
+  ['ArAr', 'Ar\u2013Ar', 'Ar','Ar','L', 376.00, 1.1830, 0, 19.97500],
+  ['KrKr', 'Kr\u2013Kr', 'Kr','Kr','L', 401.00, 1.7100, 0, 41.90000]
+];
+
+/* Atom appearance.
+   col / tc  CPK-style fill and text colour
+   cld       colour of the electron-cloud wash — picked at a middling
+             lightness for every element, because a wash of a very pale
+             colour would disappear on the light canvas and a wash of a very
+             dark one would read as the whole atom being solid
+   Z         nuclear charge — scales the nucleus-nucleus Coulomb repulsion
+   cov       covalent radius in pm — sets the cloud size relative to the
+             bond length, so a small atom really is drawn smaller
+   val       valence (bonding-shell) electron count — drives the drawn
+             electrons; it must sit ABOVE the PAIRS table, which reads it */
+var ATOM = {
+  H:  { col: '#E9EEF3', tc: '#33475B', cld: '#93AEC4', Z: 1,  cov: 31,  val: 1 },
+  C:  { col: '#3A4149', tc: '#FFFFFF', cld: '#5C6672', Z: 6,  cov: 76,  val: 4 },
+  N:  { col: '#3B6FE0', tc: '#FFFFFF', cld: '#6E96E8', Z: 7,  cov: 71,  val: 5 },
+  O:  { col: '#E0484D', tc: '#FFFFFF', cld: '#E8777B', Z: 8,  cov: 66,  val: 6 },
+  F:  { col: '#6FBF73', tc: '#12351A', cld: '#8FD093', Z: 9,  cov: 57,  val: 7 },
+  Cl: { col: '#2E8B57', tc: '#FFFFFF', cld: '#54A879', Z: 17, cov: 102, val: 7 },
+  Br: { col: '#8C3A2E', tc: '#FFFFFF', cld: '#B0604F', Z: 35, cov: 120, val: 7 },
+  I:  { col: '#6B4FA0', tc: '#FFFFFF', cld: '#9179BE', Z: 53, cov: 139, val: 7 },
+  He: { col: '#8FC7DE', tc: '#0D3A4D', cld: '#8FC7DE', Z: 2,  cov: 28,  val: 2 },
+  Ne: { col: '#8CC0EC', tc: '#0D3A4D', cld: '#8CC0EC', Z: 10, cov: 58,  val: 8 },
+  Ar: { col: '#7FA9D8', tc: '#0D3A4D', cld: '#7FA9D8', Z: 18, cov: 106, val: 8 },
+  Kr: { col: '#6E9BD0', tc: '#0D3A4D', cld: '#6E9BD0', Z: 36, cov: 116, val: 8 }
+};
+
+var PALETTE = ['#E11D48','#F59E0B','#0EA5E9','#8B5CF6','#10B981','#EC4899',
+               '#F97316','#14B8A6','#6366F1','#84CC16','#0891B2','#DC2626',
+               '#7C5CBF','#A78BFA','#C4B5FD','#059669'];
+
+var PAIRS = RAW.map(function (a, i) {
+  var id = a[0], label = a[1], A = a[2], B = a[3], model = a[4];
+  var re = a[5], D0 = a[6], we = a[7], mu = a[8];
+  // bond order for covalent pairs (single / double / triple); 0 for vdW
+  var BOND = { HH:1, HF:1, HCl:1, HBr:1, CC:1, NN:3, OO:2, FF:1, ClCl:1, BrBr:1, II:1 };
+  var bond = BOND[id] || 0;
+  var De, alpha_pm, Treal, K, ZPE;
+  if (model === 'M') {
+    ZPE = we / 2 * CM1_KJMOL;                 // zero-point energy
+    De = D0 + ZPE;                            // well depth = D0 + ZPE
+    alpha_pm = 0.0188365 * we * Math.sqrt(mu / (2 * De)) / 100;   // pm^-1
+    Treal = 1 / (C_LIGHT * we);               // true vibrational period, s
+    K = 2 * re * re * alpha_pm * alpha_pm;   // curvature of V/De at re
+                                             // (the repulsion term is flat there)
+  } else {
+    ZPE = 0;
+    De = D0;
+    alpha_pm = 0;
+    var kSI = 72 * De / (re * re) * 1660.54;   // LJ curvature V''(r_m)=72e/r_m^2
+    var muSI = mu * ATOM_M;
+    Treal = 2 * Math.PI / Math.sqrt(kSI / muSI);
+    K = 72;
+  }
+  // map the true period onto a watchable on-screen period (log scale,
+  // so heavy / weakly-bound pairs still visibly vibrate slower)
+  var Tvis = Math.max(0.85, Math.min(3.0, 0.90 + 0.55 * Math.log10(Treal / T_H2)));
+  return {
+    id: id, label: label, A: A, B: B, model: model, re: re, D0: D0, we: we,
+    mu: mu, De: De, ZPE: ZPE, alpha: alpha_pm, sig: re / Math.pow(2, 1 / 6),
+    Treal: Treal, Tvis: Tvis, K: K, col: PALETTE[i % PALETTE.length],
+    vdw: model === 'L', bond: bond,
+    // electrons each atom keeps as lone pairs (valence minus what it shares)
+    loneA: ATOM[A].val - bond, loneB: ATOM[B].val - bond
+  };
+});
+
+function pairById(id) {
+  for (var i = 0; i < PAIRS.length; i++) { if (PAIRS[i].id === id) return PAIRS[i]; }
+  return PAIRS[0];
+}
+
+/* potential energy of pair p at separation r (pm) -> kJ/mol */
+function Vpot(p, r) {
+  if (r < 1) r = 1;
+  if (p.model === 'M') {
+    var u = Math.exp(-p.alpha * (r - p.re));
+    var t = 1 - u;
+    return p.De * (t * t - 1);
+  }
+  var x = p.sig / r, x3 = x * x * x, x6 = x3 * x3;
+  return 4 * p.De * (x6 * x6 - x6);
+}
+
+/* numerical dV/dr, kJ/mol per pm */
+function dVdr(p, r) {
+  var h = 0.05;
+  return (Vpot(p, r + h) - Vpot(p, r - h)) / (2 * h);
+}
+
+/* bisect V(r) = E along a monotonic stretch of the curve */
+function bisectV(p, a, b, E) {
+  var va = Vpot(p, a) - E, t;
+  if (va > 0) { t = a; a = b; b = t; }
+  for (var i = 0; i < 70; i++) {
+    var m = (a + b) / 2;
+    if (Vpot(p, m) - E < 0) a = m; else b = m;
+  }
+  return (a + b) / 2;
+}
+
+/* the two classical turning points of V(r) = E */
+function turning(p, E) {
+  var step = p.re * 0.05, hi = p.re, lo = p.re, i;
+  for (i = 0; i < 600; i++) {
+    hi += step;
+    if (hi > p.re * 20 || Vpot(p, hi) >= E) break;
+  }
+  for (i = 0; i < 600; i++) {
+    lo -= step * 0.6;
+    if (lo < 1.5) { lo = 1.5; break; }
+    if (Vpot(p, lo) >= E) break;
+  }
+  return { lo: bisectV(p, lo, p.re, E), hi: bisectV(p, p.re, hi, E) };
+}
+
+/* numerical well bottom — the repulsion term shifts it off r_e by ~0.2 %,
+   which is invisible, but the marker must sit on the curve */
+function minOf(p) {
+  var a = p.re * 0.55, b = p.re * 1.3, m1, m2;
+  for (var i = 0; i < 90; i++) {
+    m1 = a + (b - a) / 3; m2 = b - (b - a) / 3;
+    if (Vpot(p, m1) < Vpot(p, m2)) b = m2; else a = m1;
+  }
+  var r = (a + b) / 2;
+  return { r: r, v: Vpot(p, r) };
+}
+
+/* ============================================================
+   SECTION 2 — canvas, palette, drawing primitives
+   ============================================================ */
+var DPR = window.devicePixelRatio || 1;
+var cv = document.getElementById('micro');
+var ctx = cv.getContext('2d');
+var W = 0, H = 0;
+
+function resize() {
+  var r = cv.getBoundingClientRect();
+  cv.width = Math.round(r.width * DPR);
+  cv.height = Math.round(r.height * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  W = r.width; H = r.height;
+}
+window.addEventListener('resize', resize);
+
+var TEAL = '#4699AA', DTEAL = '#0A455D', RED = '#C0504D', GREEN = '#2E8B57',
+    AMBER = '#B45309', VIOLET = '#7C5CBF', GREY = '#94A3B8', SLATE = '#64748B',
+    DARK = '#1f2937', INK = '#0F172A';
+
+/* One colour per force component.  They are read against the legend under the
+   canvas, so the drawing itself never has to carry a label. */
+var F_EE = '#D97706',      // electron cloud <-> electron cloud  (repulsion)
+    F_NN = '#C0392B',      // nucleus        <-> nucleus         (repulsion)
+    F_NE = '#2563EB';      // nucleus        <-> electron cloud  (attraction)
+
+/* electron glyph colours */
+var E_LONE = '#F4C045',     // lone-pair electron, sits in its own cloud
+    E_LONE_ED = 'rgba(60,42,8,.55)',
+    E_BOND = '#E8FBFF',     // shared / bonding electron, sits in the junction
+    E_BOND_ED = '#0B6E8F',
+    E_BOND_GLOW = 'rgba(56,189,248,.55)';
+
+
+function hex2rgb(h) {
+  h = h.replace('#', '');
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  var n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function mixHex(a, b, t) {
+  var A = hex2rgb(a), B = hex2rgb(b);
+  return 'rgb(' + Math.round(A[0] + (B[0] - A[0]) * t) + ',' +
+       Math.round(A[1] + (B[1] - A[1]) * t) + ',' +
+       Math.round(A[2] + (B[2] - A[2]) * t) + ')';
+}
+/* same colour at a chosen opacity — the electron clouds are all drawn as
+   translucent washes so that overlapping regions darken by themselves */
+function hexA(hex, a) {
+  var r = hex2rgb(hex);
+  return 'rgba(' + r[0] + ',' + r[1] + ',' + r[2] + ',' + a + ')';
+}
+/* f > 0 tints toward white, f < 0 shades toward black */
+function shade(hex, f) {
+  var rgb;
+  if (hex.indexOf('rgb') === 0) {
+    var m = hex.match(/\d+/g);
+    rgb = [+m[0], +m[1], +m[2]];
+  } else { rgb = hex2rgb(hex); }
+  var t = f > 0 ? 255 : 0, k = Math.abs(f);
+  return 'rgb(' + Math.round(rgb[0] + (t - rgb[0]) * k) + ',' +
+       Math.round(rgb[1] + (t - rgb[1]) * k) + ',' +
+       Math.round(rgb[2] + (t - rgb[2]) * k) + ')';
+}
+
+/* ---- the two-part atom --------------------------------------------------
+   Each atom is drawn as a translucent electron cloud with a small solid
+   nucleus at its centre.  Both clouds are washes of colour, so wherever two
+   of them overlap the region simply darkens — that overlap IS the
+   electron-electron repulsion, so it needs no label.
+   ------------------------------------------------------------------------ */
+
+/* soft electron cloud with a dashed rim, so its boundary stays readable */
+function electronCloud(c, x, y, r, color) {
+  var g = c.createRadialGradient(x, y, r * .06, x, y, r);
+  g.addColorStop(0,   hexA(color, .55));
+  g.addColorStop(.52, hexA(color, .40));
+  g.addColorStop(.80, hexA(color, .21));
+  g.addColorStop(1,   hexA(color, .04));
+  c.fillStyle = g;
+  c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+  c.save();
+  c.setLineDash([5, 4]); c.lineWidth = 1.4;
+  c.strokeStyle = hexA(color, .60);
+  c.beginPath(); c.arc(x, y, r - .7, 0, 7); c.stroke();
+  c.restore();
+}
+
+/* the nucleus — drawn far larger than scale (a real one is ~1e-5 of the
+   atom) but as a solid body, so it can never be read as part of the cloud */
+function nucleus(c, x, y, r, color, label, tc) {
+  var g = c.createRadialGradient(x - r * .38, y - r * .44, r * .06, x, y, r * 1.05);
+  g.addColorStop(0, shade(color, .34));
+  g.addColorStop(.60, shade(color, -.26));
+  g.addColorStop(1, shade(color, -.58));
+  c.fillStyle = g;
+  c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+  c.strokeStyle = 'rgba(12,22,32,.40)'; c.lineWidth = 1;
+  c.beginPath(); c.arc(x, y, r - .4, 0, 7); c.stroke();
+  if (label) {
+    c.font = '800 ' + Math.max(8, Math.round(r * .94)) + 'px Inter,Segoe UI,Arial';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = tc || '#fff';
+    c.fillText(label, x, y + .3);
+  }
+  c.globalAlpha = .30; c.fillStyle = '#fff';
+  c.beginPath(); c.ellipse(x - r * .30, y - r * .34, r * .26, r * .17, -.6, 0, 7); c.fill();
+  c.globalAlpha = 1;
+}
+
+/* a single electron glyph: a small glossy dot with an optional glow ring.
+   Used both for lone-pair electrons (in a cloud) and bonding electrons (in the
+   junction between the two nuclei). */
+function electronDot(c, x, y, r, fill, edge, glow) {
+  if (glow) {
+    var gg = c.createRadialGradient(x, y, r * .4, x, y, r * 2.1);
+    gg.addColorStop(0, glow);
+    gg.addColorStop(1, glow.replace(/[\d.]+\)$/, '0)'));
+    c.fillStyle = gg;
+    c.beginPath(); c.arc(x, y, r * 2.1, 0, 7); c.fill();
+  }
+  c.fillStyle = edge;
+  c.beginPath(); c.arc(x, y, r + .8, 0, 7); c.fill();
+  var g = c.createRadialGradient(x - r * .35, y - r * .4, r * .1, x, y, r);
+  g.addColorStop(0, '#ffffff');
+  g.addColorStop(.5, fill);
+  g.addColorStop(1, shade(fill, -.18));
+  c.fillStyle = g;
+  c.beginPath(); c.arc(x, y, r, 0, 7); c.fill();
+}
+
+/* lone-pair electrons: n dots evenly spread on a ring around the nucleus,
+   kept clear of the nucleus and inside the cloud */
+function drawLoneElectrons(c, x, y, ringR, n) {
+  if (n <= 0) return;
+  var er = Math.max(3, Math.min(4.6, ringR * .16));
+  for (var i = 0; i < n; i++) {
+    var a = -Math.PI / 2 + i * 2 * Math.PI / n;
+    electronDot(c, x + ringR * Math.cos(a), y + ringR * Math.sin(a), er,
+                E_LONE, E_LONE_ED, null);
+  }
+}
+
+/* bonding electrons: 2n dots arranged as n pairs stacked across the junction
+   between the two nuclei — a single/double/triple bond reads at a glance.
+   They sit inside the overlap lens, so the more bond order, the wider the
+   spread; dx is clamped to stay within the clouds. */
+function drawBondingElectrons(c, cx, cy, n, dxMax) {
+  if (n <= 0) return;
+  var er = Math.max(3.4, Math.min(5, dxMax * .42));
+  var dx = n > 1 ? Math.min(12, dxMax / (n - 1)) : 0;
+  var dy = er * 1.25;
+  var pulse = 0.45 + 0.55 * Math.abs(Math.sin((S.t || 0) * 2.4));
+  for (var k = 0; k < n; k++) {
+    var x = cx + (k - (n - 1) / 2) * dx;
+    electronDot(c, x, cy - dy, er, E_BOND, E_BOND_ED, E_BOND_GLOW.replace(/\.55\)/, (0.20 + 0.34 * pulse) + ')'));
+    electronDot(c, x, cy + dy, er, E_BOND, E_BOND_ED, E_BOND_GLOW.replace(/\.55\)/, (0.20 + 0.34 * pulse) + ')'));
+  }
+}
+
+/* path of the lens where two clouds interpenetrate; false if they are clear */
+function cloudOverlapPath(c, x1, x2, y, r1, r2) {
+  var d = x2 - x1;
+  if (d >= r1 + r2) return false;
+  if (d <= Math.abs(r1 - r2)) {                    // one cloud inside the other
+    c.beginPath();
+    c.arc(r1 < r2 ? x1 : x2, y, Math.min(r1, r2), 0, 7);
+    return true;
+  }
+  var a1 = Math.acos((d * d + r1 * r1 - r2 * r2) / (2 * d * r1));
+  var a2 = Math.acos((d * d + r2 * r2 - r1 * r1) / (2 * d * r2));
+  c.beginPath();
+  c.arc(x1, y, r1, -a1, a1);
+  c.arc(x2, y, r2, Math.PI - a2, Math.PI + a2);
+  c.closePath();
+  return true;
+}
+
+function roundRect(c, x, y, w, h, r) {
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+function arrow(c, x1, y1, x2, y2, col, w, head) {
+  col = col || DTEAL; w = w || 3; head = head || 11;
+  c.strokeStyle = col; c.fillStyle = col; c.lineWidth = w;
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1);
+  c.beginPath(); c.moveTo(x2, y2);
+  c.lineTo(x2 - head * Math.cos(a - .42), y2 - head * Math.sin(a - .42));
+  c.lineTo(x2 - head * Math.cos(a + .42), y2 - head * Math.sin(a + .42));
+  c.closePath(); c.fill();
+}
+/* the same arrow haloed in white, so it stays legible where it has to be
+   drawn on top of a translucent electron cloud */
+function arrowH(c, x1, y1, x2, y2, col, w, head) {
+  w = w || 3; head = head || 11;
+  arrow(c, x1, y1, x2, y2, 'rgba(255,255,255,.90)', w + 2.6, head + 2.2);
+  arrow(c, x1, y1, x2, y2, col, w, head);
+}
+function dashLine(c, x1, y1, x2, y2, col, w, pat) {
+  c.save(); c.strokeStyle = col; c.lineWidth = w || 1.5;
+  c.setLineDash(pat || [6, 5]);
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.restore();
+}
+function txt(c, s, x, y, col, size, align, weight) {
+  c.fillStyle = col || DARK;
+  c.font = (weight || '700') + ' ' + (size || 12) + 'px Segoe UI,Inter,Arial';
+  c.textAlign = align || 'center'; c.textBaseline = 'middle';
+  c.fillText(s, x, y);
+}
+function panel(c, x, y, w, h, r, fill, stroke) {
+  c.save();
+  roundRect(c, x, y, w, h, r);
+  c.fillStyle = fill || 'rgba(255,255,255,.7)'; c.fill();
+  if (stroke) { c.strokeStyle = stroke; c.lineWidth = 1; c.stroke(); }
+  c.restore();
+}
+
+/* ============================================================
+   SECTION 3 — state + atom view (left panel)
+   ============================================================ */
+var S = {
+  sel: ['HH'],        // ids checked in the comparison chart
+  active: 'HH',       // pair shown in the atom view
+  eFrac: 0.20,        // total energy as a fraction of the well depth
+  playing: true,      // vibration running?
+  norm: false,        // normalise every curve to its own well depth
+  breakdown: true,    // show the three force components, or only the net force
+  electrons: true,    // draw the discrete electrons (lone + bonding)
+  r: 74.14,           // current separation, pm
+  x: 0, v: 0,         // dimensionless displacement from re, and its rate
+  dragging: false, hover: false, t: 0, lastT: 0
+};
+/* the state a fresh page load starts in — Reset returns here */
+var HOME = { sel: ['HH'], active: 'HH', norm: false, eFrac: 0.20, breakdown: true, electrons: true };
+function act() { return pairById(S.active); }
+function isSel(id) { return S.sel.indexOf(id) >= 0; }
+
+function resetVib(inner) {
+  var p = act(), tp = turning(p, -S.eFrac * p.De);
+  S.x = ((inner ? tp.lo : tp.hi) - p.re) / p.re;
+  S.v = 0;
+  S.r = p.re * (1 + S.x);
+}
+
+/* kinetic state of the pair, expressed without units */
+function forceAt(p, r) { return -dVdr(p, r); }          // >0 repulsive, <0 attractive
+
+/* ---- where the force comes from -----------------------------------------
+   Split the interaction into its three physical sources:
+
+     nucleus–nucleus   Coulomb repulsion, k Z_A Z_B / r^2
+     cloud–cloud       the same law softened by the finite size of the two
+                       electron clouds, so it saturates instead of diverging
+                       once the clouds interpenetrate
+     nucleus–cloud     attraction, defined as whatever closes the balance
+
+   The attraction is not fitted: it is F_net - F_nn - F_ee, which guarantees
+   the three arrows always add up to the true net force -dV/dr of the very
+   curve plotted on the right.  It comes out negative everywhere the model
+   is used, i.e. the attraction is always being outvoted by the two
+   repulsions rather than the other way round.
+   ------------------------------------------------------------------------ */
+var KC = 1.3891e8;                  // pure Coulomb constant in kJ mol^-1 pm^-1,
+                                    // i.e. (1/4 pi eps0) e^2 N_A / 1e12, so that
+                                    // k Z_A Z_B / r^2 comes out in the same unit
+                                    // as -dV/dr and can be added straight to it
+
+function forceParts(p, r) {
+  var A = ATOM[p.A], B = ATOM[p.B];
+  var k = KC * A.Z * B.Z;
+  /* the clouds are drawn at 1.2 x the covalent radius, so their mean
+     separation sets the softening length of the cloud-cloud term */
+  var cloud2 = 1.44 * (A.cov * A.cov + B.cov * B.cov);
+  var nn = k / (r * r);
+  var ee = k / (r * r + cloud2);
+  var net = -dVdr(p, r);
+  return { nn: nn, ee: ee, ne: net - nn - ee, net: net };
+}
+/* one shared reference so the three arrows can be read against each other:
+   the strongest of the three at full compression */
+function forceRef(p) {
+  var f = forceParts(p, 0.75 * p.re);
+  return Math.max(1e-9, Math.max(f.nn, f.ee, -f.ne));
+}
+/* sqrt keeps the change with distance visible without the arrows vanishing */
+function fLen(v, L) { return L * Math.sqrt(Math.max(0, Math.min(1, v))); }
+
+/* The atom view zooms out just enough to keep the whole vibration on screen, so
+   an excited pair is never drawn halfway off the panel. */
+function spanOf(p) {
+  var tp = turning(p, -S.eFrac * p.De);
+  return Math.max(2.6 * p.re, tp.hi * 1.10);
+}
+/* 0.72 rather than a fuller 0.82: the electron clouds need margin at the
+   panel edges once the pair has been dragged out to its full stretch */
+function pxpmOf(p, bw) { return bw * 0.72 / spanOf(p); }
+
+/* Cloud radii in px, split in proportion to the two covalent radii.
+   The 1.20 is deliberate: at 1.00 the clouds would merely touch at r_e,
+   whereas a covalent bond genuinely has its clouds overlapping at the
+   equilibrium length.  Squeezing the pair deepens that overlap, and that is
+   exactly what this view is meant to show. */
+var CLOUD_K = 1.20;
+function cloudPx(p, pxpm) {
+  var A = ATOM[p.A], B = ATOM[p.B], s = A.cov + B.cov;
+  return { a: CLOUD_K * p.re * pxpm * A.cov / s,
+           b: CLOUD_K * p.re * pxpm * B.cov / s };
+}
+
+function drawAtomView(c, bx, by, bw, bh, p) {
+  var A = ATOM[p.A], B = ATOM[p.B];
+  var cx = bx + bw / 2, cy = by + bh * 0.42;
+  var pxpm = pxpmOf(p, bw);
+
+  /* --- geometry --------------------------------------------------------
+     The clouds are sized so that they just touch at r_e, so squeezing the
+     pair makes them interpenetrate on their own; `room` is only a guard for
+     the far end of the drag, where a cloud would otherwise leave the panel. */
+  var cl = cloudPx(p, pxpm);
+  var rpx = S.r * pxpm;
+  var room = Math.max(16, bw / 2 - 14 - rpx / 2);
+  var rA = Math.min(cl.a, room), rB = Math.min(cl.b, room);
+  var Lx = cx - rpx / 2, Rx = cx + rpx / 2;
+  var nA = Math.max(5.5, rA * .27), nB = Math.max(5.5, rB * .27);
+  var R = Math.max(rA, rB);
+
+  txt(c, 'TWO ATOMS', cx, by + 15, SLATE, 10.5);
+  txt(c, p.label, cx, by + 37, p.col, 18);
+
+  /* --- the two atoms: a translucent cloud around a solid nucleus ------- */
+  electronCloud(c, Lx, cy, rA, A.cld);
+  electronCloud(c, Rx, cy, rB, B.cld);
+
+  /* --- the interpenetration itself.  This region IS the electron-electron
+         repulsion, so it is shown rather than labelled. ------------------ */
+  if (cloudOverlapPath(c, Lx, Rx, cy, rA, rB)) {
+    c.save();
+    c.globalCompositeOperation = 'source-over';
+    c.fillStyle = 'rgba(251,191,36,.30)'; c.fill();
+    c.strokeStyle = 'rgba(180,83,9,.62)'; c.lineWidth = 1.4; c.stroke();
+    c.restore();
+  }
+
+  /* --- electrons (drawn on top of the clouds, behind the nuclei labels) -- */
+  if (S.electrons) {
+    var ringR = (nA + rA) / 2;
+    drawLoneElectrons(c, Lx, cy, ringR, p.loneA);
+    drawLoneElectrons(c, Rx, cy, ringR, p.loneB);
+  }
+
+  nucleus(c, Lx, cy, nA, A.cld, p.A, A.tc);
+  nucleus(c, Rx, cy, nB, B.cld, p.B, B.tc);
+
+  /* --- the bonding (shared) electrons, sitting in the junction between the
+         two nuclei.  This is the part that was missing: for a covalent bond
+         the white pair(s) sit in the overlap of the two clouds. ---------- */
+  if (S.electrons && !p.vdw) {
+    var dxMax = Math.max(10, (rA + rB - rpx) / 2);
+    drawBondingElectrons(c, cx, cy, p.bond, dxMax);
+  }
+
+  /* --- the forces, each on its own level -------------------------------
+     L1 cloud-cloud repulsion     L2 nucleus-nucleus repulsion, drawn at
+     nucleus height so it lines up with the two nuclei it acts on
+     L3 nucleus-cloud attraction  L4 the net force, on the outer level.
+     All four lengths come from the same decomposition, so what is drawn is
+     always consistent with the slope of the curve on the right. --------- */
+  var F = forceParts(p, S.r), REF = forceRef(p);
+  var Lmax = Math.max(20, R * 0.80);
+
+  if (S.breakdown) {
+    var yEE = cy - R * .60, lEE = fLen(F.ee / REF, Lmax);
+    arrowH(c, Lx, yEE, Lx - lEE, yEE, F_EE, 2.8, 8);
+    arrowH(c, Rx, yEE, Rx + lEE, yEE, F_EE, 2.8, 8);
+
+    var lNN = fLen(F.nn / REF, Math.max(12, R - nA));
+    arrowH(c, Lx - nA - 2, cy, Lx - nA - 2 - lNN, cy, F_NN, 2.9, 8);
+    arrowH(c, Rx + nB + 2, cy, Rx + nB + 2 + lNN, cy, F_NN, 2.9, 8);
+
+    var yNE = cy + R * .50;
+    var lNE = fLen(-F.ne / REF, Math.max(14, (rpx - nA - nB) / 2 - 6));
+    arrowH(c, Lx + nA + 2, yNE, Lx + nA + 2 + lNE, yNE, F_NE, 2.8, 8);
+    arrowH(c, Rx - nB - 2, yNE, Rx - nB - 2 - lNE, yNE, F_NE, 2.8, 8);
+  }
+
+  var Fn = F.net, Fre = Math.abs(forceAt(p, p.re * 1.18)) || 1;
+  var lNet = Math.min(R * .62, 5 + Math.min(1.15, Math.abs(Fn) / Fre) * 30);
+  if (Math.abs(Fn) / Fre > 0.045) {
+    var yNet = cy + R * .80, ncol = Fn > 0 ? VIOLET : TEAL, m = cx;
+    if (Fn > 0) {
+      arrowH(c, m - 5, yNet, m - 5 - lNet, yNet, ncol, 3.4, 10);
+      arrowH(c, m + 5, yNet, m + 5 + lNet, yNet, ncol, 3.4, 10);
+    } else {
+      arrowH(c, m - 5 - lNet, yNet, m - 5, yNet, ncol, 3.4, 10);
+      arrowH(c, m + 5 + lNet, yNet, m + 5, yNet, ncol, 3.4, 10);
+    }
+  }
+
+  /* ---- vibration band, then the separation ruler ---------------------- */
+  var bandY = cy + R + 22;
+  if (S.playing) {
+    var tp = turning(p, -S.eFrac * p.De);
+    var b1 = cx - tp.hi * pxpm / 2, b2 = cx - tp.lo * pxpm / 2;
+    c.fillStyle = 'rgba(70,153,170,.15)';
+    roundRect(c, b1, bandY - 6, Math.max(3, b2 - b1), 12, 6); c.fill();
+  }
+
+  /* ---- separation ruler ---- */
+  var ry = cy + R + 52;
+  c.strokeStyle = '#8FA6B4'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(Lx, cy + rA + 4); c.lineTo(Lx, ry + 9); c.stroke();
+  c.beginPath(); c.moveTo(Rx, cy + rB + 4); c.lineTo(Rx, ry + 9); c.stroke();
+  c.beginPath(); c.moveTo(Lx, ry); c.lineTo(Rx, ry); c.stroke();
+  [Lx, Rx].forEach(function (x) {
+    c.beginPath(); c.moveTo(x - 5, ry - 5); c.lineTo(x, ry); c.lineTo(x - 5, ry + 5); c.stroke();
+  });
+  var rlab = 'r = ' + S.r.toFixed(1) + ' pm';
+  c.save(); c.font = '800 13px Segoe UI,Inter,Arial';
+  var tw = c.measureText(rlab).width; c.restore();
+  c.fillStyle = '#F8FAFC';
+  roundRect(c, cx - tw / 2 - 8, ry - 11, tw + 16, 22, 7); c.fill();
+  txt(c, rlab, cx, ry, INK, 13, 'center', '800');
+
+  /* ---- state line ---- */
+  var rel = S.r / p.re, st, scol;
+  if (rel > 1.015) { st = 'ATTRACTION \u2014 held together'; scol = TEAL; }
+  else if (rel < 0.985) { st = 'REPULSION \u2014 clouds clash'; scol = VIOLET; }
+  else { st = 'BALANCED \u2014 equilibrium length r\u2091'; scol = GREEN; }
+  var sy = ry + 46;
+  c.fillStyle = scol + '1A';
+  roundRect(c, bx + 16, sy - 15, bw - 32, 30, 9); c.fill();
+  c.strokeStyle = scol + '55'; c.lineWidth = 1;
+  roundRect(c, bx + 16, sy - 15, bw - 32, 30, 9); c.stroke();
+  txt(c, st, cx, sy, scol, 12.5, 'center', '800');
+
+  txt(c, S.playing ? 'vibrating \u2014 drag to freeze and explore' : 'drag an atom to change r',
+      cx, by + bh - 12, '#9AAEBB', 11.5, 'center', '600');
+}
+
+/* ============================================================
+   SECTION 4 — potential-energy chart (right panel)
+   ============================================================ */
+function niceStep(span, target) {
+  var raw = span / target;
+  var mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  var n = raw / mag, m = n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10;
+  return m * mag;
+}
+function fmtAxis(v) {
+  var a = Math.abs(v);
+  /* energies reach a few thousand kJ/mol for the stiff bonds; spell them out
+     rather than abbreviating to "1k", which reads badly on a science axis */
+  if (a >= 10) return String(Math.round(v));
+  if (a >= 1) return v.toFixed(1);
+  if (a === 0) return '0';
+  return v.toFixed(2);
+}
+
+function drawChart(c, bx, by, bw, bh) {
+  var sel = S.sel.map(pairById);
+  if (!sel.length) sel = [act()];
+  var padL = 70, padR = 16, padT = 32, padB = 48;
+  var px0 = bx + padL, py0 = by + padT;
+  var pw = bw - padL - padR, ph = bh - padT - padB, py1 = py0 + ph;
+
+  var maxRe = 0, maxDe = 0;
+  sel.forEach(function (p) { maxRe = Math.max(maxRe, p.re); maxDe = Math.max(maxDe, p.De); });
+  var xmax = Math.max(360, Math.min(1400, maxRe * 2.7));
+  var ymin, ymax;
+  if (S.norm) { ymin = -1.10; ymax = 0.42; }
+  else { ymin = -1.08 * maxDe; ymax = 0.40 * maxDe; }
+
+  var X = function (r) { return px0 + (r / xmax) * pw; };
+  var Y = function (v) { return py1 - ((v - ymin) / (ymax - ymin)) * ph; };
+  var sc = function (p) { return S.norm ? 1 / p.De : 1; };
+
+  /* plot frame */
+  panel(c, bx, by, bw, bh, 14, 'rgba(255,255,255,.78)', '#E3EBF0');
+
+  /* grid */
+  var xs = niceStep(xmax, 6), ys = niceStep(ymax - ymin, 5);
+  c.save(); c.strokeStyle = '#EAF1F5'; c.lineWidth = 1;
+  for (var gx = 0; gx <= xmax + 1e-6; gx += xs) {
+    c.beginPath(); c.moveTo(X(gx), py0); c.lineTo(X(gx), py1); c.stroke();
+  }
+  for (var gy = Math.ceil(ymin / ys) * ys; gy <= ymax; gy += ys) {
+    c.beginPath(); c.moveTo(px0, Y(gy)); c.lineTo(px0 + pw, Y(gy)); c.stroke();
+  }
+  c.restore();
+
+  /* zero line */
+  c.strokeStyle = '#C3D2DB'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(px0, Y(0)); c.lineTo(px0 + pw, Y(0)); c.stroke();
+
+  /* axes */
+  c.strokeStyle = '#94A6B4'; c.lineWidth = 1.8;
+  c.beginPath(); c.moveTo(px0, py0 - 6); c.lineTo(px0, py1); c.lineTo(px0 + pw, py1); c.stroke();
+
+  /* ticks */
+  c.save(); c.font = '600 10.5px Segoe UI,Inter,Arial';
+  c.fillStyle = '#7C8FA0'; c.textAlign = 'center'; c.textBaseline = 'top';
+  for (var tx = 0; tx <= xmax + 1e-6; tx += xs) {
+    c.beginPath(); c.moveTo(X(tx), py1); c.lineTo(X(tx), py1 + 5);
+    c.strokeStyle = '#94A6B4'; c.lineWidth = 1.4; c.stroke();
+    if (tx > 0) c.fillText(String(Math.round(tx)), X(tx), py1 + 8);
+  }
+  c.textAlign = 'right'; c.textBaseline = 'middle';
+  for (var ty = Math.ceil(ymin / ys) * ys; ty <= ymax; ty += ys) {
+    c.beginPath(); c.moveTo(px0 - 5, Y(ty)); c.lineTo(px0, Y(ty));
+    c.strokeStyle = '#94A6B4'; c.lineWidth = 1.4; c.stroke();
+    c.fillText(fmtAxis(ty), px0 - 9, Y(ty));
+  }
+  c.restore();
+
+  /* axis titles */
+  txt(c, 'Internuclear distance   r  /  pm', px0 + pw / 2, py1 + 34, SLATE, 11.5, 'center', '800');
+  c.save();
+  c.translate(bx + 18, py0 + ph / 2);
+  c.rotate(-Math.PI / 2);
+  txt(c, S.norm ? 'Potential energy   V / D\u2091'
+                : 'Potential energy   V  /  kJ mol\u207B\u00B9',
+      0, 0, SLATE, 11.5, 'center', '800');
+  c.restore();
+
+  /* ---- curves ---- */
+  sel.forEach(function (p) {
+    var isA = (p.id === S.active), s = sc(p);
+    c.beginPath(); c.lineJoin = 'round'; c.lineCap = 'round';
+    var started = false;
+    for (var i = 0; i <= 520; i++) {
+      var r = 0.4 + (xmax - 0.4) * i / 520;
+      var v = Vpot(p, r) * s;
+      if (v > ymax) { started = false; continue; }
+      var x = X(r), y = Y(v);
+      if (!started) { c.moveTo(x, y); started = true; } else { c.lineTo(x, y); }
+    }
+    c.strokeStyle = p.col; c.lineWidth = isA ? 3.2 : 1.8;
+    c.globalAlpha = isA ? 1 : 0.5; c.stroke(); c.globalAlpha = 1;
+  });
+
+  /* ---- equilibrium markers (sitting exactly on the well bottom) ---- */
+  sel.forEach(function (p) {
+    var isA = (p.id === S.active), s = sc(p), m = minOf(p);
+    var bx0 = X(m.r), by0 = Y(m.v * s), rad = isA ? 5.5 : 3.5;
+    c.beginPath(); c.arc(bx0, by0, rad, 0, 7);
+    c.fillStyle = p.col; c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 1.7; c.stroke();
+  });
+
+  /* ---- active pair annotations ---- */
+  var p = act(), s = sc(p), mp = minOf(p);
+  var ax = X(mp.r), ay = Y(mp.v * s);
+
+  /* A vertical guide at r_e. V(r) is single-valued, so this column is empty
+     except at the minimum itself — the label therefore sits clear of the curve
+     at the top, instead of colliding with the x tick labels at the bottom. */
+  dashLine(c, ax, py1, ax, py0 + 20, p.col + '99', 1.5, [5, 4]);
+  dashLine(c, px0, ay, ax, ay, p.col + '99', 1.5, [5, 4]);
+
+  if (!S.norm) {
+    /* The crosshair sits on the well bottom, i.e. at -D_e, the true well depth.
+       D_0 (the bond energy) lies one zero-point energy higher, so it gets its
+       own line and the gap between the two is the zero-point energy. */
+    if (p.ZPE > 1e-9) {
+      var ay0 = Y(-p.D0 * s);
+      if (ay - ay0 > 13) {
+        c.fillStyle = p.col + '12';
+        c.fillRect(px0, ay0, ax - px0, ay - ay0);
+        txt(c, 'zero-point gap', (px0 + ax) / 2, (ay0 + ay) / 2 + 3.5,
+            p.col, 9.5, 'center', '800');
+      }
+      dashLine(c, px0, ay0, ax, ay0, p.col + '88', 1.3, [4, 4]);
+      txt(c, 'D\u2080 = ' + p.D0.toFixed(1), px0 + 6, ay0 - 7, p.col, 10.5, 'left', '800');
+      txt(c, 'D\u2091 = ' + p.De.toFixed(1) + '  (well depth)',
+          px0 + 6, Math.min(ay + 14, py1 - 3), p.col, 10, 'left', '800');
+    } else {
+      txt(c, 'D\u2091 = D\u2080 = ' + p.De.toFixed(2) + '  (well depth)',
+          px0 + 6, ay - 11, p.col, 10, 'left', '800');
+    }
+    txt(c, 'r\u2091 = ' + p.re.toFixed(1) + ' pm', ax, py0 + 11, p.col, 11.5, 'center', '800');
+  } else {
+    txt(c, 'r\u2091 = ' + p.re.toFixed(1) + ' pm', ax, py0 + 11, p.col, 11.5, 'center', '800');
+  }
+
+  /* ---- energy level: the vibration's ceiling ---- */
+  var Ev = -S.eFrac * p.De * s, ey = Y(Ev);
+  if (ey > py0 + 2) {
+    dashLine(c, px0, ey, px0 + pw, ey, '#B45309AA', 1.8, [8, 5]);
+    txt(c, 'total energy', px0 + pw - 6, ey - 10, AMBER, 11, 'right', '800');
+    var tp = turning(p, -S.eFrac * p.De);
+    [tp.lo, tp.hi].forEach(function (rv) {
+      var tx = X(rv);
+      if (tx >= px0 && tx <= px0 + pw) {
+        c.beginPath(); c.moveTo(tx, ey - 5); c.lineTo(tx, ey + 5);
+        c.strokeStyle = AMBER; c.lineWidth = 2; c.stroke();
+      }
+    });
+  }
+
+  /* ---- live state point on the active curve ---- */
+  var lx = Math.max(px0 + 2, Math.min(px0 + pw - 2, X(S.r)));
+  var lyRaw = Y(Vpot(p, S.r) * s);
+  var ly = Math.max(py0 + 3, Math.min(py1 - 3, lyRaw));
+  var clipped = (Math.abs(ly - lyRaw) > 0.5);
+  c.beginPath(); c.arc(lx, ly, 8.5, 0, 7);
+  c.fillStyle = 'rgba(255,255,255,.95)'; c.fill();
+  c.strokeStyle = p.col; c.lineWidth = 3;
+  if (clipped) c.setLineDash([3, 3]);
+  c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.arc(lx, ly, 3.4, 0, 7); c.fillStyle = p.col; c.fill();
+  if (clipped) {
+    txt(c, lyRaw < py0 ? 'off scale' : 'off scale',
+        lx, ly + (lyRaw < py0 ? 20 : -20), p.col, 10, 'center', '800');
+  }
+
+  txt(c, 'POTENTIAL ENERGY  vs  ATOMIC SEPARATION', bx + bw / 2, by + 17, SLATE, 10.5, 'center', '800');
+}
+
+/* ============================================================
+   SECTION 5 — physics update + scene render
+   ============================================================ */
+var lastT = 0;
+
+function updatePhysics(dt) {
+  var p = act();
+  if (!S.playing || S.dragging) { S.r = p.re * (1 + S.x); return; }
+  var w2 = Math.pow(2 * Math.PI / p.Tvis, 2);
+  var sub = 8, h = dt / sub;
+  for (var i = 0; i < sub; i++) {
+    var r = p.re * (1 + S.x);
+    var acc = -(w2 / p.K) * (p.re / p.De) * dVdr(p, r);
+    S.v += acc * h;
+    S.x += S.v * h;
+  }
+  var tp = turning(p, -S.eFrac * p.De);
+  var xo = (tp.hi - p.re) / p.re, xi = (tp.lo - p.re) / p.re;
+  if (S.x > xo) { S.x = xo; S.v = -Math.abs(S.v) * 0.97; }
+  if (S.x < xi) { S.x = xi; S.v = Math.abs(S.v) * 0.97; }
+  S.r = p.re * (1 + S.x);
+}
+
+function panelGeom() {
+  var gap = 20;
+  var lw = Math.max(228, W * 0.345);
+  return { lw: lw, rx: lw + gap, rw: Math.max(200, W - lw - gap - 2) };
+}
+function drawScene() {
+  ctx.clearRect(0, 0, W, H);
+  var g = panelGeom();
+  panel(ctx, 2, 4, g.lw, H - 8, 14, 'rgba(255,255,255,.78)', '#E3EBF0');
+  drawAtomView(ctx, 2, 4, g.lw, H - 8, act());
+  drawChart(ctx, g.rx, 4, g.rw, H - 8);
+  updateReadout();
+}
+
+/* ============================================================
+   SECTION 6 — UI, interaction, main loop
+   ============================================================ */
+var elControls = document.getElementById('controls');
+var elReadout = document.getElementById('readout');
+var elCaption = document.getElementById('caption');
+var elLegend = document.getElementById('legend');
+var elFKey = document.getElementById('forcekey');
+var eRange = null, eVals = null, vibrateBtn = null;
+var normBtn = null, covBtn = null, vdwBtn = null, fbdBtn = null;
+var statRefs = {};
+
+function makeRow(label) {
+  var row = document.createElement('div'); row.className = 'ctl-row';
+  var lb = document.createElement('span'); lb.className = 'ctl-label'; lb.textContent = label;
+  row.appendChild(lb); elControls.appendChild(row);
+  return row;
+}
+function makeBtn(row, p) {
+  var b = document.createElement('button');
+  b.className = 'btn' + (p.vdw ? ' vdw' : '');
+  b.textContent = p.label;
+  b.addEventListener('click', function () { pickPair(p.id); });
+  row.appendChild(b);
+  return b;
+}
+var pairBtns = {};
+
+function pickPair(id) {
+  var i = S.sel.indexOf(id);
+  if (i < 0) {                       // not on the chart yet -> plot it and focus it
+    S.sel.push(id); S.active = id;
+  } else if (S.active !== id) {      // already plotted -> just move the focus to it
+    S.active = id;
+  } else if (S.sel.length > 1) {     // clicking the focused pair hides it
+    S.sel.splice(i, 1);
+    S.active = S.sel[S.sel.length - 1];
+  }
+  var p = act();
+  S.r = p.re; S.x = 0; S.v = 0;
+  resetVib(false);
+  syncPairBtns(); syncEnergy(); updateLegend(); updateCaption();
+}
+
+function syncPairBtns() {
+  PAIRS.forEach(function (p) {
+    var b = pairBtns[p.id];
+    if (!b) return;
+    b.classList.toggle('active', isSel(p.id));
+    b.style.opacity = (isSel(p.id) && p.id !== S.active) ? '.72' : '1';
+  });
+}
+
+function makeToggle(row, label, onToggle, cls) {
+  var b = document.createElement('button');
+  b.className = 'btn' + (cls ? ' ' + cls : '');
+  b.textContent = label;
+  b.addEventListener('click', function () {
+    b.classList.toggle('active');
+    onToggle(b.classList.contains('active'));
+  });
+  row.appendChild(b);
+  return b;
+}
+
+function buildUI() {
+  elControls.innerHTML = '';
+
+  var r1 = makeRow('Covalent bonds');
+  PAIRS.forEach(function (p) { if (!p.vdw) pairBtns[p.id] = makeBtn(r1, p); });
+
+  var r2 = makeRow('Van der Waals');
+  PAIRS.forEach(function (p) { if (p.vdw) pairBtns[p.id] = makeBtn(r2, p); });
+
+  var r3 = makeRow('View');
+  vibrateBtn = makeToggle(r3, 'Vibrate', function (on) {
+    S.playing = on;
+    if (on) { resetVib(false); }
+    updateCaption();
+  }, 'util');
+  vibrateBtn.classList.add('active');
+
+  var eBtn = makeToggle(r3, 'Electrons', function (on) {
+    S.electrons = on; updateLegend(); updateCaption();
+  }, 'util');
+  eBtn.classList.add('active');
+
+  normBtn = makeToggle(r3, 'Normalised depth', function (on) {
+    S.norm = on; updateLegend();
+  }, 'util');
+  fbdBtn = makeToggle(r3, 'Force breakdown', function (on) {
+    S.breakdown = on; updateLegend();
+  }, 'util');
+  fbdBtn.classList.add('active');
+  covBtn = makeToggle(r3, 'Show all covalent', function (on) {
+    var ids = PAIRS.filter(function (p) { return !p.vdw; }).map(function (p) { return p.id; });
+    S.sel = on ? ids : [S.active];
+    if (S.sel.indexOf(S.active) < 0) S.sel.push(S.active);
+    syncPairBtns(); updateLegend();
+  }, 'util');
+  vdwBtn = makeToggle(r3, 'Show all vdW', function (on) {
+    var ids = PAIRS.filter(function (p) { return p.vdw; }).map(function (p) { return p.id; });
+    S.sel = on ? ids : [S.active];
+    if (S.sel.indexOf(S.active) < 0) S.sel.push(S.active);
+    syncPairBtns(); updateLegend();
+  }, 'util');
+
+  var bR = document.createElement('button');
+  bR.className = 'btn util'; bR.textContent = 'Reset';
+  bR.addEventListener('click', function () {
+    /* back to exactly the state a fresh page load would give */
+    S.sel = HOME.sel.slice(); S.active = HOME.active;
+    S.norm = HOME.norm; S.eFrac = HOME.eFrac; S.breakdown = HOME.breakdown;
+    S.electrons = HOME.electrons;
+    [normBtn, covBtn, vdwBtn].forEach(function (b) {
+      if (b) b.classList.remove('active');
+    });
+    if (fbdBtn) fbdBtn.classList.toggle('active', HOME.breakdown);
+    if (eBtn) eBtn.classList.toggle('active', HOME.electrons);
+    S.r = act().re; S.x = 0; S.v = 0; S.dragging = false;
+    if (vibrateBtn) { S.playing = true; vibrateBtn.classList.add('active'); }
+    eRange.value = Math.round(HOME.eFrac * 100);
+    syncPairBtns(); syncEnergy(); updateLegend(); resetVib(false); updateCaption();
+  });
+  r3.appendChild(bR);
+
+  /* energy slider */
+  var wrap = document.createElement('div'); wrap.className = 'energy-wrap';
+  wrap.style.cssText = 'display:flex;align-items:center;gap:9px;background:#F1F6F8;' +
+    'padding:6px 12px;border-radius:11px;border:1px solid #d8e5eb;';
+  var lb = document.createElement('span');
+  lb.className = 'ctl-label'; lb.textContent = 'Total energy';
+  eRange = document.createElement('input');
+  eRange.type = 'range'; eRange.min = 20; eRange.max = 95; eRange.value = 20;
+  eRange.style.width = '190px';
+  eVals = document.createElement('span');
+  eVals.style.cssText = 'font-size:11.5px;font-weight:800;color:#0A455D;min-width:78px;text-align:right;';
+  eRange.addEventListener('input', function () {
+    S.eFrac = (+eRange.value) / 100;
+    S.playing = true;
+    if (vibrateBtn) vibrateBtn.classList.add('active');
+    updateCaption();
+  });
+  wrap.appendChild(lb); wrap.appendChild(eRange); wrap.appendChild(eVals);
+  r3.appendChild(wrap);
+}
+
+function syncEnergy() {
+  if (!eRange) return;
+  eRange.value = Math.round(S.eFrac * 100);
+}
+
+function buildReadout() {
+  var defs = [
+    ['r', 'Current separation', 'pm'],
+    ['V', 'Potential energy', 'kJ mol\u207B\u00B9'],
+    ['re', 'Bond length  r\u2091', 'pm'],
+    ['D0', 'Bond energy  D\u2080', 'kJ mol\u207B\u00B9'],
+    ['T', 'True vibration period', '']
+  ];
+  elReadout.innerHTML = '';
+  defs.forEach(function (d) {
+    var el = document.createElement('div');
+    el.className = 'stat' + (d[0] === 'V' ? ' wide' : '');
+    el.innerHTML = '<div class="k">' + d[1] + '</div><div class="v"></div>';
+    elReadout.appendChild(el);
+    statRefs[d[0]] = { box: el, v: el.querySelector('.v'), unit: d[2], last: null };
+  });
+}
+
+function updateReadout() {
+  var p = act();
+  var v = Vpot(p, S.r);
+  setStat('r', S.r.toFixed(1));
+  setStat('V', (v > 0 ? '+' : '') + v.toFixed(1));
+  setStat('re', p.re.toFixed(1));
+  setStat('D0', p.D0.toFixed(1));
+  var ts = p.Treal;
+  setStat('T', ts < 1e-12 ? (ts * 1e15).toFixed(2) + ' fs' : (ts * 1e12).toFixed(2) + ' ps');
+  var box = statRefs.V.box;
+  box.classList.toggle('neg', v < -0.2);
+  box.classList.toggle('pos', v > 0.2);
+  if (eVals) eVals.textContent = '\u2212' + (S.eFrac * p.De).toFixed(1) + ' kJ mol\u207B\u00B9';
+}
+function setStat(k, txtv) {
+  var s = statRefs[k];
+  if (!s) return;
+  var html = txtv + (s.unit ? ' <small>' + s.unit + '</small>' : '');
+  if (s.last !== html) { s.last = html; s.v.innerHTML = html; }
+}
+
+function updateCaption() {
+  var p = act();
+  var html;
+  if (!S.playing) {
+    html = '<span class="em">Drag any atom</span> to change the separation. ' +
+      'The white dot on the curve tracks the current separation, and the readout shows the potential energy there.';
+  } else if (S.eFrac > 0.55) {
+    html = 'High total energy: the pair <span class="emr">vibrates widely</span> \u2014 it stretches <b>more than</b> it compresses. ' +
+      'This is the anharmonicity that lets a bond break.';
+  } else {
+    html = 'The pair <span class="em">vibrates</span> inside the potential well. ' +
+      'The bottom of the well is the <span class="em">equilibrium bond length r\u2091</span>; ' +
+      'its depth is the <span class="em">well depth D\u2091</span>, and the ' +
+      '<span class="em">bond energy D\u2080</span> is one zero-point energy higher.';
+  }
+  if (S.breakdown) {
+    html += ' Squeeze the pair and the two <b>electron clouds</b> interpenetrate: ' +
+      '<span class="emo">cloud on cloud</span> and <span class="emr">nucleus on nucleus</span> ' +
+      'both push outwards, and only the <span class="emb">nucleus-to-cloud pull</span> holds the atoms together.';
+  }
+  if (S.electrons && !p.vdw) {
+    var ord = p.bond === 3 ? 'triple' : p.bond === 2 ? 'double' : 'single';
+    html += ' The <span class="emb">' + (p.bond === 1 ? 'two white electrons' : (p.bond * 2) + ' white electrons') +
+      '</span> in the junction between the nuclei are the <b>' + ord + ' bond</b> \u2014 ' +
+      'the electrons shared by both atoms.';
+  }
+  if (S.norm) html += ' Curves are normalised to their own well depth \u2014 read the <b>shape</b>, not the depth.';
+  elCaption.innerHTML = html;
+}
+
+function updateLegend() {
+  /* key for the coloured arrows drawn inside the atom view */
+  if (elFKey) {
+    elFKey.innerHTML = '';
+    var hd = document.createElement('span'); hd.className = 'hd';
+    hd.textContent = 'Arrows in the atom view';
+    elFKey.appendChild(hd);
+    var keys = [];
+    if (S.breakdown) {
+      keys.push([F_EE, 'electron cloud \u2194 electron cloud', 'repulsion']);
+      keys.push([F_NN, 'nucleus \u2194 nucleus', 'repulsion']);
+      keys.push([F_NE, 'nucleus \u2194 electron cloud', 'attraction']);
+    }
+    keys.push([TEAL, 'net force', 'attraction']);
+    keys.push([VIOLET, 'net force', 'repulsion']);
+    if (S.electrons) {
+      keys.push([E_LONE, 'lone-pair electron', 'in a cloud']);
+      keys.push([E_BOND, 'bonding electron', 'in the junction']);
+    }
+    keys.forEach(function (k) {
+      var d = document.createElement('span'); d.className = 'k';
+      d.innerHTML = '<i style="background:' + k[0] + '"></i>' + k[1] +
+        ' \u2014 <b>' + k[2] + '</b>';
+      elFKey.appendChild(d);
+    });
+  }
+
+  var rows = S.sel.map(pairById);
+  elLegend.innerHTML = '';
+  rows.forEach(function (p) {
+    var d = document.createElement('span'); d.className = 'it';
+    d.innerHTML = '<span class="ln" style="border-color:' + p.col + '"></span>' +
+      '<span><b style="color:' + p.col + '">' + p.label + '</b>' +
+      ' &nbsp;r\u2091 <b>' + p.re.toFixed(1) + '</b> pm' +
+      ' &nbsp;\u00B7&nbsp; D\u2080 <b>' + p.D0.toFixed(1) + '</b> kJ mol\u207B\u00B9</span>';
+    elLegend.appendChild(d);
+  });
+}
+
+/* ---------- pointer interaction ---------- */
+function localPos(e) {
+  var r = cv.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function inAtomPanel(q) {
+  var g = panelGeom();
+  return q.x >= 2 && q.x <= 2 + g.lw && q.y >= 4 && q.y <= H - 4;
+}
+function setRfromX(mx) {
+  var g = panelGeom(), p = act();
+  var cx = 2 + g.lw / 2;
+  var pxpm = pxpmOf(p, g.lw);
+  var r = Math.abs(mx - cx) * 2 / pxpm;
+  r = Math.max(0.75 * p.re, Math.min(2.6 * p.re, r));
+  S.r = r; S.x = r / p.re - 1; S.v = 0;
+}
+cv.addEventListener('mousedown', function (e) {
+  var q = localPos(e);
+  if (!inAtomPanel(q)) return;
+  S.dragging = true; cv.style.cursor = 'grabbing'; setRfromX(q.x);
+});
+window.addEventListener('mousemove', function (e) {
+  var q = localPos(e);
+  if (S.dragging) { setRfromX(q.x); return; }
+  cv.style.cursor = inAtomPanel(q) ? 'grab' : 'default';
+});
+window.addEventListener('mouseup', function () {
+  if (!S.dragging) return;
+  S.dragging = false;
+  cv.style.cursor = 'grab';
+  if (S.playing) {                                   // restart vibration from rest
+    var p = act();
+    S.eFrac = Math.max(0.20, Math.min(0.95, -Vpot(p, S.r) / p.De));
+    S.v = 0; syncEnergy();
+  }
+  updateCaption();
+});
+cv.addEventListener('touchstart', function (e) {
+  var t = e.touches[0]; if (!t) return;
+  var r = cv.getBoundingClientRect(), q = { x: t.clientX - r.left, y: t.clientY - r.top };
+  if (!inAtomPanel(q)) return;
+  e.preventDefault(); S.dragging = true; setRfromX(q.x);
+}, { passive: false });
+cv.addEventListener('touchmove', function (e) {
+  if (!S.dragging) return;
+  var t = e.touches[0]; if (!t) return;
+  e.preventDefault();
+  var r = cv.getBoundingClientRect();
+  setRfromX(t.clientX - r.left);
+}, { passive: false });
+cv.addEventListener('touchend', function () {
+  if (!S.dragging) return;
+  S.dragging = false;
+  if (S.playing) {
+    var p = act();
+    S.eFrac = Math.max(0.20, Math.min(0.95, -Vpot(p, S.r) / p.De));
+    S.v = 0; syncEnergy();
+  }
+});
+
+/* ---------- main loop ---------- */
+function loop(now) {
+  var dt = (now - lastT) / 1000; lastT = now;
+  if (!(dt > 0)) dt = 0; else if (dt > 0.05) dt = 0.05;
+  S.t += dt;
+  try { updatePhysics(dt); } catch (err) { /* one bad frame never freezes the demo */ }
+  try { drawScene(); } catch (err) { }
+  requestAnimationFrame(loop);
+}
+
+resize();
+buildUI();
+buildReadout();
+syncPairBtns();
+syncEnergy();
+updateLegend();
+updateCaption();
+resetVib(false);
+requestAnimationFrame(function (now) { lastT = now; loop(now); });
+</script>
+</body>
+</html>

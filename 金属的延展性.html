@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="XaZmNVpLCs0zRKur3MzCec">
+<head data-page-node-id="GT8ArTf6ldKXXUxUjEFAWG">
+    <meta charset="UTF-8" data-page-node-id="gsoyaJlAUkg33yhdokxlC1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="khLQGFjOMlEC0XO3hhLdUT">
+    <title>金属延展性的微观原因</title>
+    <style>
+        body{margin:0;font-family:system-ui,'Segoe UI','Microsoft YaHei',sans-serif;background:#eef2f7;color:#1e293b;padding:24px;}
+        .wrap{max-width:780px;margin:0 auto;background:#fff;border-radius:24px;box-shadow:0 10px 40px rgba(0,0,0,.08);padding:26px 32px 34px;border:1px solid #e2e8f0;}
+        h1{font-size:25px;margin:0 0 4px;color:#0f172a;}
+        .sub{color:#64748b;font-style:italic;margin-bottom:20px;font-size:14px;}
+        .controls{background:#eff6ff;border:2px solid #bfdbfe;border-radius:16px;padding:18px 22px;margin-bottom:20px;}
+        .controls label{font-weight:800;color:#1e40af;font-size:16px;display:block;text-align:center;margin-bottom:10px;}
+        .controls .row{display:flex;align-items:center;gap:14px;}
+        input[type=range]{flex:1;height:6px;border-radius:6px;background:#bfdbfe;appearance:none;}
+        input[type=range]::-webkit-slider-thumb{appearance:none;width:22px;height:22px;border-radius:50%;background:#2563eb;cursor:pointer;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3);}
+        .btn{background:#0f766e;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer;white-space:nowrap;}
+        .btn:hover{background:#0d5d56;}
+        .card{border:1px solid #e2e8f0;border-radius:16px;background:#f8fafc;padding:8px 10px;}
+        svg{width:100%;height:auto;display:block;}
+        .caption{margin-top:14px;background:#0f172a;color:#e2e8f0;border-radius:14px;padding:15px 18px;font-size:15px;line-height:1.55;transition:background .3s;}
+        .caption .en{display:block;margin-top:6px;color:#94a3b8;font-size:13px;font-style:italic;}
+        .caption.hot{background:#064e3b;}
+        .caption.hot .en{color:#a7f3d0;}
+        .legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px;font-size:13px;color:#475569;}
+        .legend span{display:inline-flex;align-items:center;gap:6px;}
+        .dot{width:14px;height:14px;border-radius:50%;display:inline-block;}
+        .explain{margin-top:20px;font-size:14px;line-height:1.7;color:#334155;}
+        .explain b{color:#0f766e;}
+        .explain h4{margin:0 0 8px;color:#1e293b;font-size:16px;}
+    </style>
+</head>
+<body data-page-node-id="OcmUEtAN1QNp5q5b3at4hO">
+    <div class="wrap" data-page-node-id="WFLOGpEyGRwyn2IBkMmV01">
+        <header data-page-node-id="0HpB9l2muVVfmXAWqvI74l">
+            <h1 data-page-node-id="y2ZDH1uoNh7MYNSTHScCLX">金属延展性的微观原因</h1>
+            <p class="sub" data-page-node-id="0GQ8PjebvQNIMmy0W7fdRm">纯金属为什么能被锻打、拉丝而不碎裂？——从金属键的非方向性说起</p>
+        </header>
+
+        <!-- 控制区 -->
+        <div class="controls" data-page-node-id="1CmMwgrc2KLIqYXybLoH2T">
+            <label data-page-node-id="0Gpw4ccFa5WTLQRgcgEPp3">增大剪切力 (Increase Shear Force): <span id="forceValue" data-page-node-id="km9JnEfyPauxSThttzAsmP">0%</span></label>
+            <div class="row" data-page-node-id="LuBdu13MuLHxnOzmGnJBvB">
+                <input id="forceSlider" type="range" min="0" max="1" step="0.005" value="0" data-page-node-id="c8uhNNFsAHHFGVGIpuCBE3">
+                <button id="autoBtn" class="btn" data-page-node-id="bAvClxe1QXTYnErWneKMhk">自动演示</button>
+            </div>
+            <div class="flex justify-between text-xs font-bold text-blue-400 mt-3 px-1" style="font-size:12px;color:#93c5fd;display:flex;justify-content:space-between;" data-page-node-id="HNgYGtqOtAg96f2fVBvEtz">
+                <span data-page-node-id="4bKyrDbClCHJxSS3yEAufd">初始状态</span>
+                <span data-page-node-id="W70vbAmJyUbloFmG7aHur4">强力滑移</span>
+            </div>
+        </div>
+
+        <!-- 模拟器 -->
+        <div class="card" data-page-node-id="PDscC77taUai1C2ioQYuHv">
+            <svg id="metalSvg" viewBox="0 0 560 300" class="overflow-visible" data-page-node-id="7wGjWi0l8oLha6U6pFn6b4">
+                <!-- 自由电子海 背景 -->
+                <rect x="18" y="58" width="524" height="206" rx="16" fill="rgba(20,184,166,0.07)" data-page-node-id="0WNEduGZS0oGsbBxajLksn"></rect>
+                <!-- 键合连线层 -->
+                <g id="bondGroup" data-page-node-id="IJVazr7SuVxs81OL6eEGQK"></g>
+                <!-- 电子层 -->
+                <g id="electronGroup" data-page-node-id="BDDsVHxJ74hW4f2KZXo4Br"></g>
+                <!-- 金属离子层 -->
+                <g id="ionGroup" data-page-node-id="oawdqOn1S9xBgrlGG6M2tD"></g>
+                <!-- 滑移面 -->
+                <line x1="18" y1="158" x2="542" y2="158" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,5" data-page-node-id="wc8OY2SkJaifxa75jFQwdE"></line>
+                <text x="22" y="152" fill="#b45309" font-size="12" font-weight="bold" data-page-node-id="iTS1H0N2F7e8wlAbIQ6JgL">滑移面 Slip plane</text>
+                <!-- 剪切力箭头 -->
+                <g id="forceArrow" style="display:none" data-page-node-id="fLAiMMlsOHwifrON41KQgo">
+                    <path id="arrowPath" d="" fill="none" stroke="#e67e22" stroke-width="3" data-page-node-id="SBYM1hg2vsNrytBsSpwFHa"></path>
+                    <text id="arrowText" x="4" y="-10" fill="#e67e22" font-size="13" font-weight="bold" data-page-node-id="uCkdrv6bBawCBa0AVEpOWP">剪切力</text>
+                </g>
+            </svg>
+        </div>
+
+        <!-- 动态说明 -->
+        <div id="caption" class="caption" data-page-node-id="zgC6rG4njNFO4DH6AaOaZP">
+            <span class="cn" data-page-node-id="xcit5JKdhIZnCowuq2Hn6B">金属离子规则排列，被周围自由电子海共同吸引，形成金属键。</span>
+            <span class="en" data-page-node-id="XWX24plOhpvzFJN4437c4s">Metal ions are held together by the surrounding sea of delocalised electrons — metallic bonding.</span>
+        </div>
+
+        <!-- 图例 -->
+        <div class="legend" data-page-node-id="ZuUfLcBPG5SqY1iI2EV1Pm">
+            <span data-page-node-id="ZXI4lX00Bmvru3hkojumxz"><i class="dot" style="background:#3b82f6" data-page-node-id="n9NcMeQpZYFF0JQoAdJi3P"></i> 金属离子 Metal ion (+)</span>
+            <span data-page-node-id="idzN2XmuTd1ShBXgphEh6B"><i class="dot" style="background:#f59e0b" data-page-node-id="iTMFCYB8GdgK2PBre6bsWI"></i> 自由电子 Delocalised electron (−)</span>
+            <span data-page-node-id="GHjInyxSyr7vM2DbDw7Vza"><i class="dot" style="background:#10b981;width:18px;height:4px;border-radius:2px;" data-page-node-id="M44U6zFBEq3TLlN3AyOdP8"></i> 金属键 Metallic bond</span>
+            <span data-page-node-id="0rMklgk6m0Ar35crHY6SIk"><i class="dot" style="background:#f59e0b;width:18px;height:0;border-top:2px dashed #f59e0b;" data-page-node-id="uwGBCCwMNJe4x5sFUYXHKZ"></i> 滑移面 Slip plane</span>
+        </div>
+
+        <!-- 原理解释 -->
+        <div class="explain" data-page-node-id="7mJ9rL1khg3xwzHHwraQpz">
+            <h4 data-page-node-id="IpBq4MHSh8cfdZENjSbyGR">为什么金属有延展性？</h4>
+            <p data-page-node-id="oM6F5grpyRPxgys2QLTX38">
+                金属键是<b data-page-node-id="qmSktEWSMESn3TLZrJbGlN">非方向性</b>的：金属阳离子浸在自由电子的"海洋"里，电子不属于任何一个特定离子，而是被整块金属共享。
+                当施加剪切力时，<b data-page-node-id="yAs5KTBoSNI2FFKYQrhOB1">一层金属离子可以沿滑移面滑过相邻层</b>（Layers of metal ions slide over each other）。
+                由于电子海是流动的、金属键没有固定指向，离子到达新位置后，<b data-page-node-id="VYpPV3NW44XCEd4MDZvF78">立即与附近的自由电子重建金属键</b>
+                （New metallic bonds form between metal ions and electrons in the new position）。
+                因此金属发生的是<b data-page-node-id="SOC6jXgd0j9OYLk4SqwcZE">塑性形变</b>而非断裂——这正是它能被锤扁、拉成细丝的根本原因。
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const SVGNS = "http://www.w3.org/2000/svg";
+        const svg = document.getElementById('metalSvg');
+        const ionGroup = document.getElementById('ionGroup');
+        const electronGroup = document.getElementById('electronGroup');
+        const bondGroup = document.getElementById('bondGroup');
+        const forceArrow = document.getElementById('forceArrow');
+        const arrowPath = document.getElementById('arrowPath');
+        const arrowText = document.getElementById('arrowText');
+        const slider = document.getElementById('forceSlider');
+        const forceValue = document.getElementById('forceValue');
+        const caption = document.getElementById('caption');
+        const autoBtn = document.getElementById('autoBtn');
+
+        // ---- 晶格参数 ----
+        const COLS = 7, ROWS = 4;
+        const SX = 58, SY = 52, OX = 62, OY = 82, IR = 17, ER = 6.5;
+        const SLIP_Y = OY + 1.5 * SY;   // 158
+        const SLIDE_MAX = 80;           // 上层最大滑移量(px)
+
+        // 金属离子
+        const ions = [];
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const bx = OX + c * SX, by = OY + r * SY;
+                const block = r < 2 ? 'top' : 'bottom';
+                const g = document.createElementNS(SVGNS, 'g');
+                const circle = document.createElementNS(SVGNS, 'circle');
+                circle.setAttribute('r', IR);
+                circle.setAttribute('fill', '#3b82f6');
+                circle.setAttribute('stroke', '#1e3a8a');
+                circle.setAttribute('stroke-width', '1.5');
+                const t = document.createElementNS(SVGNS, 'text');
+                t.setAttribute('text-anchor', 'middle');
+                t.setAttribute('dominant-baseline', 'central');
+                t.setAttribute('fill', '#fff');
+                t.setAttribute('font-size', '16');
+                t.setAttribute('font-weight', 'bold');
+                t.textContent = '+';
+                g.appendChild(circle); g.appendChild(t);
+                ionGroup.appendChild(g);
+                ions.push({ el: g, bx, by, x: bx, y: by, block });
+            }
+        }
+
+        // 自由电子（位于晶格空隙）
+        const electrons = [];
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                const bx = OX + (c + 0.5) * SX, by = OY + (r + 0.5) * SY;
+                const block = r < 2 ? 'top' : 'bottom';
+                const g = document.createElementNS(SVGNS, 'g');
+                const circle = document.createElementNS(SVGNS, 'circle');
+                circle.setAttribute('r', ER);
+                circle.setAttribute('fill', '#f59e0b');
+                circle.setAttribute('stroke', '#b45309');
+                circle.setAttribute('stroke-width', '1');
+                const t = document.createElementNS(SVGNS, 'text');
+                t.setAttribute('text-anchor', 'middle');
+                t.setAttribute('dominant-baseline', 'central');
+                t.setAttribute('fill', '#fff');
+                t.setAttribute('font-size', '10');
+                t.setAttribute('font-weight', 'bold');
+                t.textContent = '−';
+                g.appendChild(circle); g.appendChild(t);
+                electronGroup.appendChild(g);
+                electrons.push({ el: g, bx, by, x: bx, y: by, block, phase: Math.random() * 6.28 });
+            }
+        }
+
+        // 键合连线对象池
+        const BOND_COUNT = ions.length * 2;
+        const bondPool = [];
+        for (let i = 0; i < BOND_COUNT; i++) {
+            const ln = document.createElementNS(SVGNS, 'line');
+            ln.setAttribute('stroke-linecap', 'round');
+            bondGroup.appendChild(ln);
+            bondPool.push(ln);
+        }
+
+        // ---- 状态 ----
+        let targetF = 0, dispF = 0, auto = false, t = 0;
+
+        function bondStroke(f) {
+            if (f < 0.12) return 'rgba(100,116,139,0.32)';   // 初始晶格键
+            if (f < 0.5)  return 'rgba(13,148,136,0.5)';     // 滑移中，键在重组
+            return 'rgba(16,185,129,0.9)';                   // 新金属键形成
+        }
+
+        function drawBonds(f) {
+            const stroke = bondStroke(f);
+            const w = 1 + f * 1.6;
+            let idx = 0;
+            for (const ion of ions) {
+                // 找最近的两颗电子
+                const near = electrons
+                    .map(e => ({ e, d: (e.x - ion.x) ** 2 + (e.y - ion.y) ** 2 }))
+                    .sort((a, b) => a.d - b.d)
+                    .slice(0, 2);
+                for (const { e } of near) {
+                    if (idx >= bondPool.length) break;
+                    const ln = bondPool[idx++];
+                    ln.setAttribute('x1', ion.x); ln.setAttribute('y1', ion.y);
+                    ln.setAttribute('x2', e.x);   ln.setAttribute('y2', e.y);
+                    ln.setAttribute('stroke', stroke);
+                    ln.setAttribute('stroke-width', w);
+                    ln.style.display = '';
+                }
+            }
+            for (; idx < bondPool.length; idx++) bondPool[idx].style.display = 'none';
+        }
+
+        function updateArrow(f) {
+            if (f < 0.02) { forceArrow.style.display = 'none'; return; }
+            forceArrow.style.display = '';
+            const L = 36 + f * 150;
+            forceArrow.setAttribute('transform', 'translate(26,48)');
+            arrowPath.setAttribute('d', `M0,0 L${L},0 M${L - 9},-6 L${L},0 L${L - 9},6`);
+            arrowText.setAttribute('x', Math.max(4, L / 2 - 22));
+        }
+
+        function updateCaption(f) {
+            let cn, en;
+            if (f < 0.12) {
+                cn = '金属离子规则排列，被周围自由电子海共同吸引，形成金属键。';
+                en = 'Metal ions are held together by the surrounding sea of delocalised electrons — metallic bonding.';
+                caption.classList.remove('hot');
+            } else if (f < 0.5) {
+                cn = '施加剪切力 → 上层金属离子沿滑移面相对下层滑动。';
+                en = 'Layers of metal ions slide over each other along the slip plane.';
+                caption.classList.remove('hot');
+            } else {
+                cn = '离子滑移到新位置，自由电子立即与相邻离子重建金属键 → 金属不断裂，可被锻打、拉丝（延展性）。';
+                en = 'New metallic bonds form between metal ions and electrons in the new position. The metal deforms instead of breaking — that is ductility.';
+                caption.classList.add('hot');
+            }
+            caption.querySelector('.cn').textContent = cn;
+            caption.querySelector('.en').textContent = en;
+        }
+
+        function frame() {
+            t += 0.016;
+            if (auto) {
+                targetF = 0.5 - 0.5 * Math.cos(t * 0.5);
+                slider.value = targetF.toFixed(3);
+            }
+            dispF += (targetF - dispF) * 0.12;
+            const f = dispF;
+            const shift = f * SLIDE_MAX;
+
+            forceValue.textContent = (f * 100).toFixed(0) + '%';
+
+            for (const o of ions) {
+                o.x = o.bx + (o.block === 'top' ? shift : 0);
+                o.y = o.by;
+                o.el.setAttribute('transform', `translate(${o.x},${o.y})`);
+            }
+            for (const e of electrons) {
+                const sx = 2.2 * Math.sin(t * 1.3 + e.phase);
+                const sy = 2.2 * Math.cos(t * 1.1 + e.phase);
+                e.x = e.bx + (e.block === 'top' ? shift : 0) + sx;
+                e.y = e.by + sy;
+                e.el.setAttribute('transform', `translate(${e.x},${e.y})`);
+            }
+
+            drawBonds(f);
+            updateArrow(f);
+            updateCaption(f);
+            requestAnimationFrame(frame);
+        }
+
+        slider.addEventListener('input', () => {
+            if (auto) { auto = false; autoBtn.textContent = '自动演示'; }
+            targetF = parseFloat(slider.value);
+        });
+        autoBtn.addEventListener('click', () => {
+            auto = !auto;
+            autoBtn.textContent = auto ? '停止演示' : '自动演示';
+            if (auto) t = 0;
+        });
+
+        requestAnimationFrame(frame);
+    </script>
+</body>
+</html>

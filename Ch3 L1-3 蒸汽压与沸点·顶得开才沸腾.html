@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vapor Pressure &amp; Boiling: When Vapor Wins</title>
+<style>
+* { box-sizing: border-box; }
+html,body { margin:0; padding:0; }
+body {
+  font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: #EEF3F5; color:#1f2937; min-height:100vh;
+  display:flex; align-items:center; justify-content:center; padding:18px;
+}
+.card {
+  width:100%; max-width:1040px; background:#fff; border-radius:22px;
+  box-shadow:0 22px 48px -18px rgba(10,69,93,.35); overflow:hidden;
+  border:1px solid #dbe7ec;
+}
+.head { padding:16px 22px 12px; background:linear-gradient(135deg,#0A455D,#1c6a85); color:#fff; }
+.head h1 { margin:0; font-size:22px; font-weight:800; letter-spacing:.3px; }
+.head .sub { margin-top:3px; font-size:13px; opacity:.85; }
+.head .badge {
+  float:right; margin-top:-2px; background:rgba(255,255,255,.16); color:#fff;
+  font-size:12px; font-weight:700; padding:5px 11px; border-radius:999px;
+  border:1px solid rgba(255,255,255,.35);
+}
+.body { padding:14px 18px 18px; }
+.controls { display:flex; flex-wrap:wrap; gap:9px; align-items:center; margin-bottom:10px; min-height:40px; }
+.ctl-group { display:flex; flex-wrap:wrap; gap:9px; align-items:center; width:100%; }
+.ctl-label { font-size:13px; font-weight:700; color:#0A455D; margin-right:2px; }
+button.btn {
+  border:none; cursor:pointer; font-size:13px; font-weight:700; padding:8px 13px;
+  border-radius:12px; background:#EAF2F5; color:#0A455D; transition:all .15s ease;
+  border:1px solid #cfe1e8;
+}
+button.btn:hover { transform:translateY(-1px); }
+button.btn.active { background:#0A455D; color:#fff; border-color:#0A455D; box-shadow:0 8px 18px -6px rgba(10,69,93,.55); }
+button.btn.accent { background:#FBF0D9; color:#9A6208; border-color:#f0d9a8; }
+button.btn.accent.active { background:#B45309; color:#fff; border-color:#B45309; }
+input[type=range] { -webkit-appearance:none; appearance:none; height:8px; border-radius:8px;
+  background:#cfe3ea; outline:none; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; height:22px; width:22px;
+  border-radius:50%; background:#0A455D; cursor:pointer; margin-top:-7px; box-shadow:0 2px 6px rgba(0,0,0,.25); }
+input[type=range]::-moz-range-thumb { height:22px; width:22px; border:none; border-radius:50%; background:#0A455D; cursor:pointer; }
+.slider-wrap { display:flex; align-items:center; gap:8px; background:#EAF3F6; padding:7px 12px; border-radius:12px; border:1px solid #cfe3ea; }
+.slider-wrap .val { font-size:12px; font-weight:800; color:#0A455D; min-width:42px; text-align:right; }
+canvas { display:block; width:100%; height:430px; background:#F8FAFC; border-radius:14px; border:1px solid #e3ebf0; }
+.legend { display:flex; flex-wrap:wrap; gap:14px; margin-top:11px; font-size:11.5px; color:#64748b; }
+.legend .it { display:flex; align-items:center; gap:6px; }
+.legend .dot { width:13px; height:13px; border-radius:50%; display:inline-block; border:1.5px solid #fff; box-shadow:0 0 0 1px #cbd5e1; }
+.legend .ln { width:18px; height:0; border-top:2px dashed #888; display:inline-block; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="head">
+    <span class="badge">P0 · Hands-on</span>
+    <h1>Vapor Pressure &amp; Boiling: When Vapor Wins</h1>
+    <div class="sub">Ch3 L1 · Intermolecular Forces · P0 · Hands-on</div>
+  </div>
+  <div class="body">
+    <div class="controls" id="controls"></div>
+    <canvas id="micro"></canvas>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+<script>
+
+const DPR = window.devicePixelRatio || 1;
+const cv = document.getElementById('micro');
+const ctx = cv.getContext('2d');
+let W=0, H=0, t=0;
+function resize(){
+  const r = cv.getBoundingClientRect();
+  cv.width = Math.round(r.width*DPR); cv.height = Math.round(r.height*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0); W=r.width; H=r.height;
+}
+window.addEventListener('resize', resize);
+
+// palette
+const TEAL='#4699AA', DTEAL='#0A455D', RED='#C0504D', ORANGE='#E08A3C',
+      YEL='#FACC15', HOT='#EF4444', GRN='#2E8B57', BLUE='#3B6FE0', PURPLE='#8B5CF6',
+      GREY='#94A3B8', DARK='#1f2937';
+const ELEM = { H:'#ffffff', C:'#2b2b2b', O:'#E0484D', N:'#3B6FE0', Cl:'#2E8B57',
+               Br:'#7A2E2E', S:'#E0B020', Na:'#9B6DD6', K:'#7A4FD0', Mg:'#5BA38A',
+               Al:'#8AA0B0', Fe:'#C8743C', Cu:'#C0623C', Zn:'#7E8AA0', Cation:'#4699AA' };
+
+function atom(x,y,r,label,color,stroke){
+  ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fillStyle=color||TEAL; ctx.fill();
+  ctx.lineWidth=2.4; ctx.strokeStyle=stroke||'#fff'; ctx.stroke();
+  if(label){ ctx.fillStyle='#fff'; ctx.font='bold '+Math.round(r*0.8)+'px Arial';
+    ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(label,x,y); }
+}
+function core(x,y,r,label,color){ // nucleus-style for structure models
+  atom(x,y,r,label,color||'#475569');
+}
+function electronGlow(x,y,r,col){
+  col = col||YEL;
+  const g=ctx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,'#fff7d6'); g.addColorStop(.45,col); g.addColorStop(1,'rgba(250,204,21,0)');
+  ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fillStyle=g; ctx.fill();
+}
+// external agents
+function hand(x,y,s){ s=s||1; ctx.save(); ctx.translate(x,y); ctx.scale(s,s);
+  ctx.font='40px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('✋',0,0); ctx.restore(); }
+function hammer(x,y,drop){ drop=drop||0; ctx.save(); ctx.translate(x,y+drop);
+  ctx.font='46px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('🔨',0,0); ctx.restore(); }
+function arrow(x1,y1,x2,y2,col,w){ col=col||DTEAL; w=w||4;
+  ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1);
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-13*Math.cos(a-0.4), y2-13*Math.sin(a-0.4));
+  ctx.lineTo(x2-13*Math.cos(a+0.4), y2-13*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill(); }
+function dashedArrow(x1,y1,x2,y2,col){ col=col||HOT; ctx.strokeStyle=col; ctx.fillStyle=col;
+  ctx.lineWidth=3; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.setLineDash([]);
+  const a=Math.atan2(y2-y1,x2-x1);
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-10*Math.cos(a-0.4), y2-10*Math.sin(a-0.4));
+  ctx.lineTo(x2-10*Math.cos(a+0.4), y2-10*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill(); }
+function battery(cx,cy,on){ ctx.fillStyle=on?'#FEF9C3':'#E2E8F0'; ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+  ctx.fillRect(cx-18,cy-26,36,52); ctx.strokeRect(cx-18,cy-26,36,52);
+  ctx.fillStyle='#475569'; ctx.font='bold 18px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('+',cx-26,cy); ctx.fillText('−',cx+26,cy);
+  ctx.fillStyle=on?DTEAL:'#94a3b8'; ctx.font='bold 11px Arial'; ctx.fillText(on?'BATTERY ON':'BATTERY',cx,cy-36); }
+function wire(x1,y1,x2,y2){ ctx.strokeStyle='#64748b'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); }
+function bulb(x,y,glow){ ctx.beginPath(); ctx.arc(x,y,14,0,7);
+  ctx.fillStyle = glow>0.3? 'rgba(253,224,71,'+(0.4+glow*0.6)+')':'rgba(203,213,225,.6)';
+  ctx.fill(); ctx.strokeStyle='#475569'; ctx.lineWidth=2; ctx.stroke();
+  ctx.fillStyle=DTEAL; ctx.font='bold 11px Arial'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('bulb',x,y+18); }
+function flame(x,y){ const f=Math.sin(t*8)*3; ctx.save(); ctx.translate(x,y);
+  ctx.fillStyle='#F97316'; ctx.beginPath(); ctx.ellipse(0,-14+f,12,22,0,0,7); ctx.fill();
+  ctx.fillStyle='#FACC15'; ctx.beginPath(); ctx.ellipse(0,-12+f*0.5,6,13,0,0,7); ctx.fill(); ctx.restore();
+  ctx.fillStyle='#B45309'; ctx.font='bold 11px Arial'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText('Bunsen',x,y+12); }
+function thermo(x,y0,y1,lvl){ ctx.strokeStyle='#94a3b8'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(x,y0); ctx.lineTo(x,y1-14); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x,y1,10,0,7); ctx.stroke();
+  const mh=(y1-14-y0)*lvl; ctx.fillStyle=HOT; ctx.fillRect(x-3,y1-14-mh,6,mh+10);
+  ctx.beginPath(); ctx.arc(x,y1,8,0,7); ctx.fillStyle=HOT; ctx.fill();
+  ctx.fillStyle='#475569'; ctx.font='bold 10px Arial'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+  ctx.fillText('thermo',x,y0-4); }
+function slipPlane(x0,y,x1,col){ col=col||ORANGE; ctx.strokeStyle=col; ctx.lineWidth=2; ctx.setLineDash([5,5]);
+  ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle=col; ctx.font='bold 11px Arial'; ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.fillText('slip plane',x0+4,y-3); }
+/* The wash behind in-canvas text. Raised from .55 to .78: the gas space now
+   carries two species and is roughly twice as crowded, so the old wash let
+   molecules bleed through the equilibrium note. Over the plain white panel the
+   change is invisible; behind a label it is the difference between readable and
+   not. */
+function panelBg(x,y,w,h,title){ ctx.fillStyle='rgba(255,255,255,.78)'; ctx.fillRect(x,y,w,h);
+  if(title){ ctx.fillStyle=DTEAL; ctx.font='bold 14px Arial'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(title,x+w/2,y+8); } }
+function label(txt,x,y,col,size,align){ col=col||DARK; size=size||12; align=align||'center';
+  ctx.fillStyle=col; ctx.font='bold '+size+'px Arial'; ctx.textAlign=align; ctx.textBaseline='middle'; ctx.fillText(txt,x,y); }
+
+// ---- UI helpers ----
+const _controls = document.getElementById('controls');
+const _legend = document.getElementById('legend');
+function addSlider(text, min, max, val, onInput, fmt){
+  const wrap=document.createElement('div'); wrap.className='slider-wrap';
+  const lab=document.createElement('span'); lab.className='ctl-label'; lab.textContent=text;
+  const inp=document.createElement('input'); inp.type='range'; inp.min=min; inp.max=max; inp.value=val; inp.style.width='150px';
+  const v=document.createElement('span'); v.className='val'; v.textContent=(fmt?fmt(val):val);
+  inp.addEventListener('input',e=>{ const x=parseFloat(e.target.value); v.textContent=(fmt?fmt(x):x); onInput(x); });
+  wrap.appendChild(lab); wrap.appendChild(inp); wrap.appendChild(v); _controls.appendChild(wrap);
+  return inp;
+}
+function addButton(text, onClick, cls){
+  const b=document.createElement('button'); b.className='btn'+(cls?(' '+cls):''); b.textContent=text;
+  b.addEventListener('click',()=>onClick(b)); _controls.appendChild(b); return b;
+}
+function addToggle(text, onChange, cls){
+  const b=document.createElement('button'); b.className='btn'+(cls?(' '+cls):''); b.textContent=text;
+  b.addEventListener('click',()=>{ b.classList.toggle('active'); onChange(b.classList.contains('active'), b); });
+  _controls.appendChild(b); return b;
+}
+function addLegend(items){ _legend.innerHTML='';
+  items.forEach(it=>{ const d=document.createElement('span'); d.className='it';
+    let mark=''; if(it.color){ mark='<span class="dot" style="background:'+it.color+'"></span>'; }
+    else if(it.line){ mark='<span class="ln" style="border-color:'+it.line+'"></span>'; }
+    d.innerHTML=mark+'<span>'+it.text+'</span>'; _legend.appendChild(d); }); }
+
+// ---- loop ----
+function frame(){ t+=1/60; if(window.drawScene) drawScene(ctx,W,H,t); requestAnimationFrame(frame); }
+resize(); requestAnimationFrame(frame);
+
+
+/* ===========================================================================
+   Vapor pressure & boiling — piston cylinder, dynamic equilibrium
+   ---------------------------------------------------------------------------
+   P_sat(T)    Antoine, log10(P/mmHg) = 8.07131 − 1730.63/(233.426 + T)
+   T_boil      the same equation solved backwards for a given external pressure
+   equilibrium two rates that must balance: escape depends only on T,
+               condensation is proportional to how many molecules are in the gas,
+               so they meet at N_eq ∝ P_sat. Both keep running at the balance
+               point — that is the whole point of "dynamic".
+   =========================================================================== */
+
+const AX1=8.07131, AX2=1730.63, AX3=233.426, MMHG=760, KPA=101.325;
+const KCON=0.40;          // condensation probability per gas molecule per second
+const GASMAX=38;          // water-vapour molecules drawn at the ceiling of the range
+const PREF=1.55, CEXP=0.60;
+const BARTOP=5.0;         // atm, full scale of the two pressure bars
+const KAIR=30;            // air molecules drawn per 1.00 atm of air at full bore
+
+let T=20;                 // °C
+
+/* The external pressure is no longer a number someone types in — it is produced
+   by the air sitting above the water. `airAmt` is how much air is in the vessel,
+   written as the pressure that amount would give at 100% volume, so the control
+   can still be labelled in atm. `Pext` is DERIVED every frame: a fixed amount of
+   air in a smaller volume is a higher pressure (P ∝ 1/V), which is what makes
+   the vessel-volume slider a pressure knob as well as a volume knob.
+
+   P_air deliberately does NOT depend on T. Heating your own water does not
+   change the atmosphere above it; and if it did, the P_ext bar would drift while
+   the teacher dragged the temperature slider, turning "the boiling point at this
+   pressure" into a moving target. */
+let airAmt=1.00;          // air in the vessel, in atm at 100% volume
+let Pext=1.00;            // DERIVED each frame: airAmt / vol
+let vol=1.00;             // gas volume as a fraction of the full bore, 0.50–1.00
+let mols=[], slots=[], freeSlots=[], air=[];
+let gasCount=0, escAcc=0, conAcc=0, escRate=0, conRate=0;
+let escDisp=0, conDisp=0;   // display-only averages, see step()
+let boiling=false, lift=0, geow=0, geoh=0, spacing=26, molR=5.5;
+let bubbles=[];
+
+function psat(Tc){ return Math.pow(10, AX1 - AX2/(AX3+Tc))/MMHG; }
+function boilT(P){ return AX2/(AX1 - Math.log10(P*MMHG)) - AX3; }
+function nEq(Tc){ return GASMAX*Math.min(1, Math.pow(Math.max(psat(Tc),1e-7)/PREF, CEXP)); }
+const lerp=(a,b,k)=>a+(b-a)*k;
+
+function geom(W,H){
+  const vx=26, vy=76, vh=H-vy-36, vw=(W-92)*0.60;
+  const px=vx+vw+40, pw=W-px-26, sy=vy+vh*0.50;
+  /* The liquid is incompressible, so shrinking the vessel moves the PISTON down
+     onto a fixed liquid level — the vapor band is what gets squeezed. In a 2D
+     slice the vapor volume is proportional to its height, so vol maps straight
+     onto the band height. */
+  return { vx:vx, vy:vy, vw:vw, vh:vh, sy:sy, px:px, py:54, pw:pw, ph:262,
+           btop:114, bar:296, blab:88, bval:104, pistonY:sy-(sy-vy)*vol };
+}
+
+function buildSlots(g){
+  const x0=g.vx+14, x1=g.vx+g.vw-14, y0=g.sy+10, y1=g.vy+g.vh-14;
+  const area=Math.max(1,x1-x0)*Math.max(1,y1-y0);
+  spacing=Math.max(15,Math.min(40,Math.sqrt(area/(0.866*112))));
+  molR=spacing*0.20;
+  const rowH=spacing*0.866, out=[];
+  let r=0;
+  for(let y=y1;y>=y0;y-=rowH,r++){
+    const off=(r%2)?spacing*0.5:0;
+    for(let x=x0+off;x<=x1;x+=spacing) out.push({x:x+Math.random()*spacing*0.16,y:y+Math.random()*rowH*0.26,row:r});
+  }
+  return out;
+}
+function rebuild(W,H){
+  const g=geom(W,H);
+  slots=buildSlots(g); freeSlots=[];
+  mols=slots.map((s,i)=>({st:'liq',si:i,hx:s.x,hy:s.y,ph:Math.random()*7,
+    x:s.x,y:s.y,vx:0,vy:0,ang:Math.random()*7,spin:0,settle:1,sx:s.x,sy:s.y,gt:0}));
+  gasCount=0; escAcc=0; conAcc=0; bubbles=[]; geow=W; geoh=H;
+  air=[];                 // repopulated by syncAir() on the next step
+}
+
+/* ---------------------------------------------------------------------------
+   The air.
+
+   A second, independent population in the gas space. Three deliberate choices:
+
+   1. It never condenses and never leaves. Water evaporates and returns; air
+      just sits there being air. Keeping it in its own array means the whole
+      established condensation / nEq machinery is untouched.
+   2. Its speed does NOT respond to the temperature slider. P_air was defined as
+      independent of T (the atmosphere above your beaker does not care how hot
+      the beaker is), so if these molecules visibly sped up with T the picture
+      would contradict the model's own pressure law.
+   3. It is drawn smaller, and as a two-equal-balls dumbbell, so the silhouette
+      separates it from water (one big red O + two small white H) at a glance.
+   --------------------------------------------------------------------------- */
+function newAir(g){
+  const rr=molR*1.2;
+  return { x:g.vx+rr+Math.random()*Math.max(1,g.vw-2*rr),
+           y:g.pistonY+rr+Math.random()*Math.max(1,g.sy-g.pistonY-2*rr),
+           vx:(Math.random()-0.5)*190, vy:(Math.random()-0.5)*190,
+           ang:Math.random()*7, spin:(Math.random()-0.5)*3.2 };
+}
+/* The NUMBER of air molecules tracks the AMOUNT of air, not the pressure. A fixed
+   amount squeezed into half the volume is the same number of molecules in less
+   space — the density is the picture of the pressure rise. */
+function syncAir(g){
+  const want=Math.round(KAIR*airAmt);
+  while(air.length>want) air.pop();
+  while(air.length<want) air.push(newAir(g));
+}
+
+/* Only the EXPOSED top layer evaporates. A molecule counts as exposed when no
+   other liquid molecule sits above it within one lattice step — so as the top
+   layer thins out the surface RECEDES and the layer underneath becomes the new
+   top, instead of molecules being plucked from inside the bulk.
+
+   This replaced a fixed depth band (the top N rows, then a random pick biased
+   upward), which let a molecule two rows down launch out of the liquid while
+   its neighbours stayed put. Exposed-only is both what the eye expects and
+   what the physics says: evaporation is a surface process. */
+function topLayer(){
+  const occ=[];
+  for(const m of mols) if(m.st==='liq'&&m.settle>=1) occ.push(m);
+  const out=[];
+  for(const m of occ){
+    let covered=false;
+    for(const b of occ){
+      if(b!==m && b.hy<m.hy-1 && Math.abs(b.hx-m.hx)<spacing*0.95){ covered=true; break; }
+    }
+    if(!covered) out.push(m);
+  }
+  return out;
+}
+
+function doEscape(tl){
+  if(!tl.length) return false;
+  for(let k=0;k<14;k++){
+    const m=tl[(Math.random()*tl.length)|0];
+    if(!m||m.st!=='liq'||m.settle<1) continue;
+    const spd=Math.sqrt((T+273)/293), v=(88+Math.random()*64)*spd;
+    m.st='gas'; m.x=m.hx; m.y=m.hy;
+    m.vx=(Math.random()-0.5)*1.1*v; m.vy=-Math.abs(0.72+Math.random()*0.28)*v;
+    m.ang=Math.random()*7; m.spin=(Math.random()-0.5)*2.8*spd;
+    m.gt=0;
+    freeSlots.push(m.si); m.si=-1; gasCount++;
+    return true;
+  }
+  return false;
+}
+/* A molecule only becomes a condensation candidate after GT_MIN seconds in the
+   gas. Without the wait, "closest to the surface" is always the one that just
+   left — it flies out and is pulled straight back in the same frame, net zero,
+   so the balance looks alive while neither direction actually happens. */
+const GT_MIN=0.12;
+function doCondense(g){
+  if(!freeSlots.length) return false;
+  let best=null,by=-1e9;
+  for(const m of mols){ if(m.st!=='gas'||m.gt<GT_MIN) continue; if(m.y>by){by=m.y;best=m;} }
+  if(!best) return false;
+  /* Fill the LOWEST free slot — the one sitting right on top of the liquid —
+     ties broken by distance from where it landed.
+     Condensation is a surface process, so it has to ADD AT THE SURFACE. Filling
+     the highest vacancy instead drove the vacancies downward layer by layer,
+     and once a vacancy is buried the only molecule still "exposed" is the one
+     at the bottom of the pit — so molecules launched out of the middle of the
+     liquid. Adding at the bottom of the vacancy band keeps every vacancy in one
+     band above the liquid, which leaves the liquid's top row flat and
+     contiguous and makes topLayer() return exactly that row. */
+  let bi=-1,br=1e9,bx=1e9;
+  for(let i=0;i<freeSlots.length;i++){
+    const s=slots[freeSlots[i]], dx=Math.abs(s.x-best.x);
+    if(s.row<br||(s.row===br&&dx<bx)){br=s.row;bx=dx;bi=i;}
+  }
+  if(bi<0) return false;
+  const si=freeSlots.splice(bi,1)[0];
+  best.st='liq'; best.si=si; best.sx=best.x; best.sy=best.y;
+  best.hx=slots[si].x; best.hy=slots[si].y; best.settle=0; gasCount--;
+  return true;
+}
+
+/* The air and the water vapour actually collide.
+
+   This is what turns "the air is at 1.00 atm" from an assertion into a
+   mechanism. Before, the air occupied the headspace but did nothing in it, so
+   the only thing holding the vapour down was the number in the pressure bar.
+   Now the air is physically in the way: a molecule that has just escaped gets
+   its heading randomised within a mean free path instead of flying clean across
+   the band, and with a full charge of air most of them are knocked back toward
+   the surface within a few tens of pixels. In vacuum they run straight and far —
+   which is exactly the contrast the vacuum demo needs.
+
+   DIRECTION is exchanged; SPEED is not. Each species already has its own speed
+   law, and they are not the same law: the vapour's goes as √T, the air's is
+   constant because P_air was defined as independent of T. Letting the two
+   thermalise would quietly erase "hot water makes faster molecules", since the
+   air would drag the vapour back to its own fixed speed. Both species are
+   renormalised by their own loops immediately after this call, so a collision
+   only decides where a molecule goes next, never how fast it is.
+
+   Equal masses, so the normal components simply swap; the tangential ones are
+   left alone and both molecules keep their heading sideways. */
+function collideAirVapour(){
+  if(!air.length) return;
+  const minD=molR*1.2+molR*1.9;
+  for(const a of air){
+    for(const m of mols){
+      if(m.st!=='gas') continue;
+      const dx=m.x-a.x, dy=m.y-a.y, d2=dx*dx+dy*dy;
+      if(d2>=minD*minD) continue;
+      const d=Math.sqrt(d2)||1e-6, nx=dx/d, ny=dy/d;
+      const push=(minD-d)*0.5;
+      a.x-=nx*push; a.y-=ny*push;
+      m.x+=nx*push; m.y+=ny*push;
+      const dvn=(m.vx-a.vx)*nx+(m.vy-a.vy)*ny;
+      if(dvn>=0) continue;               // already separating
+      a.vx+=dvn*nx; a.vy+=dvn*ny;
+      m.vx-=dvn*nx; m.vy-=dvn*ny;
+    }
+  }
+}
+
+function step(g,dt){
+  /* The causal chain in two lines: how much air is in the vessel, and how much
+     room it has, decide the external pressure. Everything downstream — the
+     boiling test, the piston lift, the bubble rate, the boiling-point readout —
+     follows from it. Nothing else in the model sets Pext. */
+  Pext = airAmt/vol;
+  syncAir(g);
+
+  const ps=psat(T);
+  boiling = ps>=Pext;
+  lift = lerp(lift, boiling?Math.min(11,(ps-Pext)*15):0, Math.min(1,dt*6));
+
+  escRate = KCON*nEq(T);
+  /* Condensation flux is proportional to the vapor NUMBER DENSITY, and the
+     density is N / volume. So dividing by vol makes the balance land at
+     N = nEq(T)·vol — squeeze the vapor and the surplus molecules condense out,
+     squeeze it back and they evaporate again, while P_sat never moves. This is
+     the whole point of the volume control. */
+  conRate = KCON*gasCount/vol;
+
+  /* Two more values, and they are NOT the ones above. The model's events are
+     discrete — a whole number of molecules — so at low counts the balance lands
+     BETWEEN integers: at 20 °C with the vessel squeezed to 50% the target is 1.5
+     molecules, and the count can only be 1 or 2. Measured, the instantaneous
+     intensities then differ by 34% and the two arrows flicker visibly unequal,
+     which reads as "not in balance" at exactly the moment the model is claiming
+     balance. A one-second average of each flux is what the arrows were always
+     meant to show — and the long-run escape and condensation fluxes ARE equal,
+     because the count cannot drift. Only the display uses these; the event
+     accumulators below keep using the instantaneous rates, so the physics is
+     untouched. */
+  escDisp = lerp(escDisp, escRate, Math.min(1,dt*1.0));
+  conDisp = lerp(conDisp, conRate, Math.min(1,dt*1.0));
+
+  escAcc += escRate*dt;
+  // topLayer() is O(occupied²), so it is built at most once per frame and only
+  // when an escape is actually about to fire.
+  let n=0, tl=null;
+  while(escAcc>=1&&n++<3){
+    escAcc-=1; if(tl===null) tl=topLayer();
+    if(!doEscape(tl)) escAcc+=1;
+  }
+  conAcc += conRate*dt;
+  n=0; while(conAcc>=1&&n++<3){ conAcc-=1; if(!doCondense(g)) conAcc+=1; }
+
+  /* Runs BEFORE the two movement loops on purpose: they are the ones that hold
+     each species at its own speed, so any velocity a collision hands out is
+     corrected in the same frame and never shows up as a speed change. */
+  collideAirVapour();
+
+  const amp=Math.min(3.2,0.3+0.020*T);
+  for(const m of mols){
+    if(m.st==='liq'){
+      m.x=m.hx+Math.cos(t*2.10+m.ph*3.1)*amp;
+      m.y=m.hy+Math.sin(t*1.70+m.ph*2.3)*amp;
+      m.ang=Math.sin(t*0.62+m.ph)*0.38;
+    } else {
+      const spd=Math.sqrt((T+273)/293);
+      m.vx+=(Math.random()-0.5)*10*dt; m.vy+=(Math.random()-0.5)*10*dt;
+      const sp=Math.hypot(m.vx,m.vy)||1, want=118*spd, k=1+(want/sp-1)*Math.min(1,dt*1.6);
+      m.vx*=k; m.vy*=k;
+      m.x+=m.vx*dt; m.y+=m.vy*dt; m.ang+=m.spin*dt*spd; m.gt+=dt;
+      const rr=molR*1.9;
+      if(m.x<g.vx+rr){m.x=g.vx+rr;m.vx=Math.abs(m.vx);}
+      if(m.x>g.vx+g.vw-rr){m.x=g.vx+g.vw-rr;m.vx=-Math.abs(m.vx);}
+      const top=g.pistonY-lift+2+rr;
+      if(m.y<top){m.y=top;m.vy=Math.abs(m.vy);}
+      if(m.y>g.sy-rr){m.y=g.sy-rr;m.vy=-Math.abs(m.vy);}
+    }
+  }
+
+  /* Air, confined by exactly the same walls as the vapour. Squeeze the vessel and
+     these do not multiply — they keep the same count in less space, which is the
+     density rise the pressure law is talking about. */
+  for(const a of air){
+    const sp=Math.hypot(a.vx,a.vy)||1, want=112, k=1+(want/sp-1)*Math.min(1,dt*1.8);
+    a.vx*=k; a.vy*=k;
+    a.x+=a.vx*dt; a.y+=a.vy*dt; a.ang+=a.spin*dt;
+    const rr=molR*1.2;
+    if(a.x<g.vx+rr){a.x=g.vx+rr;a.vx=Math.abs(a.vx);}
+    if(a.x>g.vx+g.vw-rr){a.x=g.vx+g.vw-rr;a.vx=-Math.abs(a.vx);}
+    const atop=g.pistonY-lift+2+rr;
+    if(a.y<atop){a.y=atop;a.vy=Math.abs(a.vy);}
+    if(a.y>g.sy-rr){a.y=g.sy-rr;a.vy=-Math.abs(a.vy);}
+  }
+
+  for(const m of mols){
+    if(m.st==='liq'&&m.settle<1){
+      m.settle=Math.min(1,m.settle+dt*2.6);
+      const e=m.settle*m.settle*(3-2*m.settle);
+      m.x=lerp(m.sx,m.hx+Math.cos(t*2.10+m.ph*3.1)*amp,e);
+      m.y=lerp(m.sy,m.hy+Math.sin(t*1.70+m.ph*2.3)*amp,e);
+    }
+  }
+  if(boiling){
+    /* ps/Pext blows up once the air has been pumped all the way out, which is
+       precisely the "it boils at room temperature" case. The clamp keeps the
+       arithmetic finite and leaves the bubble rate pinned at its ceiling there. */
+    if(Math.random()<dt*(6+14*Math.min(1.4,ps/Math.max(Pext,1e-3)-1))){
+      bubbles.push({x:g.vx+34+Math.random()*(g.vw-68),y:g.sy+20+Math.random()*(g.vh*0.42),
+                    r:3+Math.random()*4,v:44+Math.random()*46,w:Math.random()*6.3});
+    }
+  }
+  for(let i=bubbles.length-1;i>=0;i--){
+    const b=bubbles[i]; b.y-=b.v*dt; b.x+=Math.sin(t*3.4+b.w)*20*dt; b.r+=5*dt;
+    if(b.y<g.sy+3) bubbles.splice(i,1);
+  }
+}
+
+/* Text that has to survive sitting on top of molecules or arrows. panelBg is the
+   house primitive for exactly this; the box is measured so it hugs the string. */
+function boxedLabel(txt,x,y,col,size,align){
+  ctx.font='bold '+size+'px Arial';
+  const w=ctx.measureText(txt).width+13;
+  const left = align==='right' ? x-w : (align==='center' ? x-w/2 : x);
+  panelBg(left, y-size*0.88, w, size*1.76, '');
+  label(txt, x, y, col, size, align);
+}
+
+function waterMol(x,y,r,ang){
+  const rH=r*0.58, d=r*1.75, a1=ang-Math.PI/2-0.912, a2=ang-Math.PI/2+0.912;
+  const h1x=x+Math.cos(a1)*d, h1y=y+Math.sin(a1)*d;
+  const h2x=x+Math.cos(a2)*d, h2y=y+Math.sin(a2)*d;
+  ctx.lineCap='round'; ctx.strokeStyle='#9DB4C6'; ctx.lineWidth=Math.max(0.8,r*0.26);
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(h1x,h1y); ctx.moveTo(x,y); ctx.lineTo(h2x,h2y); ctx.stroke();
+  ctx.beginPath(); ctx.arc(h1x,h1y,rH,0,7); ctx.fillStyle='#EAF4FB'; ctx.fill();
+  ctx.lineWidth=Math.max(0.7,rH*0.42); ctx.strokeStyle='#5E8AA6'; ctx.stroke();
+  ctx.beginPath(); ctx.arc(h2x,h2y,rH,0,7); ctx.fillStyle='#EAF4FB'; ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fillStyle=ELEM.O; ctx.fill();
+  ctx.lineWidth=Math.max(0.8,r*0.24); ctx.strokeStyle='#A33120'; ctx.stroke();
+}
+
+/* Air: two equal grey-blue balls on a short bond. Two equal balls against water's
+   one big red O + two small white H is a silhouette difference, not a colour
+   difference — colour alone gets unreadable once the gas space is crowded. */
+function airMol(x,y,r,ang){
+  const d=r*1.34, rh=r*0.74, c=Math.cos(ang), s=Math.sin(ang);
+  const x1=x-c*d/2, y1=y-s*d/2, x2=x+c*d/2, y2=y+s*d/2;
+  ctx.lineCap='round'; ctx.strokeStyle='#8698A6'; ctx.lineWidth=Math.max(0.7,r*0.38);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  for(const p of [[x1,y1],[x2,y2]]){
+    ctx.beginPath(); ctx.arc(p[0],p[1],rh,0,7);
+    ctx.fillStyle='#C3D0DA'; ctx.fill();
+    ctx.lineWidth=Math.max(0.6,rh*0.34); ctx.strokeStyle='#7E919F'; ctx.stroke();
+  }
+}
+
+function drawScene(ctx,W,H,t){
+  if(!mols.length||geow!==W||geoh!==H) rebuild(W,H);
+  const g=geom(W,H);
+  step(g,1/60);
+  ctx.clearRect(0,0,W,H);
+
+  const ps=psat(T), tb=boilT(Pext);
+
+  /* The bore is full height and the PISTON slides inside it, so the band from the
+     top of the bore down to the piston is open cylinder — no vapor, no fill. That
+     blank strip is what makes the compression legible: the vapor band visibly
+     shrinks while the liquid stays exactly where it was. */
+  const pBot=g.pistonY-lift, pTop=pBot-13, cx=g.vx+g.vw/2;
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(g.vx,g.vy-4,g.vw,g.vh+8); ctx.clip();
+  /* The gas band used to be cream, labelled "vapor". Now that air is the species
+     that actually fills it, a neutral slate keeps the fill from claiming the
+     space is all water vapour. */
+  ctx.fillStyle='#E9F0F5'; ctx.fillRect(g.vx,pBot,g.vw,g.sy-pBot);
+  ctx.fillStyle='rgba(176,220,240,.62)'; ctx.fillRect(g.vx,g.sy,g.vw,g.vy+g.vh-g.sy);
+  ctx.restore();
+  ctx.strokeStyle='#64748b'; ctx.lineWidth=3;
+  ctx.beginPath(); ctx.moveTo(g.vx,g.vy-4); ctx.lineTo(g.vx,g.vy+g.vh);
+  ctx.lineTo(g.vx+g.vw,g.vy+g.vh); ctx.lineTo(g.vx+g.vw,g.vy-4); ctx.stroke();
+
+  // air first, so the water — the species the lesson is about — lands on top
+  for(const a of air){
+    if(a.x<g.vx-16||a.x>g.vx+g.vw+16||a.y<pTop-16||a.y>g.vy+g.vh+16) continue;
+    airMol(a.x,a.y,molR*0.72,a.ang);
+  }
+
+  // molecules
+  for(const m of mols){
+    if(m.x<g.vx-16||m.x>g.vx+g.vw+16||m.y<pTop-16||m.y>g.vy+g.vh+16) continue;
+    ctx.globalAlpha = m.st==='gas'?0.96:(m.settle<1?0.5+0.5*m.settle:1);
+    waterMol(m.x,m.y,molR,m.ang);
+  }
+  ctx.globalAlpha=1;
+
+  // boiling bubbles
+  for(const b of bubbles){
+    ctx.globalAlpha=.62; ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,7);
+    ctx.fillStyle='rgba(255,255,255,.92)'; ctx.fill();
+    ctx.lineWidth=1.4; ctx.strokeStyle='rgba(90,150,185,.85)'; ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+
+  // surface line
+  ctx.strokeStyle='rgba(255,255,255,.9)'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(g.vx+1,g.sy); ctx.lineTo(g.vx+g.vw-1,g.sy); ctx.stroke();
+
+  // piston — now simply the vessel's lid; what presses on the water is inside
+  ctx.fillStyle='#64809A'; ctx.strokeStyle='#3A566E'; ctx.lineWidth=1.6;
+  ctx.fillRect(g.vx-4,pTop,g.vw+8,13); ctx.strokeRect(g.vx-4,pTop,g.vw+8,13);
+
+  /* The five orange arrows and the "External pressure 1.00 atm" caption used to
+     sit here, asserting a downward force from OUTSIDE the vessel. Now that the
+     air is inside the vessel and IS the external pressure, keeping them would
+     count it twice — a student would reasonably add the two. Gone. The space
+     they freed carries the one thing the back row needs to read at a glance. */
+  const pill = boiling ? 'BOILING' : 'not boiling';
+  ctx.font='bold 15px Arial';
+  const pw=ctx.measureText(pill).width+30;
+  ctx.save();
+  if(boiling) ctx.globalAlpha=0.80+0.20*Math.sin(t*4);
+  ctx.fillStyle=boiling?HOT:'#E4EBEF';
+  ctx.fillRect(cx-pw/2, 17, pw, 27);
+  ctx.restore();
+  label(pill, cx, 31, boiling?'#fff':'#8A9AA6', 15);
+
+  // how much of the bore the vapor no longer occupies
+  if(vol<0.985){
+    const midY=(g.vy+pTop)/2;
+    boxedLabel('vapor volume '+Math.round(vol*100)+'%', cx, midY-12, '#64748b', 12, 'center');
+    boxedLabel('P_sat unchanged', cx, midY+11, DTEAL, 14, 'center');
+  }
+
+  /* Surface exchange: two mirrored arrows whose shared length encodes the rate.
+     The labels sit BESIDE the arrows, not above them — stacked above, the three
+     rows (note + two labels) need roughly 60px of clear air, and at 50% volume
+     the whole vapor band is only about 80px, so the pistol would have hit the
+     text. Beside the arrows there is always room. */
+  /* The arrows read the smoothed fluxes, not the instantaneous ones — see step()
+     for why a one-second average is the honest thing to draw here. */
+  const rmax=Math.max(escDisp,conDisp,1e-6), relE=escDisp/rmax, relC=conDisp/rmax;
+  const yb=g.sy-10, vapH=g.sy-pBot;
+  const LMAX=Math.max(14,Math.min(62,vapH-35)), midA=yb-(14+LMAX)/2;
+  arrow(cx-70, yb, cx-70, yb-(14+relE*LMAX), boiling?HOT:GRN, 4);
+  arrow(cx+70, yb-(14+relC*LMAX), cx+70, yb, BLUE, 4);
+  boxedLabel('escaping', cx-84, midA, boiling?HOT:'#2E8B57', 11, 'right');
+  boxedLabel('condensing', cx+84, midA, '#3B6FE0', 11, 'left');
+  /* The equilibrium line only appears when it has its own clear row above the
+     arrows. The Vapor / Liquid tags were dropped — the legend names both
+     regions and in-canvas they landed on the molecules. The BOILING banner was
+     dropped for the same reason; the lifted piston, the red bar-to-bar line and
+     the readout below the bars already state it without covering anything. */
+  if(yb-(14+LMAX)-20 > pTop+16)
+    boxedLabel('equilibrium: escaping and condensing happen at the same rate',
+               cx, yb-(14+LMAX)-16, '#64748b', 12, 'center');
+
+  // pressure bars
+  panelBg(g.px,g.py,g.pw,g.ph,'Pressure (atm)');
+  const b1=g.px+g.pw*0.30, b2=g.px+g.pw*0.72, bw=52;
+  label('P_sat',    b1, g.blab, DTEAL, 13);
+  label('P_ext  (air)', b2, g.blab, '#B45309', 13);
+  label((ps*KPA).toFixed(1)+' kPa', b1, g.bval, DTEAL, 12);
+  label((Pext*KPA).toFixed(1)+' kPa', b2, g.bval, '#B45309', 12);
+  for(let k=0;k<=BARTOP;k++){
+    const y=g.bar-(g.bar-g.btop)*k/BARTOP;
+    ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(g.px+16,y); ctx.lineTo(g.px+g.pw-14,y); ctx.stroke();
+    label(String(k), g.px+34, y, '#94a3b8', 10);
+  }
+  ctx.strokeStyle='#94a3b8'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(g.px+16,g.bar); ctx.lineTo(g.px+g.pw-14,g.bar); ctx.stroke();
+  function bar(cx,v,col){
+    const hh=(g.bar-g.btop)*Math.max(0,Math.min(1,v/BARTOP));
+    ctx.fillStyle=col; ctx.globalAlpha=.85;
+    ctx.fillRect(cx-bw/2,g.bar-hh,bw,hh);
+    ctx.globalAlpha=1;
+    ctx.strokeStyle=col; ctx.lineWidth=2; ctx.strokeRect(cx-bw/2,g.bar-hh,bw,hh);
+    ctx.beginPath(); ctx.moveTo(cx,g.bar); ctx.lineTo(cx,g.bar-hh); ctx.strokeStyle=col; ctx.lineWidth=1;
+    ctx.setLineDash([3,3]); ctx.stroke(); ctx.setLineDash([]);
+  }
+  bar(b1,ps,TEAL);
+  bar(b2,Pext,ORANGE);
+  // equality mark: the boiling criterion, drawn where the two bars stand level
+  if(boiling){
+    ctx.globalAlpha=.55+.45*Math.sin(t*4);
+    ctx.strokeStyle=HOT; ctx.lineWidth=3; ctx.setLineDash([7,5]);
+    ctx.beginPath(); ctx.moveTo(b1-30,g.bar-(g.bar-g.btop)*Math.min(1,ps/BARTOP));
+    ctx.lineTo(b2+30,g.bar-(g.bar-g.btop)*Math.min(1,Pext/BARTOP)); ctx.stroke(); ctx.setLineDash([]);
+    ctx.globalAlpha=1;
+  }
+
+  // readout under the bars
+  /* With the air pumped all the way out there is no boiling point to state — the
+     liquid boils at whatever temperature it happens to be at. boilT(0) cheerfully
+     returns the Antoine extrapolation limit of about −233 °C, which is both
+     meaningless and alarming on screen, so that case gets named instead. Only a
+     literally zero P_ext triggers it: the slider's next stop, 0.01 atm, already
+     gives a genuine 7 °C. */
+  const rc=g.px+g.pw/2, noAir=Pext<0.005;
+  label('BOILING POINT AT THIS P_ext', rc, g.py+g.ph+22, '#64748b', 11);
+  label(noAir?'any temperature':tb.toFixed(1)+' °C', rc, g.py+g.ph+48, boiling?HOT:DTEAL, noAir?20:24);
+  label(noAir ? 'no air left — nothing holds the surface down'
+      : (boiling ? 'P_sat has reached P_ext  →  boiling'
+                 : 'P_sat is still below P_ext  →  no boiling'),
+        rc, g.py+g.ph+72, boiling?HOT:'#2E8B57', 12);
+}
+
+let presetBtns=[], airSlider=null;
+function syncPreset(){
+  presetBtns.forEach(b=>b.classList.toggle('active', Math.abs(parseFloat(b.dataset.p)-airAmt)<0.005));
+}
+/* One quantity, two faces: the atm the class talks in, and the number of
+   molecules they can count on the canvas. Showing both is what ties the control
+   to the picture — drag it and molecules visibly appear or vanish. */
+function airFmt(v){ return v.toFixed(2)+' atm · n='+Math.round(KAIR*v); }
+function setAir(v){
+  airAmt=v;
+  if(airSlider){ airSlider.value=v; airSlider.nextElementSibling.textContent=airFmt(v); }
+  syncPreset();
+}
+addSlider('Temperature', 0, 150, 20, v=>{T=v;}, v=>v+' °C');
+/* This control used to be "External pressure" — a free number with nothing in
+   the scene producing it. It now sets HOW MUCH AIR IS IN THE VESSEL, written as
+   the pressure that amount gives at full bore, and the pressure is derived. */
+airSlider=addSlider('Air in the vessel', 0.00, 2.00, 1.00,
+  v=>{airAmt=v; syncPreset();}, airFmt);
+airSlider.nextElementSibling.style.minWidth='118px';
+/* addSlider sets min/max/value but not step, and a range input defaults to
+   step = 1 — so without this the slider could only land on 0 / 1 / 2, and
+   neither High altitude (0.64) nor anything in between was reachable. */
+airSlider.step=0.01;
+addSlider('Vessel volume', 50, 100, 100, v=>{vol=v/100;}, v=>v+'%');
+/* "Evacuate" now means literally what it says: pump the air out of the vessel.
+   With no air left there is nothing holding the surface down, so P_ext is 0 and
+   the water boils at whatever temperature it happens to be — the vacuum-pump
+   demo, and the hardest evidence there is that the boiling point is set from
+   outside the liquid. The vapour is cleared too so the sequence reads from a
+   clean, empty vessel. */
+addButton('Evacuate', ()=>{
+  setAir(0); air=[];
+  freeSlots=[]; let k=0;
+  for(const m of mols){ m.st='liq'; m.si=k; m.hx=slots[k].x; m.hy=slots[k].y;
+    m.x=m.hx; m.y=m.hy; m.settle=1; k++; }
+  gasCount=0; escAcc=0; conAcc=0; bubbles=[];
+}, 'accent');
+/* The pressure cooker keeps its name because that is the anchor the lesson uses,
+   even though a real cooker's extra 2 atm comes from trapped steam rather than
+   from air. What the model shows is the quantity that actually decides whether
+   the water boils: the pressure sitting on the surface. */
+[['Sea level',1.00],['High altitude',0.64],['Pressure cooker',2.00]].forEach(([nm,p])=>{
+  presetBtns.push(addButton(nm, ()=>setAir(p)));
+});
+syncPreset();
+addLegend([{color:ELEM.O,text:'water molecule (O + 2 H)'},
+           {color:'#C3D0DA',text:'air (N₂ / O₂) — the molecules that make the pressure'},
+           {color:'#E9F0F5',text:'gas space — air + water vapour'},
+           {color:'#B0DCF0',text:'liquid — molecules held by intermolecular forces'},
+           {color:HOT,text:'boiling'},{color:DTEAL,text:'saturated vapor pressure'},
+           {color:ORANGE,text:'external pressure = the pressure of that air'},
+           {text:'add air → P_ext rises → the boiling point rises  ·  pump the air out → it boils at any temperature'}]);
+</script>
+</body>
+</html>

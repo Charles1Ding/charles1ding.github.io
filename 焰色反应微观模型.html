@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<!--
+设计提示词（Design Prompt）：
+主题 —— 焰色反应的微观视角：Na vs Cu
+目的 —— 从原子微观层面展示：火焰把原子最外层电子激发到高能级（吸收热能），
+        电子回落时发射出特定波长的光子（这就是我们看到的"焰色"）。
+        不同元素的能级间距（指纹）不同 → 发射光子能量 hν 不同 → 波长 λ 不同 → 颜色不同。
+        Na 的 3s→3p 发射 ≈589 nm（黄）；Cu 的 4s→4p（蓝绿混合）发射更短波长 → 蓝绿。
+包含 ——
+  左右两个原子（Na / Cu）：Bohr 壳层 + 高亮发生跃迁的价电子 + 激发轨道环
+  每个原子旁的"能级阶梯"：基态 / 激发态两条能级 + ΔE 箭头（按真实 eV 比例放大绘制）
+  动画：火焰加热 → 电子吸收热能跃迁到激发态 → 回落发射光子（按 λ 上色）飞向可见光谱
+  底部"可见光谱带"：把 Na / Cu 发射光子按真实波长标到光谱上，直观看到落点不同
+  右侧数据卡：ΔE (eV)、λ (nm)、ν (Hz)、对应颜色、跃迁标注
+风格 —— teal 主色 #0A455D / #4699AA；Canvas 2D；零依赖；可离线运行
+教学注意 —— 澄清常见误区：看到的焰色 = 电子"回落发射"的光，不是吸收的光；火焰提供的是激发所需的热能。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>焰色反应微观模型 · Flame Test at the Atomic Scale</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:#EEF3F5;font-family:'Segoe UI',Arial,'Microsoft YaHei',sans-serif;color:#16323F;padding:18px 12px 40px;}
+  .wrap{max-width:1080px;margin:0 auto;}
+  h1{color:#0A455D;font-size:22px;letter-spacing:.2px;}
+  .sub{color:#5B7684;font-size:13px;margin:4px 0 12px;line-height:1.55;}
+  .card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(10,69,93,.08);padding:12px;}
+  .ctrls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0;}
+  .btn{padding:7px 16px;border-radius:9px;border:1.5px solid #0A455D;background:#fff;color:#0A455D;
+       font-size:13px;font-weight:600;cursor:pointer;}
+  .btn:hover{background:#EAF3F7;}
+  .btn.active{background:#0A455D;color:#fff;}
+  .ctlrow{display:flex;align-items:center;gap:8px;font-size:13px;color:#0A455D;font-weight:600;}
+  .ctlrow input[type=range]{accent-color:#0A455D;}
+  canvas{display:block;border-radius:10px;width:100%;}
+  .duo{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;}
+  .panel{flex:1 1 300px;min-width:280px;}
+  .datacard{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(10,69,93,.08);padding:14px;}
+  .datacard h3{color:#0A455D;font-size:16px;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+  .sw{width:16px;height:16px;border-radius:4px;display:inline-block;border:1px solid rgba(0,0,0,.15);}
+  .datarow{display:flex;justify-content:space-between;font-size:13px;padding:5px 2px;border-bottom:1px dashed #DDE8ED;}
+  .datarow b{color:#0A455D;font-family:Consolas,'Courier New',monospace;}
+  .note{margin-top:14px;background:#E4EEF2;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#0A455D;line-height:1.6;}
+  .note b{color:#B3441E;}
+  .foot{margin-top:18px;text-align:center;font-size:11.5px;color:#8FA9B7;}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#33586B;margin-top:8px;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>焰色反应微观模型 · Na vs Cu</h1>
+  <div class="sub">从原子尺度看：火焰把原子<b>最外层电子</b>激发到高能级（吸收热能），电子回落时<b>发射</b>出特定波长的光子——这就是我们看到的"焰色"。<br>
+  关键：每种元素的能级间距是独特的（像指纹），所以发射光子的能量 hν、波长 λ、颜色都不同。 <b>Na 发黄光，Cu 发蓝绿光，正是因为跃迁的电子所处的能级结构不同。</b></div>
+
+  <div class="ctrls">
+    <button class="btn" id="btnHeat">🔥 开始加热</button>
+    <button class="btn" id="btnReset">↺ 冷却复位</button>
+    <div class="ctlrow"><label>速度</label><input type="range" id="sSpeed" min="0.3" max="2" step="0.1" value="1"><span id="vSpeed">1.0×</span></div>
+    <span class="hint" style="font-size:11.5px;color:#8FA9B7;">提示：点击「🔥 开始加热」让火焰持续激发 Na / Cu 并不断发射光子；再点一次「停止加热」，原子冷却回基态。可对照两者光子在光谱上的落点差异。</span>
+  </div>
+
+  <div class="card"><canvas id="cv"></canvas></div>
+
+  <div class="duo">
+    <div class="datacard" id="cardNa">
+      <h3><span class="sw" id="swNa"></span> 钠 Na（Z = 11）</h3>
+      <div class="datarow"><span>发生跃迁的电子</span><b>3s¹ 价电子</b></div>
+      <div class="datarow"><span>跃迁</span><b>3s → 3p（激发）→ 3s（发射）</b></div>
+      <div class="datarow"><span>能级差 ΔE</span><b id="dENa">2.11 eV</b></div>
+      <div class="datarow"><span>发射波长 λ</span><b id="dLNa">589 nm</b></div>
+      <div class="datarow"><span>频率 ν = c/λ</span><b id="dVNa">5.09×10¹⁴ Hz</b></div>
+      <div class="datarow"><span>看到的焰色</span><b style="color:#B07A00;">金黄色（黄）</b></div>
+    </div>
+    <div class="datacard" id="cardCu">
+      <h3><span class="sw" id="swCu"></span> 铜 Cu（Z = 29）</h3>
+      <div class="datarow"><span>发生跃迁的电子</span><b>4s¹ 价电子</b></div>
+      <div class="datarow"><span>跃迁</span><b>4s → 4p（激发）→ 4s（发射）</b></div>
+      <div class="datarow"><span>能级差 ΔE</span><b id="dECu">2.41 eV</b></div>
+      <div class="datarow"><span>发射波长 λ</span><b id="dLCu">515 nm</b></div>
+      <div class="datarow"><span>频率 ν = c/λ</span><b id="dVCu">5.83×10¹⁴ Hz</b></div>
+      <div class="datarow"><span>看到的焰色</span><b style="color:#0A8F7A;">蓝绿色（绿中带蓝）</b></div>
+    </div>
+  </div>
+
+  <div class="note">💡 <b>澄清一个常见误区：</b> 焰色反应里我们眼睛看到的颜色，是电子<b>从激发态回落到基态时"发射"的光子</b>，而不是"吸收"的光。
+  火焰本身提供的是把电子"推"到高能级所需的<b>热能</b>（吸收）。电子跃迁的能级差 ΔE 越大 → 发射光子能量 hν = ΔE 越大 → 波长 λ = hc/ΔE 越短 → 颜色越偏蓝/绿。
+  Cu 的能级差（≈2.4 eV）比 Na（≈2.1 eV）略大，所以 Cu 发出更短波长的蓝绿光，Na 发出较长波长的黄光。</div>
+
+  <div class="foot">焰色反应微观模型 • Canvas 2D • 零依赖 • 可离线运行</div>
+</div>
+
+<script>
+'use strict';
+/* ================= helpers ================= */
+function rr(c,x,y,w,h,r){r=Math.min(r,w/2,h/2);c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);
+  c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+function lerp(a,b,t){return a+(b-a)*t;}
+function pill(c,text,x,y,o){o=o||{};const f=o.font||'11px Segoe UI';c.font=f;
+  const pad=(o.pad!=null?o.pad:6),h=o.h||20;const w=c.measureText(text).width+pad*2;
+  c.fillStyle=o.bg||'rgba(255,255,255,.93)';rr(c,x-w/2,y-h/2,w,h,h/2);c.fill();
+  if(o.border){c.strokeStyle=o.border;c.lineWidth=1.2;c.stroke();}
+  c.fillStyle=o.fg||'#0A455D';c.textAlign='center';c.textBaseline='middle';c.fillText(text,x,y+.5);
+  return w;}
+function setupCanvas(id,w,h){const cv=document.getElementById(id);const d=window.devicePixelRatio||1;
+  cv.width=w*d;cv.height=h*d;cv.style.width='100%';cv.style.maxWidth=w+'px';
+  cv.style.margin='0 auto';cv.style.display='block';
+  const c=cv.getContext('2d');c.setTransform(d,0,0,d,0,0);return {c,w,h};}
+
+// wavelength (nm) -> RGB (Bruton approximation)
+function wavelengthToRGB(wl){
+  let R=0,G=0,B=0;
+  if(wl>=380&&wl<440){R=-(wl-440)/60;G=0;B=1;}
+  else if(wl<490){R=0;G=(wl-440)/50;B=1;}
+  else if(wl<510){R=0;G=1;B=-(wl-510)/20;}
+  else if(wl<580){R=(wl-510)/70;G=1;B=0;}
+  else if(wl<645){R=1;G=-(wl-645)/65;B=0;}
+  else if(wl<=780){R=1;G=0;B=0;}
+  let f=1;
+  if(wl<420)f=0.3+0.7*(wl-380)/40;
+  else if(wl>700)f=0.3+0.7*(780-wl)/80;
+  R=Math.round(255*Math.max(0,R)*f);G=Math.round(255*Math.max(0,G)*f);B=Math.round(255*Math.max(0,B)*f);
+  return [R,G,B];
+}
+function rgbStr(a,al){return 'rgba('+a[0]+','+a[1]+','+a[2]+','+(al==null?1:al)+')';}
+
+/* ================= spin arrows for orbital boxes ================= */
+function drawArrowUp(x, y, size, color){
+  c.strokeStyle=color; c.fillStyle=color; c.lineWidth=2.2;
+  c.lineCap='round'; c.lineJoin='round';
+  size=size||12;
+  c.beginPath();
+  c.moveTo(x, y+size/2);
+  c.lineTo(x, y-size/2);
+  c.moveTo(x-3.5, y-size/2+4);
+  c.lineTo(x, y-size/2);
+  c.lineTo(x+3.5, y-size/2+4);
+  c.stroke();
+}
+function drawArrowDown(x, y, size, color){
+  c.strokeStyle=color; c.fillStyle=color; c.lineWidth=2.2;
+  c.lineCap='round'; c.lineJoin='round';
+  size=size||12;
+  c.beginPath();
+  c.moveTo(x, y-size/2);
+  c.lineTo(x, y+size/2);
+  c.moveTo(x-3.5, y+size/2-4);
+  c.lineTo(x, y+size/2);
+  c.lineTo(x+3.5, y+size/2-4);
+  c.stroke();
+}
+
+/* ================= data ================= */
+const HC = 1239.84; // hc in eV·nm
+const C  = 3.0e8;   // speed of light m/s
+function makeEl(sym,Z,lambda,trans,ground,excited,note){
+  const E = HC/lambda;                 // eV
+  const nu = C/(lambda*1e-9);         // Hz
+  return {sym,Z,lambda,E,nu,trans,ground,excited,note,
+          color:wavelengthToRGB(lambda),
+          cfg:(sym==='Na'?'[Ne] 3s¹':'[Ar] 4s¹ 3d¹⁰'),
+          caps:(sym==='Na'?[2,8,1]:[2,8,18,1]),
+          valShell:(sym==='Na'?2:3)}; // index of valence shell (0-based)
+}
+const NA = makeEl('Na',11,589,'3s → 3p','3s¹','3p¹','基态 3s¹ → 激发 3p¹ → 发射回 3s¹');
+const CU = makeEl('Cu',29,515,'4s → 4p','4s¹','4p¹','基态 4s¹ → 激发 4p¹ → 发射回 4s¹（实际为绿+蓝线混合，简化为 4s↔4p）');
+
+/* ================= orbital boxes data ================= */
+// 每个轨道：label + boxes 数 + slots（每个盒的 [up, down]）+ 是否为发生跃迁的源/目标
+// [1,1]=↑↓，[1,0]=↑，[0,0]=空
+const NA_ORBS = [
+  {label:'1s', boxes:1, slots:[[1,1]]},
+  {label:'2s', boxes:1, slots:[[1,1]]},
+  {label:'2p', boxes:3, slots:[[1,1],[1,1],[1,1]]},
+  {label:'3s', boxes:1, slots:[[1,0]], isSource:true},   // 红框：跃迁源
+  {label:'3p', boxes:3, slots:[[0,0],[0,0],[0,0]], isTarget:true}, // 激发后接收电子
+];
+const CU_ORBS = [
+  {label:'1s', boxes:1, slots:[[1,1]]},
+  {label:'2s', boxes:1, slots:[[1,1]]},
+  {label:'2p', boxes:3, slots:[[1,1],[1,1],[1,1]]},
+  {label:'3s', boxes:1, slots:[[1,1]]},
+  {label:'3p', boxes:3, slots:[[1,1],[1,1],[1,1]]},
+  {label:'4s', boxes:1, slots:[[1,0]], isSource:true},   // 红框：跃迁源
+  {label:'3d', boxes:5, slots:[[1,1],[1,1],[1,1],[1,1],[1,1]]},
+  {label:'4p', boxes:3, slots:[[0,0],[0,0],[0,0]], isTarget:true},
+];
+
+/* ================= animation state ================= */
+const S={heating:false, heatLevel:0, clock:0, speed:1, last:0,
+         na:{cyc:0, rfac:1, _emitted:false}, cu:{cyc:0, rfac:1, _emitted:false}};
+const photons=[];               // 飞行中的光子：{el, sx, sy, prog}
+const CYCLE=1.3;                // 加热中：每轮 激发→回落 的秒数
+const EXCITE=0.5;               // 电子爬升到激发态的秒数
+const FALL=0.4;                 // 电子从激发态回落（同时发射光子）的秒数
+const PHOTON_T=1.0;             // 光子飞到光谱带所需秒数
+
+// 取原子最外层电子（顶部）在给定 rfac 下的坐标
+function valenceElectron(cx,cy,scale,el,rfac){
+  const baseStep=26*scale;
+  const shellR=i=>16*scale+(i+1)*baseStep;   // 与 drawAtom 一致：单层 scale（修 fix）
+  const Rv=shellR(el.valShell)*rfac;
+  return {x:cx+Rv*Math.cos(-Math.PI/2), y:cy+Rv*0.52*Math.sin(-Math.PI/2), Rv};
+}
+
+/* ================= canvas ================= */
+const CW=1200, CH=700;
+const _cv0 = setupCanvas('cv',CW,CH);
+const ctx = _cv0.c;
+const c = ctx;   // alias: helper draw fns reference c.*
+
+/* ================= atom drawing ================= */
+function drawAtom(cx, cy, scale, el, ph){
+  const caps=el.caps, valIdx=el.valShell;
+  const nShell=caps.length;
+  const baseStep=26*scale;
+  const shellR = i => 16*scale + (i+1)*baseStep;   // 线性放大 —— fix: 原 (16+(i+1)*baseStep)*scale 双乘 scale
+  // nucleus
+  const rn=(14+el.Z*0.35)*scale;
+  const g=c.createRadialGradient(cx-rn*.3,cy-rn*.3,rn*.2,cx,cy,rn);
+  g.addColorStop(0,'#FDE68A');g.addColorStop(.5,'#F59E0B');g.addColorStop(1,'#B45309');
+  c.beginPath();c.arc(cx,cy,rn,0,7);c.fillStyle=g;c.fill();
+  c.lineWidth=2;c.strokeStyle='rgba(255,255,255,.9)';c.stroke();
+  c.fillStyle='#7C2D12';c.font='bold '+Math.max(9,Math.round(rn*0.66))+'px Segoe UI';
+  c.textAlign='center';c.textBaseline='middle';c.fillText('+'+el.Z,cx,cy);
+  // shells (faint ellipses) + electrons
+  for(let s=0;s<nShell;s++){
+    const R=shellR(s);
+    c.strokeStyle='rgba(10,69,93,.18)';c.lineWidth=1;
+    c.beginPath();c.ellipse(cx,cy,R,R*0.52,0,0,7);c.stroke();
+    const cnt=caps[s];
+    for(let i=0;i<cnt;i++){
+      const a=-Math.PI/2 + i*2*Math.PI/Math.max(cnt,3);
+      const ex=cx+R*Math.cos(a), ey=cy+R*0.52*Math.sin(a);
+      const isVal=(s===valIdx);
+      const r=isVal?6.4*scale:4.6*scale;
+      c.beginPath();c.arc(ex,ey,r,0,7);
+      c.fillStyle=isVal?'#FACC15':'#FCD34D';c.fill();
+      c.lineWidth=1.2;c.strokeStyle='#B45309';c.stroke();
+    }
+  }
+  // excited orbit ring (only when electron is above ground)
+  if(ph.rfac>1.001){
+    const R=shellR(valIdx)*ph.rfac;
+    c.strokeStyle='rgba(239,68,68,.5)';c.lineWidth=1.4;c.setLineDash([5,4]);
+    c.beginPath();c.ellipse(cx,cy,R,R*0.52,0,0,7);c.stroke();c.setLineDash([]);
+  }
+  // the transitioning valence electron: position on its (possibly excited) orbit
+  const a=-Math.PI/2; // top
+  const Rv=shellR(valIdx)*ph.rfac;
+  const vx=cx+Rv*Math.cos(a), vy=cy+Rv*0.52*Math.sin(a);
+  c.beginPath();c.arc(vx,vy,7.2*scale,0,7);
+  c.fillStyle='#FACC15';c.fill();
+  c.lineWidth=2;c.strokeStyle='#B45309';c.stroke();
+  // glow when excited
+  if(ph.rfac>1.05){
+    const pulse=1+0.2*Math.sin(S.clock*6);
+    c.beginPath();c.arc(vx,vy,12*scale*pulse,0,7);
+    c.strokeStyle='rgba(239,68,68,.8)';c.lineWidth=2;c.stroke();
+  }
+  return {cx,cy,vx,vy,Rv};
+}
+
+/* ================= energy ladder ================= */
+function drawLadder(cx, groundY, el, ph){
+  const gapPx = 70 + el.E*22;   // exaggerated for visibility, labeled with real eV
+  const exY = groundY - gapPx;
+  // vertical axis
+  c.strokeStyle='#9FB9C6';c.lineWidth=1.4;
+  c.beginPath();c.moveTo(cx,exY-14);c.lineTo(cx,groundY+14);c.stroke();
+  // ground level
+  c.strokeStyle='#0A455D';c.lineWidth=3;
+  c.beginPath();c.moveTo(cx-34,groundY);c.lineTo(cx+34,groundY);c.stroke();
+  // excited level
+  c.strokeStyle='#B3441E';c.lineWidth=3;
+  c.beginPath();c.moveTo(cx-34,exY);c.lineTo(cx+34,exY);c.stroke();
+  // labels
+  c.fillStyle='#0A455D';c.font='bold 12px Consolas,monospace';c.textAlign='left';c.textBaseline='middle';
+  c.fillText('基态 '+el.ground, cx+40, groundY);
+  c.fillStyle='#B3441E';c.fillText('激发态 '+el.excited, cx+40, exY);
+  // ΔE arrow + value
+  c.strokeStyle='#4699AA';c.lineWidth=2;
+  c.beginPath();c.moveTo(cx-46,groundY);c.lineTo(cx-46,exY);c.stroke();
+  c.beginPath();c.moveTo(cx-50,groundY);c.lineTo(cx-46,groundY);c.lineTo(cx-50,exY);c.lineTo(cx-46,exY);c.stroke();
+  c.fillStyle='#0A455D';c.font='bold 12px Segoe UI';c.textAlign='right';c.textBaseline='middle';
+  c.fillText('ΔE = '+el.E.toFixed(2)+' eV', cx-54, (groundY+exY)/2);
+  // electron marker on ladder (synced with atom radius factor)
+  const ey = lerp(groundY, exY, (ph.rfac-1)/0.55);
+  c.beginPath();c.arc(cx,ey,6,0,7);c.fillStyle='#FACC15';c.fill();
+  c.lineWidth=1.4;c.strokeStyle='#B45309';c.stroke();
+  return {cx,exY,groundY};
+}
+
+/* ================= orbital boxes diagram ================= */
+// 画一组轨道方块图。rfac: 1=基态, 1.55=完全激发。
+// 排布方向：1s 在最底（低能级在底），高能级依次往上排，符合教科书惯例。
+// 电子从 isSource 轨道（红框）的 0 号盒淡出，同时从 isTarget 轨道（激发时变绿框）的 0 号盒淡入。
+function drawOrbitalBoxes(x, y, orbs, rfac){
+  const rowH=30, boxSize=22, gap=2, labelW=30;
+  const exciteProgress = Math.max(0, Math.min(1, (rfac-1)/0.55));
+  const nRows = orbs.length;
+  let srcBox=null, tgtBox=null;
+
+  // 反向布局：index 越小（更靠近 1s）排在越底；index 越大（更靠近 3p/4p）排在越顶
+  for(let i=0;i<nRows;i++){
+    const orb=orbs[i];
+    const ry = y + (nRows-1-i)*rowH;
+
+    // 左侧轨道名标签（核心轨道灰色，源/目标深色）
+    c.fillStyle = (orb.isSource||orb.isTarget) ? '#0A455D' : '#7F95A2';
+    c.font = 'bold 11px Consolas, monospace';
+    c.textAlign = 'right';
+    c.textBaseline = 'middle';
+    c.fillText(orb.label, x + labelW - 4, ry + boxSize/2);
+
+    for(let j=0;j<orb.boxes;j++){
+      const bx = x + labelW + j*(boxSize + gap);
+
+      // 盒子描边/底色
+      let border='#9FB9C6', bg='#fff', lw=1.2;
+      if(orb.isSource){ border='#B3441E'; bg='#FFF5F0'; lw=1.8; }
+      else if(orb.isTarget && exciteProgress>0.05){ border='#0A8F7A'; bg='#E4F6F2'; lw=1.8; }
+      rr(c, bx, ry, boxSize, boxSize, 3);
+      c.fillStyle=bg; c.fill();
+      c.strokeStyle=border; c.lineWidth=lw; c.stroke();
+
+      // 电子：源轨道淡出，目标轨道淡入（仅 0 号盒）
+      let [up,dn] = orb.slots[j];
+      if(orb.isSource && j===0){ up *= (1-exciteProgress); dn *= (1-exciteProgress); }
+      if(orb.isTarget && j===0){ up = exciteProgress; }
+
+      const hasUp = up>0.05, hasDn = dn>0.05;
+      const offX = (hasUp && hasDn) ? 5 : 0;
+      if(hasUp){ c.globalAlpha=Math.min(1,up); drawArrowUp(bx+boxSize/2-offX, ry+boxSize/2, 12, '#2563EB'); }
+      if(hasDn){ c.globalAlpha=Math.min(1,dn); drawArrowDown(bx+boxSize/2+offX, ry+boxSize/2, 12, '#DC2626'); }
+      c.globalAlpha=1;
+
+      if(orb.isSource && j===0) srcBox={x:bx+boxSize/2, y:ry+boxSize/2};
+      if(orb.isTarget && j===0) tgtBox={x:bx+boxSize/2, y:ry+boxSize/2};
+    }
+  }
+
+  // 跃迁箭头（源 → 目标，弧线绕到右侧，mid-rfac 时最亮）
+  if(srcBox && tgtBox && exciteProgress>0.03 && exciteProgress<0.97){
+    drawTransitionArrow(srcBox.x, srcBox.y, tgtBox.x, tgtBox.y, exciteProgress);
+  }
+}
+
+// 从源盒子顶部画一条弧线到目标盒子底部，可见度按 sin(π·p) 在中间最强
+function drawTransitionArrow(x1, y1, x2, y2, p){
+  c.save();
+  const vis = Math.sin(p * Math.PI);
+  c.globalAlpha = vis * 0.85;
+  c.strokeStyle='#B3441E'; c.fillStyle='#B3441E'; c.lineWidth=2;
+  c.setLineDash([5, 3]);
+
+  const startX=x1, startY=y1-11;   // 源盒上边
+  const endX  =x2, endY  =y2+11;   // 目标盒下边
+  const ctrlX = Math.max(startX,endX) + 30;
+  const ctrlY = (startY+endY)/2;
+
+  c.beginPath();
+  c.moveTo(startX, startY);
+  c.quadraticCurveTo(ctrlX, ctrlY, endX, endY);
+  c.stroke();
+
+  // 箭头头部
+  c.setLineDash([]);
+  const ang = Math.atan2(endY-ctrlY, endX-ctrlX);
+  const hl=8;
+  c.beginPath();
+  c.moveTo(endX, endY);
+  c.lineTo(endX-hl*Math.cos(ang-0.5), endY-hl*Math.sin(ang-0.5));
+  c.moveTo(endX, endY);
+  c.lineTo(endX-hl*Math.cos(ang+0.5), endY-hl*Math.sin(ang+0.5));
+  c.stroke();
+  c.restore();
+}
+
+/* ================= flame ================= */
+function drawFlame(cx, baseY, el, ph, intensity){
+  // outer glow color = emitted photon color
+  const col = el.color;
+  const h = 46 + intensity*40;
+  const grd=c.createLinearGradient(0,baseY,0,baseY-h);
+  grd.addColorStop(0, rgbStr(col, 0.15+0.75*intensity));
+  grd.addColorStop(0.5, rgbStr(col, 0.5*intensity));
+  grd.addColorStop(1, rgbStr(col, 0));
+  c.beginPath();
+  c.moveTo(cx-22, baseY);
+  c.quadraticCurveTo(cx-16, baseY-h*0.6, cx, baseY-h);
+  c.quadraticCurveTo(cx+16, baseY-h*0.6, cx+22, baseY);
+  c.closePath();c.fillStyle=grd;c.fill();
+  // core
+  c.beginPath();
+  c.moveTo(cx-9, baseY);
+  c.quadraticCurveTo(cx-6, baseY-h*0.5, cx, baseY-h*0.78);
+  c.quadraticCurveTo(cx+6, baseY-h*0.5, cx+9, baseY);
+  c.closePath();c.fillStyle=rgbStr([255,255,255],0.5*intensity);c.fill();
+}
+
+/* ================= photon ================= */
+function drawPhoton(cx, cy, el, prog, targetY){
+  // travels from (cx,cy) up to (cx, targetY)
+  const y = lerp(cy, targetY, prog);
+  const col = el.color;
+  // wave trail
+  c.save();
+  c.globalAlpha = 1-prog*0.3;
+  const r=8;
+  // glow
+  const g=c.createRadialGradient(cx,y,r*0.3,cx,y,r*2.2);
+  g.addColorStop(0, rgbStr(col,0.95));g.addColorStop(1, rgbStr(col,0));
+  c.beginPath();c.arc(cx,y,r*2.2,0,7);c.fillStyle=g;c.fill();
+  c.beginPath();c.arc(cx,y,r,0,7);c.fillStyle=rgbStr(col);c.fill();
+  // little wave symbol
+  c.strokeStyle=rgbStr(col,0.9);c.lineWidth=2;
+  c.beginPath();
+  for(let i=0;i<=20;i++){const xx=cx-18+i*1.8;const yy=y+Math.sin(i*0.7)*4;if(i===0)c.moveTo(xx,yy);else c.lineTo(xx,yy);}
+  c.stroke();
+  c.restore();
+  pill(ctx, el.lambda+' nm', cx, y-16, {font:'bold 11px Segoe UI',h:18,pad:5,bg:'rgba(255,255,255,.92)',fg:rgbStr(col,1),border:'rgba(0,0,0,.12)'});
+}
+
+/* ================= spectrum bar ================= */
+const SPEC_X0=80, SPEC_X1=1140, SPEC_Y=610, SPEC_H=46, WL_MIN=380, WL_MAX=700;
+function wlToX(wl){return SPEC_X0+(wl-WL_MIN)/(WL_MAX-WL_MIN)*(SPEC_X1-SPEC_X0);}
+function drawSpectrum(){
+  const grd=ctx.createLinearGradient(SPEC_X0,0,SPEC_X1,0);
+  const N=80;
+  for(let i=0;i<=N;i++){
+    const wl=WL_MIN+(WL_MAX-WL_MIN)*i/N;
+    grd.addColorStop(i/N, rgbStr(wavelengthToRGB(wl)));
+  }
+  ctx.fillStyle=grd;rr(ctx,SPEC_X0,SPEC_Y,SPEC_X1-SPEC_X0,SPEC_H,8);ctx.fill();
+  ctx.strokeStyle='#9FB9C6';ctx.lineWidth=1;rr(ctx,SPEC_X0,SPEC_Y,SPEC_X1-SPEC_X0,SPEC_H,8);ctx.stroke();
+  ctx.fillStyle='#5B7684';ctx.font='11px Segoe UI';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('可见光谱 380 nm (紫)', SPEC_X0+50, SPEC_Y+SPEC_H+6);
+  ctx.fillText('700 nm (红)', SPEC_X1-40, SPEC_Y+SPEC_H+6);
+  // markers
+  [['Na',NA,589],['Cu',CU,515]].forEach(([nm,el,wl])=>{
+    const x=wlToX(wl);
+    ctx.strokeStyle='#16323F';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(x,SPEC_Y-6);ctx.lineTo(x,SPEC_Y+SPEC_H+6);ctx.stroke();
+    ctx.beginPath();ctx.arc(x,SPEC_Y-6,4,0,7);ctx.fillStyle=rgbStr(el.color);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#16323F';ctx.font='bold 12px Segoe UI';ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.fillText(nm+' '+wl+' nm', x, SPEC_Y-10);
+  });
+}
+
+/* ================= main render ================= */
+function render(){
+  ctx.clearRect(0,0,CW,CH);
+  const heat=S.heatLevel;
+  // 顶部状态条
+  if(S.heating){
+    pill(ctx,'🔥 加热中：电子吸收热能 → 跃迁到激发态 → 回落发射光子', CW/2, 30, {font:'bold 13px Segoe UI',h:24,pad:10,bg:'#FCE8DD',fg:'#B3441E',border:'#E8A48C'});
+  } else {
+    pill(ctx,'⏹ 加热已停止 — 原子冷却，电子回到基态', CW/2, 30, {font:'bold 13px Segoe UI',h:24,pad:10,bg:'rgba(159,185,198,.22)',fg:'#5B7684',border:'rgba(159,185,198,.6)'});
+  }
+  // ---------- Na (left) ----------
+  const naCx=260;
+  const naPh={rfac:S.na.rfac};
+  pill(ctx,'钠 Na  ·  '+NA.cfg, naCx, 64, {font:'bold 15px Segoe UI',h:26,pad:8,bg:'rgba(10,69,93,.08)',fg:'#0A455D'});
+  const naAtom=drawAtom(naCx, 200, 1.3, NA, naPh);
+  drawOrbitalBoxes(420, 105, NA_ORBS, S.na.rfac);
+  drawFlame(naCx, 360, NA, naPh, heat);
+  // ---------- Cu (right) ----------
+  const cuCx=820;
+  const cuPh={rfac:S.cu.rfac};
+  pill(ctx,'铜 Cu  ·  '+CU.cfg, cuCx, 64, {font:'bold 15px Segoe UI',h:26,pad:8,bg:'rgba(10,69,93,.08)',fg:'#0A455D'});
+  const cuAtom=drawAtom(cuCx, 200, 1.3, CU, cuPh);
+  drawOrbitalBoxes(980, 100, CU_ORBS, S.cu.rfac);
+  drawFlame(cuCx, 360, CU, cuPh, heat);
+  // divider
+  ctx.strokeStyle='rgba(10,69,93,.15)';ctx.lineWidth=1;ctx.setLineDash([4,5]);
+  ctx.beginPath();ctx.moveTo(CW/2,20);ctx.lineTo(CW/2,SPEC_Y-10);ctx.stroke();ctx.setLineDash([]);
+  // 飞行中的光子
+  const ty=SPEC_Y+SPEC_H/2;
+  for(const ph of photons){ drawPhoton(ph.sx, ph.sy, ph.el, ph.prog, ty); }
+  // 可见光谱带
+  ctx.fillStyle='#0A455D';ctx.font='bold 13px Segoe UI';ctx.textAlign='left';ctx.textBaseline='bottom';
+  ctx.fillText('两束发射光在可见光谱上的落点（波长不同 → 位置不同 → 颜色不同）：', SPEC_X0, SPEC_Y-26);
+  drawSpectrum();
+}
+
+/* ================= loop ================= */
+function frame(ts){
+  if(!S.last)S.last=ts;
+  const dt=(ts-S.last)/1000; S.last=ts;
+  // 火焰强度平滑过渡（开始加热→升起，停止→冷却）
+  const target=S.heating?1:0;
+  S.heatLevel += (target-S.heatLevel)*Math.min(1,dt*4);
+  if(S.heating){
+    ['na','cu'].forEach(k=>{
+      const st=S[k];
+      st.cyc += dt*S.speed;
+      if(st.cyc>=CYCLE){ st.cyc-=CYCLE; st._emitted=false; }      // 新一轮
+      if(st.cyc<EXCITE){ st.rfac=lerp(1,1.55,st.cyc/EXCITE); }  // 爬升到激发态
+      else if(st.cyc<EXCITE+FALL){ st.rfac=lerp(1.55,1,(st.cyc-EXCITE)/FALL); } // 从激发态回落
+      else { st.rfac=1; }                                       // 静止（基态）
+      if(st.cyc>=EXCITE && !st._emitted){                        // 越过激发点 → 发射光子
+        st._emitted=true;
+        const el=(k==='na')?NA:CU;
+        const cx=(k==='na')?260:820;
+        const ve=valenceElectron(cx,200,1.3,el,1.55);
+        photons.push({el, sx:cx, sy:ve.y, prog:0});
+      }
+    });
+  } else {
+    // 停止加热：电子平滑回落到基态
+    S.na.rfac += (1-S.na.rfac)*Math.min(1,dt*4);
+    S.cu.rfac += (1-S.cu.rfac)*Math.min(1,dt*4);
+  }
+  // 推进飞行中的光子
+  for(let i=photons.length-1;i>=0;i--){
+    photons[i].prog += dt*S.speed/PHOTON_T;
+    if(photons[i].prog>=1) photons.splice(i,1);
+  }
+  render();
+  requestAnimationFrame(frame);
+}
+
+/* ================= wiring ================= */
+function init(){
+  // color swatches in data cards
+  document.getElementById('swNa').style.background=rgbStr(NA.color);
+  document.getElementById('swCu').style.background=rgbStr(CU.color);
+  document.getElementById('dENa').textContent=NA.E.toFixed(2)+' eV';
+  document.getElementById('dLNa').textContent=NA.lambda+' nm';
+  document.getElementById('dVNa').textContent=(NA.nu/1e14).toFixed(2)+'×10¹⁴ Hz';
+  document.getElementById('dECu').textContent=CU.E.toFixed(2)+' eV';
+  document.getElementById('dLCu').textContent=CU.lambda+' nm';
+  document.getElementById('dVCu').textContent=(CU.nu/1e14).toFixed(2)+'×10¹⁴ Hz';
+  const btnHeat=document.getElementById('btnHeat');
+  btnHeat.addEventListener('click',()=>{
+    S.heating=!S.heating;
+    if(S.heating){                                  // 重新开始时清掉残留状态，干净循环
+      S.na={cyc:0,rfac:1,_emitted:false};
+      S.cu={cyc:0,rfac:1,_emitted:false};
+    }
+    btnHeat.textContent=S.heating?'🔥 加热中（点击停止）':'🔥 开始加热';
+    btnHeat.classList.toggle('active',S.heating);
+  });
+  document.getElementById('btnReset').addEventListener('click',()=>{
+    S.heating=false; S.heatLevel=0;
+    S.na={cyc:0,rfac:1,_emitted:false};
+    S.cu={cyc:0,rfac:1,_emitted:false};
+    photons.length=0;
+    btnHeat.textContent='🔥 开始加热'; btnHeat.classList.remove('active');
+  });
+  const sSpeed=document.getElementById('sSpeed');
+  sSpeed.addEventListener('input',e=>{
+    S.speed=parseFloat(e.target.value);
+    document.getElementById('vSpeed').textContent=S.speed.toFixed(1)+'×';
+  });
+  requestAnimationFrame(frame);
+}
+init();
+</script>
+</body>
+</html>
