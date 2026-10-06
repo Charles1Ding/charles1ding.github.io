@@ -3,3 +3,8 @@
 *.bak.*
 *.tmp
 _*_bak/
+
+# Design drafts — kept local only, NOT published (user decision)
+bg.jpg
+hero-visual.png
+index.redesign.html
