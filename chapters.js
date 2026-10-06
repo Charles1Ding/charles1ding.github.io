@@ -116,7 +116,8 @@ window.CHAPTER_OF = {
   "金刚石对比SiO2-熔点模型.html": { ig: 3, ap: 3 },
   "金刚石对比石墨-熔点模型.html": { ig: 3, ap: 3 },
   "金属的延展性.html": { ig: 3, ap: 3 },
-  "键长与势能曲线·不同原子对.html": { ig: 3, ap: 2 }
+  "键长与势能曲线·不同原子对.html": { ig: 3, ap: 2 },
+  "氧化还原·电子得失.html": { ig: 6, ap: 4 }
 };
 
 window.CHAPTERS = {
@@ -126,7 +127,7 @@ window.CHAPTERS = {
     { n: 3, key: "ig3", label: "Ch 3 · Atoms Combining", full: "第3章 Atoms combining 原子结合（化学键）", count: 17 },
     { n: 4, key: "ig4", label: "Ch 4 · Reacting Masses", full: "第4章 Reacting masses, and chemical equations 反应质量与化学方程式", count: 1 },
     { n: 5, key: "ig5", label: "Ch 5 · Using Moles", full: "第5章 Using moles 摩尔计算", count: 1 },
-    { n: 6, key: "ig6", label: "Ch 6 · Redox Reactions", full: "第6章 Redox reactions 氧化还原反应", count: 0 },
+    { n: 6, key: "ig6", label: "Ch 6 · Redox Reactions", full: "第6章 Redox reactions 氧化还原反应", count: 1 },
     { n: 7, key: "ig7", label: "Ch 7 · Electricity & Chem Change", full: "第7章 Electricity and chemical change 电与化学变化（电解）", count: 9 },
     { n: 8, key: "ig8", label: "Ch 8 · Energy Changes", full: "第8章 Energy changes in reactions 反应中的能量变化", count: 10 },
     { n: 9, key: "ig9", label: "Ch 9 · Rate of Reaction", full: "第9章 The rate of reaction 反应速率", count: 1 },
@@ -146,7 +147,7 @@ window.CHAPTERS = {
     { n: 1, key: "ap1", label: "第1章 · 原子结构", full: "第一章 原子结构与元素周期表 Atomic Structure and the Periodic Table", count: 8 },
     { n: 2, key: "ap2", label: "第2章 · 化学键", full: "第二章 原子间的互动——化学键 Interactions Between Atoms – Chemical Bonding", count: 8 },
     { n: 3, key: "ap3", label: "第3章 · 物理性质", full: "第三章 由微观到宏观——物理性质 From Micro to Macro – Physical Properties", count: 18 },
-    { n: 4, key: "ap4", label: "第4章 · 化学反应", full: "第四章 化学反应 Chemical Reactions", count: 8 },
+    { n: 4, key: "ap4", label: "第4章 · 化学反应", full: "第四章 化学反应 Chemical Reactions", count: 9 },
     { n: 5, key: "ap5", label: "第5章 · 化学计量", full: "第五章 化学中的定量分析——化学计量学 Stoichiometry", count: 6 },
     { n: 6, key: "ap6", label: "第6章 · 气体", full: "第六章 “自由”的粒子——气体 Gases", count: 0 },
     { n: 7, key: "ap7", label: "第7章 · 溶液", full: "第七章 均匀混合物——溶液 Solutions", count: 0 },

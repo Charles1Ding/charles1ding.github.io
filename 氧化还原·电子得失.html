@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Redox — Electron Loss &amp; Gain</title>
+<style>
+@font-face{
+  font-family:'MB';
+  src:url(data:font/woff;base64,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) format('woff');
+  font-weight:900; font-style:normal; font-display:block;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:#BEBEBE;
+  font-family:'MB','Segoe UI',system-ui,sans-serif;
+  font-weight:900;
+  color:#2F2F2F;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.wrap{
+  flex:1;min-height:0;width:100%;max-width:1460px;margin:0 auto;
+  display:flex;flex-direction:column;gap:8px;padding:12px 20px 14px;
+}
+.kicker{
+  text-align:center;font-size:15px;letter-spacing:3.2px;
+  color:#4A4A4A;opacity:.75;
+}
+.eq{
+  text-align:center;font-size:38px;line-height:1.1;color:#2F2F2F;
+  letter-spacing:.5px;
+}
+.tabs{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.tab{
+  font-family:inherit;font-weight:900;font-size:17px;color:#2F2F2F;
+  background:rgba(255,255,255,.42);border:0;border-radius:9px;
+  padding:8px 17px;cursor:pointer;letter-spacing:.3px;
+  transition:background .16s,color .16s;
+}
+.tab:hover{background:rgba(255,255,255,.68)}
+.tab[aria-selected="true"]{background:#2F2F2F;color:#fff}
+.stage{
+  flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+}
+canvas{display:block;border-radius:6px}
+.ctl{display:flex;gap:9px;justify-content:center}
+.btn{
+  font-family:inherit;font-weight:900;font-size:16px;color:#2F2F2F;
+  background:rgba(255,255,255,.5);border:0;border-radius:9px;
+  padding:9px 20px;cursor:pointer;letter-spacing:.3px;min-width:104px;
+  transition:background .16s;
+}
+.btn:hover{background:rgba(255,255,255,.78)}
+.btn:active{transform:translateY(1px)}
+.btn.wide{min-width:150px}
+.hint{text-align:center;font-size:12.5px;color:#4A4A4A;opacity:.62;letter-spacing:.4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">REDOX &mdash; ELECTRON LOSS &amp; GAIN</div>
+  <div class="eq" id="eq">&nbsp;</div>
+  <div class="tabs" id="tabs"></div>
+  <div class="stage" id="stage"><canvas id="cv"></canvas></div>
+  <div class="ctl">
+    <button class="btn wide" id="play">Pause</button>
+    <button class="btn" id="step">Step</button>
+    <button class="btn" id="replay">Replay</button>
+  </div>
+  <div class="hint">Space = play / pause &nbsp;·&nbsp; Right arrow = step one group &nbsp;·&nbsp; R = replay</div>
+</div>
+<script>
+'use strict';
+
+/* ============================================================
+   Canvas is authored in a fixed 1280x720 logical space and letterboxed to
+   whatever box the stage gives us, so every coordinate below is resolution
+   independent.
+   ============================================================ */
+const W = 1280, H = 720;
+const R = 120;              // particle radius (0.167 x H -- the agreed unified scale)
+const ER = 17;              // electron dot radius
+
+const COL = {
+  bg:'#BEBEBE',
+  dark:'#666666',
+  ink:'#2F2F2F',
+  inkSoft:'#4A4A4A',
+  mg:'#83CD3D',   // taken from the source video
+  o :'#F42424',   // taken from the source video
+  cl:'#D9B22B',
+  k :'#726E91',
+  br:'#8C4A2F',
+  au:'#E8A81C',   // gold -- warm amber-metal, distinct from Cl's lemon yellow
+  ar:'#5FA8D3',   // argon -- pale blue, unused elsewhere
+  bond:'rgba(70,70,70,.34)',
+  glow:'#EF9F27',
+  force:'rgba(47,47,47,.50)',      // force arrows are neutral ink, not matter
+  ghostPath:'rgba(47,47,47,.24)'   // the route an electron WOULD take
+};
+
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+
+function fit(){
+  const box = document.getElementById('stage').getBoundingClientRect();
+  if(box.width < 10 || box.height < 10) return;
+  const s = Math.min(box.width / W, box.height / H);
+  const cw = Math.floor(W * s), ch = Math.floor(H * s);
+  cv.style.width = cw + 'px';
+  cv.style.height = ch + 'px';
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(cw * dpr);
+  cv.height = Math.round(ch * dpr);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+}
+
+/* ============================================================
+   SMALL HELPERS
+   ============================================================ */
+const clamp = (v,a,b)=>v<a?a:(v>b?b:v);
+const smoothstep = (a,b,x)=>{ const t=clamp((x-a)/(b-a),0,1); return t*t*(3-2*t); };
+const clone = o=>JSON.parse(JSON.stringify(o));
+
+function darken(hex, k){
+  const n = parseInt(hex.slice(1),16);
+  const r = Math.round(((n>>16)&255)*k);
+  const g = Math.round(((n>>8)&255)*k);
+  const b = Math.round((n&255)*k);
+  return 'rgb('+r+','+g+','+b+')';
+}
+
+// Particle glyph size: two-letter symbols need to be smaller to stay inside the
+// circle. Tuned against R so it holds at any canvas size.
+function glyphSize(el){ return el.length > 1 ? R*0.78 : R*0.98; }
+
+function fitFont(text, maxW, base, weight){
+  let s = base;
+  for(let i=0;i<40;i++){
+    ctx.font = weight + ' ' + s + 'px MB, sans-serif';
+    if(ctx.measureText(text).width <= maxW) break;
+    s -= 1;
+    if(s < 8) break;
+  }
+  return s;
+}
+
+/* ============================================================
+   REACTION DATA
+
+   Every reaction is a list of EVENTS. Each event produces one complete scene
+   SNAPSHOT, so the animation is just an interpolation between snapshot k and
+   snapshot k+1 -- which is what makes pause / step / replay a matter of moving
+   a time cursor rather than inverting a state machine.
+
+   An electron is identified by a stable id and lives in exactly one place per
+   snapshot: on a particle's rim (st.rim[pid] = ordered list) or inside a bond
+   (st.bondE[bondId] = ordered list).
+   ============================================================ */
+
+const P = (id,el,color,x,y)=>({id,el,color,x,y});
+const L = (pid,pre,n)=>Array.from({length:n},(_,i)=>pid+'-'+pre+(i+1));
+
+const REACTIONS = [
+  /* ---------------- 1. Mg + Cl2 -> MgCl2 ---------------- */
+  {
+    key:'mgcl2',
+    tab:'Mg + Cl\u2082',
+    eq:'Mg + Cl\u2082 \u2192 MgCl\u2082',
+    particles:{
+      mg : P('mg','Mg',COL.mg, 455, 320),
+      cl1: P('cl1','Cl',COL.cl, 825, 150),
+      cl2: P('cl2','Cl',COL.cl, 825, 490)
+    },
+    bondDef:{ 'cl1-cl2':['cl1','cl2'] },
+    init:{
+      rim:{ mg:['ma','mb'], cl1:L('cl1','c',6), cl2:L('cl2','c',6) },
+      bondE:{ 'cl1-cl2':['s1','s2'] },
+      charges:{ mg:'', cl1:'', cl2:'' },
+      tags:{}
+    },
+    events:[
+      { cap:'Magnesium has 2 electrons in its outer shell. Each chlorine needs 1 more.',
+        dur:3.0 },
+      { cap:'The Cl\u2013Cl bond breaks \u2014 the shared pair splits one electron each.',
+        dur:1.6, type:'split', bond:'cl1-cl2' },
+      { cap:'Magnesium loses 2 electrons \u2014 one to each chlorine.',
+        dur:1.7, type:'move', moves:[['ma','cl1'],['mb','cl2']],
+        charges:{ mg:'2+', cl1:'1\u2212', cl2:'1\u2212' } },
+      { cap:'Mg is oxidised (lost e\u207B). Each Cl is reduced (gained 1 e\u207B).',
+        dur:2.6, tags:{ mg:'oxidised', cl1:'reduced', cl2:'reduced' } }
+    ]
+  },
+
+  /* ---------------- 2. 2Mg + O2 -> 2MgO ---------------- */
+  {
+    key:'mgo',
+    tab:'Mg + O\u2082',
+    eq:'2Mg + O\u2082 \u2192 2MgO',
+    particles:{
+      mg1:P('mg1','Mg',COL.mg, 455, 150),
+      mg2:P('mg2','Mg',COL.mg, 455, 490),
+      o1 :P('o1','O',COL.o,     825, 150),
+      o2 :P('o2','O',COL.o,     825, 490)
+    },
+    bondDef:{ 'o1-o2':['o1','o2'] },
+    init:{
+      rim:{ mg1:['m1a','m1b'], mg2:['m2a','m2b'],
+            o1:L('o1','e',4), o2:L('o2','e',4) },
+      bondE:{ 'o1-o2':['s1','s2','s3','s4'] },
+      charges:{ mg1:'', mg2:'', o1:'', o2:'' },
+      tags:{}
+    },
+    events:[
+      { cap:'Oxygen travels as O\u2082 \u2014 a double bond, 4 shared electrons.',
+        dur:3.0 },
+      { cap:'The O=O bond breaks: 2 + 2 shared electrons, one pair to each oxygen.',
+        dur:1.9, type:'split', bond:'o1-o2' },
+      { cap:'The first magnesium loses its 2 electrons to the first oxygen atom.',
+        dur:1.6, type:'move', moves:[['m1a','o1'],['m1b','o1']],
+        charges:{ mg1:'2+', o1:'2\u2212' } },
+      { cap:'The second magnesium does exactly the same \u2014 it is a 1 : 1 ratio.',
+        dur:1.6, type:'move', moves:[['m2a','o2'],['m2b','o2']],
+        charges:{ mg2:'2+', o2:'2\u2212' } },
+      { cap:'Both magnesiums are oxidised, both oxygens are reduced.',
+        dur:2.6, tags:{ mg1:'oxidised', mg2:'oxidised', o1:'reduced', o2:'reduced' } }
+    ]
+  },
+
+  /* ---------------- 3. Cl2 + 2KBr -> 2KCl + Br2 ---------------- */
+  {
+    key:'kbr',
+    tab:'Cl\u2082 + KBr',
+    eq:'Cl\u2082 + 2KBr \u2192 2KCl + Br\u2082',
+    particles:{
+      k1 :P('k1','K',COL.k,   270, 150),
+      k2 :P('k2','K',COL.k,   270, 490),
+      br1:P('br1','Br',COL.br, 640, 150),
+      br2:P('br2','Br',COL.br, 640, 490),
+      cl1:P('cl1','Cl',COL.cl,1010, 150),
+      cl2:P('cl2','Cl',COL.cl,1010, 490)
+    },
+    bondDef:{ 'cl1-cl2':['cl1','cl2'], 'br1-br2':['br1','br2'] },
+    init:{
+      rim:{ k1:[], k2:[],
+            br1:L('br1','b',8), br2:L('br2','b',8),
+            cl1:L('cl1','c',6), cl2:L('cl2','c',6) },
+      bondE:{ 'cl1-cl2':['cs1','cs2'] },
+      charges:{ k1:'1+', k2:'1+', br1:'1\u2212', br2:'1\u2212', cl1:'', cl2:'' },
+      tags:{ k1:'spectator ion', k2:'spectator ion' }
+    },
+    events:[
+      { cap:'KBr is ionic \u2014 K\u207A ions and Br\u207B ions. K\u207A never changes: a spectator ion.',
+        dur:3.2 },
+      { cap:'The Cl\u2013Cl bond breaks, one electron to each chlorine.',
+        dur:1.6, type:'split', bond:'cl1-cl2' },
+      { cap:'Each Br\u207B gives up 1 electron to a chlorine.',
+        dur:1.8, type:'move', moves:[['b8','cl1'],['b8','cl2']],
+        moves2:[['br1','b8','cl1'],['br2','b8','cl2']],
+        charges:{ br1:'', br2:'', cl1:'1\u2212', cl2:'1\u2212' } },
+      { cap:'The two bromine atoms pair up \u2014 a covalent bond makes Br\u2082.',
+        dur:1.8, type:'form', bond:'br1-br2',
+        take:[['br1','b1'],['br2','b1']] },
+      { cap:'Br\u207B oxidised (lost e\u207B) \u00b7 Cl reduced (gained e\u207B) \u00b7 K\u207A unchanged.',
+        dur:2.8, tags:{ br1:'oxidised', br2:'oxidised', cl1:'reduced', cl2:'reduced' } }
+    ]
+  },
+
+  /* ---------------- 4. Au + O2 -> no reaction ----------------
+     Oxygen here is the SAME O2 as in the magnesium tab. The only change is the metal, so the
+     contrast is unmistakable: same oxidising agent, no transfer.
+
+     `strain` is a new event type. It changes NO state -- nothing is reassigned, no charge, no
+     tag -- and exists purely to visualise the failed tug. Because ownership never moves,
+     buildSnapshots finds ZERO actors here, and that zero IS the chemical claim. */
+  {
+    key:'auo2',
+    tab:'Au + O\u2082',
+    eq:'Au + O\u2082 \u2192 no reaction',
+    particles:{
+      au:P('au','Au',COL.au, 455, 320),
+      o1:P('o1','O', COL.o,  825, 150),
+      o2:P('o2','O', COL.o,  825, 490)
+    },
+    bondDef:{ 'o1-o2':['o1','o2'] },
+    init:{
+      rim:{ au:L('au','a',1), o1:L('o1','e',4), o2:L('o2','e',4) },
+      bondE:{ 'o1-o2':['s1','s2','s3','s4'] },
+      charges:{ au:'', o1:'', o2:'' },
+      tags:{}
+    },
+    events:[
+      { cap:'Oxygen travels as O\u2082 \u2014 a double bond. Gold sits beside it with one outer electron.',
+        dur:3.0 },
+      { cap:'Oxygen pulls at that electron, but gold holds its outer electron very tightly.',
+        dur:3.4, type:'strain', strain:{ at:'au', toward:'o1', eids:['au-a1'], amp:0.30 } },
+      { cap:'The electron strains towards the oxygen \u2014 then snaps back. It never leaves the gold.',
+        dur:3.0, type:'strain', strain:{ at:'au', toward:'o1', eids:['au-a1'], amp:0.30 } },
+      { cap:'No electron transfer, so gold is NOT oxidised and oxygen is NOT reduced. Au + O\u2082: no reaction.',
+        dur:2.8, tags:{ au:'not oxidised', o1:'not reduced', o2:'not reduced' } }
+    ]
+  },
+
+  /* ---------------- 5. Ar + O2 -> no reaction ----------------
+     Same stage as the gold tab. Argon has a COMPLETE outer shell, so there is no loose
+     electron to hand over: the tug ripples round the closed ring and dies, and not one
+     electron leaves. Again zero actors. */
+  {
+    key:'aro2',
+    tab:'Ar + O\u2082',
+    eq:'Ar + O\u2082 \u2192 no reaction',
+    particles:{
+      ar:P('ar','Ar',COL.ar, 455, 320),
+      o1:P('o1','O', COL.o,  825, 150),
+      o2:P('o2','O', COL.o,  825, 490)
+    },
+    bondDef:{ 'o1-o2':['o1','o2'] },
+    init:{
+      rim:{ ar:L('ar','g',8), o1:L('o1','e',4), o2:L('o2','e',4) },
+      bondE:{ 'o1-o2':['s1','s2','s3','s4'] },
+      charges:{ ar:'', o1:'', o2:'' },
+      tags:{}
+    },
+    events:[
+      { cap:'Argon has a full outer shell \u2014 8 electrons, nothing to give and no room to take.',
+        dur:3.0 },
+      { cap:'Oxygen pulls at the shell, but a complete shell has no loose electron to hand over.',
+        dur:3.4, type:'repel', repel:{ at:'ar', toward:'o1', amp:0.11, all:true } },
+      { cap:'The pull only ripples round the closed shell and dies away. Not one electron moves.',
+        dur:3.0, type:'repel', repel:{ at:'ar', toward:'o1', amp:0.11, all:true } },
+      { cap:'No electron transfer, so argon is NOT oxidised and oxygen is NOT reduced. Ar + O\u2082: no reaction.',
+        dur:2.8, tags:{ ar:'not oxidised', o1:'not reduced', o2:'not reduced' } }
+    ]
+  }
+];
+
+/* The Br electron ids are generated as b1..b8 per atom, but the two bromines
+   need distinct ids. Rewrite them at load so the data above can stay readable. */
+(function fixBromineIds(){
+  const rx = REACTIONS[2];
+  ['br1','br2'].forEach(pid=>{
+    rx.init.rim[pid] = Array.from({length:8},(_,i)=>pid+'-b'+(i+1));
+  });
+  // the electron each Br- loses is its 8th; the pair it keeps for the Br-Br bond is its 1st
+  rx.events[2].moves = [['br1-b8','cl1'],['br2-b8','cl2']];
+  delete rx.events[2].moves2;
+  rx.events[3].take = [['br1','br1-b1'],['br2','br2-b1']];
+})();
+
+/* ============================================================
+   SNAPSHOT MACHINE
+   ============================================================ */
+function stripElectron(st, eid){
+  for(const pid in st.rim){
+    const i = st.rim[pid].indexOf(eid);
+    if(i >= 0){ st.rim[pid].splice(i,1); return; }
+  }
+  for(const bid in st.bondE){
+    const i = st.bondE[bid].indexOf(eid);
+    if(i >= 0){ st.bondE[bid].splice(i,1); return; }
+  }
+}
+
+function applyEvent(st, ev){
+  if(ev.type === 'split'){
+    const arr = (st.bondE[ev.bond] || []).slice();
+    delete st.bondE[ev.bond];
+    const half = Math.ceil(arr.length / 2);
+    arr.forEach((e,i)=> st.rim[i < half ? ev.pairA : ev.pairB].push(e));
+  }
+  if(ev.type === 'move'){
+    ev.moves.forEach(m=>{ stripElectron(st, m[0]); st.rim[m[1]].push(m[0]); });
+  }
+  if(ev.type === 'form'){
+    st.bondE[ev.bond] = [];
+    ev.take.forEach(t=>{ stripElectron(st, t[1]); st.bondE[ev.bond].push(t[1]); });
+  }
+  if(ev.charges) Object.assign(st.charges, ev.charges);
+  if(ev.tags)    Object.assign(st.tags, ev.tags);
+  return st;
+}
+
+// A split needs to know which particle each half of the shared pair goes to.
+// Derive it from the bond definition rather than hand-writing it per event.
+function prepare(rx){
+  rx.events.forEach(ev=>{
+    if(ev.type === 'split'){
+      const def = rx.bondDef[ev.bond];
+      ev.pairA = def[0]; ev.pairB = def[1];
+    }
+    // `repel` acts on the whole shell, so let the data say "all" instead of listing ids
+    if(ev.repel && ev.repel.all){
+      ev.repel.eids = (rx.init.rim[ev.repel.at] || []).slice();
+    }
+  });
+}
+
+function buildSnapshots(rx){
+  prepare(rx);
+  const snaps = [clone(rx.init)];
+  const times = [0];
+  let acc = 0;
+  rx.events.forEach(ev=>{
+    const st = applyEvent(clone(snaps[snaps.length-1]), ev);
+    acc += ev.dur;
+    snaps.push(st);
+    times.push(acc);
+  });
+  rx._snaps = snaps; rx._times = times; rx.total = acc;
+
+  // Roster + which electrons actually move anywhere in this reaction. Derived by
+  // diffing snapshots so the "dim the ones that never change" highlight can never
+  // drift out of sync with the choreography.
+  const ids = new Set();
+  snaps.forEach(s=>{
+    for(const pid in s.rim) s.rim[pid].forEach(e=>ids.add(e));
+    for(const bid in s.bondE) s.bondE[bid].forEach(e=>ids.add(e));
+  });
+  rx._ids = [...ids];
+  rx._actors = new Set();
+  // Owner only -- deliberately NOT the slot index. Slot indices shift whenever a
+  // shell gains or loses an electron, so including them would flag every electron
+  // on that particle as an actor and the dimming would never show.
+  const at = (s, eid)=>{
+    for(const pid in s.rim){ if(s.rim[pid].indexOf(eid) >= 0) return 'r'+pid; }
+    for(const bid in s.bondE){ if(s.bondE[bid].indexOf(eid) >= 0) return 'b'+bid; }
+    return '?';
+  };
+  rx._ids.forEach(eid=>{
+    for(let k=0;k+1<snaps.length;k++){
+      if(at(snaps[k],eid) !== at(snaps[k+1],eid)){ rx._actors.add(eid); break; }
+    }
+  });
+}
+
+/* ============================================================
+   POSITIONS
+   ============================================================ */
+function rimPos(rx, pid, i, n){
+  const p = rx.particles[pid];
+  const a = -Math.PI/2 + i * (Math.PI*2/n);
+  return { x: p.x + Math.cos(a)*R, y: p.y + Math.sin(a)*R };
+}
+
+function bondPos(rx, bid, i, n){
+  const def = rx.bondDef[bid];
+  const A = rx.particles[def[0]], B = rx.particles[def[1]];
+  const mx = (A.x+B.x)/2, my = (A.y+B.y)/2;
+  let ux = B.x-A.x, uy = B.y-A.y;
+  const L2 = Math.hypot(ux,uy) || 1; ux/=L2; uy/=L2;
+  const vx = -uy, vy = ux;
+  if(n <= 2){
+    const s = i === 0 ? -1 : 1;
+    return { x: mx + vx*ER*1.15*s, y: my + vy*ER*1.15*s };
+  }
+  // double bond: two pairs, one pair each side along the bond axis
+  const along = (i < 2 ? -1 : 1) * ER*1.38;
+  const perp  = (i % 2 === 0 ? -1 : 1) * ER*1.15;
+  return { x: mx + ux*along + vx*perp, y: my + uy*along + vy*perp };
+}
+
+function findPos(rx, st, eid){
+  for(const pid in st.rim){
+    const arr = st.rim[pid], i = arr.indexOf(eid);
+    if(i >= 0) return rimPos(rx, pid, i, arr.length);
+  }
+  for(const bid in st.bondE){
+    const arr = st.bondE[bid], i = arr.indexOf(eid);
+    if(i >= 0) return bondPos(rx, bid, i, arr.length);
+  }
+  return null;
+}
+
+/* Quadratic-bezier flight path. Straight lines read as "teleporting" when many
+   electrons move at once; a bow makes the direction of travel obvious.
+   bowSign lets a caller bow the same path the other way, which is how the no-reaction
+   tabs keep the dashed route clear of the force arrows instead of knotting them together. */
+function flight(a, b, p, bowSign){
+  const e = p<0.5 ? 2*p*p : 1-Math.pow(-2*p+2,2)/2;
+  const dx = b.x-a.x, dy = b.y-a.y;
+  const L2 = Math.hypot(dx,dy);
+  if(L2 < 1.5) return { x:b.x, y:b.y };
+  const nx = -dy/L2, ny = dx/L2;
+  const bow = Math.min(L2*0.20, 62) * (bowSign === undefined ? 1 : bowSign);
+  const cx = (a.x+b.x)/2 + nx*bow, cy = (a.y+b.y)/2 + ny*bow;
+  const q = (1-e)*(1-e);
+  return { x: q*a.x + 2*(1-e)*e*cx + e*e*b.x,
+           y: q*a.y + 2*(1-e)*e*cy + e*e*b.y };
+}
+
+/* ============================================================
+   FAILED-TRANSFER VISUALS  (the Au / Ar no-reaction tabs)
+
+   Oxygen's demand is real, so the animation has to show a genuine tug -- and then show it
+   FAILING. Three pieces, none of which is a text label:
+
+     tugEnv(p)  out-and-back envelope: the electron strains toward the oxygen and springs
+                back, repeatedly, decaying to zero. Ownership never changes.
+     drawRoute  the whole flight path drawn as a dashed "route not taken"; only the fraction
+                the electron actually reaches is overdrawn solid. The unused remainder IS
+                the argument.
+     drawPull   force arrows along the direction the electron would travel. Neutral ink,
+                because they are force, not matter.
+   ============================================================ */
+function tugEnv(p){
+  // |sin| so it never overshoots toward the target; (1-p) so it has settled by the end
+  return Math.abs(Math.sin(p*Math.PI*2.6)) * (1-p) * 1.25;
+}
+
+/* The closed-shell ripple: a band that travels round the 8 electrons and dies. The
+   sin(pi*p) window is not decoration -- it forces the wave to ZERO at both ends, so the
+   last frame of the event is bit-identical to the static figure. Without it the wave was
+   still 2.3 px out when the event ended and every electron jumped on the next event. */
+function repelWave(p, idx){
+  const band = Math.exp(-Math.pow(p*9.5 - 0.6 - idx, 2)/1.1);
+  return band * Math.sin(Math.PI*p);
+}
+
+/* How far the force arrows have reached out. Deliberately NOT zero-based: the arrows must
+   look IDENTICAL at p=0 and p=1 so the two consecutive strain events join without a pop.
+   A zero-based envelope (|sin(pi p)|) left the arrows at full reach when the event ended and
+   they vanished on the next frame. */
+function pullReach(p){
+  return 0.55 + 0.45*Math.abs(Math.sin(p*Math.PI*2));
+}
+
+/* the point on pid's rim that faces (x,y) */
+function rimFacing(rx, pid, x, y){
+  const p = rx.particles[pid];
+  const dx = x-p.x, dy = y-p.y, L = Math.hypot(dx,dy) || 1;
+  return { x: p.x + dx/L*R, y: p.y + dy/L*R };
+}
+
+function pathThrough(a, b, q, bowSign){
+  const n = Math.max(2, Math.round(26*q));
+  ctx.beginPath();
+  for(let i=0;i<=n;i++){
+    const pt = flight(a, b, q*i/n, bowSign);
+    i ? ctx.lineTo(pt.x,pt.y) : ctx.moveTo(pt.x,pt.y);
+  }
+}
+
+function drawRoute(a, b, travelled, color, bowSign){
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.setLineDash([9,10]);
+  ctx.strokeStyle = COL.ghostPath; ctx.lineWidth = 3.2;
+  pathThrough(a, b, 1, bowSign); ctx.stroke();
+  ctx.setLineDash([]);
+  if(travelled > 0.012){
+    ctx.strokeStyle = color; ctx.lineWidth = 5;
+    pathThrough(a, b, travelled, bowSign); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* Arrows from the atom towards the oxygen -- the direction the electron would travel. */
+function drawPull(rx, fromPid, toPid, reach){
+  const A = rx.particles[fromPid], B = rx.particles[toPid];
+  let ux = B.x-A.x, uy = B.y-A.y;
+  const L = Math.hypot(ux,uy) || 1; ux/=L; uy/=L;
+  const vx = -uy, vy = ux;
+  ctx.save();
+  ctx.strokeStyle = COL.force;
+  ctx.lineWidth = 4.5; ctx.lineCap='round'; ctx.lineJoin='round';
+  [-1,1].forEach(k=>{
+    const off = k*R*0.42;
+    const sx = A.x + ux*(R*1.16) + vx*off;
+    const sy = A.y + uy*(R*1.16) + vy*off;
+    const span = (L - R*1.16 - R*1.12) * reach;
+    if(span < 18) return;
+    const ex = sx + ux*span - vx*off*0.55;
+    const ey = sy + uy*span - vy*off*0.55;
+    ctx.beginPath(); ctx.moveTo(sx,sy); ctx.lineTo(ex,ey); ctx.stroke();
+    const h = 15;
+    ctx.beginPath();
+    ctx.moveTo(ex,ey); ctx.lineTo(ex - ux*h + vx*h*0.55, ey - uy*h + vy*h*0.55);
+    ctx.moveTo(ex,ey); ctx.lineTo(ex - ux*h - vx*h*0.55, ey - uy*h - vy*h*0.55);
+    ctx.stroke();
+  });
+  ctx.restore();
+}
+
+/* ============================================================
+   SCENE LOOKUP AT TIME t
+   ============================================================ */
+function sceneAt(rx, t){
+  const T = rx._times;
+  let k = 0;
+  while(k+1 < T.length && t > T[k+1]) k++;
+  if(k+1 >= T.length) k = T.length-2;
+  const span = Math.max(1e-6, T[k+1]-T[k]);
+  const p = clamp((t-T[k])/span, 0, 1);
+  return { k, p, cap: rx.events[k].cap, elapsed: t-T[k] };
+}
+
+function electronXY(rx, k, p, eid, pp){
+  const a = findPos(rx, rx._snaps[k], eid);
+  const b = findPos(rx, rx._snaps[k+1], eid);
+  if(!a && !b) return null;
+  if(!a) return { x:b.x, y:b.y };
+  if(!b) return { x:a.x, y:a.y };
+  const q = (pp === undefined ? p : pp);
+  return flight(a, b, q);
+}
+
+/* ============================================================
+   DRAWING
+   ============================================================ */
+function drawElectron(x, y, alpha, opts){
+  const o = opts || {};
+  const r = o.r || ER;
+  if(o.trail){
+    for(let i=1;i<=3;i++){
+      const g = o.trail(i);
+      if(!g) continue;
+      ctx.globalAlpha = alpha * (0.30 - i*0.08);
+      ctx.fillStyle = COL.glow;
+      ctx.beginPath(); ctx.arc(g.x, g.y, r*(1-i*0.10), 0, 7); ctx.fill();
+    }
+  }
+  if(o.glow){
+    ctx.globalAlpha = alpha*0.55;
+    const gg = ctx.createRadialGradient(x,y,r*0.6,x,y,r*3.1);
+    gg.addColorStop(0,'rgba(239,159,39,.85)');
+    gg.addColorStop(1,'rgba(239,159,39,0)');
+    ctx.fillStyle = gg;
+    ctx.beginPath(); ctx.arc(x,y,r*3.1,0,7); ctx.fill();
+  }
+  ctx.globalAlpha = alpha;
+  ctx.beginPath(); ctx.arc(x,y,r,0,7);
+  ctx.fillStyle = o.shared ? '#E9E9E9' : '#FFFFFF';
+  ctx.fill();
+  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = 'rgba(55,55,55,.42)';
+  ctx.stroke();
+  if(o.label !== false){
+    const fs = Math.round(r*0.98);
+    ctx.font = '900 '+fs+'px MB, sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle = 'rgba(40,40,40,.92)';
+    ctx.fillText('e\u207B', x, y+r*0.06);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawBond(rx, bid, st){
+  const n = (st.bondE[bid]||[]).length;
+  if(!n) return;
+  const def = rx.bondDef[bid];
+  const A = rx.particles[def[0]], B = rx.particles[def[1]];
+  const lines = n >= 4 ? 2 : 1;
+  const off = n >= 4 ? 11 : 0;
+  let ux = B.x-A.x, uy = B.y-A.y;
+  const L2 = Math.hypot(ux,uy)||1; ux/=L2; uy/=L2;
+  const vx = -uy, vy = ux;
+  ctx.save();
+  ctx.strokeStyle = COL.bond; ctx.lineWidth = 7; ctx.lineCap='round';
+  for(let i=0;i<lines;i++){
+    const s = lines===1 ? 0 : (i===0 ? -1 : 1) * off;
+    ctx.beginPath();
+    ctx.moveTo(A.x + ux*(R*0.30) + vx*s, A.y + uy*(R*0.30) + vy*s);
+    ctx.lineTo(B.x - ux*(R*0.30) + vx*s, B.y - uy*(R*0.30) + vy*s);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawParticle(rx, pid, st, chAlpha){
+  const p = rx.particles[pid];
+  ctx.beginPath(); ctx.arc(p.x, p.y, R, 0, 7);
+  ctx.fillStyle = p.color; ctx.fill();
+
+  const ch = st.charges[pid] || '';
+  const gly = glyphSize(p.el);
+  ctx.font = '900 '+gly+'px MB, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle = '#fff';
+  const gx = p.x - (ch ? R*0.10 : 0);
+  ctx.fillText(p.el, gx, p.y + R*0.04);
+
+  if(ch && chAlpha > 0.01){
+    ctx.globalAlpha = chAlpha;
+    const cs = Math.round(R*0.44);
+    ctx.font = '900 '+cs+'px MB, sans-serif';
+    ctx.textAlign='left'; ctx.textBaseline='middle';
+    ctx.fillStyle = darken(p.color, 0.52);
+    ctx.fillText(ch, p.x + R*0.16, p.y - R*0.34);
+    ctx.globalAlpha = 1;
+  }
+
+}
+
+/* --- the OIL RIG end card: dark backdrop, stacked mnemonic, oil derrick --- */
+function drawDerrick(x, y, h, color){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = 3.4; ctx.lineJoin='round';
+  const w = h*0.34;
+  // legs
+  ctx.beginPath();
+  ctx.moveTo(x-w, y); ctx.lineTo(x-w*0.12, y-h);
+  ctx.lineTo(x+w*0.12, y-h); ctx.lineTo(x+w, y);
+  ctx.stroke();
+  // cross bracing
+  for(let i=1;i<=4;i++){
+    const t0 = i/5, t1 = (i+1)/5;
+    const w0 = w*(1-t0), w1 = w*(1-t1);
+    const y0 = y - h*t0, y1 = y - h*t1;
+    ctx.beginPath();
+    ctx.moveTo(x-w0, y0); ctx.lineTo(x+w1, y1);
+    ctx.moveTo(x+w0, y0); ctx.lineTo(x-w1, y1);
+    ctx.stroke();
+  }
+  // crown + beam
+  ctx.beginPath(); ctx.moveTo(x-6, y-h); ctx.lineTo(x+6, y-h); ctx.stroke();
+  ctx.restore();
+  // walking beam silhouette
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.translate(x, y-h);
+  ctx.beginPath();
+  ctx.moveTo(-h*0.30, 2); ctx.lineTo(h*0.26, -6);
+  ctx.lineTo(h*0.26, 2);  ctx.lineTo(-h*0.30, 10);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.arc(h*0.30, -2, 9, 0, 7); ctx.fill();
+  ctx.restore();
+}
+
+function drawOilRig(t){
+  ctx.fillStyle = COL.dark;
+  ctx.fillRect(0,0,W,H);
+  const appear = smoothstep(0, 0.5, t);
+
+  const rows = [
+    ['O','xidation'], ['I','s'], ['L','oss'],
+    ['R','eduction'], ['I','s'], ['G','ain']
+  ];
+  const colX = [W*0.33, W*0.66];
+  const startY = 168, gapY = 78;
+  ctx.globalAlpha = appear;
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  rows.forEach((row,i)=>{
+    const col = i < 3 ? 0 : 1;
+    const line = i % 3;
+    const x = colX[col], y = startY + line*gapY;
+    ctx.font = '900 46px MB, sans-serif';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(row[0], x, y);
+    const leadW = ctx.measureText(row[0]).width;
+    ctx.font = '900 34px MB, sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.82)';
+    ctx.fillText(row[1], x + leadW + 7, y + 2);
+  });
+  drawDerrick(W*0.83, H-92, 150, 'rgba(255,255,255,.30)');
+  ctx.globalAlpha = 1;
+
+  const a2 = smoothstep(0.35, 1.0, t);
+  ctx.globalAlpha = a2;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.font = '900 20px MB, sans-serif';
+  ctx.fillStyle = 'rgba(255,255,255,.66)';
+  ctx.fillText('click to go back', W/2, H-52);
+  ctx.globalAlpha = 1;
+}
+
+/* ============================================================
+   MAIN RENDER
+   ============================================================ */
+let cur = 0;                 // reaction index
+let t = 0;                   // time cursor inside the reaction, seconds
+let playing = false;
+let oilRig = false;
+let oilT = 0;
+let pausedDone = false;      // reached the end, waiting
+
+// True when this particle has an active bond whose partner sits BELOW it, i.e.
+// the bond line and its shared electrons occupy the space the tag would use.
+function bondLeavesDownward(rx, st, pid){
+  for(const bid in st.bondE){
+    if(!st.bondE[bid] || !st.bondE[bid].length) continue;
+    const def = rx.bondDef[bid];
+    const other = def[0] === pid ? def[1] : (def[1] === pid ? def[0] : null);
+    if(other && rx.particles[other].y > rx.particles[pid].y) return true;
+  }
+  return false;
+}
+
+function draw(){
+  ctx.fillStyle = COL.bg;
+  ctx.fillRect(0,0,W,H);
+
+  if(oilRig){ drawOilRig(oilT); return; }
+
+  const rx = REACTIONS[cur];
+  const sc = sceneAt(rx, t);
+  const stA = rx._snaps[sc.k], stB = rx._snaps[sc.k+1];
+
+  const EV = rx.events[sc.k];
+  const strainCfg = EV.strain || null;
+  const repelCfg  = EV.repel  || null;
+  /* When a reaction transfers nothing anywhere there are no actors to contrast against, so
+     the "dim everything that never moves" treatment would just wash the whole scene out. */
+  const noActors = rx._actors.size === 0;
+
+  // captions first (behind everything), then bonds, then particles, then electrons
+  const capA = smoothstep(0, 0.28, sc.elapsed);
+  ctx.globalAlpha = capA;
+  const cs = fitFont(sc.cap, W-140, 28, '900');
+  ctx.font = '900 '+cs+'px MB, sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillStyle = COL.ink;
+  ctx.fillText(sc.cap, W/2, H-20);
+  ctx.globalAlpha = 1;
+
+  for(const bid in rx.bondDef) drawBond(rx, bid, sc.p < 0.5 ? stA : stB);
+
+  /* The failed-tug layer sits BEHIND the particles, so the strained electron ends up drawn
+     on top of its own force arrow -- which is exactly how it should read.
+     bowSign -1 arcs the route clear of the straight force arrows; at +1 the two knotted
+     together into an unreadable cluster in the middle of the gap. */
+  if(strainCfg){
+    const home = findPos(rx, stA, strainCfg.eids[0]);
+    const tip  = rimFacing(rx, strainCfg.toward, home.x, home.y);
+    drawRoute(home, tip, strainCfg.amp * tugEnv(sc.p), rx.particles[strainCfg.at].color, -1);
+  }
+  if(repelCfg){
+    const home = findPos(rx, stA, repelCfg.eids[0]);
+    const tip  = rimFacing(rx, repelCfg.toward, home.x, home.y);
+    // travelled = 0 for the whole animation: the route never stops being dashed
+    drawRoute(home, tip, 0, COL.ink, -1);
+  }
+  if(strainCfg || repelCfg){
+    const cfg = strainCfg || repelCfg;
+    drawPull(rx, cfg.at, cfg.toward, pullReach(sc.p));
+  }
+
+  // charges fade as the electron lands, so the label and the arrival are one beat
+  const charged = {};
+  for(const pid in rx.particles){
+    const a = stA.charges[pid] || '', b = stB.charges[pid] || '';
+    let al = 1;
+    if(a !== b){
+      al = b ? smoothstep(0.55, 1.0, sc.p) : 1 - smoothstep(0, 0.42, sc.p);
+    }
+    charged[pid] = al;
+  }
+  const tagAlpha = smoothstep(0.5, 1.0, sc.p);
+
+  ctx.globalAlpha = 1;
+  for(const pid in rx.particles) drawParticle(rx, pid, stB, charged[pid]);
+  // Tags. A tag that already exists in the PREVIOUS snapshot (K+ is a spectator
+  // from the very first frame) has to render at full opacity -- requiring it to
+  // be newly added is what made the spectator-ion label invisible.
+  for(const pid in rx.particles){
+    const tg = stB.tags[pid];
+    if(!tg) continue;
+    const al = stA.tags[pid] ? 1 : tagAlpha;
+    if(al < 0.01) continue;
+    const p = rx.particles[pid];
+    const ts = fitFont(tg, R*2.0, Math.round(R*0.30), '900');
+    ctx.font = '900 '+ts+'px MB, sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    const tw = ctx.measureText(tg).width;
+    /* A tag hanging under a particle that has a bond leaving it downward would land on that
+       bond's shared electrons, so shift it clear of the bond axis. The clearance must be
+       derived from the TAG WIDTH: the shared electrons only reach ER*2.15 either side of the
+       axis, but the tag is centred, so half of it still hangs back in. The old fixed R*1.05
+       happened to work for the 7-character "reduced" and silently failed for "not reduced",
+       whose first letter was painted straight over the electrons. */
+    let tx = p.x;
+    if(bondLeavesDownward(rx, stB, pid)) tx = p.x + (p.x < W/2 ? -1 : 1) * (ER*2.15 + 18 + tw/2);
+    tx = clamp(tx, 24 + tw/2, W - 24 - tw/2);
+    ctx.globalAlpha = al;
+    ctx.fillStyle = COL.ink;
+    ctx.fillText(tg, tx, p.y + R + 12);
+    ctx.globalAlpha = 1;
+  }
+
+  // electrons
+  rx._ids.forEach(eid=>{
+    const isActor = rx._actors.has(eid);
+    /* noActors: nothing anywhere moves, so there is nothing to dim against */
+    const emph = isActor || noActors;
+    const pos = electronXY(rx, sc.k, sc.p, eid);
+    if(!pos) return;
+
+    /* A strained electron is emphatically NOT an actor -- the whole point is that it never
+       leaves -- so it needs its own position and its own emphasis. */
+    let x = pos.x, y = pos.y, strained = false;
+    if(strainCfg && strainCfg.eids.indexOf(eid) >= 0){
+      const home = findPos(rx, stA, eid);
+      const tip  = rimFacing(rx, strainCfg.toward, home.x, home.y);
+      const pt = flight(home, tip, strainCfg.amp * tugEnv(sc.p), -1);
+      x = pt.x; y = pt.y; strained = true;
+    }
+    if(repelCfg && repelCfg.eids.indexOf(eid) >= 0){
+      const home = findPos(rx, stA, eid);
+      const c0 = rx.particles[repelCfg.at];
+      const idx = (stB.rim[repelCfg.at] || []).indexOf(eid);
+      /* A wave travelling ROUND the ring rather than outward: a closed shell can absorb the
+         tug, but the disturbance has nowhere to go except around and back into itself. */
+      const w = repelWave(sc.p, idx);
+      const nx = (home.x - c0.x)/R, ny = (home.y - c0.y)/R;
+      x = home.x + nx*R*repelCfg.amp*w;
+      y = home.y + ny*R*repelCfg.amp*w;
+      /* Only the CREST of the wave lights up. Glowing all eight said "the whole shell is
+         reacting", which is the exact opposite of what this tab has to say. */
+      if(w > 0.15) strained = true;
+    }
+
+    const a2 = findPos(rx, stA, eid), b2 = findPos(rx, stB, eid);
+    const moving = a2 && b2 && (Math.abs(a2.x-b2.x) > 1.5 || Math.abs(a2.y-b2.y) > 1.5);
+    const inBond = (()=>{ for(const bid in stB.bondE) if(stB.bondE[bid].indexOf(eid)>=0) return true; return false; })();
+
+    if(strained){
+      drawElectron(x, y, 1, { shared:false, glow:true, label:true });
+    } else if(moving && isActor){
+      drawElectron(pos.x, pos.y, 1, {
+        shared:false, glow:true,
+        trail:(i)=> electronXY(rx, sc.k, sc.p, eid, clamp(sc.p - i*0.055, 0, 1))
+      });
+    } else {
+      drawElectron(x, y, emph ? 1 : 0.38, {
+        shared: inBond, glow:false, label: emph
+      });
+    }
+  });
+
+  // progress hairline -- unobtrusive, tells the teacher how far the beat goes
+  const pgX = 44, pgW = W - 88, pgY = 15;
+  ctx.fillStyle = 'rgba(47,47,47,.13)';
+  ctx.beginPath(); ctx.roundRect(pgX, pgY, pgW, 4, 2); ctx.fill();
+  ctx.fillStyle = 'rgba(47,47,47,.40)';
+  ctx.beginPath();
+  ctx.roundRect(pgX, pgY, Math.max(4, pgW * clamp(t / rx.total, 0, 1)), 4, 2);
+  ctx.fill();
+}
+
+/* ============================================================
+   TRANSPORT + UI
+   ============================================================ */
+function eventsCount(rx){ return rx.events.length; }
+
+function stepOnce(){
+  const rx = REACTIONS[cur];
+  if(t >= rx.total) { t = rx.total; return; }
+  // advance to the end of the next event boundary
+  let k = 0;
+  while(k+1 < rx._times.length && t >= rx._times[k+1] - 1e-4) k++;
+  t = rx._times[k+1];
+  if(t >= rx.total - 1e-6) onComplete();
+}
+
+function onComplete(){
+  playing = false;
+  /* The OIL RIG mnemonic is the closing card of the whole deck, so fire it on the LAST
+     reaction instead of hard-coding a key -- `key === 'kbr'` only worked while KBr happened
+     to be the last tab, and it now sits in the middle. */
+  if(cur === REACTIONS.length - 1){ oilRig = true; oilT = 0; }
+  syncBtns();
+}
+
+function replay(){
+  oilRig = false; oilT = 0;
+  t = 0; playing = true; syncBtns();
+}
+
+function syncBtns(){
+  document.getElementById('play').textContent = playing ? 'Pause' : 'Play';
+  syncEq();
+}
+
+/* The OIL RIG card closes the whole deck, but it is painted over whichever reaction you were
+   last on -- and that reaction is now Ar + O2, whose equation reads "no reaction". A mnemonic
+   about electron transfer sitting above a line saying nothing transfers contradicts itself, so
+   hide the equation while the card is up. visibility, not display: the layout must not jump. */
+function syncEq(){
+  document.getElementById('eq').style.visibility = oilRig ? 'hidden' : 'visible';
+}
+
+function selectReaction(i){
+  cur = i; t = 0; oilRig = false; oilT = 0; playing = true;
+  document.getElementById('eq').textContent = REACTIONS[i].eq;
+  [...document.querySelectorAll('.tab')].forEach((b,j)=>
+    b.setAttribute('aria-selected', j === i ? 'true' : 'false'));
+  syncBtns();
+}
+
+function boot(){
+  const tabs = document.getElementById('tabs');
+  REACTIONS.forEach((rx,i)=>{
+    const b = document.createElement('button');
+    b.className = 'tab'; b.textContent = rx.tab;
+    b.setAttribute('aria-selected','false');
+    b.onclick = ()=> selectReaction(i);
+    tabs.appendChild(b);
+  });
+  REACTIONS.forEach(buildSnapshots);
+
+  document.getElementById('play').onclick = ()=>{
+    if(oilRig){ oilRig = false; oilT = 0; t = 0; playing = true; syncBtns(); return; }
+    if(t >= REACTIONS[cur].total) t = 0;
+    playing = !playing; syncBtns();
+  };
+  document.getElementById('step').onclick = ()=>{
+    if(oilRig) return;
+    playing = false; stepOnce(); syncBtns();
+  };
+  document.getElementById('replay').onclick = ()=>{
+    if(oilRig){ oilRig = false; oilT = 0; }
+    replay();
+  };
+  cv.onclick = ()=>{ if(oilRig){ oilRig = false; syncEq(); } };
+
+  window.addEventListener('keydown', e=>{
+    if(e.code === 'Space'){ e.preventDefault(); document.getElementById('play').click(); }
+    else if(e.code === 'ArrowRight'){ e.preventDefault(); document.getElementById('step').click(); }
+    else if(e.key === 'r' || e.key === 'R'){ document.getElementById('replay').click(); }
+  });
+
+  selectReaction(0);
+  fit();
+  window.addEventListener('resize', fit);
+  requestAnimationFrame(loop);
+}
+
+let last = 0;
+function loop(now){
+  const dt = Math.min(0.05, (now - last)/1000 || 0);
+  last = now;
+  if(oilRig){
+    if(oilT < 1.2) oilT += dt;
+  } else if(playing){
+    const rx = REACTIONS[cur];
+    t += dt;
+    if(t >= rx.total){ t = rx.total; onComplete(); }
+  }
+  draw();
+  requestAnimationFrame(loop);
+}
+
+if(document.fonts && document.fonts.load){
+  Promise.all([document.fonts.load('900 100px MB'), document.fonts.ready])
+    .then(boot).catch(boot);
+} else {
+  boot();
+}
+</script>
+</body>
+</html>

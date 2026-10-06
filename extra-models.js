@@ -420,5 +420,14 @@ window.EXTRA_MODELS = [
     topic: "bonding",
     topicLabel: "Bonding & Structure",
     desc: "Potential-energy curves for different atom pairs — bond length, bond strength and vibration."
+  },
+  {
+    file: "氧化还原·电子得失.html",
+    title: "Redox: Electron Loss & Gain",
+    icon: "🔄",
+    lang: "en",
+    topic: "redox",
+    topicLabel: "Redox",
+    desc: "Redox at the particle level — follow electron loss (oxidation) and electron gain (reduction) and see the OIL RIG rule in action."
   }
 ];
