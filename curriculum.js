@@ -115,7 +115,9 @@
       function paint() {
         var cur = get();
         host.querySelectorAll('.curr-btn,[data-curr]').forEach(function (b) {
-          b.classList.toggle('active', (b.getAttribute('data-curr') || b.textContent.includes('AP') ? 'ap' : 'alig') === cur);
+          var key = b.getAttribute('data-curr') ||
+                    (b.textContent.indexOf('AP') !== -1 ? 'ap' : 'alig');
+          b.classList.toggle('active', key === cur);
         });
       }
       window.addEventListener(EVT, paint);
@@ -137,6 +139,11 @@
         '<button class="curr-btn" data-curr="alig">📘 AL / IG</button>' +
         '<button class="curr-btn" data-curr="ap">📗 AP</button>';
       host.appendChild(pill);
+      // Dynamic pills have no inline onclick (unlike index.html's hardcoded
+      // buttons) — bind clicks here so the toggle actually switches mode.
+      pill.querySelectorAll('.curr-btn').forEach(function (b) {
+        b.addEventListener('click', function () { set(b.getAttribute('data-curr')); });
+      });
       wireToggle(pill);
     });
   }
