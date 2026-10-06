@@ -17,6 +17,7 @@
   <script src="ap-models.js"></script>
   <script src="curriculum.js?v=6"></script>
   <script src="extra-models.js"></script>
+  <script src="chapters.js"></script>
   <style>
     :root {
       --bg: #f0f4f8;
@@ -195,6 +196,20 @@
       background: #f0fdf4;
       color: #15803d;
     }
+    .tag-ch {
+      background: #eef2ff;
+      color: #3730a3;
+      font-weight: 600;
+    }
+    /* 语言筛选与章节筛选之间的竖线分隔 */
+    .filter-sep {
+      width: 1px;
+      align-self: stretch;
+      margin: 3px 4px;
+      background: var(--border);
+    }
+    /* 该章暂无模型的按钮（仍可点击，会显示空状态提示） */
+    .filter-btns button.empty-ch { opacity: 0.5; }
     .card-desc {
       font-size: 0.83rem;
       color: var(--subtext);
@@ -257,6 +272,10 @@
       background: #fdeef2;
       color: #a02048;
     }
+    html[data-curriculum="ap"] .tag-ch {
+      background: #fbe9ef;
+      color: #a02048;
+    }
     html[data-curriculum="ap"] .card-observe {
       color: #8B1A4A;
       background: rgba(176,40,80,0.07);
@@ -309,14 +328,9 @@
     <button class="active" data-filter="all" data-label-alig="All" onclick="setFilter('all', this)">All</button>
     <button data-filter="en" data-label-alig="English" onclick="setFilter('en', this)">English</button>
     <button data-filter="cn" data-label-alig="中文" onclick="setFilter('cn', this)">中文</button>
-    <button data-filter="atomic" data-label-alig="Atomic Structure" onclick="setFilter('atomic', this)">Atomic Structure</button>
-    <button data-filter="bonding" data-label-alig="Bonding &amp; Structure" onclick="setFilter('bonding', this)">Bonding &amp; Structure</button>
-    <button data-filter="electrochemistry" data-label-alig="Electrochemistry" onclick="setFilter('electrochemistry', this)">Electrochemistry</button>
-    <button data-filter="acids" data-label-alig="Acids &amp; Salts" onclick="setFilter('acids', this)">Acids &amp; Salts</button>
-    <button data-filter="metals" data-label-alig="Metals" onclick="setFilter('metals', this)">Metals</button>
-    <button data-filter="thermochemistry" data-label-alig="Thermochemistry" onclick="setFilter('thermochemistry', this)">Thermochemistry</button>
-    <button data-filter="organic" data-label-alig="Organic" onclick="setFilter('organic', this)">Organic</button>
-    <button data-filter="other" data-label-alig="Other" onclick="setFilter('other', this)">Other</button>
+    <!-- 章节按钮由 chapters.js 按当前 Curriculum(IG/AP) 动态注入 -->
+    <span class="filter-sep" aria-hidden="true"></span>
+    <span id="chFilterHost" style="display:contents"></span>
   </div>
 </div>
 
@@ -917,6 +931,72 @@ if (window.EXTRA_MODELS && window.EXTRA_MODELS.length) {
 
 let currentFilter = 'all';
 
+/* ── 章节分类（数据源 chapters.js） ─────────────────────────────
+   IG 模式用 CIE 0620 的 19 章，AP 模式用教程原稿的 13 章；
+   chapter: 0 表示「其他 / 综合」。                              */
+function chapterMode() {
+  return (window.Curriculum && window.Curriculum.get() === 'ap') ? 'ap' : 'alig';
+}
+function chapterNoOf(m, mode) {
+  const t = window.CHAPTER_OF && window.CHAPTER_OF[m.file];
+  if (!t) return null;
+  return mode === 'ap' ? t.ap : t.ig;
+}
+function chapterList(mode) {
+  return (window.CHAPTERS && window.CHAPTERS[mode]) || [];
+}
+function chapterCount(mode, n) {
+  return models.filter(m => chapterNoOf(m, mode) === n).length;
+}
+// 卡片上的章节小标签
+function chapterTagHTML(m) {
+  const mode = chapterMode();
+  const n = chapterNoOf(m, mode);
+  if (n === null || n === undefined) return '';
+  const def = chapterList(mode).find(c => c.n === n);
+  const label = n === 0
+    ? (mode === 'ap' ? '综合' : '其他')
+    : (mode === 'ap' ? '第' + n + '章' : 'Ch ' + n);
+  const full = def ? String(def.full).replace(/"/g, '&quot;') : '';
+  return '<span class="tag tag-ch" title="' + full + '">' + label + '</span>';
+}
+// 命中章节筛选键（ig3 / ap12 …）；返回 null 表示「这不是章节键」
+function chapterMatch(m, filter) {
+  if (!filter || filter.length < 3) return null;
+  const pre = filter.slice(0, 2);
+  if (pre !== 'ig' && pre !== 'ap') return null;
+  const n = parseInt(filter.slice(2), 10);
+  if (isNaN(n)) return null;
+  const no = chapterNoOf(m, pre === 'ap' ? 'ap' : 'alig');
+  return no === null ? (n === 0) : no === n;
+}
+// 按当前 Curriculum 重建章节按钮
+function renderFilterButtons() {
+  const host = document.getElementById('chFilterHost');
+  if (!host) return;
+  const mode = chapterMode();
+  host.innerHTML = '';
+  chapterList(mode).forEach(c => {
+    const cnt = chapterCount(mode, c.n);
+    const b = document.createElement('button');
+    b.setAttribute('data-filter', c.key);
+    b.textContent = c.label;
+    b.title = c.full + ' — ' + cnt + ' models';
+    if (cnt === 0) b.classList.add('empty-ch');
+    if (currentFilter === c.key) b.classList.add('active');
+    b.addEventListener('click', function () { setFilter(c.key, b); });
+    host.appendChild(b);
+  });
+}
+// 切换 Curriculum 后章节键已失效 → 回到 All
+function resetFilterIfChapter() {
+  if (!/^(ig|ap)\d+$/.test(currentFilter)) return;
+  currentFilter = 'all';
+  document.querySelectorAll('.filter-btns button').forEach(b => b.classList.remove('active'));
+  const all = document.querySelector('.filter-btns button[data-filter="all"]');
+  if (all) all.classList.add('active');
+}
+
 function topicInFilter(topic, filter) {
   if (filter === 'all') return true;
   if (filter === 'en' || filter === 'cn') return false; // handled by lang
@@ -952,14 +1032,13 @@ function renderCards(list) {
     a.rel = 'noopener';
     const title = C ? C.modelTitle(m) : m.title;
     const desc  = C ? C.modelDesc(m)  : m.desc;
-    const tLabel = C ? C.topicLabel(m.topic, m.topicLabel) : m.topicLabel;
     const tip = C ? C.topicTip(m.topic, topicTips[m.topic]) : topicTips[m.topic];
     a.innerHTML = `
       <div class="card-icon">${m.icon}</div>
       <div class="card-title">${title}</div>
       <div class="card-tags">
+        ${chapterTagHTML(m)}
         <span class="tag ${m.lang === 'en' ? 'tag-en' : 'tag-cn'}">${m.lang === 'en' ? 'English' : '中文'}</span>
-        <span class="tag tag-topic">${tLabel}</span>
       </div>
       <div class="card-desc">${desc}</div>
       ${tip ? '<div class="card-observe">🔍 ' + tip + '</div>' : ''}
@@ -971,7 +1050,9 @@ function renderCards(list) {
 // Relabel filter buttons + header badge according to current curriculum.
 function applyCurriculumLabels() {
   const C = window.Curriculum;
-  document.querySelectorAll('.filter-btns button').forEach(b => {
+  // 只重命名带 data-label-alig 的固定按钮（All / English / 中文）；
+  // 章节按钮由 renderFilterButtons() 按模式整体重建，跳过。
+  document.querySelectorAll('.filter-btns button[data-label-alig]').forEach(b => {
     const key = b.getAttribute('data-filter');
     const fallback = b.getAttribute('data-label-alig');
     b.innerHTML = C ? C.filterLabel(key, fallback) : fallback;
@@ -993,10 +1074,14 @@ function applyCurriculumLabels() {
 function filterCards() {
   const q = document.getElementById('searchInput').value.toLowerCase().trim();
   let filtered = models.filter(m => {
-    const matchLang = currentFilter === 'en' ? m.lang === 'en'
-                    : currentFilter === 'cn' ? m.lang === 'cn'
-                    : currentFilter === 'all' ? true
-                    : topicInFilter(m.topic, currentFilter);
+    let matchLang;
+    if (currentFilter === 'all') matchLang = true;
+    else if (currentFilter === 'en') matchLang = (m.lang === 'en');
+    else if (currentFilter === 'cn') matchLang = (m.lang === 'cn');
+    else {
+      const cm = chapterMatch(m, currentFilter);
+      matchLang = (cm === null) ? topicInFilter(m.topic, currentFilter) : cm;
+    }
     const C = window.Curriculum;
     const apTitle = C ? C.modelTitle(m) : m.title;
     const apDesc = C ? C.modelDesc(m) : m.desc;
@@ -1019,10 +1104,13 @@ if (window.Curriculum) {
   applyCurriculumLabels();
   window.addEventListener(window.Curriculum.EVENT, function () {
     applyCurriculumLabels();
+    resetFilterIfChapter();
+    renderFilterButtons();
     filterCards();
   });
 }
 
+renderFilterButtons();
 renderCards(models);
 </script>
 <script src="search-widget.js"></script>
