@@ -132,6 +132,16 @@
       margin-bottom: 36px;
     }
 
+    .ch-sub {
+      font-size: 0.95rem;
+      font-weight: 800;
+      color: #4a78c8;
+      margin: 18px 0 10px;
+      padding-left: 8px;
+      border-left: 3px solid rgba(74,120,200,0.45);
+    }
+    .ch-sub:first-child { margin-top: 0; }
+
     .file-card {
       background: rgba(255,255,255,0.82);
       backdrop-filter: blur(6px);
@@ -248,7 +258,7 @@
   <div class="header">
     <h1>📝 Review Notes</h1>
     <div class="header-line"></div>
-    <p>53 份复习资料 — 点击 Open 预览 / Download 下载</p>
+    <p>53 份复习资料 + 90 份高一作业 — 点击 Open 预览 / Download 下载</p>
   </div>
 
   <!-- Category: 期末复习试题&清单 (C1-C15) -->
@@ -285,6 +295,12 @@
   <div class="category">
     <div class="cat-title">📎 其他</div>
     <div class="file-grid" id="grid-other"></div>
+  </div>
+
+  <!-- Category: Past Homework (IG 高一作业) -->
+  <div class="category">
+    <div class="cat-title">📄 Past Homework · 高一作业</div>
+    <div id="grid-pasthw"></div>
   </div>
 
   <footer>Made with <span>♥</span> by Charles · Keep reviewing! 📖</footer>
@@ -454,6 +470,142 @@ render('grid-p2', p2Files);
 render('grid-quiz', quizFiles);
 render('grid-defs', defFiles);
 render('grid-other', otherFiles);
+
+// ── Past Homework (IG 高一作业, by chapter) ──
+var hwFiles = [
+  "1.1作业 四年制.doc",
+  "1.2 作业.docx",
+  "1.3作业.docx",
+  "1.4作业.docx",
+  "2.1 作业.docx",
+  "2.2作业.docx",
+  "2.3作业.docx",
+  "2.4作业.docx",
+  "3.1作业.docx",
+  "3.2 作业.docx",
+  "3.3作业.docx",
+  "3.4 作业.docx",
+  "3.5作业 gaint 与 molecular的比较.docx",
+  "3.6作业.docx",
+  "4.1 formulae and names.docx",
+  "4.2Equations.docx",
+  "4.3masses of particles.docx",
+  "5.1 mole.docx",
+  "5.2 Calculation through equations.docx",
+  "5.3 Gas volume.docx",
+  "5.4 concentration.docx",
+  "5.5 Empirical formula.docx",
+  "5.6 Yield and purity.docx",
+  "6.1redox.docx",
+  "6.2作业 electron transfer.docx",
+  "6.3 作业oxidation number.docx",
+  "6.4作业 redox agents.doc",
+  "7.1 The system of electrolysis.docx",
+  "7.2 The product of electrolysis.docx",
+  "7.3 Electroplating.docx",
+  "7.4 Hydrogen fule cells.docx",
+  "8.1作业 Enthalpy change.docx",
+  "8.2作业Energy pathway diagram.docx",
+  "8.3作业 Bond energy.docx",
+  "9.1 Measure the rate.docx",
+  "9.2 Collision theory.docx",
+  "9.3 Conc,Pressure , surface.docx",
+  "9.4 Affecting rate.catalyst.docx",
+  "10.1Reversible reaction.docx",
+  "10.2 factors change equilibrium.docx",
+  "10.3 Haber process.docx",
+  "10.4contact process.docx",
+  "11.1作业 Acids and bases.docx",
+  "11.2作业 reactions of acids and bases Acids and bases.docx",
+  "11.3 Neutralization.docx",
+  "11.3 Neutralizsation and ionic equations .docx",
+  "11.4 作业 Oxides.docx",
+  "11.5 作业making salts.docx",
+  "11.6作业 titration.docx",
+  "11.7Titrationpart1.docx",
+  "11.7Titration PART2.docx",
+  "11.7Titration 12.11.docx",
+  "12.1 group Ⅰ.docx",
+  "12.2 Group Ⅶ.docx",
+  "12.3 Across the period .docx",
+  "12.4 Transition metal .docx",
+  "13.1 Use of metals.docx",
+  "13.2 Reactivity series.docx",
+  "13.3 Rusting of metals.docx",
+  "13.4 Extraction of metals.docx",
+  "13.5 Extracgtion of iron.docx",
+  "13.6 Extraction of Al.docx",
+  "15.1 Water.docx",
+  "15.2 Air.docx",
+  "15.3 carbon cycle.docx",
+  "16.1 Petroleum .docx",
+  "16.2 Alkanes.docx",
+  "16.3 Alkenes .docx",
+  "16.4 Alcohols.docx",
+  "16.5 Carboxylic acids .docx",
+  "16.5.2 Esters.docx",
+  "16.6 Polymers.docx",
+  "C1 复习题.docx",
+  "C3章末复习.docx",
+  "C5 revision.docx",
+  "C6 Redox review assginment.docx",
+  "C11作业第1-5节review.docx",
+  "C16 Revision .docx",
+  "Chapter2 综合练习.docx",
+  "Homologous series.docx",
+  "Isomers.docx",
+  "Organic chemistry 记忆.docx",
+  "Organic names 练习.docx",
+  "quiz 2.docx",
+  "quiz 10.14.docx",
+  "quiz 10.21.docx",
+  "QUIZ 11.11.docx",
+  "QUIZ 11.24.docx",
+  "Quiz 12.23.docx",
+  "判断化学反应.docx"
+];
+
+function hwCard(file) {
+  var displayName = file.replace(/\.docx$/, '').replace(/\.doc$/, '');
+  var enc = encodeURIComponent(file);
+  return '<div class="file-card">' +
+    '<div class="file-icon docx">📘</div>' +
+    '<div class="file-info">' +
+      '<div class="file-name">' + displayName + '</div>' +
+      '<div class="file-meta">IGCSE Homework</div>' +
+    '</div>' +
+    '<div class="file-actions">' +
+      '<a class="file-btn" href="ig-homework/' + enc + '" target="_blank" title="Open">↗</a>' +
+      '<a class="file-btn dl" href="ig-homework/' + enc + '" download title="Download">↓</a>' +
+    '</div>' +
+  '</div>';
+}
+
+(function renderHw() {
+  var byCh = {};
+  var others = [];
+  hwFiles.forEach(function(f) {
+    var m = f.match(/^\d+\.\d/);
+    if (m) {
+      var ch = f.split('.')[0];
+      (byCh[ch] = byCh[ch] || []).push(f);
+    } else {
+      others.push(f);
+    }
+  });
+  var html = '';
+  Object.keys(byCh).map(Number).sort(function(a, b) { return a - b; }).forEach(function(ch) {
+    html += '<div class="ch-sub">Chapter ' + ch + '</div><div class="file-grid">';
+    byCh[String(ch)].sort().forEach(function(f) { html += hwCard(f); });
+    html += '</div>';
+  });
+  if (others.length) {
+    html += '<div class="ch-sub">Reviews · Quizzes · Other</div><div class="file-grid">';
+    others.sort().forEach(function(f) { html += hwCard(f); });
+    html += '</div>';
+  }
+  document.getElementById('grid-pasthw').innerHTML = html;
+})();
 
 })();
 </script>
