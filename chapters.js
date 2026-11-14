@@ -14,6 +14,7 @@ window.CHAPTER_OF = {
   "Extraction of Al .html": { ig: 14, ap: 12 },
   "Extraction of al.html": { ig: 14, ap: 12 },
   "Haber process 公开课模型.html": { ig: 10, ap: 10 },
+  "synthetic-ammonia-plant.html": { ig: 10, ap: 10 },
   "Halogen displacement.html": { ig: 12, ap: 4 },
   "Hydrogen fuel cell.html": { ig: 8, ap: 12 },
   "Mass spectrum.html": { ig: 2, ap: 5 },

@@ -17,7 +17,7 @@
   <script src="ap-models.js"></script>
   <script src="curriculum.js?v=7"></script>
   <script src="extra-models.js"></script>
-  <script src="chapters.js"></script>
+  <script src="chapters.js?v=2"></script>
   <style>
     :root {
       --bg: #f0f4f8;
@@ -226,6 +226,38 @@
       font-weight: 600;
     }
 
+    /* ── Featured hero card (top, full-width, highlighted) ── */
+    .card.featured {
+      grid-column: 1 / -1;
+      flex-direction: row;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px 20px;
+      padding: 22px 26px;
+      border: 2px solid var(--accent);
+      background: linear-gradient(120deg, #ffffff 0%, var(--accent-light) 100%);
+      box-shadow: 0 10px 34px rgba(26,86,160,0.20);
+    }
+    .card.featured:hover { transform: translateY(-2px); }
+    .card.featured .card-icon { font-size: 2.6rem; flex: none; }
+    .card.featured .card-title { font-size: 1.3rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .card.featured .card-desc { font-size: 0.95rem; flex: 1 1 320px; }
+    .card.featured .card-tags { flex: none; }
+    .card.featured .card-observe { flex-basis: 100%; margin-top: 2px; }
+    .featured-badge {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      box-shadow: 0 2px 8px rgba(26,86,160,0.4);
+    }
+    html[data-curriculum="ap"] .card.featured { box-shadow: 0 10px 34px rgba(160,32,72,0.22); }
+    html[data-curriculum="ap"] .featured-badge { box-shadow: 0 2px 8px rgba(160,32,72,0.45); }
+
     .no-result {
       grid-column: 1 / -1;
       text-align: center;
@@ -392,14 +424,16 @@ const models = [
     topicLabel: "Metals",
     desc: "Alternative model of aluminium extraction via electrolysis."
   },
+  // ─── FEATURED: Synthetic Ammonia Plant (replaces old "Haber Process (Open Lesson)") ───
   {
-    file: "Haber process 公开课模型.html",
-    title: "Haber Process (Open Lesson)",
-    icon: "🌿",
+    file: "synthetic-ammonia-plant.html",
+    title: "Synthetic Ammonia Plant · 合成氨工业装置",
+    icon: "🏭",
     lang: "en",
     topic: "equilibrium",
     topicLabel: "Equilibrium",
-    desc: "Interactive Haber process model for classroom demonstration — N₂ + H₂ → NH₃."
+    desc: "3D industrial simulation of the Haber process — reformer, air separation, shift converter, ammonia converter and the N₂/H₂ recycle loop. Drag to rotate, scroll to zoom.",
+    featured: true
   },
   {
     file: "Halogen displacement.html",
@@ -1024,18 +1058,21 @@ function renderCards(list) {
   }
   stats.textContent = `Showing ${list.length} of ${models.length} models`;
   const C = window.Curriculum;
-  list.forEach(m => {
+  // featured cards float to the top (stable order among themselves)
+  const ordered = list.filter(m => m.featured).concat(list.filter(m => !m.featured));
+  ordered.forEach(m => {
     const a = document.createElement('a');
-    a.className = 'card';
+    a.className = 'card' + (m.featured ? ' featured' : '');
     a.href = encodeURIComponent(m.file);
     a.target = '_blank';
     a.rel = 'noopener';
     const title = C ? C.modelTitle(m) : m.title;
     const desc  = C ? C.modelDesc(m)  : m.desc;
     const tip = C ? C.topicTip(m.topic, topicTips[m.topic]) : topicTips[m.topic];
+    const badge = m.featured ? '<span class="featured-badge">★ Featured</span>' : '';
     a.innerHTML = `
       <div class="card-icon">${m.icon}</div>
-      <div class="card-title">${title}</div>
+      <div class="card-title">${title}${badge}</div>
       <div class="card-tags">
         ${chapterTagHTML(m)}
         <span class="tag ${m.lang === 'en' ? 'tag-en' : 'tag-cn'}">${m.lang === 'en' ? 'English' : '中文'}</span>
